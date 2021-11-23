@@ -4,6 +4,7 @@
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,
+    "allowJs": true,
     "forceConsistentCasingInFileNames": true,
     "lib": [
       "es2015",
