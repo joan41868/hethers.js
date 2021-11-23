@@ -6,6 +6,7 @@
       "dom"
     ],
     "preserveWatchOutput": true,
+    "noEmitOnError": false,
     "pretty": false,
     "allowJs": true,
     "esModuleInterop": true
