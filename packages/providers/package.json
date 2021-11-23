@@ -31,7 +31,9 @@
     "@ethersproject/strings": "^5.5.0",
     "@ethersproject/transactions": "^5.5.0",
     "@ethersproject/web": "^5.5.0",
+    "@types/long": "^4.0.1",
     "bech32": "1.1.4",
+    "long": "^5.1.0",
     "ws": "7.4.6"
   },
   "description": "Ethereum Providers for ethers.",
