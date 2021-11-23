@@ -6,7 +6,8 @@
       "dom"
     ],
     "preserveWatchOutput": true,
-    "pretty": false
+    "pretty": false,
+    "allowJs": true
   },
   "references": [
     {
