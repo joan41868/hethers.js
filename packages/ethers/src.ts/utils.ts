@@ -40,7 +40,7 @@ import { Deferrable } from "@ethersproject/properties";
 import { Utf8ErrorFunc } from "@ethersproject/strings";
 import { AccessList, AccessListish } from "@ethersproject/transactions";
 import { ConnectionInfo, FetchJsonResponse, OnceBlockable, OncePollable, PollOptions } from "@ethersproject/web";
-
+import {fromSolidityAddress, decodeHex, toSolidityAddress, encodeHex} from "./hedera-utils";
 ////////////////////////
 // Exports
 
@@ -210,6 +210,11 @@ export {
     FetchJsonResponse,
 
     EncryptOptions,
-    ProgressCallback
+    ProgressCallback,
+
+    toSolidityAddress,
+    fromSolidityAddress,
+    decodeHex,
+    encodeHex,
 }
 
