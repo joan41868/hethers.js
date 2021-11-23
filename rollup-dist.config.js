@@ -93,12 +93,13 @@ function getUmdConfig() {
         output: {
             file: `packages/ethers/dist/ethers.umd.js`,
             format: "umd",
-            name: "ethers",
+            name: "hethers",
             sourcemap: true
         },
         context: "window",
         treeshake: false,
-        plugins
+        plugins,
+        external: ['long', 'util', 'fs']
     };
 }
 
@@ -124,7 +125,8 @@ function getEsmConfig() {
         },
         context: "window",
         treeshake: false,
-        plugins
+        plugins,
+        external: ['long', 'util', 'fs']
     };
 }
 

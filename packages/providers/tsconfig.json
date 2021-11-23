@@ -1,8 +1,8 @@
 {
   "compilerOptions": {
+    "allowJs": true,
     "outDir": "./lib/",
-    "rootDir": "./src.ts",
-    "allowJs": true
+    "rootDir": "./src.ts"
   },
   "exclude": [],
   "extends": "../../tsconfig.package.json",
