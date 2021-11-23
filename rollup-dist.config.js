@@ -6,6 +6,7 @@
 import commonjs from '@rollup/plugin-commonjs';
 import resolveNode from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
+import json from "@rollup/plugin-json";
 
 import sourcemaps from 'rollup-plugin-sourcemaps';
 
@@ -78,7 +79,6 @@ function getUmdConfig() {
     const plugins = [ ];
 
     plugins.push(sourcemaps());
-
     addUtilsReplace(plugins);
     addEllipticReplace(plugins);
     addLangReplace(plugins);
@@ -87,6 +87,7 @@ function getUmdConfig() {
         mainFields: [ "browser", "main" ]
     }));
     plugins.push(commonjs({ }));
+    // plugins.push(json())
 
     return {
         input: `packages/ethers/lib/index.js`,
@@ -99,13 +100,13 @@ function getUmdConfig() {
         context: "window",
         treeshake: false,
         plugins,
-        external: ['long', 'util', 'fs']
+        external: ['long', 'util', 'fs', 'crypto']
     };
 }
 
 function getEsmConfig() {
     const plugins = [ ];
-
+    plugins.push(json());
     plugins.push(sourcemaps());
 
     addUtilsReplace(plugins);
@@ -125,8 +126,7 @@ function getEsmConfig() {
         },
         context: "window",
         treeshake: false,
-        plugins,
-        external: ['long', 'util', 'fs']
+        plugins
     };
 }
 
@@ -164,7 +164,7 @@ function getConfig() {
 */
 const configs = [
     getEsmConfig(),
-    getUmdConfig()
+    // getUmdConfig()
 ];
 
 export default configs;
