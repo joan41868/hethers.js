@@ -32,7 +32,7 @@ jobs:
         run: rm -rf packages/**/node_modules && rm -rf node_modules && rm -rf .package_node_modules
 
       - name: Install dependencies (and link per package)
-        run: npm i
+        run: npm ci
 
       - name: Build CommonJS and ESM (from TypeScript)
         run: npm run build-all
