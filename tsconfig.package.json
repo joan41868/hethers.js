@@ -8,6 +8,7 @@
     "forceConsistentCasingInFileNames": true,
     "lib": [
       "es2015",
+      "es2021",
       "es5",
       "dom"
     ],
@@ -22,6 +23,6 @@
     "preserveWatchOutput": true,
     "pretty": false,
     "sourceMap": true,
-    "target": "es5"
+    "target": "es2021"
   }
 }
