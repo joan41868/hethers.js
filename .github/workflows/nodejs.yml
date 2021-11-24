@@ -59,9 +59,6 @@ jobs:
 #      - name: Install node-hid requirements
 #        run: sudo apt-get install libusb-1.0-0 libusb-1.0-0-dev libudev-dev
 
-      - name: Npm install
-        run: npm i
-
       - name: Install dependencies (and link per package)
         run: npm ci
 
@@ -121,9 +118,6 @@ jobs:
 
 #      - name: Install node-hid requirements
 #        run: sudo apt-get install libusb-1.0-0 libusb-1.0-0-dev libudev-dev
-
-      - name: Npm install
-        run: npm i
 
       - name: Install dependencies (and link per package)
         run: npm ci

@@ -34,9 +34,7 @@
     "@hashgraph/proto": "^2.0.1-beta.1",
     "@hashgraph/sdk": "^2.5.0",
     "bech32": "1.1.4",
-    "ws": "7.4.6",
-    "@types/long": "^4.0.1",
-    "long": "^5.1.0"
+    "ws": "7.4.6"
   },
   "description": "Ethereum Providers for ethers.",
   "ethereum": "donations.ethers.eth",
