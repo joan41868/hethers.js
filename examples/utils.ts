@@ -1,7 +1,12 @@
 const hethers = require("ethers");
 
+// 0x0000000000000000000000000000000000000001 -> 0.0.1
+const address = `0x0000000000000000000000000000000000000001`;
+console.log(hethers.utils.arrayify(address));
+const convertedAccount = hethers.utils.getAccountFromAddress(address);
+console.log(convertedAccount);
 
 // 0.0.1 -> 0x0000000000000000000000000000000000000001
-const account = {shard: 0, realm: 0, num: 1}
-const address = hethers.utils.getAddressFromAccount({shard: 0, realm: 0, num: 1});
-console.log(`Account: 0.0.1 converted to Address: ${address}`);
+const account = {shard: BigInt(0), realm: BigInt(0), num: BigInt(1)}
+const convertedAddress = hethers.utils.getAddressFromAccount(account);
+console.log(`Account: 0.0.1 converted to Address: ${convertedAddress}`);

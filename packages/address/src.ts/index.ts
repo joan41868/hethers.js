@@ -181,9 +181,9 @@ export function getAddressFromAccount(accountLike: AccountLike): string {
     const buffer = new Uint8Array(20);
     const view = new DataView(buffer.buffer, 0, 20);
 
-    view.setUint32(0, parsedAccount.shard);
-    view.setUint32(8, parsedAccount.realm);
-    view.setUint32(16, parsedAccount.num);
+    view.setInt32(0, Number(parsedAccount.shard));
+    view.setBigInt64(4, parsedAccount.realm);
+    view.setBigInt64(12, parsedAccount.num);
 
     return hexlify(buffer);
 }
@@ -193,11 +193,13 @@ export function getAccountFromAddress(address: string): Account {
         logger.throwArgumentError("invalid address", "address", address);
     }
 
-    let addressArray = arrayify(address)
+    let buffer = arrayify(address)
+    const view = new DataView(buffer.buffer, 0, 20);
+
     return {
-        shard: Number(addressArray.slice(0, 4)),
-        realm: Number(addressArray.slice(4, 12)),
-        num: Number(addressArray.slice(12, 20))
+        shard: BigInt(view.getInt32(0)),
+        realm: BigInt(view.getBigInt64(4)),
+        num: BigInt(view.getBigInt64(12))
     }
 }
 
@@ -209,9 +211,9 @@ export function parseAccount(account: string): Account {
     if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
         let parsedAccount = account.split(',');
         result = {
-            shard: Number(parsedAccount[0]),
-            realm: Number(parsedAccount[1]),
-            num: Number(parsedAccount[2])
+            shard: BigInt(parsedAccount[0]),
+            realm: BigInt(parsedAccount[1]),
+            num: BigInt(parsedAccount[2])
         };
     } else {
         logger.throwArgumentError("invalid account", "account", account);
@@ -220,8 +222,8 @@ export function parseAccount(account: string): Account {
 }
 
 export type Account = {
-    shard: number,
-    realm: number
-    num: number
+    shard: bigint,
+    realm: bigint
+    num: bigint
 }
 export type AccountLike = Account | string;
