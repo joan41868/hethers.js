@@ -19,17 +19,18 @@ import { version } from "./_version";
 const logger = new Logger(version);
 
 function isAccount(value: any): value is ExternallyOwnedAccount {
+    //TODO check ed2559 key length
     return (value != null && isHexString(value.privateKey, 32) && value.address != null);
 }
 
-function hasMnemonic(value: any): value is { mnemonic: Mnemonic } {
-    const mnemonic = value.mnemonic;
-    return (mnemonic && mnemonic.phrase);
-}
+// function hasMnemonic(value: any): value is { mnemonic: Mnemonic } {
+//     const mnemonic = value.mnemonic;
+//     return (mnemonic && mnemonic.phrase);
+// }
 
 export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
 
-    readonly address: string;
+    readonly address: string; //implement util converter to eth address format in case of hedera account
     readonly provider: Provider;
 
     // Wrapping the _signingKey and _mnemonic in a getter function prevents
@@ -37,61 +38,66 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
     readonly _signingKey: () => SigningKey;
     readonly _mnemonic: () => Mnemonic;
 
-    constructor(privateKey: BytesLike | ExternallyOwnedAccount | SigningKey, provider?: Provider) {
+    //TODO For now work only with single key!
+    constructor(eoa: ExternallyOwnedAccount, provider?: Provider) {
         logger.checkNew(new.target, Wallet);
 
         super();
 
-        if (isAccount(privateKey)) {
-            const signingKey = new SigningKey(privateKey.privateKey);
+        if (isAccount(eoa)) {
+            const signingKey = new SigningKey(eoa.privateKey);
             defineReadOnly(this, "_signingKey", () => signingKey);
+            //check is hedera account & invoke util to split
             defineReadOnly(this, "address", computeAddress(this.publicKey));
 
-            if (this.address !== getAddress(privateKey.address)) {
+            if (this.address !== getAddress(eoa.address)) {
                 logger.throwArgumentError("privateKey/address mismatch", "privateKey", "[REDACTED]");
             }
 
-            if (hasMnemonic(privateKey)) {
-                const srcMnemonic = privateKey.mnemonic;
-                defineReadOnly(this, "_mnemonic", () => (
-                    {
-                        phrase: srcMnemonic.phrase,
-                        path: srcMnemonic.path || defaultPath,
-                        locale: srcMnemonic.locale || "en"
-                    }
-                ));
-                const mnemonic = this.mnemonic;
-                const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
-                if (computeAddress(node.privateKey) !== this.address) {
-                    logger.throwArgumentError("mnemonic/address mismatch", "privateKey", "[REDACTED]");
-                }
-            } else {
-                defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
-            }
+            // if (hasMnemonic(eoa)) {
+            //     const srcMnemonic = eoa.mnemonic;
+            //     defineReadOnly(this, "_mnemonic", () => (
+            //         {
+            //             phrase: srcMnemonic.phrase,
+            //             path: srcMnemonic.path || defaultPath,
+            //             locale: srcMnemonic.locale || "en"
+            //         }
+            //     ));
+            //     const mnemonic = this.mnemonic;
+            //     const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
+            //     if (computeAddress(node.privateKey) !== this.address) {
+            //         logger.throwArgumentError("mnemonic/address mismatch", "privateKey", "[REDACTED]");
+            //     }
+            // } else {
+            //     defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
+            // }
 
+            //TODO implement Mnemonic handling, check getMnemonic logic in hedera-sdk
 
         } else {
-            if (SigningKey.isSigningKey(privateKey)) {
-                /* istanbul ignore if */
-                if (privateKey.curve !== "secp256k1") {
-                    logger.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
-                }
-                defineReadOnly(this, "_signingKey", () => (<SigningKey>privateKey));
+            // if (SigningKey.isSigningKey(eoa)) {
+            //     /* istanbul ignore if */
+            //     if (eoa.curve !== "secp256k1") {
+            //         logger.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
+            //     }
+            //     defineReadOnly(this, "_signingKey", () => (<SigningKey>eoa));
 
-            } else {
-                // A lot of common tools do not prefix private keys with a 0x (see: #1166)
-                if (typeof(privateKey) === "string") {
-                    if (privateKey.match(/^[0-9a-f]*$/i) && privateKey.length === 64) {
-                        privateKey = "0x" + privateKey;
-                    }
-                }
+            // } else {
+            //     // A lot of common tools do not prefix private keys with a 0x (see: #1166)
+            //     if (typeof(eoa) === "string") {
+            //         if (eoa.match(/^[0-9a-f]*$/i) && eoa.length === 64) {
+            //             eoa = "0x" + eoa;
+            //         }
+            //     }
 
-                const signingKey = new SigningKey(privateKey);
-                defineReadOnly(this, "_signingKey", () => signingKey);
-            }
+            //     const signingKey = new SigningKey(eoa);
+            //     defineReadOnly(this, "_signingKey", () => signingKey);
+            // }
 
-            defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
-            defineReadOnly(this, "address", computeAddress(this.publicKey));
+            // defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
+            // defineReadOnly(this, "address", computeAddress(this.publicKey));
+
+            logger.throwArgumentError("invalid eoa", "eoa", eoa);
         }
 
         /* istanbul ignore if */
@@ -107,17 +113,20 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
     get publicKey(): string { return this._signingKey().publicKey; }
 
     getAddress(): Promise<string> {
-        return Promise.resolve(this.address);
+        return Promise.resolve(this.address); // use converterted eth address
     }
 
     connect(provider: Provider): Wallet {
         return new Wallet(this, provider);
     }
 
+    //leave it untouched for now
     signTransaction(transaction: TransactionRequest): Promise<string> {
         return resolveProperties(transaction).then((tx) => {
             if (tx.from != null) {
-                if (getAddress(tx.from) !== this.address) {
+                //either implement custom util for hedera accounts
+                // this.accountIdToEthAddress(this.account) -> 
+                if (getAddress(tx.from) !== this.accountIdToEthAddress(this.address)) {
                     logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
                 }
                 delete tx.from;
@@ -128,6 +137,13 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         });
     }
 
+    //TODO implement util
+    accountIdToEthAddress(accountId: string): string {  
+        //parse <0.0.1> to <0x3123...>
+        return "";
+    }
+
+    //to be discussed!! 
     async signMessage(message: Bytes | string): Promise<string> {
         return joinSignature(this._signingKey().signDigest(hashMessage(message)));
     }
@@ -193,7 +209,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         if (!path) { path = defaultPath; }
         return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
     }
-}
+} 
 
 export function verifyMessage(message: Bytes | string, signature: SignatureLike): string {
     return recoverAddress(hashMessage(message), signature);

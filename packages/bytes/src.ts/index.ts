@@ -2,6 +2,7 @@
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import { SigningKey } from "@ethersproject/signing-key";
 const logger = new Logger(version);
 
 ///////////////////////////////
@@ -10,6 +11,10 @@ const logger = new Logger(version);
 export type Bytes = ArrayLike<number>;
 
 export type BytesLike = Bytes | string;
+
+export type SigningKeys = ArrayLike<SigningKey>;
+
+export type HederaKeyLike = SigningKeys | SigningKey;
 
 export type DataOptions = {
     allowMissingPrefix?: boolean;
