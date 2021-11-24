@@ -1,4 +1,5 @@
-import Long from "long";
+import {BigNumber} from "./ethers";
+import {hexlify} from "./utils";
 
 export function fromSolidityAddress(address: string) {
     let addr = address.startsWith("0x")
@@ -9,20 +10,16 @@ export function fromSolidityAddress(address: string) {
         throw new Error(`Invalid hex encoded solidity address length:
                 expected length 40, got length ${address.length}`);
     }
-    const addr2: number[] = [];
-    addr.map(e => addr2.push(e.valueOf()));
-    const shard = Long.fromBytesBE([0, 0, 0, 0, ...addr2.slice(0, 4)]);
-    const realm = Long.fromBytesBE(Array.from(addr.slice(4, 12)));
-    const num = Long.fromBytesBE(Array.from(addr.slice(12, 20)));
-
-    return [shard, realm, num];
+    const shard = BigNumber.from(hexlify(addr.slice(0, 4)));
+    const realm = BigNumber.from(hexlify(addr.slice(4, 12)));
+    const num = BigNumber.from(hexlify(addr.slice(12, 20)));
+    return [shard.toNumber(), realm.toNumber(), num.toNumber()];
 }
 
 export function decodeHex(text: string): Uint8Array {
     const str = text.startsWith("0x") ? text.substring(2) : text;
     return Buffer.from(str, "hex");
 }
-
 
 export function encodeHex(data: Uint8Array) :string {
     return Buffer.from(data).toString("hex");
