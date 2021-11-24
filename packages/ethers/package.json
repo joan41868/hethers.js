@@ -31,7 +31,9 @@
     "@ethersproject/units": "5.5.0",
     "@ethersproject/wallet": "5.5.0",
     "@ethersproject/web": "5.5.0",
-    "@ethersproject/wordlists": "5.5.0"
+    "@ethersproject/wordlists": "5.5.0",
+    "@types/long": "^4.0.1",
+    "long": "^5.1.0"
   },
   "description": "Umbrella package for most common Ethers libraries.",
   "ethereum": "donations.ethers.eth",
@@ -66,7 +68,5 @@
   "types": "./lib/index.d.ts",
   "version": "5.5.1",
   "devDependencies": {
-    "@types/long": "^4.0.1",
-    "long": "^5.1.0"
   }
 }
