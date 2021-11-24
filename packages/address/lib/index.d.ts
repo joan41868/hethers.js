@@ -12,9 +12,9 @@ export declare function getAddressFromAccount(accountLike: AccountLike): string;
 export declare function getAccountFromAddress(address: string): Account;
 export declare function parseAccount(account: string): Account;
 export declare type Account = {
-    shard: number,
-    realm: number
-    num: number
-}
-export declare type AccountLike = Account | string
+    shard: number;
+    realm: number;
+    num: number;
+};
+export declare type AccountLike = Account | string;
 //# sourceMappingURL=index.d.ts.map

@@ -5,8 +5,7 @@ import {
     BytesLike,
     concat,
     hexDataLength,
-    hexDataSlice,
-    hexValue,
+    hexDataSlice, hexlify,
     isHexString,
     stripZeros
 } from "@ethersproject/bytes";
@@ -186,7 +185,7 @@ export function getAddressFromAccount(accountLike: AccountLike): string {
     view.setUint32(8, parsedAccount.realm);
     view.setUint32(16, parsedAccount.num);
 
-    return hexValue(buffer);
+    return hexlify(buffer);
 }
 
 export function getAccountFromAddress(address: string): Account {
@@ -207,7 +206,6 @@ export function parseAccount(account: string): Account {
     if (typeof (account) !== "string") {
         logger.throwArgumentError("invalid account", "account", account);
     }
-
     if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
         let parsedAccount = account.split(',');
         result = {
