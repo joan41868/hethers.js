@@ -1,6 +1,7 @@
 "use strict";
 
 module.exports = function(config) {
+  process.env.CHROME_BIN = require('puppeteer').executablePath();
   config.set({
     basePath: "./output/karma",
     frameworks: [ 'mocha' ],
@@ -20,7 +21,7 @@ module.exports = function(config) {
     autoWatch: false,
     singleRun: true,
     browserNoActivityTimeout: 3600000,
-
+    failOnEmptyTestSuite: false,
     customLaunchers: {
       HeadlessLittleLiar: {
         base: 'ChromeHeadless',
