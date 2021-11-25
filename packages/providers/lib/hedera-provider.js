@@ -55,7 +55,7 @@ exports.HederaProvider = void 0;
 var base_provider_1 = require("./base-provider");
 var sdk_1 = require("@hashgraph/sdk");
 var bignumber_1 = require("@ethersproject/bignumber");
-var hedera_utils_1 = require("ethers/lib/hedera-utils");
+var utils_1 = require("ethers/lib/utils");
 function getNetwork(net) {
     switch (net) {
         case 'mainnet':
@@ -82,15 +82,18 @@ var HederaProvider = /** @class */ (function (_super) {
      */
     HederaProvider.prototype.getBalance = function (addressOrName, blockTag) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, shard, realm, num, balance;
+            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, addressOrName];
                     case 1:
                         addressOrName = _b.sent();
-                        _a = (0, hedera_utils_1.fromSolidityAddress)(addressOrName), shard = _a[0], realm = _a[1], num = _a[2];
+                        _a = (0, utils_1.getAccountFromAddress)(addressOrName), shard = _a.shard, realm = _a.realm, num = _a.num;
+                        shardNum = bignumber_1.BigNumber.from(shard).toNumber();
+                        realmNum = bignumber_1.BigNumber.from(realm).toNumber();
+                        accountNum = bignumber_1.BigNumber.from(num).toNumber();
                         return [4 /*yield*/, new sdk_1.AccountBalanceQuery()
-                                .setAccountId(new sdk_1.AccountId({ shard: shard, realm: realm, num: num }))
+                                .setAccountId(new sdk_1.AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
                                 .execute(this.hederaClient)];
                     case 2:
                         balance = _b.sent();

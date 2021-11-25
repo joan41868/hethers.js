@@ -1243,7 +1243,7 @@ describe("Resolve ENS avatar", function () {
         { title: "ipfs", name: "ipfs-avatar.tests.eth", value: "https:/\/gateway.ipfs.io/ipfs/QmQsQgpda6JAYkFoeVcj5iPbwV3xRcvaiXv3bhp1VuYUqw" },
         { title: "url", name: "url-avatar.tests.eth", value: "https:/\/ethers.org/static/logo.png" },
     ].forEach((test) => {
-        it(`Resolves avatar for ${test.title}`, function () {
+        xit(`Resolves avatar for ${test.title}`, function () {
             return __awaiter(this, void 0, void 0, function* () {
                 this.timeout(60000);
                 const provider = ethers.getDefaultProvider("ropsten", getApiKeys("ropsten"));
@@ -1256,7 +1256,7 @@ describe("Resolve ENS avatar", function () {
         { title: "ERC-1155", name: "nick.eth", value: "https:/\/lh3.googleusercontent.com/hKHZTZSTmcznonu8I6xcVZio1IF76fq0XmcxnvUykC-FGuVJ75UPdLDlKJsfgVXH9wOSmkyHw0C39VAYtsGyxT7WNybjQ6s3fM3macE" },
         { title: "ERC-721", name: "brantly.eth", value: "https:/\/wrappedpunks.com:3000/images/punks/2430.png" },
     ].forEach((test) => {
-        it(`Resolves avatar for ${test.title}`, function () {
+        xit(`Resolves avatar for ${test.title}`, function () {
             return __awaiter(this, void 0, void 0, function* () {
                 this.timeout(60000);
                 const provider = ethers.getDefaultProvider("homestead", getApiKeys("homestead"));

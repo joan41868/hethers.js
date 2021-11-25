@@ -2,7 +2,7 @@ import {BaseProvider} from "./base-provider";
 import {AccountBalanceQuery, AccountId, Client, NetworkName} from '@hashgraph/sdk';
 import {BigNumber} from "@ethersproject/bignumber";
 import {BlockTag} from "@ethersproject/abstract-provider";
-import {fromSolidityAddress} from "ethers/lib/hedera-utils";
+import {getAccountFromAddress} from "ethers/lib/utils";
 
 function getNetwork(net: string) {
     switch (net) {
@@ -32,9 +32,12 @@ export class HederaProvider extends BaseProvider {
      */
     async getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber> {
         addressOrName = await addressOrName;
-        const [shard, realm, num] = fromSolidityAddress(addressOrName);
+        const {shard, realm, num} = getAccountFromAddress(addressOrName);
+        const shardNum = BigNumber.from(shard).toNumber();
+        const realmNum = BigNumber.from(realm).toNumber();
+        const accountNum = BigNumber.from(num).toNumber();
         const balance = await new AccountBalanceQuery()
-            .setAccountId(new AccountId({shard, realm, num}))
+            .setAccountId(new AccountId({shard: shardNum, realm: realmNum, num: accountNum}))
             .execute(this.hederaClient);
         return BigNumber.from(balance.hbars.toTinybars().toNumber());
     }
