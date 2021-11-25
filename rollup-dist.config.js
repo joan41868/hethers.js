@@ -77,7 +77,7 @@ function addEllipticReplace(plugins) {
 
 function getUmdConfig() {
     const plugins = [ ];
-
+    plugins.push(json());
     plugins.push(sourcemaps());
     addUtilsReplace(plugins);
     addEllipticReplace(plugins);
@@ -164,7 +164,7 @@ function getConfig() {
 */
 const configs = [
     getEsmConfig(),
-    // getUmdConfig()
+    getUmdConfig()
 ];
 
 export default configs;
