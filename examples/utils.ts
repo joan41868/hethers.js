@@ -2,7 +2,6 @@ const hethers = require("ethers");
 
 // 0x0000000000000000000000000000000000000001 -> 0.0.1
 const address = `0x0000000000000000000000000000000000000001`;
-console.log(hethers.utils.arrayify(address));
 const convertedAccount = hethers.utils.getAccountFromAddress(address);
 console.log(convertedAccount);
 
