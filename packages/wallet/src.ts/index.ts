@@ -1,25 +1,37 @@
 "use strict";
 
-import { getAddress } from "@ethersproject/address";
-import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
-import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@ethersproject/abstract-signer";
-import { arrayify, Bytes, BytesLike, concat, hexDataSlice, isHexString, joinSignature, SignatureLike } from "@ethersproject/bytes";
-import { hashMessage, _TypedDataEncoder } from "@ethersproject/hash";
-import { defaultPath, HDNode, entropyToMnemonic, Mnemonic } from "@ethersproject/hdnode";
-import { keccak256 } from "@ethersproject/keccak256";
-import { defineReadOnly, resolveProperties } from "@ethersproject/properties";
-import { randomBytes } from "@ethersproject/random";
-import { SigningKey } from "@ethersproject/signing-key";
-import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore, ProgressCallback } from "@ethersproject/json-wallets";
-import { computeAddress, recoverAddress, serialize, UnsignedTransaction } from "@ethersproject/transactions";
-import { Wordlist } from "@ethersproject/wordlists";
+import {Account, getAccountFromAddress, getAddress, getAddressFromAccount, parseAccount} from "@ethersproject/address";
+import {Provider, TransactionRequest} from "@ethersproject/abstract-provider";
+import {
+    ExternallyOwnedAccount,
+    Signer,
+    TypedDataDomain,
+    TypedDataField,
+    TypedDataSigner,
+    HederaAccount
+} from "@ethersproject/abstract-signer";
+import {arrayify, Bytes, concat, hexDataSlice, isHexString, joinSignature, SignatureLike} from "@ethersproject/bytes";
+import {_TypedDataEncoder, hashMessage} from "@ethersproject/hash";
+import {defaultPath, entropyToMnemonic, HDNode, Mnemonic} from "@ethersproject/hdnode";
+import {keccak256} from "@ethersproject/keccak256";
+import {defineReadOnly, resolveProperties} from "@ethersproject/properties";
+import {randomBytes} from "@ethersproject/random";
+import {SigningKey} from "@ethersproject/signing-key";
+import {decryptJsonWallet, decryptJsonWalletSync, encryptKeystore, ProgressCallback} from "@ethersproject/json-wallets";
+import {recoverAddress, serialize, UnsignedTransaction} from "@ethersproject/transactions";
+import {Wordlist} from "@ethersproject/wordlists";
 
-import { Logger } from "@ethersproject/logger";
-import { version } from "./_version";
+import {Logger} from "@ethersproject/logger";
+import {version} from "./_version";
+
 const logger = new Logger(version);
 
-function isAccount(value: any): value is ExternallyOwnedAccount {
+function isEOA(value: any): value is ExternallyOwnedAccount {
     return (value != null && isHexString(value.privateKey, 32) && value.address != null);
+}
+
+function isHederaAccount(value: any): value is HederaAccount {
+    return (value != null && isHexString(value.privateKey, 32) && value.account != null);
 }
 
 function hasMnemonic(value: any): value is { mnemonic: Mnemonic } {
@@ -29,7 +41,10 @@ function hasMnemonic(value: any): value is { mnemonic: Mnemonic } {
 
 export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
 
+    // EVM Address format
     readonly address: string;
+    // Hedera Account format
+    readonly account: Account;
     readonly provider: Provider;
 
     // Wrapping the _signingKey and _mnemonic in a getter function prevents
@@ -37,22 +52,19 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
     readonly _signingKey: () => SigningKey;
     readonly _mnemonic: () => Mnemonic;
 
-    constructor(privateKey: BytesLike | ExternallyOwnedAccount | SigningKey, provider?: Provider) {
+    constructor(acc: ExternallyOwnedAccount | HederaAccount, provider?: Provider) {
         logger.checkNew(new.target, Wallet);
-
         super();
 
-        if (isAccount(privateKey)) {
-            const signingKey = new SigningKey(privateKey.privateKey);
+        if (isEOA(acc) || isHederaAccount(acc)) {
+            const signingKey = new SigningKey(acc.privateKey);
             defineReadOnly(this, "_signingKey", () => signingKey);
-            defineReadOnly(this, "address", computeAddress(this.publicKey));
 
-            if (this.address !== getAddress(privateKey.address)) {
-                logger.throwArgumentError("privateKey/address mismatch", "privateKey", "[REDACTED]");
-            }
+            defineReadOnly(this, "address", isEOA(acc) ? getAddress(acc.address) : getAddressFromAccount(acc.account));
+            defineReadOnly(this, "account", isEOA(acc) ? getAccountFromAddress(acc.address) : parseAccount(acc.account));
 
-            if (hasMnemonic(privateKey)) {
-                const srcMnemonic = privateKey.mnemonic;
+            if (hasMnemonic(acc)) {
+                const srcMnemonic = acc.mnemonic;
                 defineReadOnly(this, "_mnemonic", () => (
                     {
                         phrase: srcMnemonic.phrase,
@@ -62,36 +74,14 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
                 ));
                 const mnemonic = this.mnemonic;
                 const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
-                if (computeAddress(node.privateKey) !== this.address) {
-                    logger.throwArgumentError("mnemonic/address mismatch", "privateKey", "[REDACTED]");
+                if (node.privateKey !== this._signingKey().privateKey) {
+                    logger.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
                 }
             } else {
                 defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
             }
-
-
         } else {
-            if (SigningKey.isSigningKey(privateKey)) {
-                /* istanbul ignore if */
-                if (privateKey.curve !== "secp256k1") {
-                    logger.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
-                }
-                defineReadOnly(this, "_signingKey", () => (<SigningKey>privateKey));
-
-            } else {
-                // A lot of common tools do not prefix private keys with a 0x (see: #1166)
-                if (typeof(privateKey) === "string") {
-                    if (privateKey.match(/^[0-9a-f]*$/i) && privateKey.length === 64) {
-                        privateKey = "0x" + privateKey;
-                    }
-                }
-
-                const signingKey = new SigningKey(privateKey);
-                defineReadOnly(this, "_signingKey", () => signingKey);
-            }
-
-            defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
-            defineReadOnly(this, "address", computeAddress(this.publicKey));
+            logger.throwArgumentError("invalid account", "account", acc);
         }
 
         /* istanbul ignore if */
@@ -102,18 +92,31 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         defineReadOnly(this, "provider", provider || null);
     }
 
-    get mnemonic(): Mnemonic { return this._mnemonic(); }
-    get privateKey(): string { return this._signingKey().privateKey; }
-    get publicKey(): string { return this._signingKey().publicKey; }
+    get mnemonic(): Mnemonic {
+        return this._mnemonic();
+    }
+
+    get privateKey(): string {
+        return this._signingKey().privateKey;
+    }
+
+    get publicKey(): string {
+        return this._signingKey().publicKey;
+    }
 
     getAddress(): Promise<string> {
         return Promise.resolve(this.address);
+    }
+
+    getAccount(): Promise<Account> {
+        return Promise.resolve(this.account);
     }
 
     connect(provider: Provider): Wallet {
         return new Wallet(this, provider);
     }
 
+    // TODO to be revised
     signTransaction(transaction: TransactionRequest): Promise<string> {
         return resolveProperties(transaction).then((tx) => {
             if (tx.from != null) {
@@ -132,6 +135,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         return joinSignature(this._signingKey().signDigest(hashMessage(message)));
     }
 
+    // TODO to be revised
     async _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
         // Populate any ENS names
         const populated = await _TypedDataEncoder.resolveNames(domain, types, value, (name: string) => {
@@ -147,58 +151,70 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         return joinSignature(this._signingKey().signDigest(_TypedDataEncoder.hash(populated.domain, types, populated.value)));
     }
 
+    // TODO to be revised
     encrypt(password: Bytes | string, options?: any, progressCallback?: ProgressCallback): Promise<string> {
-        if (typeof(options) === "function" && !progressCallback) {
+        if (typeof (options) === "function" && !progressCallback) {
             progressCallback = options;
             options = {};
         }
 
-        if (progressCallback && typeof(progressCallback) !== "function") {
+        if (progressCallback && typeof (progressCallback) !== "function") {
             throw new Error("invalid callback");
         }
 
-        if (!options) { options = {}; }
+        if (!options) {
+            options = {};
+        }
 
         return encryptKeystore(this, password, options, progressCallback);
     }
 
-
+    // TODO to be revised
     /**
      *  Static methods to create Wallet instances.
      */
     static createRandom(options?: any): Wallet {
         let entropy: Uint8Array = randomBytes(16);
 
-        if (!options) { options = { }; }
+        if (!options) {
+            options = {};
+        }
 
         if (options.extraEntropy) {
-            entropy = arrayify(hexDataSlice(keccak256(concat([ entropy, options.extraEntropy ])), 0, 16));
+            entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
         }
 
         const mnemonic = entropyToMnemonic(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     }
 
+    // TODO to be revised
     static fromEncryptedJson(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<Wallet> {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
             return new Wallet(account);
         });
     }
 
+    // TODO to be revised
     static fromEncryptedJsonSync(json: string, password: Bytes | string): Wallet {
         return new Wallet(decryptJsonWalletSync(json, password));
     }
 
+    // TODO to be revised
     static fromMnemonic(mnemonic: string, path?: string, wordlist?: Wordlist): Wallet {
-        if (!path) { path = defaultPath; }
+        if (!path) {
+            path = defaultPath;
+        }
         return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
     }
 }
 
+// TODO to be revised
 export function verifyMessage(message: Bytes | string, signature: SignatureLike): string {
     return recoverAddress(hashMessage(message), signature);
 }
 
+// TODO to be revised
 export function verifyTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, signature: SignatureLike): string {
     return recoverAddress(_TypedDataEncoder.hash(domain, types, value), signature);
 }

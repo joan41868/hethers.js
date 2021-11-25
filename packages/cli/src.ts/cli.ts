@@ -397,17 +397,20 @@ async function loadAccount(arg: string, plugin: Plugin, preventFile?: boolean): 
 
     // Secure entry; use prompt with mask
     if (arg === "-") {
+        // TODO ask for account/address + private key from the terminal
         const content = await getPassword("Private Key / Mnemonic: ");
         return loadAccount(content, plugin, true);
     }
 
     // Raw private key
+    // TODO should be changed to account + private key OR address + private key
     if (ethers.utils.isHexString(arg, 32)) {
          const signer = new ethers.Wallet(arg, plugin.provider);
          return Promise.resolve(new WrappedSigner(signer.getAddress(), () => Promise.resolve(signer), plugin));
     }
 
     // Mnemonic
+    // TODO should be changed to account OR address + mnemonic
     if (ethers.utils.isValidMnemonic(arg)) {
         const mnemonic = arg;
         let signerPromise: Promise<ethers.Wallet> = null;

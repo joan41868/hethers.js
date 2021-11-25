@@ -1,20 +1,23 @@
+import { Account } from "@ethersproject/address";
 import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
-import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@ethersproject/abstract-signer";
-import { Bytes, BytesLike, SignatureLike } from "@ethersproject/bytes";
+import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner, HederaAccount } from "@ethersproject/abstract-signer";
+import { Bytes, SignatureLike } from "@ethersproject/bytes";
 import { Mnemonic } from "@ethersproject/hdnode";
 import { SigningKey } from "@ethersproject/signing-key";
 import { ProgressCallback } from "@ethersproject/json-wallets";
 import { Wordlist } from "@ethersproject/wordlists";
 export declare class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
     readonly address: string;
+    readonly account: Account;
     readonly provider: Provider;
     readonly _signingKey: () => SigningKey;
     readonly _mnemonic: () => Mnemonic;
-    constructor(privateKey: BytesLike | ExternallyOwnedAccount | SigningKey, provider?: Provider);
+    constructor(acc: ExternallyOwnedAccount | HederaAccount, provider?: Provider);
     get mnemonic(): Mnemonic;
     get privateKey(): string;
     get publicKey(): string;
     getAddress(): Promise<string>;
+    getAccount(): Promise<Account>;
     connect(provider: Provider): Wallet;
     signTransaction(transaction: TransactionRequest): Promise<string>;
     signMessage(message: Bytes | string): Promise<string>;

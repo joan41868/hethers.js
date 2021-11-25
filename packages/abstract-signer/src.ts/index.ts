@@ -42,6 +42,11 @@ export interface ExternallyOwnedAccount {
     readonly privateKey: string;
 }
 
+export interface HederaAccount {
+    readonly account: string;
+    readonly privateKey: string
+}
+
 // Sub-Class Notes:
 //  - A Signer MUST always make sure, that if present, the "from" field
 //    matches the Signer, before sending or signing a transaction

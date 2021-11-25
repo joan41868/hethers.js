@@ -67,8 +67,11 @@ var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
-function isAccount(value) {
+function isEOA(value) {
     return (value != null && (0, bytes_1.isHexString)(value.privateKey, 32) && value.address != null);
+}
+function isHederaAccount(value) {
+    return (value != null && (0, bytes_1.isHexString)(value.privateKey, 32) && value.account != null);
 }
 function hasMnemonic(value) {
     var mnemonic = value.mnemonic;
@@ -76,20 +79,18 @@ function hasMnemonic(value) {
 }
 var Wallet = /** @class */ (function (_super) {
     __extends(Wallet, _super);
-    function Wallet(privateKey, provider) {
+    function Wallet(acc, provider) {
         var _newTarget = this.constructor;
         var _this = this;
         logger.checkNew(_newTarget, Wallet);
         _this = _super.call(this) || this;
-        if (isAccount(privateKey)) {
-            var signingKey_1 = new signing_key_1.SigningKey(privateKey.privateKey);
+        if (isEOA(acc) || isHederaAccount(acc)) {
+            var signingKey_1 = new signing_key_1.SigningKey(acc.privateKey);
             (0, properties_1.defineReadOnly)(_this, "_signingKey", function () { return signingKey_1; });
-            (0, properties_1.defineReadOnly)(_this, "address", (0, transactions_1.computeAddress)(_this.publicKey));
-            if (_this.address !== (0, address_1.getAddress)(privateKey.address)) {
-                logger.throwArgumentError("privateKey/address mismatch", "privateKey", "[REDACTED]");
-            }
-            if (hasMnemonic(privateKey)) {
-                var srcMnemonic_1 = privateKey.mnemonic;
+            (0, properties_1.defineReadOnly)(_this, "address", isEOA(acc) ? (0, address_1.getAddress)(acc.address) : (0, address_1.getAddressFromAccount)(acc.account));
+            (0, properties_1.defineReadOnly)(_this, "account", isEOA(acc) ? (0, address_1.getAccountFromAddress)(acc.address) : (0, address_1.parseAccount)(acc.account));
+            if (hasMnemonic(acc)) {
+                var srcMnemonic_1 = acc.mnemonic;
                 (0, properties_1.defineReadOnly)(_this, "_mnemonic", function () { return ({
                     phrase: srcMnemonic_1.phrase,
                     path: srcMnemonic_1.path || hdnode_1.defaultPath,
@@ -97,8 +98,8 @@ var Wallet = /** @class */ (function (_super) {
                 }); });
                 var mnemonic = _this.mnemonic;
                 var node = hdnode_1.HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
-                if ((0, transactions_1.computeAddress)(node.privateKey) !== _this.address) {
-                    logger.throwArgumentError("mnemonic/address mismatch", "privateKey", "[REDACTED]");
+                if (node.privateKey !== _this._signingKey().privateKey) {
+                    logger.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
                 }
             }
             else {
@@ -106,25 +107,7 @@ var Wallet = /** @class */ (function (_super) {
             }
         }
         else {
-            if (signing_key_1.SigningKey.isSigningKey(privateKey)) {
-                /* istanbul ignore if */
-                if (privateKey.curve !== "secp256k1") {
-                    logger.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
-                }
-                (0, properties_1.defineReadOnly)(_this, "_signingKey", function () { return privateKey; });
-            }
-            else {
-                // A lot of common tools do not prefix private keys with a 0x (see: #1166)
-                if (typeof (privateKey) === "string") {
-                    if (privateKey.match(/^[0-9a-f]*$/i) && privateKey.length === 64) {
-                        privateKey = "0x" + privateKey;
-                    }
-                }
-                var signingKey_2 = new signing_key_1.SigningKey(privateKey);
-                (0, properties_1.defineReadOnly)(_this, "_signingKey", function () { return signingKey_2; });
-            }
-            (0, properties_1.defineReadOnly)(_this, "_mnemonic", function () { return null; });
-            (0, properties_1.defineReadOnly)(_this, "address", (0, transactions_1.computeAddress)(_this.publicKey));
+            logger.throwArgumentError("invalid account", "account", acc);
         }
         /* istanbul ignore if */
         if (provider && !abstract_provider_1.Provider.isProvider(provider)) {
@@ -134,26 +117,36 @@ var Wallet = /** @class */ (function (_super) {
         return _this;
     }
     Object.defineProperty(Wallet.prototype, "mnemonic", {
-        get: function () { return this._mnemonic(); },
+        get: function () {
+            return this._mnemonic();
+        },
         enumerable: false,
         configurable: true
     });
     Object.defineProperty(Wallet.prototype, "privateKey", {
-        get: function () { return this._signingKey().privateKey; },
+        get: function () {
+            return this._signingKey().privateKey;
+        },
         enumerable: false,
         configurable: true
     });
     Object.defineProperty(Wallet.prototype, "publicKey", {
-        get: function () { return this._signingKey().publicKey; },
+        get: function () {
+            return this._signingKey().publicKey;
+        },
         enumerable: false,
         configurable: true
     });
     Wallet.prototype.getAddress = function () {
         return Promise.resolve(this.address);
     };
+    Wallet.prototype.getAccount = function () {
+        return Promise.resolve(this.account);
+    };
     Wallet.prototype.connect = function (provider) {
         return new Wallet(this, provider);
     };
+    // TODO to be revised
     Wallet.prototype.signTransaction = function (transaction) {
         var _this = this;
         return (0, properties_1.resolveProperties)(transaction).then(function (tx) {
@@ -174,6 +167,7 @@ var Wallet = /** @class */ (function (_super) {
             });
         });
     };
+    // TODO to be revised
     Wallet.prototype._signTypedData = function (domain, types, value) {
         return __awaiter(this, void 0, void 0, function () {
             var populated;
@@ -196,6 +190,7 @@ var Wallet = /** @class */ (function (_super) {
             });
         });
     };
+    // TODO to be revised
     Wallet.prototype.encrypt = function (password, options, progressCallback) {
         if (typeof (options) === "function" && !progressCallback) {
             progressCallback = options;
@@ -209,6 +204,7 @@ var Wallet = /** @class */ (function (_super) {
         }
         return (0, json_wallets_1.encryptKeystore)(this, password, options, progressCallback);
     };
+    // TODO to be revised
     /**
      *  Static methods to create Wallet instances.
      */
@@ -223,14 +219,17 @@ var Wallet = /** @class */ (function (_super) {
         var mnemonic = (0, hdnode_1.entropyToMnemonic)(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     };
+    // TODO to be revised
     Wallet.fromEncryptedJson = function (json, password, progressCallback) {
         return (0, json_wallets_1.decryptJsonWallet)(json, password, progressCallback).then(function (account) {
             return new Wallet(account);
         });
     };
+    // TODO to be revised
     Wallet.fromEncryptedJsonSync = function (json, password) {
         return new Wallet((0, json_wallets_1.decryptJsonWalletSync)(json, password));
     };
+    // TODO to be revised
     Wallet.fromMnemonic = function (mnemonic, path, wordlist) {
         if (!path) {
             path = hdnode_1.defaultPath;
@@ -240,10 +239,12 @@ var Wallet = /** @class */ (function (_super) {
     return Wallet;
 }(abstract_signer_1.Signer));
 exports.Wallet = Wallet;
+// TODO to be revised
 function verifyMessage(message, signature) {
     return (0, transactions_1.recoverAddress)((0, hash_1.hashMessage)(message), signature);
 }
 exports.verifyMessage = verifyMessage;
+// TODO to be revised
 function verifyTypedData(domain, types, value, signature) {
     return (0, transactions_1.recoverAddress)(hash_1._TypedDataEncoder.hash(domain, types, value), signature);
 }
