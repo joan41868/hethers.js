@@ -1,7 +1,7 @@
 "use strict";
 
 import { AbiCoder, checkResultErrors, ConstructorFragment, defaultAbiCoder, ErrorFragment, EventFragment, FormatTypes, Fragment, FunctionFragment, Indexed, Interface, LogDescription, ParamType, Result, TransactionDescription }from "@ethersproject/abi";
-import { getAddress, getCreate2Address, getContractAddress, getIcapAddress, isAddress } from "@ethersproject/address";
+import { getAddress, getCreate2Address, getContractAddress, getIcapAddress, isAddress, getAccountFromAddress, getAddressFromAccount, parseAccount, Account, AccountLike } from "@ethersproject/address";
 import * as base64 from "@ethersproject/base64";
 import { Base58 as base58 } from "@ethersproject/basex";
 import { arrayify, concat, hexConcat, hexDataSlice, hexDataLength, hexlify, hexStripZeros, hexValue, hexZeroPad, isBytes, isBytesLike, isHexString, joinSignature, zeroPad, splitSignature, stripZeros } from "@ethersproject/bytes";
@@ -212,9 +212,15 @@ export {
     EncryptOptions,
     ProgressCallback,
 
-    toSolidityAddress,
-    fromSolidityAddress,
-    decodeHex,
-    encodeHex,
+    ////////////////////////
+    // Hedera
+    getAddressFromAccount,
+    getAccountFromAddress,
+    parseAccount,
+
+    ////////////////////////
+    // Hedera Types
+    Account,
+    AccountLike
 }
 
