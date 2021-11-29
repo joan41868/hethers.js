@@ -1,7 +1,6 @@
 "use strict";
 
 module.exports = function(config) {
-
   config.set({
     basePath: "./output/karma",
     frameworks: [ 'mocha' ],

@@ -1,7 +1,6 @@
 "use strict";
 
 module.exports = function(config) {
-
   config.set({
     basePath: "./output/karma",
     frameworks: [ 'mocha' ],
@@ -21,7 +20,6 @@ module.exports = function(config) {
     autoWatch: false,
     singleRun: true,
     browserNoActivityTimeout: 3600000,
-
     customLaunchers: {
       HeadlessLittleLiar: {
         base: 'ChromeHeadless',
