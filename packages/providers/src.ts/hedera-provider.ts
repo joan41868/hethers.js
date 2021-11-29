@@ -1,8 +1,19 @@
 import {BaseProvider} from "./base-provider";
-import {AccountBalanceQuery, AccountId, Client, NetworkName} from '@hashgraph/sdk';
+import {AccountBalanceQuery, AccountId, Client, NetworkName,} from '@hashgraph/sdk';
 import {BigNumber} from "@ethersproject/bignumber";
 import {BlockTag} from "@ethersproject/abstract-provider";
 import {getAccountFromAddress} from "ethers/lib/utils";
+import axios from 'axios';
+import {Logger} from '@ethersproject/logger';
+import {version} from "./_version";
+
+const logger = new Logger(version);
+
+function sleep(timeout: number) {
+    return new Promise(res => {
+        setTimeout(res, timeout);
+    })
+}
 
 function getNetwork(net: string) {
     switch (net) {
@@ -18,11 +29,10 @@ function getNetwork(net: string) {
 }
 
 export class HederaProvider extends BaseProvider {
-    private hederaClient: Client;
-
+    private readonly hederaClient: Client;
     constructor(network: string) {
-        super(network);
-        this.hederaClient = Client.forName(getNetwork(network));
+        super('testnet');
+        this.hederaClient = Client.forName(getNetwork(network))
     }
 
     /**
@@ -41,5 +51,34 @@ export class HederaProvider extends BaseProvider {
             .execute(this.hederaClient);
         return BigNumber.from(balance.hbars.toTinybars().toNumber());
     }
-}
 
+    /**
+     *
+     * @param txId - id of the transaction to search for
+     */
+    async getTransaction(txId: string | Promise<string>): Promise<any> {
+        txId = await txId;
+        const ep = '/api/v1/transactions';
+        const url = 'https://testnet.mirrornode.hedera.com';
+        const maxRetries = 10;
+        let counter = 0;
+        while (true) {
+            if (counter >= maxRetries) {
+                logger.info('Giving up after 10 retries.')
+                return [];
+            }
+            const {data} = await axios.get(url + ep);
+            const filtered = data.transactions.filter((e: { transaction_id: string | Promise<string>; }) => e.transaction_id === txId);
+            if (filtered.length > 0) {
+                return filtered[0];
+            }
+            await sleep(1000);
+            counter++;
+        }
+    }
+
+    public getClient(): Client {
+        return this.hederaClient;
+    }
+
+}

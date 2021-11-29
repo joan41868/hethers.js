@@ -50,12 +50,24 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HederaProvider = void 0;
 var base_provider_1 = require("./base-provider");
 var sdk_1 = require("@hashgraph/sdk");
 var bignumber_1 = require("@ethersproject/bignumber");
 var utils_1 = require("ethers/lib/utils");
+var axios_1 = __importDefault(require("axios"));
+var logger_1 = require("@ethersproject/logger");
+var _version_1 = require("./_version");
+var logger = new logger_1.Logger(_version_1.version);
+function sleep(timeout) {
+    return new Promise(function (res) {
+        setTimeout(res, timeout);
+    });
+}
 function getNetwork(net) {
     switch (net) {
         case 'mainnet':
@@ -71,7 +83,7 @@ function getNetwork(net) {
 var HederaProvider = /** @class */ (function (_super) {
     __extends(HederaProvider, _super);
     function HederaProvider(network) {
-        var _this = _super.call(this, network) || this;
+        var _this = _super.call(this, 'testnet') || this;
         _this.hederaClient = sdk_1.Client.forName(getNetwork(network));
         return _this;
     }
@@ -101,6 +113,49 @@ var HederaProvider = /** @class */ (function (_super) {
                 }
             });
         });
+    };
+    /**
+     *
+     * @param txId - id of the transaction to search for
+     */
+    HederaProvider.prototype.getTransaction = function (txId) {
+        return __awaiter(this, void 0, void 0, function () {
+            var ep, url, maxRetries, counter, data, filtered;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, txId];
+                    case 1:
+                        txId = _a.sent();
+                        ep = '/api/v1/transactions';
+                        url = 'https://testnet.mirrornode.hedera.com';
+                        maxRetries = 10;
+                        counter = 0;
+                        _a.label = 2;
+                    case 2:
+                        if (!true) return [3 /*break*/, 5];
+                        if (counter >= maxRetries) {
+                            logger.info('Giving up after 10 retries.');
+                            return [2 /*return*/, []];
+                        }
+                        return [4 /*yield*/, axios_1.default.get(url + ep)];
+                    case 3:
+                        data = (_a.sent()).data;
+                        filtered = data.transactions.filter(function (e) { return e.transaction_id === txId; });
+                        if (filtered.length > 0) {
+                            return [2 /*return*/, filtered[0]];
+                        }
+                        return [4 /*yield*/, sleep(1000)];
+                    case 4:
+                        _a.sent();
+                        counter++;
+                        return [3 /*break*/, 2];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    };
+    HederaProvider.prototype.getClient = function () {
+        return this.hederaClient;
     };
     return HederaProvider;
 }(base_provider_1.BaseProvider));
