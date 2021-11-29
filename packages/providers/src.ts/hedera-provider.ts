@@ -38,11 +38,11 @@ function getNetwork(net: string) {
 function resolveMirrorNetGetTransactionUrl(net: string) :string {
     switch (net) {
         case 'mainnet':
-            return 'https://mainnet.mirrornode.hedera.com/';
+            return 'https://mainnet.mirrornode.hedera.com';
         case 'previewnet':
-            return 'https://previewnet.mirrornode.hedera.com/';
+            return 'https://previewnet.mirrornode.hedera.com';
         case 'testnet':
-            return 'https://testnet.mirrornode.hedera.com/';
+            return 'https://testnet.mirrornode.hedera.com';
         default:
             throw new Error("Invalid network name");
     }
