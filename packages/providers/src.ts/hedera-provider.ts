@@ -6,8 +6,11 @@ import {getAccountFromAddress} from "ethers/lib/utils";
 import axios from 'axios';
 import {Logger} from '@ethersproject/logger';
 import {version} from "./_version";
+import {MirrorNetwork} from "@hashgraph/sdk/lib/client/NodeClient";
 
 const logger = new Logger(version);
+
+// utilities which can later be moved to separate file
 
 function sleep(timeout: number) {
     return new Promise(res => {
@@ -28,10 +31,27 @@ function getNetwork(net: string) {
     }
 }
 
+function resolveMirrorNetGetTransactionUrl(net: string) :string {
+    switch (net) {
+        case 'mainnet':
+            return MirrorNetwork.MAINNET[0];
+        case 'previewnet':
+            return MirrorNetwork.PREVIEWNET[0];
+        case 'testnet':
+            return MirrorNetwork.TESTNET[0];
+        default:
+            throw new Error("Invalid network name");
+    }
+}
+
+
 export class HederaProvider extends BaseProvider {
     private readonly hederaClient: Client;
+    private readonly hederaNetwork: string;
+
     constructor(network: string) {
         super('testnet');
+        this.hederaNetwork = network;
         this.hederaClient = Client.forName(getNetwork(network))
     }
 
@@ -59,7 +79,7 @@ export class HederaProvider extends BaseProvider {
     async getTransaction(txId: string | Promise<string>): Promise<any> {
         txId = await txId;
         const ep = '/api/v1/transactions';
-        const url = 'https://testnet.mirrornode.hedera.com';
+        const url = resolveMirrorNetGetTransactionUrl(this.hederaNetwork);
         const maxRetries = 10;
         let counter = 0;
         while (true) {
