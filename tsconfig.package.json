@@ -14,7 +14,7 @@
     ],
     "module": "commonjs",
     "moduleResolution": "node",
-    "noEmitOnError": false,
+    "noEmitOnError": true,
     "noFallthroughCasesInSwitch": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,

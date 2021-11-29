@@ -1,7 +1,6 @@
 "use strict";
 
 module.exports = function(config) {
-  process.env.CHROME_BIN = require('puppeteer').executablePath();
 
   config.set({
     basePath: "./output/karma",
@@ -12,8 +11,8 @@ module.exports = function(config) {
     ],
     reporters: [ 'karma' ],
     plugins: [
-      require('karma-mocha'),
-      require('karma-chrome-launcher'),
+      'karma-mocha',
+      'karma-chrome-launcher',
       require('./packages/tests/karma-reporter')
     ],
     port: 9876,
@@ -22,14 +21,13 @@ module.exports = function(config) {
     autoWatch: false,
     singleRun: true,
     browserNoActivityTimeout: 3600000,
-    failOnEmptyTestSuite: false,
+
     customLaunchers: {
       HeadlessLittleLiar: {
         base: 'ChromeHeadless',
         // https://peter.sh/experiments/chromium-command-line-switches/
         flags: [
           '--disable-extensions',
-          // '--remote-debugging-port=9876',
           // Enable this to help debug CORS issues (otherwise fetch throws a useless TypeError)
           //'--disable-web-security',
 
