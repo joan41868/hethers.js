@@ -63,6 +63,7 @@ var axios_1 = __importDefault(require("axios"));
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
+// utilities which can later be moved to separate file
 function sleep(timeout) {
     return new Promise(function (res) {
         setTimeout(res, timeout);
@@ -80,10 +81,28 @@ function getNetwork(net) {
             throw new Error("Invalid network name");
     }
 }
+/**
+ * Currently, the URLs are hardcoded, as the hedera SDK does not expose them
+ *
+ * @param net - the network
+ */
+function resolveMirrorNetGetTransactionUrl(net) {
+    switch (net) {
+        case 'mainnet':
+            return 'https://mainnet.mirrornode.hedera.com/';
+        case 'previewnet':
+            return 'https://previewnet.mirrornode.hedera.com/';
+        case 'testnet':
+            return 'https://testnet.mirrornode.hedera.com/';
+        default:
+            throw new Error("Invalid network name");
+    }
+}
 var HederaProvider = /** @class */ (function (_super) {
     __extends(HederaProvider, _super);
     function HederaProvider(network) {
         var _this = _super.call(this, 'testnet') || this;
+        _this.hederaNetwork = network;
         _this.hederaClient = sdk_1.Client.forName(getNetwork(network));
         return _this;
     }
@@ -127,7 +146,7 @@ var HederaProvider = /** @class */ (function (_super) {
                     case 1:
                         txId = _a.sent();
                         ep = '/api/v1/transactions';
-                        url = 'https://testnet.mirrornode.hedera.com';
+                        url = resolveMirrorNetGetTransactionUrl(this.hederaNetwork);
                         maxRetries = 10;
                         counter = 0;
                         _a.label = 2;

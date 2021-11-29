@@ -6,7 +6,6 @@ import {getAccountFromAddress} from "ethers/lib/utils";
 import axios from 'axios';
 import {Logger} from '@ethersproject/logger';
 import {version} from "./_version";
-import {MirrorNetwork} from "@hashgraph/sdk/lib/client/NodeClient";
 
 const logger = new Logger(version);
 
@@ -31,14 +30,19 @@ function getNetwork(net: string) {
     }
 }
 
+/**
+ * Currently, the URLs are hardcoded, as the hedera SDK does not expose them
+ *
+ * @param net - the network
+ */
 function resolveMirrorNetGetTransactionUrl(net: string) :string {
     switch (net) {
         case 'mainnet':
-            return MirrorNetwork.MAINNET[0];
+            return 'https://mainnet.mirrornode.hedera.com/';
         case 'previewnet':
-            return MirrorNetwork.PREVIEWNET[0];
+            return 'https://previewnet.mirrornode.hedera.com/';
         case 'testnet':
-            return MirrorNetwork.TESTNET[0];
+            return 'https://testnet.mirrornode.hedera.com/';
         default:
             throw new Error("Invalid network name");
     }

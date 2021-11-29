@@ -95234,6 +95234,7 @@ var __awaiter$g = (window && window.__awaiter) || function (thisArg, _arguments,
     });
 };
 const logger$H = new Logger(version$m);
+// utilities which can later be moved to separate file
 function sleep(timeout) {
     return new Promise(res => {
         setTimeout(res, timeout);
@@ -95251,9 +95252,27 @@ function getNetwork$1(net) {
             throw new Error("Invalid network name");
     }
 }
+/**
+ * Currently, the URLs are hardcoded, as the hedera SDK does not expose them
+ *
+ * @param net - the network
+ */
+function resolveMirrorNetGetTransactionUrl(net) {
+    switch (net) {
+        case 'mainnet':
+            return 'https://mainnet.mirrornode.hedera.com/';
+        case 'previewnet':
+            return 'https://previewnet.mirrornode.hedera.com/';
+        case 'testnet':
+            return 'https://testnet.mirrornode.hedera.com/';
+        default:
+            throw new Error("Invalid network name");
+    }
+}
 class HederaProvider extends BaseProvider {
     constructor(network) {
         super('testnet');
+        this.hederaNetwork = network;
         this.hederaClient = NodeClient.forName(getNetwork$1(network));
     }
     /**
@@ -95282,7 +95301,7 @@ class HederaProvider extends BaseProvider {
         return __awaiter$g(this, void 0, void 0, function* () {
             txId = yield txId;
             const ep = '/api/v1/transactions';
-            const url = 'https://testnet.mirrornode.hedera.com';
+            const url = resolveMirrorNetGetTransactionUrl(this.hederaNetwork);
             const maxRetries = 10;
             let counter = 0;
             while (true) {

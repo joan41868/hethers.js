@@ -4,6 +4,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { BlockTag } from "@ethersproject/abstract-provider";
 export declare class HederaProvider extends BaseProvider {
     private readonly hederaClient;
+    private readonly hederaNetwork;
     constructor(network: string);
     /**
      *
