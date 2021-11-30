@@ -1546,12 +1546,12 @@ describe("Resolve ENS avatar", function () {
 });
 describe("Test Hedera Provider", function () {
     var _this = this;
+    var provider = new providers_1.DefaultHederaProvider(hedera_provider_1.HederaNetworks.TESTNET);
     it('Gets the balance', function () { return __awaiter(_this, void 0, void 0, function () {
-        var provider, accountConfig, solAddr, balance;
+        var accountConfig, solAddr, balance;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    provider = new providers_1.DefaultHederaProvider(hedera_provider_1.HederaNetworks.TESTNET);
                     accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
                     solAddr = (0, utils_1.getAddressFromAccount)(accountConfig);
                     return [4 /*yield*/, provider.getBalance(solAddr)];
@@ -1559,6 +1559,23 @@ describe("Test Hedera Provider", function () {
                     balance = _a.sent();
                     // the balance of 0.0.98 cannot be negative
                     assert_1.default.strictEqual(true, balance.gte(0));
+                    return [2 /*return*/];
+            }
+        });
+    }); });
+    it("Gets txn record", function () { return __awaiter(_this, void 0, void 0, function () {
+        var record;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, provider.getTransaction("0.0.15680048-1638189529-145876922")];
+                case 1:
+                    record = _a.sent();
+                    // @ts-ignore
+                    assert_1.default.strictEqual(record.transaction_id, "0.0.15680048-1638189529-145876922");
+                    // @ts-ignore
+                    assert_1.default.strictEqual(record.transfers.length, 3);
+                    // @ts-ignore
+                    assert_1.default.strictEqual(record.valid_duration_seconds, '120');
                     return [2 /*return*/];
             }
         });

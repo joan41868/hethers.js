@@ -1,7 +1,7 @@
 import { BaseProvider } from "./base-provider";
 import { AccountBalanceQuery, AccountId, Client, NetworkName, } from '@hashgraph/sdk';
 import { BigNumber } from "@ethersproject/bignumber";
-import { BlockTag, TransactionResponse } from "@ethersproject/abstract-provider";
+import { BlockTag } from "@ethersproject/abstract-provider";
 import { getAccountFromAddress } from "ethers/lib/utils";
 import axios from 'axios';
 import { Logger } from '@ethersproject/logger';
@@ -90,7 +90,7 @@ export class DefaultHederaProvider extends BaseProvider {
      *
      * @param txId - id of the transaction to search for
      */
-    async getTransaction(txId: string | Promise<string>): Promise<TransactionResponse> {
+    async getTransaction(txId: string | Promise<string>): Promise<any> {
         txId = await txId;
         const [ accId, , ] = txId.split("-");
         const ep = '/api/v1/transactions?account.id=' + accId;
@@ -98,7 +98,9 @@ export class DefaultHederaProvider extends BaseProvider {
         let { data } = await axios.get(url + ep);
         while (data.links.next != null) {
             const filtered = data.transactions
-                .filter((e: { transaction_id: string | Promise<string>; }) => e.transaction_id.toString() === txId);
+                .filter((e: HederaTxRecordLike) =>
+                    e.transaction_id.toString() === txId && e.result === 'SUCCESS');
+
             if (filtered.length > 0) {
                 return filtered[0];
             }
@@ -107,3 +109,11 @@ export class DefaultHederaProvider extends BaseProvider {
         return null;
     }
 }
+
+/**
+ * Encapsulates the required properties for searching by transaction_id and status SUCCESS
+ */
+declare type HederaTxRecordLike = {
+    result: string,
+    transaction_id: string | Promise<string>,
+};

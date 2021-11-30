@@ -95313,13 +95313,19 @@ class DefaultHederaProvider extends BaseProvider {
     getTransaction(txId) {
         return __awaiter$g(this, void 0, void 0, function* () {
             txId = yield txId;
-            const [accountIdRaw, ,] = txId.split("-");
-            const ep = '/api/v1/transactions?account.id=' + accountIdRaw;
+            const [accId, ,] = txId.split("-");
+            const ep = '/api/v1/transactions?account.id=' + accId;
             const url = resolveMirrorNetworkUrl(this.hederaNetwork);
-            const { data } = yield axios$1.get(url + ep);
-            const filtered = data.transactions
-                .filter((e) => e.transaction_id === txId);
-            return filtered.length > 0 ? filtered[0] : null;
+            let { data } = yield axios$1.get(url + ep);
+            while (data.links.next != null) {
+                const filtered = data.transactions
+                    .filter((e) => e.transaction_id.toString() === txId && e.result === 'SUCCESS');
+                if (filtered.length > 0) {
+                    return filtered[0];
+                }
+                ({ data } = yield axios$1.get(url + data.links.next));
+            }
+            return null;
         });
     }
 }

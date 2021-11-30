@@ -1399,12 +1399,23 @@ describe("Resolve ENS avatar", function() {
 
 
 describe("Test Hedera Provider", function () {
-   it('Gets the balance', async () => {
-      const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+    const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+    it('Gets the balance', async () => {
       const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
       const solAddr = getAddressFromAccount(accountConfig);
       const balance = await provider.getBalance(solAddr);
       // the balance of 0.0.98 cannot be negative
       assert.strictEqual(true, balance.gte(0));
+   });
+
+   it("Gets txn record", async () => {
+       /* the test contains ignores as of the not yet refactored BaseProvider */
+       const record = await provider.getTransaction(`0.0.15680048-1638189529-145876922`);
+       // @ts-ignore
+       assert.strictEqual(record.transaction_id, `0.0.15680048-1638189529-145876922`);
+       // @ts-ignore
+       assert.strictEqual(record.transfers.length, 3);
+       // @ts-ignore
+       assert.strictEqual(record.valid_duration_seconds, '120');
    });
 });
