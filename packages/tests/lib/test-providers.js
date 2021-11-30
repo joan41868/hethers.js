@@ -1563,10 +1563,5 @@ describe("Test Hedera Provider", function () {
             }
         });
     }); });
-    it("Gets the transaction record", function () { return __awaiter(_this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            return [2 /*return*/];
-        });
-    }); });
 });
 //# sourceMappingURL=test-providers.js.map

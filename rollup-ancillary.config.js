@@ -4,7 +4,7 @@ import resolve from 'rollup-plugin-node-resolve';
 import commonjs from 'rollup-plugin-commonjs';
 import _globals from 'rollup-plugin-node-globals';
 
-import {terser} from "rollup-plugin-terser";
+import { terser } from "rollup-plugin-terser";
 
 function getConfig(project, minify) {
 

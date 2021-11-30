@@ -1278,7 +1278,5 @@ describe("Test Hedera Provider", function () {
         // the balance of 0.0.98 cannot be negative
         assert.strictEqual(true, balance.gte(0));
     }));
-    it("Gets the transaction record", () => __awaiter(this, void 0, void 0, function* () {
-    }));
 });
 //# sourceMappingURL=test-providers.js.map

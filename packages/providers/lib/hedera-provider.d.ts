@@ -1,5 +1,4 @@
 import { BaseProvider } from "./base-provider";
-import { Client } from '@hashgraph/sdk';
 import { BigNumber } from "@ethersproject/bignumber";
 import { BlockTag, TransactionResponse } from "@ethersproject/abstract-provider";
 export declare enum HederaNetworks {
@@ -31,9 +30,5 @@ export declare class DefaultHederaProvider extends BaseProvider {
      * @param txId - id of the transaction to search for
      */
     getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
-    /**
-     * Allows us to get the underlying gRPC client and execute gRPC calls.
-     */
-    getClient(): Client;
 }
 //# sourceMappingURL=hedera-provider.d.ts.map

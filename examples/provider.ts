@@ -5,8 +5,7 @@ import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
 
 (async () => {
     // TODO: replace with yours when testing.
-    const accountNum = 0;
-    const pkey = '';
+    const accountNum = 98;
 
     const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
@@ -22,23 +21,8 @@ import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
     console.log(balance2);
     console.log(balance2.toNumber());
 
-    // set operator in order to execute the following transfer
-    provider.getClient().setOperator(new AccountId({
-        shard: 0,
-        realm: 0,
-        num: accountNum
-    }), pkey);
-
-    const tx = new TransferTransaction()
-        .addHbarTransfer(`0.0.${accountConfig.num}`, -0.25) // sending 0.25 Hbars to the 98 acc
-        .addHbarTransfer("0.0.98", 0.25);
-    const txId = await tx.execute(provider.getClient());
-
-    // get the record of the transfer txn
-    // @ts-ignore -> tsc suggests that the long object chain may lead to null object
-    const validStart = txId.transactionId.validStart.toString().split(".").join('-'); // necessary as of different ID formats
-    const txIdStr = `${txId.transactionId.accountId}-${validStart}`;
-    const record = await provider.getTransaction(txIdStr);
+    const txId = `0.0.15680048-1638195233-881537326`;
+    const record = await provider.getTransaction(txId);
     console.log(record);
 })();
 

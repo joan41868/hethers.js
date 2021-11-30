@@ -1,9 +1,6 @@
 {
   "name": "hethers",
   "version": "1.0.0",
-  "common": {
-    "TODO": "TODO"
-  },
   "private": true,
   "repository": {
     "type": "git",

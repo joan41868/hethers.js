@@ -63,11 +63,6 @@ var axios_1 = __importDefault(require("axios"));
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
-function sleep(timeout) {
-    return new Promise(function (res) {
-        setTimeout(res, timeout);
-    });
-}
 // resolves network string to a hedera network name
 function resolveNetwork(net) {
     switch (net) {
@@ -165,48 +160,36 @@ var DefaultHederaProvider = /** @class */ (function (_super) {
      */
     DefaultHederaProvider.prototype.getTransaction = function (txId) {
         return __awaiter(this, void 0, void 0, function () {
-            var ep, url, maxRetries, counter, data, filtered;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, accId, ep, url, data, filtered;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, txId];
                     case 1:
-                        txId = _a.sent();
-                        ep = '/api/v1/transactions';
+                        txId = _b.sent();
+                        _a = txId.split("-"), accId = _a[0];
+                        ep = '/api/v1/transactions?account.id=' + accId;
                         url = resolveMirrorNetworkUrl(this.hederaNetwork);
-                        maxRetries = 10;
-                        counter = 0;
-                        _a.label = 2;
-                    case 2:
-                        if (!true) return [3 /*break*/, 5];
-                        if (counter >= maxRetries) {
-                            logger.warn("Giving up after " + maxRetries + " retries.");
-                            return [2 /*return*/, null];
-                        }
                         return [4 /*yield*/, axios_1.default.get(url + ep)];
+                    case 2:
+                        data = (_b.sent()).data;
+                        _b.label = 3;
                     case 3:
-                        data = (_a.sent()).data;
+                        if (!(data.links.next != null)) return [3 /*break*/, 5];
+                        data.transactions.forEach(function (t) { return console.log(t.transaction_hash); });
                         filtered = data.transactions
                             .filter(function (e) { return e.transaction_id === txId; });
-                        if (filtered.length > 0) {
+                        if (filtered.length > 1) {
                             return [2 /*return*/, filtered[0]];
                         }
-                        // retry each 0.5 seconds
-                        return [4 /*yield*/, sleep(500)];
+                        console.log('Next page', data.links.next);
+                        return [4 /*yield*/, axios_1.default.get(url + data.links.next)];
                     case 4:
-                        // retry each 0.5 seconds
-                        _a.sent();
-                        counter++;
-                        return [3 /*break*/, 2];
-                    case 5: return [2 /*return*/];
+                        (data = (_b.sent()).data);
+                        return [3 /*break*/, 3];
+                    case 5: return [2 /*return*/, null];
                 }
             });
         });
-    };
-    /**
-     * Allows us to get the underlying gRPC client and execute gRPC calls.
-     */
-    DefaultHederaProvider.prototype.getClient = function () {
-        return this.hederaClient;
     };
     return DefaultHederaProvider;
 }(base_provider_1.BaseProvider));

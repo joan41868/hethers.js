@@ -9,12 +9,6 @@ import { version } from "./_version";
 
 const logger = new Logger(version);
 
-function sleep(timeout: number) {
-    return new Promise(res => {
-        setTimeout(res, timeout);
-    })
-}
-
 // resolves network string to a hedera network name
 function resolveNetwork(net: string) {
     switch (net) {
@@ -98,33 +92,18 @@ export class DefaultHederaProvider extends BaseProvider {
      */
     async getTransaction(txId: string | Promise<string>): Promise<TransactionResponse> {
         txId = await txId;
-        const ep = '/api/v1/transactions';
+        const [ accId, , ] = txId.split("-");
+        const ep = '/api/v1/transactions?account.id=' + accId;
         const url = resolveMirrorNetworkUrl(this.hederaNetwork);
-        // The following logic will be refactored/moved to tx.wait() method
-        const maxRetries = 10;
-        let counter = 0;
-        while (true) {
-            if (counter >= maxRetries) {
-                logger.warn(`Giving up after ${maxRetries} retries.`);
-                return null;
-            }
-            const { data } = await axios.get(url + ep);
+        let { data } = await axios.get(url + ep);
+        while (data.links.next != null) {
             const filtered = data.transactions
                 .filter((e: { transaction_id: string | Promise<string>; }) => e.transaction_id === txId);
-            if (filtered.length > 0) {
+            if (filtered.length > 1) {
                 return filtered[0];
             }
-            // retry each 0.5 seconds
-            await sleep(500);
-            counter++;
+            ({ data } = await axios.get(url + data.links.next));
         }
+        return null;
     }
-
-    /**
-     * Allows us to get the underlying gRPC client and execute gRPC calls.
-     */
-    public getClient(): Client {
-        return this.hederaClient;
-    }
-
 }

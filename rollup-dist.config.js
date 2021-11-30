@@ -87,7 +87,6 @@ function getUmdConfig() {
         mainFields: [ "browser", "main" ]
     }));
     plugins.push(commonjs({ }));
-    // plugins.push(json())
 
     return {
         input: `packages/ethers/lib/index.js`,
