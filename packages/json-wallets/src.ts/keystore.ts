@@ -11,7 +11,6 @@ import { keccak256 } from "@ethersproject/keccak256";
 import { pbkdf2 as _pbkdf2 } from "@ethersproject/pbkdf2";
 import { randomBytes } from "@ethersproject/random";
 import { Description } from "@ethersproject/properties";
-import { computeAddress } from "@ethersproject/transactions";
 
 import { getPassword, looseArrayify, searchPath, uuidV4, zpad } from "./utils";
 
@@ -92,19 +91,15 @@ function _getAccount(data: any, key: Uint8Array): KeystoreAccount {
 
     const mnemonicKey = key.slice(32, 64);
 
-    const address = computeAddress(privateKey);
-    if (data.address) {
-        let check = data.address.toLowerCase();
-        if (check.substring(0, 2) !== "0x") { check = "0x" + check; }
-
-        if (getAddress(check) !== address) {
-            throw new Error("address mismatch");
-        }
+    if (!data.address) {
+        throw new Error("no address provided");
     }
+    let check = data.address.toLowerCase();
+    if (check.substring(0, 2) !== "0x") { check = "0x" + check; }
 
     const account: _KeystoreAccount = {
         _isKeystoreAccount: true,
-        address: address,
+        address: getAddress(check),
         privateKey: hexlify(privateKey)
     };
 
@@ -227,11 +222,6 @@ export async function decrypt(json: string, password: Bytes | string, progressCa
 export function encrypt(account: ExternallyOwnedAccount, password: Bytes | string, options?: EncryptOptions, progressCallback?: ProgressCallback): Promise<string> {
 
     try {
-        // Check the address matches the private key
-        if (getAddress(account.address) !== computeAddress(account.privateKey)) {
-            throw new Error("address/privateKey mismatch");
-        }
-
         // Check the mnemonic (if any) matches the private key
         if (hasMnemonic(account)) {
             const mnemonic = account.mnemonic;

@@ -18609,7 +18609,6 @@
 
 
 
-
 	var logger = new lib.Logger(_version$A.version);
 	// Exported Types
 	function hasMnemonic(value) {
@@ -18649,19 +18648,16 @@
 	        });
 	    }
 	    var mnemonicKey = key.slice(32, 64);
-	    var address = (0, lib$e.computeAddress)(privateKey);
-	    if (data.address) {
-	        var check = data.address.toLowerCase();
-	        if (check.substring(0, 2) !== "0x") {
-	            check = "0x" + check;
-	        }
-	        if ((0, lib$6.getAddress)(check) !== address) {
-	            throw new Error("address mismatch");
-	        }
+	    if (!data.address) {
+	        throw new Error("no address provided");
+	    }
+	    var check = data.address.toLowerCase();
+	    if (check.substring(0, 2) !== "0x") {
+	        check = "0x" + check;
 	    }
 	    var account = {
 	        _isKeystoreAccount: true,
-	        address: address,
+	        address: (0, lib$6.getAddress)(check),
 	        privateKey: (0, lib$1.hexlify)(privateKey)
 	    };
 	    // Version 0.1 x-ethers metadata must contain an encrypted mnemonic phrase
@@ -18771,10 +18767,6 @@
 	exports.decrypt = decrypt;
 	function encrypt(account, password, options, progressCallback) {
 	    try {
-	        // Check the address matches the private key
-	        if ((0, lib$6.getAddress)(account.address) !== (0, lib$e.computeAddress)(account.privateKey)) {
-	            throw new Error("address/privateKey mismatch");
-	        }
 	        // Check the mnemonic (if any) matches the private key
 	        if (hasMnemonic(account)) {
 	            var mnemonic = account.mnemonic;

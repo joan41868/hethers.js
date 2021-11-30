@@ -151,7 +151,6 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         return joinSignature(this._signingKey().signDigest(_TypedDataEncoder.hash(populated.domain, types, populated.value)));
     }
 
-    // TODO to be revised
     encrypt(password: Bytes | string, options?: any, progressCallback?: ProgressCallback): Promise<string> {
         if (typeof (options) === "function" && !progressCallback) {
             progressCallback = options;
@@ -188,14 +187,12 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     }
 
-    // TODO to be revised
     static fromEncryptedJson(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<Wallet> {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
             return new Wallet(account);
         });
     }
 
-    // TODO to be revised
     static fromEncryptedJsonSync(json: string, password: Bytes | string): Wallet {
         return new Wallet(decryptJsonWalletSync(json, password));
     }
