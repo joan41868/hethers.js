@@ -190,7 +190,6 @@ var Wallet = /** @class */ (function (_super) {
             });
         });
     };
-    // TODO to be revised
     Wallet.prototype.encrypt = function (password, options, progressCallback) {
         if (typeof (options) === "function" && !progressCallback) {
             progressCallback = options;
@@ -219,13 +218,11 @@ var Wallet = /** @class */ (function (_super) {
         var mnemonic = (0, hdnode_1.entropyToMnemonic)(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     };
-    // TODO to be revised
     Wallet.fromEncryptedJson = function (json, password, progressCallback) {
         return (0, json_wallets_1.decryptJsonWallet)(json, password, progressCallback).then(function (account) {
             return new Wallet(account);
         });
     };
-    // TODO to be revised
     Wallet.fromEncryptedJsonSync = function (json, password) {
         return new Wallet((0, json_wallets_1.decryptJsonWalletSync)(json, password));
     };

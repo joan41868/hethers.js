@@ -17,6 +17,10 @@ export interface ExternallyOwnedAccount {
     readonly address: string;
     readonly privateKey: string;
 }
+export interface HederaAccount {
+    readonly account: string;
+    readonly privateKey: string;
+}
 export interface TypedDataSigner {
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;
 }

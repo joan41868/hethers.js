@@ -64,7 +64,6 @@ var keccak256_1 = require("@ethersproject/keccak256");
 var pbkdf2_1 = require("@ethersproject/pbkdf2");
 var random_1 = require("@ethersproject/random");
 var properties_1 = require("@ethersproject/properties");
-var transactions_1 = require("@ethersproject/transactions");
 var utils_1 = require("./utils");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
@@ -107,19 +106,16 @@ function _getAccount(data, key) {
         });
     }
     var mnemonicKey = key.slice(32, 64);
-    var address = (0, transactions_1.computeAddress)(privateKey);
-    if (data.address) {
-        var check = data.address.toLowerCase();
-        if (check.substring(0, 2) !== "0x") {
-            check = "0x" + check;
-        }
-        if ((0, address_1.getAddress)(check) !== address) {
-            throw new Error("address mismatch");
-        }
+    if (!data.address) {
+        throw new Error("no address provided");
+    }
+    var check = data.address.toLowerCase();
+    if (check.substring(0, 2) !== "0x") {
+        check = "0x" + check;
     }
     var account = {
         _isKeystoreAccount: true,
-        address: address,
+        address: (0, address_1.getAddress)(check),
         privateKey: (0, bytes_1.hexlify)(privateKey)
     };
     // Version 0.1 x-ethers metadata must contain an encrypted mnemonic phrase
@@ -229,10 +225,6 @@ function decrypt(json, password, progressCallback) {
 exports.decrypt = decrypt;
 function encrypt(account, password, options, progressCallback) {
     try {
-        // Check the address matches the private key
-        if ((0, address_1.getAddress)(account.address) !== (0, transactions_1.computeAddress)(account.privateKey)) {
-            throw new Error("address/privateKey mismatch");
-        }
         // Check the mnemonic (if any) matches the private key
         if (hasMnemonic(account)) {
             var mnemonic = account.mnemonic;

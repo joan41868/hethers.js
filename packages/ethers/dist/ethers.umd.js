@@ -7108,7 +7108,7 @@
 	var lib$6 = createCommonjsModule(function (module, exports) {
 	"use strict";
 	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.isAddress = exports.getAddress = void 0;
+	exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.isAddress = exports.getAddress = void 0;
 
 
 
@@ -7116,27 +7116,6 @@
 
 
 	var logger = new lib.Logger(_version$c.version);
-	function getChecksumAddress(address) {
-	    if (!(0, lib$1.isHexString)(address, 20)) {
-	        logger.throwArgumentError("invalid address", "address", address);
-	    }
-	    address = address.toLowerCase();
-	    var chars = address.substring(2).split("");
-	    var expanded = new Uint8Array(40);
-	    for (var i = 0; i < 40; i++) {
-	        expanded[i] = chars[i].charCodeAt(0);
-	    }
-	    var hashed = (0, lib$1.arrayify)((0, lib$4.keccak256)(expanded));
-	    for (var i = 0; i < 40; i += 2) {
-	        if ((hashed[i >> 1] >> 4) >= 8) {
-	            chars[i] = chars[i].toUpperCase();
-	        }
-	        if ((hashed[i >> 1] & 0x0f) >= 8) {
-	            chars[i + 1] = chars[i + 1].toUpperCase();
-	        }
-	    }
-	    return "0x" + chars.join("");
-	}
 	// Shims for environments that are missing some required constants and functions
 	var MAX_SAFE_INTEGER = 0x1fffffffffffff;
 	function log10(x) {
@@ -7159,7 +7138,9 @@
 	function ibanChecksum(address) {
 	    address = address.toUpperCase();
 	    address = address.substring(4) + address.substring(0, 2) + "00";
-	    var expanded = address.split("").map(function (c) { return ibanLookup[c]; }).join("");
+	    var expanded = address.split("").map(function (c) {
+	        return ibanLookup[c];
+	    }).join("");
 	    // Javascript can handle integers safely up to 15 (decimal) digits
 	    while (expanded.length >= safeDigits) {
 	        var block = expanded.substring(0, safeDigits);
@@ -7171,39 +7152,18 @@
 	    }
 	    return checksum;
 	}
-	;
 	function getAddress(address) {
-	    var result = null;
-	    if (typeof (address) !== "string") {
+	    if (typeof (address) !== "string" || !address.match(/^(0x)?[0-9a-fA-F]{40}$/)) {
 	        logger.throwArgumentError("invalid address", "address", address);
 	    }
-	    if (address.match(/^(0x)?[0-9a-fA-F]{40}$/)) {
-	        // Missing the 0x prefix
-	        if (address.substring(0, 2) !== "0x") {
-	            address = "0x" + address;
-	        }
-	        result = getChecksumAddress(address);
-	        // It is a checksummed address with a bad checksum
-	        if (address.match(/([A-F].*[a-f])|([a-f].*[A-F])/) && result !== address) {
-	            logger.throwArgumentError("bad address checksum", "address", address);
-	        }
-	        // Maybe ICAP? (we only support direct mode)
+	    // Missing the 0x prefix
+	    if (address.substring(0, 2) !== "0x") {
+	        address = "0x" + address;
 	    }
-	    else if (address.match(/^XE[0-9]{2}[0-9A-Za-z]{30,31}$/)) {
-	        // It is an ICAP address with a bad checksum
-	        if (address.substring(2, 4) !== ibanChecksum(address)) {
-	            logger.throwArgumentError("bad icap checksum", "address", address);
-	        }
-	        result = (0, lib$2._base36To16)(address.substring(4));
-	        while (result.length < 40) {
-	            result = "0" + result;
-	        }
-	        result = getChecksumAddress("0x" + result);
-	    }
-	    else {
+	    if (!(0, lib$1.isHexString)(address, 20)) {
 	        logger.throwArgumentError("invalid address", "address", address);
 	    }
-	    return result;
+	    return address.toLowerCase();
 	}
 	exports.getAddress = getAddress;
 	function isAddress(address) {
@@ -7211,7 +7171,8 @@
 	        getAddress(address);
 	        return true;
 	    }
-	    catch (error) { }
+	    catch (error) {
+	    }
 	    return false;
 	}
 	exports.isAddress = isAddress;
@@ -7246,6 +7207,45 @@
 	    return getAddress((0, lib$1.hexDataSlice)((0, lib$4.keccak256)((0, lib$1.concat)(["0xff", getAddress(from), salt, initCodeHash])), 12));
 	}
 	exports.getCreate2Address = getCreate2Address;
+	function getAddressFromAccount(accountLike) {
+	    var parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
+	    var buffer = new Uint8Array(20);
+	    var view = new DataView(buffer.buffer, 0, 20);
+	    view.setInt32(0, Number(parsedAccount.shard));
+	    view.setBigInt64(4, parsedAccount.realm);
+	    view.setBigInt64(12, parsedAccount.num);
+	    return (0, lib$1.hexlify)(buffer);
+	}
+	exports.getAddressFromAccount = getAddressFromAccount;
+	function getAccountFromAddress(address) {
+	    var buffer = (0, lib$1.arrayify)(getAddress(address));
+	    var view = new DataView(buffer.buffer, 0, 20);
+	    return {
+	        shard: BigInt(view.getInt32(0)),
+	        realm: BigInt(view.getBigInt64(4)),
+	        num: BigInt(view.getBigInt64(12))
+	    };
+	}
+	exports.getAccountFromAddress = getAccountFromAddress;
+	function parseAccount(account) {
+	    var result = null;
+	    if (typeof (account) !== "string") {
+	        logger.throwArgumentError("invalid account", "account", account);
+	    }
+	    if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
+	        var parsedAccount = account.split('.');
+	        result = {
+	            shard: BigInt(parsedAccount[0]),
+	            realm: BigInt(parsedAccount[1]),
+	            num: BigInt(parsedAccount[2])
+	        };
+	    }
+	    else {
+	        logger.throwArgumentError("invalid account", "account", account);
+	    }
+	    return result;
+	}
+	exports.parseAccount = parseAccount;
 
 	});
 
@@ -18609,7 +18609,6 @@
 
 
 
-
 	var logger = new lib.Logger(_version$A.version);
 	// Exported Types
 	function hasMnemonic(value) {
@@ -18649,19 +18648,16 @@
 	        });
 	    }
 	    var mnemonicKey = key.slice(32, 64);
-	    var address = (0, lib$e.computeAddress)(privateKey);
-	    if (data.address) {
-	        var check = data.address.toLowerCase();
-	        if (check.substring(0, 2) !== "0x") {
-	            check = "0x" + check;
-	        }
-	        if ((0, lib$6.getAddress)(check) !== address) {
-	            throw new Error("address mismatch");
-	        }
+	    if (!data.address) {
+	        throw new Error("no address provided");
+	    }
+	    var check = data.address.toLowerCase();
+	    if (check.substring(0, 2) !== "0x") {
+	        check = "0x" + check;
 	    }
 	    var account = {
 	        _isKeystoreAccount: true,
-	        address: address,
+	        address: (0, lib$6.getAddress)(check),
 	        privateKey: (0, lib$1.hexlify)(privateKey)
 	    };
 	    // Version 0.1 x-ethers metadata must contain an encrypted mnemonic phrase
@@ -18771,10 +18767,6 @@
 	exports.decrypt = decrypt;
 	function encrypt(account, password, options, progressCallback) {
 	    try {
-	        // Check the address matches the private key
-	        if ((0, lib$6.getAddress)(account.address) !== (0, lib$e.computeAddress)(account.privateKey)) {
-	            throw new Error("address/privateKey mismatch");
-	        }
 	        // Check the mnemonic (if any) matches the private key
 	        if (hasMnemonic(account)) {
 	            var mnemonic = account.mnemonic;
@@ -19050,8 +19042,11 @@
 
 
 	var logger = new lib.Logger(_version$C.version);
-	function isAccount(value) {
+	function isEOA(value) {
 	    return (value != null && (0, lib$1.isHexString)(value.privateKey, 32) && value.address != null);
+	}
+	function isHederaAccount(value) {
+	    return (value != null && (0, lib$1.isHexString)(value.privateKey, 32) && value.account != null);
 	}
 	function hasMnemonic(value) {
 	    var mnemonic = value.mnemonic;
@@ -19059,20 +19054,18 @@
 	}
 	var Wallet = /** @class */ (function (_super) {
 	    __extends(Wallet, _super);
-	    function Wallet(privateKey, provider) {
+	    function Wallet(acc, provider) {
 	        var _newTarget = this.constructor;
 	        var _this = this;
 	        logger.checkNew(_newTarget, Wallet);
 	        _this = _super.call(this) || this;
-	        if (isAccount(privateKey)) {
-	            var signingKey_1 = new lib$d.SigningKey(privateKey.privateKey);
+	        if (isEOA(acc) || isHederaAccount(acc)) {
+	            var signingKey_1 = new lib$d.SigningKey(acc.privateKey);
 	            (0, lib$3.defineReadOnly)(_this, "_signingKey", function () { return signingKey_1; });
-	            (0, lib$3.defineReadOnly)(_this, "address", (0, lib$e.computeAddress)(_this.publicKey));
-	            if (_this.address !== (0, lib$6.getAddress)(privateKey.address)) {
-	                logger.throwArgumentError("privateKey/address mismatch", "privateKey", "[REDACTED]");
-	            }
-	            if (hasMnemonic(privateKey)) {
-	                var srcMnemonic_1 = privateKey.mnemonic;
+	            (0, lib$3.defineReadOnly)(_this, "address", isEOA(acc) ? (0, lib$6.getAddress)(acc.address) : (0, lib$6.getAddressFromAccount)(acc.account));
+	            (0, lib$3.defineReadOnly)(_this, "account", isEOA(acc) ? (0, lib$6.getAccountFromAddress)(acc.address) : (0, lib$6.parseAccount)(acc.account));
+	            if (hasMnemonic(acc)) {
+	                var srcMnemonic_1 = acc.mnemonic;
 	                (0, lib$3.defineReadOnly)(_this, "_mnemonic", function () { return ({
 	                    phrase: srcMnemonic_1.phrase,
 	                    path: srcMnemonic_1.path || lib$k.defaultPath,
@@ -19080,8 +19073,8 @@
 	                }); });
 	                var mnemonic = _this.mnemonic;
 	                var node = lib$k.HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
-	                if ((0, lib$e.computeAddress)(node.privateKey) !== _this.address) {
-	                    logger.throwArgumentError("mnemonic/address mismatch", "privateKey", "[REDACTED]");
+	                if (node.privateKey !== _this._signingKey().privateKey) {
+	                    logger.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
 	                }
 	            }
 	            else {
@@ -19089,25 +19082,7 @@
 	            }
 	        }
 	        else {
-	            if (lib$d.SigningKey.isSigningKey(privateKey)) {
-	                /* istanbul ignore if */
-	                if (privateKey.curve !== "secp256k1") {
-	                    logger.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
-	                }
-	                (0, lib$3.defineReadOnly)(_this, "_signingKey", function () { return privateKey; });
-	            }
-	            else {
-	                // A lot of common tools do not prefix private keys with a 0x (see: #1166)
-	                if (typeof (privateKey) === "string") {
-	                    if (privateKey.match(/^[0-9a-f]*$/i) && privateKey.length === 64) {
-	                        privateKey = "0x" + privateKey;
-	                    }
-	                }
-	                var signingKey_2 = new lib$d.SigningKey(privateKey);
-	                (0, lib$3.defineReadOnly)(_this, "_signingKey", function () { return signingKey_2; });
-	            }
-	            (0, lib$3.defineReadOnly)(_this, "_mnemonic", function () { return null; });
-	            (0, lib$3.defineReadOnly)(_this, "address", (0, lib$e.computeAddress)(_this.publicKey));
+	            logger.throwArgumentError("invalid account", "account", acc);
 	        }
 	        /* istanbul ignore if */
 	        if (provider && !lib$b.Provider.isProvider(provider)) {
@@ -19117,26 +19092,36 @@
 	        return _this;
 	    }
 	    Object.defineProperty(Wallet.prototype, "mnemonic", {
-	        get: function () { return this._mnemonic(); },
+	        get: function () {
+	            return this._mnemonic();
+	        },
 	        enumerable: false,
 	        configurable: true
 	    });
 	    Object.defineProperty(Wallet.prototype, "privateKey", {
-	        get: function () { return this._signingKey().privateKey; },
+	        get: function () {
+	            return this._signingKey().privateKey;
+	        },
 	        enumerable: false,
 	        configurable: true
 	    });
 	    Object.defineProperty(Wallet.prototype, "publicKey", {
-	        get: function () { return this._signingKey().publicKey; },
+	        get: function () {
+	            return this._signingKey().publicKey;
+	        },
 	        enumerable: false,
 	        configurable: true
 	    });
 	    Wallet.prototype.getAddress = function () {
 	        return Promise.resolve(this.address);
 	    };
+	    Wallet.prototype.getAccount = function () {
+	        return Promise.resolve(this.account);
+	    };
 	    Wallet.prototype.connect = function (provider) {
 	        return new Wallet(this, provider);
 	    };
+	    // TODO to be revised
 	    Wallet.prototype.signTransaction = function (transaction) {
 	        var _this = this;
 	        return (0, lib$3.resolveProperties)(transaction).then(function (tx) {
@@ -19157,6 +19142,7 @@
 	            });
 	        });
 	    };
+	    // TODO to be revised
 	    Wallet.prototype._signTypedData = function (domain, types, value) {
 	        return __awaiter(this, void 0, void 0, function () {
 	            var populated;
@@ -19192,6 +19178,7 @@
 	        }
 	        return (0, lib$m.encryptKeystore)(this, password, options, progressCallback);
 	    };
+	    // TODO to be revised
 	    /**
 	     *  Static methods to create Wallet instances.
 	     */
@@ -19214,6 +19201,7 @@
 	    Wallet.fromEncryptedJsonSync = function (json, password) {
 	        return new Wallet((0, lib$m.decryptJsonWalletSync)(json, password));
 	    };
+	    // TODO to be revised
 	    Wallet.fromMnemonic = function (mnemonic, path, wordlist) {
 	        if (!path) {
 	            path = lib$k.defaultPath;
@@ -19223,10 +19211,12 @@
 	    return Wallet;
 	}(lib$c.Signer));
 	exports.Wallet = Wallet;
+	// TODO to be revised
 	function verifyMessage(message, signature) {
 	    return (0, lib$e.recoverAddress)((0, lib$9.hashMessage)(message), signature);
 	}
 	exports.verifyMessage = verifyMessage;
+	// TODO to be revised
 	function verifyTypedData(domain, types, value, signature) {
 	    return (0, lib$e.recoverAddress)(lib$9._TypedDataEncoder.hash(domain, types, value), signature);
 	}
@@ -26670,7 +26660,8 @@
 	};
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.formatBytes32String = exports.Utf8ErrorFuncs = exports.toUtf8String = exports.toUtf8CodePoints = exports.toUtf8Bytes = exports._toEscapedUtf8String = exports.nameprep = exports.hexDataSlice = exports.hexDataLength = exports.hexZeroPad = exports.hexValue = exports.hexStripZeros = exports.hexConcat = exports.isHexString = exports.hexlify = exports.base64 = exports.base58 = exports.TransactionDescription = exports.LogDescription = exports.Interface = exports.SigningKey = exports.HDNode = exports.defaultPath = exports.isBytesLike = exports.isBytes = exports.zeroPad = exports.stripZeros = exports.concat = exports.arrayify = exports.shallowCopy = exports.resolveProperties = exports.getStatic = exports.defineReadOnly = exports.deepCopy = exports.checkProperties = exports.poll = exports.fetchJson = exports._fetchData = exports.RLP = exports.Logger = exports.checkResultErrors = exports.FormatTypes = exports.ParamType = exports.FunctionFragment = exports.EventFragment = exports.ErrorFragment = exports.ConstructorFragment = exports.Fragment = exports.defaultAbiCoder = exports.AbiCoder = void 0;
-	exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.serializeTransaction = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseEther = exports.formatEther = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.isValidName = exports.namehash = exports.hashMessage = exports.parseBytes32String = void 0;
+	exports.getAccountFromAddress = exports.getAddressFromAccount = exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.serializeTransaction = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseEther = exports.formatEther = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.isValidName = exports.namehash = exports.hashMessage = exports.parseBytes32String = void 0;
+	exports.parseAccount = void 0;
 
 	Object.defineProperty(exports, "AbiCoder", { enumerable: true, get: function () { return lib$a.AbiCoder; } });
 	Object.defineProperty(exports, "checkResultErrors", { enumerable: true, get: function () { return lib$a.checkResultErrors; } });
@@ -26692,6 +26683,9 @@
 	Object.defineProperty(exports, "getContractAddress", { enumerable: true, get: function () { return lib$6.getContractAddress; } });
 	Object.defineProperty(exports, "getIcapAddress", { enumerable: true, get: function () { return lib$6.getIcapAddress; } });
 	Object.defineProperty(exports, "isAddress", { enumerable: true, get: function () { return lib$6.isAddress; } });
+	Object.defineProperty(exports, "getAccountFromAddress", { enumerable: true, get: function () { return lib$6.getAccountFromAddress; } });
+	Object.defineProperty(exports, "getAddressFromAccount", { enumerable: true, get: function () { return lib$6.getAddressFromAccount; } });
+	Object.defineProperty(exports, "parseAccount", { enumerable: true, get: function () { return lib$6.parseAccount; } });
 	var base64 = __importStar(lib$p);
 	exports.base64 = base64;
 
