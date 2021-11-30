@@ -95,7 +95,7 @@ describe('Test JSON Wallets', function () {
                             }
                             // Make sure it can accept a SigningKey
                             {
-                                wallet2 = new ethers_1.ethers.Wallet(wallet._signingKey());
+                                wallet2 = new ethers_1.ethers.Wallet({ address: wallet.address, privateKey: wallet.privateKey });
                                 assert_1.default.equal(wallet2.privateKey, test.privateKey, 'generated correct private key - ' + wallet2.privateKey);
                             }
                             // Test the sync decryption (this wallet is light, so it is safe)
@@ -225,7 +225,7 @@ describe('Test Transaction Signing and Parsing', function () {
                     switch (_a.label) {
                         case 0:
                             this.timeout(120000);
-                            wallet = new ethers_1.ethers.Wallet(test.privateKey);
+                            wallet = new ethers_1.ethers.Wallet({ address: test.accountAddress, privateKey: test.privateKey });
                             transaction = {
                                 to: test.to,
                                 data: test.data,
@@ -279,7 +279,7 @@ describe('Test Signing Messages', function () {
     tests.forEach(function (test) {
         it(('signs a message "' + test.name + '"'), function () {
             this.timeout(120000);
-            var wallet = new ethers_1.ethers.Wallet(test.privateKey);
+            var wallet = new ethers_1.ethers.Wallet({ address: test.address, privateKey: test.privateKey });
             return wallet.signMessage(test.message).then(function (signature) {
                 assert_1.default.equal(signature, test.signature, 'computes message signature');
             });
@@ -338,7 +338,10 @@ describe("Wallet Errors", function () {
     });
     it("fails on from mismatch", function () {
         var _this = this;
-        var wallet = new ethers_1.ethers.Wallet("0x6a73cd9b03647e83ef937888a5258a26e4c766dbf41ddd974f15e32d09cfe9c0");
+        var wallet = new ethers_1.ethers.Wallet({
+            privateKey: "0x6a73cd9b03647e83ef937888a5258a26e4c766dbf41ddd974f15e32d09cfe9c0",
+            address: "0x4Dfe3BF68c80f19083FF90E6a852fC876AE7429b"
+        });
         return new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
             var error_1;
             return __generator(this, function (_a) {

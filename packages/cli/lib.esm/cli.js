@@ -374,22 +374,25 @@ function loadAccount(arg, plugin, preventFile) {
     return __awaiter(this, void 0, void 0, function* () {
         // Secure entry; use prompt with mask
         if (arg === "-") {
+            // TODO ask for account/address + private key from the terminal
             const content = yield getPassword("Private Key / Mnemonic: ");
             return loadAccount(content, plugin, true);
         }
         // Raw private key
-        if (ethers.utils.isHexString(arg, 32)) {
-            const signer = new ethers.Wallet(arg, plugin.provider);
-            return Promise.resolve(new WrappedSigner(signer.getAddress(), () => Promise.resolve(signer), plugin));
-        }
+        // TODO should be changed to account + private key OR address + private key
+        // if (ethers.utils.isHexString(arg, 32)) {
+        //      const signer = new ethers.Wallet(arg, plugin.provider);
+        //      return Promise.resolve(new WrappedSigner(signer.getAddress(), () => Promise.resolve(signer), plugin));
+        // }
         // Mnemonic
+        // TODO should be changed to account OR address + mnemonic
         if (ethers.utils.isValidMnemonic(arg)) {
             const mnemonic = arg;
             let signerPromise = null;
             if (plugin.mnemonicPassword) {
                 signerPromise = getPassword("Password (mnemonic): ").then((password) => {
                     let node = ethers.utils.HDNode.fromMnemonic(mnemonic, password).derivePath(plugin.mnemonicPath);
-                    return new ethers.Wallet(node.privateKey, plugin.provider);
+                    return new ethers.Wallet({ address: node.address, privateKey: node.privateKey }, plugin.provider);
                 });
             }
             else if (plugin._xxxMnemonicPasswordHard) {
@@ -400,7 +403,7 @@ function loadAccount(arg, plugin, preventFile) {
                     return scrypt.scrypt(passwordBytes, saltBytes, (1 << 20), 8, 1, 32, progressBar).then((key) => {
                         const derivedPassword = ethers.utils.hexlify(key).substring(2);
                         const node = ethers.utils.HDNode.fromMnemonic(mnemonic, derivedPassword).derivePath(plugin.mnemonicPath);
-                        return new ethers.Wallet(node.privateKey, plugin.provider);
+                        return new ethers.Wallet({ address: node.address, privateKey: node.privateKey }, plugin.provider);
                     });
                 });
             }

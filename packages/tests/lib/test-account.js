@@ -7,13 +7,15 @@ var assert_1 = __importDefault(require("assert"));
 var ethers_1 = require("ethers");
 var testcases_1 = require("@ethersproject/testcases");
 describe('Private key generation', function () {
-    var tests = (0, testcases_1.loadTests)('accounts');
+    var tests = (0, testcases_1.loadTests)('accounts-test');
     tests.forEach(function (test) {
         if (!test.privateKey) {
             return;
         }
         it(('correctly converts private key - ' + test.name), function () {
-            var wallet = new ethers_1.ethers.Wallet(test.privateKey);
+            var wallet = new ethers_1.ethers.Wallet({ address: test.address, privateKey: test.privateKey });
+            // wallet._signingKey().publicKey = test.publicKey;
+            assert_1.default.equal(wallet._signingKey().publicKey, test.publicKey, 'correctly computes publicKey - ' + test.publicKey);
             assert_1.default.equal(wallet.address.toLowerCase(), test.address.toLowerCase(), 'correctly computes privateKey - ' + test.privateKey);
         });
     });

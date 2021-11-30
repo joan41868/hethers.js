@@ -1443,57 +1443,32 @@ describe("Test Events", function () {
         });
     });
 });
-describe("Bad ENS resolution", function () {
-    var provider = providerFunctions[0].create("ropsten");
-    it("signer has a bad ENS name", function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var wallet, tx, error_2, tos, i, to, tx, error_3;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this.timeout(300000);
-                        wallet = new ethers_1.ethers.Wallet(ethers_1.ethers.utils.id("random-wallet"), provider);
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, wallet.sendTransaction({ to: "junk", value: 1 })];
-                    case 2:
-                        tx = _a.sent();
-                        console.log("TX", tx);
-                        assert_1.default.ok(false, "failed to throw an exception");
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_2 = _a.sent();
-                        assert_1.default.ok(error_2.argument === "tx.to" && error_2.value === "junk");
-                        return [3 /*break*/, 4];
-                    case 4:
-                        tos = [null, Promise.resolve(null)];
-                        i = 0;
-                        _a.label = 5;
-                    case 5:
-                        if (!(i < tos.length)) return [3 /*break*/, 10];
-                        to = tos[i];
-                        _a.label = 6;
-                    case 6:
-                        _a.trys.push([6, 8, , 9]);
-                        return [4 /*yield*/, wallet.sendTransaction({ to: to, value: 1 })];
-                    case 7:
-                        tx = _a.sent();
-                        console.log("TX", tx);
-                        return [3 /*break*/, 9];
-                    case 8:
-                        error_3 = _a.sent();
-                        assert_1.default.ok(error_3.code === "INSUFFICIENT_FUNDS");
-                        return [3 /*break*/, 9];
-                    case 9:
-                        i++;
-                        return [3 /*break*/, 5];
-                    case 10: return [2 /*return*/];
-                }
-            });
-        });
-    });
-});
+// describe("Bad ENS resolution", function() {
+//     const provider = providerFunctions[0].create("ropsten");
+//     it("signer has a bad ENS name", async function() {
+//         this.timeout(300000);
+//         const wallet = new ethers.Wallet(ethers.utils.id("random-wallet"), provider);
+//         // If "to" is specified as an ENS name, it cannot resolve to null
+//         try {
+//             const tx = await wallet.sendTransaction({ to: "junk", value: 1 });
+//             console.log("TX", tx);
+//             assert.ok(false, "failed to throw an exception");
+//         } catch (error) {
+//             assert.ok(error.argument === "tx.to" && error.value === "junk");
+//         }
+//         // But promises that resolve to null are ok
+//         const tos = [ null, Promise.resolve(null) ];
+//         for (let i = 0; i < tos.length; i++) {
+//             const to = tos[i];
+//             try {
+//                 const tx = await wallet.sendTransaction({ to, value: 1 });
+//                 console.log("TX", tx);
+//             } catch (error) {
+//                 assert.ok(error.code === "INSUFFICIENT_FUNDS");
+//             }
+//         }
+//     });
+// });
 describe("Resolve ENS avatar", function () {
     [
         { title: "data", name: "data-avatar.tests.eth", value: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAMAAACeL25MAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyVpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDYuMC1jMDAyIDc5LjE2NDQ4OCwgMjAyMC8wNy8xMC0yMjowNjo1MyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDIyLjAgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NUQ4NTEyNUIyOEIwMTFFQzg0NTBDNTU2RDk1NTA5NzgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NUQ4NTEyNUMyOEIwMTFFQzg0NTBDNTU2RDk1NTA5NzgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1RDg1MTI1OTI4QjAxMUVDODQ1MEM1NTZEOTU1MDk3OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1RDg1MTI1QTI4QjAxMUVDODQ1MEM1NTZEOTU1MDk3OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PkbM0uMAAAAGUExURQAA/wAAAHtivz4AAAAOSURBVHjaYmDABAABBgAAFAABaEkyYwAAAABJRU5ErkJggg==" },

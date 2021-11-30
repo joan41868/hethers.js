@@ -63,7 +63,7 @@ describe('Test HD Node Derivation from Seed', function () {
             test.hdnodes.forEach(function (nodeTest) {
                 var node = rootNode.derivePath(nodeTest.path);
                 assert_1.default.equal(node.privateKey, nodeTest.privateKey, 'Generates privateKey - ' + nodeTest.privateKey);
-                var wallet = new ethers_1.ethers.Wallet(node.privateKey);
+                var wallet = new ethers_1.ethers.Wallet({ address: node.address, privateKey: node.privateKey });
                 assert_1.default.equal(wallet.address.toLowerCase(), nodeTest.address, 'Generates address - ' + nodeTest.privateKey);
             });
         });
@@ -91,7 +91,7 @@ describe('Test HD Node Derivation from Mnemonic', function () {
                 assert_1.default.equal(node.path, nodeTest.path, 'Matches path - ' + nodeTest.privateKey);
                 assert_1.default.equal(node.mnemonic.phrase, test.mnemonic, 'Matches mnemonic.phrase - ' + nodeTest.privateKey);
                 assert_1.default.equal(node.mnemonic.path, nodeTest.path, 'Matches mnemonic.path - ' + nodeTest.privateKey);
-                var wallet = new ethers_1.ethers.Wallet(node.privateKey);
+                var wallet = new ethers_1.ethers.Wallet({ address: node.address, privateKey: node.privateKey });
                 assert_1.default.equal(wallet.address.toLowerCase(), nodeTest.address, 'Generates address - ' + nodeTest.privateKey);
             });
         });

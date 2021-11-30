@@ -125,7 +125,7 @@ function parseAccount(account) {
         logger.throwArgumentError("invalid account", "account", account);
     }
     if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
-        var parsedAccount = account.split(',');
+        var parsedAccount = account.split('.');
         result = {
             shard: BigInt(parsedAccount[0]),
             realm: BigInt(parsedAccount[1]),

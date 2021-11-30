@@ -536,7 +536,7 @@ exports.ArgParser = ArgParser;
 //   - mnemonic
 function loadAccount(arg, plugin, preventFile) {
     return __awaiter(this, void 0, void 0, function () {
-        var content, signer_1, mnemonic_1, signerPromise_1, content_1, address;
+        var content, mnemonic_1, signerPromise_1, content_1, address;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -549,10 +549,10 @@ function loadAccount(arg, plugin, preventFile) {
                 case 2:
                     // Raw private key
                     // TODO should be changed to account + private key OR address + private key
-                    if (ethers_1.ethers.utils.isHexString(arg, 32)) {
-                        signer_1 = new ethers_1.ethers.Wallet(arg, plugin.provider);
-                        return [2 /*return*/, Promise.resolve(new WrappedSigner(signer_1.getAddress(), function () { return Promise.resolve(signer_1); }, plugin))];
-                    }
+                    // if (ethers.utils.isHexString(arg, 32)) {
+                    //      const signer = new ethers.Wallet(arg, plugin.provider);
+                    //      return Promise.resolve(new WrappedSigner(signer.getAddress(), () => Promise.resolve(signer), plugin));
+                    // }
                     // Mnemonic
                     // TODO should be changed to account OR address + mnemonic
                     if (ethers_1.ethers.utils.isValidMnemonic(arg)) {
@@ -561,7 +561,7 @@ function loadAccount(arg, plugin, preventFile) {
                         if (plugin.mnemonicPassword) {
                             signerPromise_1 = (0, prompt_1.getPassword)("Password (mnemonic): ").then(function (password) {
                                 var node = ethers_1.ethers.utils.HDNode.fromMnemonic(mnemonic_1, password).derivePath(plugin.mnemonicPath);
-                                return new ethers_1.ethers.Wallet(node.privateKey, plugin.provider);
+                                return new ethers_1.ethers.Wallet({ address: node.address, privateKey: node.privateKey }, plugin.provider);
                             });
                         }
                         else if (plugin._xxxMnemonicPasswordHard) {
@@ -572,7 +572,7 @@ function loadAccount(arg, plugin, preventFile) {
                                 return scrypt.scrypt(passwordBytes, saltBytes, (1 << 20), 8, 1, 32, progressBar).then(function (key) {
                                     var derivedPassword = ethers_1.ethers.utils.hexlify(key).substring(2);
                                     var node = ethers_1.ethers.utils.HDNode.fromMnemonic(mnemonic_1, derivedPassword).derivePath(plugin.mnemonicPath);
-                                    return new ethers_1.ethers.Wallet(node.privateKey, plugin.provider);
+                                    return new ethers_1.ethers.Wallet({ address: node.address, privateKey: node.privateKey }, plugin.provider);
                                 });
                             });
                         }
@@ -686,7 +686,7 @@ var Plugin = /** @class */ (function () {
                         accounts = [];
                         accountOptions = argParser.consumeMultiOptions(["account", "account-rpc", "account-void"]);
                         _loop_1 = function (i) {
-                            var account, _b, wrappedSigner, signer_2, addressPromise, signerPromise_2;
+                            var account, _b, wrappedSigner, signer_1, addressPromise, signerPromise_2;
                             return __generator(this, function (_c) {
                                 switch (_c.label) {
                                     case 0:
@@ -713,14 +713,14 @@ var Plugin = /** @class */ (function () {
                                             this_1.throwUsageError("--account-rpc requires exactly one JSON-RPC provider");
                                         }
                                         try {
-                                            signer_2 = null;
+                                            signer_1 = null;
                                             if (account.value.match(/^[0-9]+$/)) {
-                                                signer_2 = rpc[0].getSigner(parseInt(account.value));
+                                                signer_1 = rpc[0].getSigner(parseInt(account.value));
                                             }
                                             else {
-                                                signer_2 = rpc[0].getSigner(ethers_1.ethers.utils.getAddress(account.value));
+                                                signer_1 = rpc[0].getSigner(ethers_1.ethers.utils.getAddress(account.value));
                                             }
-                                            accounts.push(new WrappedSigner(signer_2.getAddress(), function () { return Promise.resolve(signer_2); }, this_1));
+                                            accounts.push(new WrappedSigner(signer_1.getAddress(), function () { return Promise.resolve(signer_1); }, this_1));
                                         }
                                         catch (error) {
                                             this_1.throwUsageError("invalid --account-rpc - " + account.value);

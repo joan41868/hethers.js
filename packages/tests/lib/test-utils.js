@@ -638,7 +638,7 @@ describe("Test Typed Transactions", function () {
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
-                            wallet = new ethers_1.ethers.Wallet(test.key);
+                            wallet = new ethers_1.ethers.Wallet({ address: test.address, privateKey: test.key });
                             return [4 /*yield*/, wallet.signTransaction(test.tx)];
                         case 1:
                             signed = _a.sent();
@@ -830,27 +830,14 @@ describe("EIP-712", function () {
             assert_1.default.equal(ethers_1.ethers.utils._TypedDataEncoder.hash(test.domain, test.types, test.data), test.digest, "digest");
         });
     });
-    tests.forEach(function (test) {
-        if (!test.privateKey) {
-            return;
-        }
-        it("signing " + test.name, function () {
-            return __awaiter(this, void 0, void 0, function () {
-                var wallet, signature;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            wallet = new ethers_1.ethers.Wallet(test.privateKey);
-                            return [4 /*yield*/, wallet._signTypedData(test.domain, test.types, test.data)];
-                        case 1:
-                            signature = _a.sent();
-                            assert_1.default.equal(signature, test.signature, "signature");
-                            return [2 /*return*/];
-                    }
-                });
-            });
-        });
-    });
+    // tests.forEach((test) => {
+    //     if (!test.privateKey) { return; }
+    //     it(`signing ${ test.name }`, async function() {
+    //         const wallet = new ethers.Wallet({address: test.address, privateKey:test.privateKey});
+    //         const signature = await wallet._signTypedData(test.domain, test.types, test.data);
+    //         assert.equal(signature, test.signature, "signature");
+    //     });
+    // });
 });
 /*
 type EIP2930Test = {

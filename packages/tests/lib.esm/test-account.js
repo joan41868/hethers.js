@@ -3,13 +3,15 @@ import assert from 'assert';
 import { ethers } from "ethers";
 import { loadTests } from "@ethersproject/testcases";
 describe('Private key generation', function () {
-    let tests = loadTests('accounts');
+    let tests = loadTests('accounts-test');
     tests.forEach((test) => {
         if (!test.privateKey) {
             return;
         }
         it(('correctly converts private key - ' + test.name), function () {
-            let wallet = new ethers.Wallet(test.privateKey);
+            let wallet = new ethers.Wallet({ address: test.address, privateKey: test.privateKey });
+            // wallet._signingKey().publicKey = test.publicKey;
+            assert.equal(wallet._signingKey().publicKey, test.publicKey, 'correctly computes publicKey - ' + test.publicKey);
             assert.equal(wallet.address.toLowerCase(), test.address.toLowerCase(), 'correctly computes privateKey - ' + test.privateKey);
         });
     });

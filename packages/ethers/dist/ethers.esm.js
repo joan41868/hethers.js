@@ -6771,27 +6771,6 @@ const version$6 = "address/5.5.0";
 
 "use strict";
 const logger$7 = new Logger(version$6);
-function getChecksumAddress(address) {
-    if (!isHexString(address, 20)) {
-        logger$7.throwArgumentError("invalid address", "address", address);
-    }
-    address = address.toLowerCase();
-    const chars = address.substring(2).split("");
-    const expanded = new Uint8Array(40);
-    for (let i = 0; i < 40; i++) {
-        expanded[i] = chars[i].charCodeAt(0);
-    }
-    const hashed = arrayify(keccak256(expanded));
-    for (let i = 0; i < 40; i += 2) {
-        if ((hashed[i >> 1] >> 4) >= 8) {
-            chars[i] = chars[i].toUpperCase();
-        }
-        if ((hashed[i >> 1] & 0x0f) >= 8) {
-            chars[i + 1] = chars[i + 1].toUpperCase();
-        }
-    }
-    return "0x" + chars.join("");
-}
 // Shims for environments that are missing some required constants and functions
 const MAX_SAFE_INTEGER = 0x1fffffffffffff;
 function log10(x) {
@@ -6814,7 +6793,9 @@ const safeDigits = Math.floor(log10(MAX_SAFE_INTEGER));
 function ibanChecksum(address) {
     address = address.toUpperCase();
     address = address.substring(4) + address.substring(0, 2) + "00";
-    let expanded = address.split("").map((c) => { return ibanLookup[c]; }).join("");
+    let expanded = address.split("").map((c) => {
+        return ibanLookup[c];
+    }).join("");
     // Javascript can handle integers safely up to 15 (decimal) digits
     while (expanded.length >= safeDigits) {
         let block = expanded.substring(0, safeDigits);
@@ -6826,46 +6807,26 @@ function ibanChecksum(address) {
     }
     return checksum;
 }
-;
 function getAddress(address) {
-    let result = null;
-    if (typeof (address) !== "string") {
+    if (typeof (address) !== "string" || !address.match(/^(0x)?[0-9a-fA-F]{40}$/)) {
         logger$7.throwArgumentError("invalid address", "address", address);
     }
-    if (address.match(/^(0x)?[0-9a-fA-F]{40}$/)) {
-        // Missing the 0x prefix
-        if (address.substring(0, 2) !== "0x") {
-            address = "0x" + address;
-        }
-        result = getChecksumAddress(address);
-        // It is a checksummed address with a bad checksum
-        if (address.match(/([A-F].*[a-f])|([a-f].*[A-F])/) && result !== address) {
-            logger$7.throwArgumentError("bad address checksum", "address", address);
-        }
-        // Maybe ICAP? (we only support direct mode)
+    // Missing the 0x prefix
+    if (address.substring(0, 2) !== "0x") {
+        address = "0x" + address;
     }
-    else if (address.match(/^XE[0-9]{2}[0-9A-Za-z]{30,31}$/)) {
-        // It is an ICAP address with a bad checksum
-        if (address.substring(2, 4) !== ibanChecksum(address)) {
-            logger$7.throwArgumentError("bad icap checksum", "address", address);
-        }
-        result = _base36To16(address.substring(4));
-        while (result.length < 40) {
-            result = "0" + result;
-        }
-        result = getChecksumAddress("0x" + result);
-    }
-    else {
+    if (!isHexString(address, 20)) {
         logger$7.throwArgumentError("invalid address", "address", address);
     }
-    return result;
+    return address.toLowerCase();
 }
 function isAddress(address) {
     try {
         getAddress(address);
         return true;
     }
-    catch (error) { }
+    catch (error) {
+    }
     return false;
 }
 function getIcapAddress(address) {
@@ -6895,6 +6856,42 @@ function getCreate2Address(from, salt, initCodeHash) {
         logger$7.throwArgumentError("initCodeHash must be 32 bytes", "initCodeHash", initCodeHash);
     }
     return getAddress(hexDataSlice(keccak256(concat(["0xff", getAddress(from), salt, initCodeHash])), 12));
+}
+function getAddressFromAccount(accountLike) {
+    let parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
+    const buffer = new Uint8Array(20);
+    const view = new DataView(buffer.buffer, 0, 20);
+    view.setInt32(0, Number(parsedAccount.shard));
+    view.setBigInt64(4, parsedAccount.realm);
+    view.setBigInt64(12, parsedAccount.num);
+    return hexlify(buffer);
+}
+function getAccountFromAddress(address) {
+    let buffer = arrayify(getAddress(address));
+    const view = new DataView(buffer.buffer, 0, 20);
+    return {
+        shard: BigInt(view.getInt32(0)),
+        realm: BigInt(view.getBigInt64(4)),
+        num: BigInt(view.getBigInt64(12))
+    };
+}
+function parseAccount(account) {
+    let result = null;
+    if (typeof (account) !== "string") {
+        logger$7.throwArgumentError("invalid account", "account", account);
+    }
+    if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
+        let parsedAccount = account.split('.');
+        result = {
+            shard: BigInt(parsedAccount[0]),
+            realm: BigInt(parsedAccount[1]),
+            num: BigInt(parsedAccount[2])
+        };
+    }
+    else {
+        logger$7.throwArgumentError("invalid account", "account", account);
+    }
+    return result;
 }
 
 "use strict";
@@ -17121,26 +17118,27 @@ var __awaiter$6 = (window && window.__awaiter) || function (thisArg, _arguments,
     });
 };
 const logger$p = new Logger(version$j);
-function isAccount(value) {
+function isEOA(value) {
     return (value != null && isHexString(value.privateKey, 32) && value.address != null);
+}
+function isHederaAccount(value) {
+    return (value != null && isHexString(value.privateKey, 32) && value.account != null);
 }
 function hasMnemonic$1(value) {
     const mnemonic = value.mnemonic;
     return (mnemonic && mnemonic.phrase);
 }
 class Wallet extends Signer {
-    constructor(privateKey, provider) {
+    constructor(acc, provider) {
         logger$p.checkNew(new.target, Wallet);
         super();
-        if (isAccount(privateKey)) {
-            const signingKey = new SigningKey(privateKey.privateKey);
+        if (isEOA(acc) || isHederaAccount(acc)) {
+            const signingKey = new SigningKey(acc.privateKey);
             defineReadOnly(this, "_signingKey", () => signingKey);
-            defineReadOnly(this, "address", computeAddress(this.publicKey));
-            if (this.address !== getAddress(privateKey.address)) {
-                logger$p.throwArgumentError("privateKey/address mismatch", "privateKey", "[REDACTED]");
-            }
-            if (hasMnemonic$1(privateKey)) {
-                const srcMnemonic = privateKey.mnemonic;
+            defineReadOnly(this, "address", isEOA(acc) ? getAddress(acc.address) : getAddressFromAccount(acc.account));
+            defineReadOnly(this, "account", isEOA(acc) ? getAccountFromAddress(acc.address) : parseAccount(acc.account));
+            if (hasMnemonic$1(acc)) {
+                const srcMnemonic = acc.mnemonic;
                 defineReadOnly(this, "_mnemonic", () => ({
                     phrase: srcMnemonic.phrase,
                     path: srcMnemonic.path || defaultPath,
@@ -17148,8 +17146,8 @@ class Wallet extends Signer {
                 }));
                 const mnemonic = this.mnemonic;
                 const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
-                if (computeAddress(node.privateKey) !== this.address) {
-                    logger$p.throwArgumentError("mnemonic/address mismatch", "privateKey", "[REDACTED]");
+                if (node.privateKey !== this._signingKey().privateKey) {
+                    logger$p.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
                 }
             }
             else {
@@ -17157,25 +17155,7 @@ class Wallet extends Signer {
             }
         }
         else {
-            if (SigningKey.isSigningKey(privateKey)) {
-                /* istanbul ignore if */
-                if (privateKey.curve !== "secp256k1") {
-                    logger$p.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
-                }
-                defineReadOnly(this, "_signingKey", () => privateKey);
-            }
-            else {
-                // A lot of common tools do not prefix private keys with a 0x (see: #1166)
-                if (typeof (privateKey) === "string") {
-                    if (privateKey.match(/^[0-9a-f]*$/i) && privateKey.length === 64) {
-                        privateKey = "0x" + privateKey;
-                    }
-                }
-                const signingKey = new SigningKey(privateKey);
-                defineReadOnly(this, "_signingKey", () => signingKey);
-            }
-            defineReadOnly(this, "_mnemonic", () => null);
-            defineReadOnly(this, "address", computeAddress(this.publicKey));
+            logger$p.throwArgumentError("invalid account", "account", acc);
         }
         /* istanbul ignore if */
         if (provider && !Provider.isProvider(provider)) {
@@ -17183,15 +17163,25 @@ class Wallet extends Signer {
         }
         defineReadOnly(this, "provider", provider || null);
     }
-    get mnemonic() { return this._mnemonic(); }
-    get privateKey() { return this._signingKey().privateKey; }
-    get publicKey() { return this._signingKey().publicKey; }
+    get mnemonic() {
+        return this._mnemonic();
+    }
+    get privateKey() {
+        return this._signingKey().privateKey;
+    }
+    get publicKey() {
+        return this._signingKey().publicKey;
+    }
     getAddress() {
         return Promise.resolve(this.address);
+    }
+    getAccount() {
+        return Promise.resolve(this.account);
     }
     connect(provider) {
         return new Wallet(this, provider);
     }
+    // TODO to be revised
     signTransaction(transaction) {
         return resolveProperties(transaction).then((tx) => {
             if (tx.from != null) {
@@ -17209,6 +17199,7 @@ class Wallet extends Signer {
             return joinSignature(this._signingKey().signDigest(hashMessage(message)));
         });
     }
+    // TODO to be revised
     _signTypedData(domain, types, value) {
         return __awaiter$6(this, void 0, void 0, function* () {
             // Populate any ENS names
@@ -17224,6 +17215,7 @@ class Wallet extends Signer {
             return joinSignature(this._signingKey().signDigest(TypedDataEncoder.hash(populated.domain, types, populated.value)));
         });
     }
+    // TODO to be revised
     encrypt(password, options, progressCallback) {
         if (typeof (options) === "function" && !progressCallback) {
             progressCallback = options;
@@ -17237,6 +17229,7 @@ class Wallet extends Signer {
         }
         return encrypt(this, password, options, progressCallback);
     }
+    // TODO to be revised
     /**
      *  Static methods to create Wallet instances.
      */
@@ -17251,14 +17244,17 @@ class Wallet extends Signer {
         const mnemonic = entropyToMnemonic(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     }
+    // TODO to be revised
     static fromEncryptedJson(json, password, progressCallback) {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
             return new Wallet(account);
         });
     }
+    // TODO to be revised
     static fromEncryptedJsonSync(json, password) {
         return new Wallet(decryptJsonWalletSync(json, password));
     }
+    // TODO to be revised
     static fromMnemonic(mnemonic, path, wordlist) {
         if (!path) {
             path = defaultPath;
@@ -17266,9 +17262,11 @@ class Wallet extends Signer {
         return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
     }
 }
+// TODO to be revised
 function verifyMessage(message, signature) {
     return recoverAddress(hashMessage(message), signature);
 }
+// TODO to be revised
 function verifyTypedData(domain, types, value, signature) {
     return recoverAddress(TypedDataEncoder.hash(domain, types, value), signature);
 }
@@ -23088,7 +23086,10 @@ var utils$1 = /*#__PURE__*/Object.freeze({
 	get SupportedAlgorithm () { return SupportedAlgorithm; },
 	get UnicodeNormalizationForm () { return UnicodeNormalizationForm; },
 	get Utf8ErrorReason () { return Utf8ErrorReason; },
-	Indexed: Indexed
+	Indexed: Indexed,
+	getAddressFromAccount: getAddressFromAccount,
+	getAccountFromAddress: getAccountFromAddress,
+	parseAccount: parseAccount
 });
 
 const version$p = "ethers/5.5.1";
