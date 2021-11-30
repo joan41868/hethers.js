@@ -98,8 +98,8 @@ export class DefaultHederaProvider extends BaseProvider {
         let { data } = await axios.get(url + ep);
         while (data.links.next != null) {
             const filtered = data.transactions
-                .filter((e: { transaction_id: string | Promise<string>; }) => e.transaction_id === txId);
-            if (filtered.length > 1) {
+                .filter((e: { transaction_id: string | Promise<string>; }) => e.transaction_id.toString() === txId);
+            if (filtered.length > 0) {
                 return filtered[0];
             }
             ({ data } = await axios.get(url + data.links.next));

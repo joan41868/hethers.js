@@ -21,7 +21,7 @@ import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
     console.log(balance2);
     console.log(balance2.toNumber());
 
-    const txId = `0.0.15680048-1638195233-881537326`;
+    const txId = `0.0.15680048-1638189529-145876922`;
     const record = await provider.getTransaction(txId);
     console.log(record);
 })();
