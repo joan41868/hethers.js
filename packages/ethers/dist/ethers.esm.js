@@ -15000,7 +15000,7 @@ class HDNode {
      *   - fromMnemonic
      *   - fromSeed
      */
-    constructor(constructorGuard, privateKey, publicKey, parentFingerprint, chainCode, index, depth, mnemonicOrPath) {
+    constructor(constructorGuard, accountLike, privateKey, publicKey, parentFingerprint, chainCode, index, depth, mnemonicOrPath) {
         logger$l.checkNew(new.target, HDNode);
         /* istanbul ignore if */
         if (constructorGuard !== _constructorGuard$3) {
@@ -15017,7 +15017,15 @@ class HDNode {
         }
         defineReadOnly(this, "parentFingerprint", parentFingerprint);
         defineReadOnly(this, "fingerprint", hexDataSlice(ripemd160$1(sha256$1(this.publicKey)), 0, 4));
-        defineReadOnly(this, "address", computeAddress(this.publicKey));
+        if (typeof (accountLike) == "string" && isAddress(accountLike)) {
+            defineReadOnly(this, "address", getAddress(accountLike));
+            defineReadOnly(this, "account", getAccountFromAddress(accountLike));
+        }
+        else {
+            const addr = getAddressFromAccount(accountLike);
+            defineReadOnly(this, "address", addr);
+            defineReadOnly(this, "account", getAccountFromAddress(addr));
+        }
         defineReadOnly(this, "chainCode", chainCode);
         defineReadOnly(this, "index", index);
         defineReadOnly(this, "depth", depth);
@@ -15056,7 +15064,7 @@ class HDNode {
         ]));
     }
     neuter() {
-        return new HDNode(_constructorGuard$3, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
+        return new HDNode(_constructorGuard$3, this.account, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
     }
     _derive(index) {
         if (index > 0xffffffff) {
@@ -15110,7 +15118,7 @@ class HDNode {
                 locale: (srcMnemonic.locale || "en")
             });
         }
-        return new HDNode(_constructorGuard$3, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
+        return new HDNode(_constructorGuard$3, this.account, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
     }
     derivePath(path) {
         const components = path.split("/");
@@ -15143,29 +15151,29 @@ class HDNode {
         }
         return result;
     }
-    static _fromSeed(seed, mnemonic) {
+    static _fromSeed(accountLike, seed, mnemonic) {
         const seedArray = arrayify(seed);
         if (seedArray.length < 16 || seedArray.length > 64) {
             throw new Error("invalid seed");
         }
         const I = arrayify(computeHmac(SupportedAlgorithm.sha512, MasterSecret, seedArray));
-        return new HDNode(_constructorGuard$3, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
+        return new HDNode(_constructorGuard$3, accountLike, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
     }
-    static fromMnemonic(mnemonic, password, wordlist) {
+    static fromMnemonic(accountLike, mnemonic, password, wordlist) {
         // If a locale name was passed in, find the associated wordlist
         wordlist = getWordlist(wordlist);
         // Normalize the case and spacing in the mnemonic (throws if the mnemonic is invalid)
         mnemonic = entropyToMnemonic(mnemonicToEntropy(mnemonic, wordlist), wordlist);
-        return HDNode._fromSeed(mnemonicToSeed(mnemonic, password), {
+        return HDNode._fromSeed(accountLike, mnemonicToSeed(mnemonic, password), {
             phrase: mnemonic,
             path: "m",
             locale: wordlist.locale
         });
     }
-    static fromSeed(seed) {
-        return HDNode._fromSeed(seed, null);
+    static fromSeed(accountLike, seed) {
+        return HDNode._fromSeed(accountLike, seed, null);
     }
-    static fromExtendedKey(extendedKey) {
+    static fromExtendedKey(accountLike, extendedKey) {
         const bytes = Base58.decode(extendedKey);
         if (bytes.length !== 82 || base58check(bytes.slice(0, 78)) !== extendedKey) {
             logger$l.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
@@ -15179,14 +15187,14 @@ class HDNode {
             // Public Key
             case "0x0488b21e":
             case "0x043587cf":
-                return new HDNode(_constructorGuard$3, null, hexlify(key), parentFingerprint, chainCode, index, depth, null);
+                return new HDNode(_constructorGuard$3, accountLike, null, hexlify(key), parentFingerprint, chainCode, index, depth, null);
             // Private Key
             case "0x0488ade4":
             case "0x04358394 ":
                 if (key[0] !== 0) {
                     break;
                 }
-                return new HDNode(_constructorGuard$3, hexlify(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
+                return new HDNode(_constructorGuard$3, accountLike, hexlify(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
         }
         return logger$l.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
     }
@@ -17138,7 +17146,7 @@ class Wallet extends Signer {
                     locale: srcMnemonic.locale || "en"
                 }));
                 const mnemonic = this.mnemonic;
-                const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
+                const node = HDNode.fromMnemonic(this.account, mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
                 if (node.privateKey !== this._signingKey().privateKey) {
                     logger$p.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
                 }
@@ -17221,20 +17229,23 @@ class Wallet extends Signer {
         }
         return encrypt(this, password, options, progressCallback);
     }
-    // TODO to be revised
     /**
      *  Static methods to create Wallet instances.
      */
-    static createRandom(options) {
-        let entropy = randomBytes(16);
-        if (!options) {
-            options = {};
-        }
-        if (options.extraEntropy) {
-            entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
-        }
-        const mnemonic = entropyToMnemonic(entropy, options.locale);
-        return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
+    static createRandom(creator, options) {
+        return __awaiter$6(this, void 0, void 0, function* () {
+            let entropy = randomBytes(16);
+            if (!options) {
+                options = {};
+            }
+            if (options.extraEntropy) {
+                entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
+            }
+            // TODO accountId = creator.createAccount(options);
+            const newAccountId = "0.0.98";
+            const mnemonic = entropyToMnemonic(entropy, options.locale);
+            return Wallet.fromMnemonic(newAccountId, mnemonic, options.path, options.locale);
+        });
     }
     static fromEncryptedJson(json, password, progressCallback) {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
@@ -17244,12 +17255,11 @@ class Wallet extends Signer {
     static fromEncryptedJsonSync(json, password) {
         return new Wallet(decryptJsonWalletSync(json, password));
     }
-    // TODO to be revised
-    static fromMnemonic(mnemonic, path, wordlist) {
+    static fromMnemonic(accountLike, mnemonic, path, wordlist) {
         if (!path) {
             path = defaultPath;
         }
-        return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+        return new Wallet(HDNode.fromMnemonic(accountLike, mnemonic, null, wordlist).derivePath(path));
     }
 }
 // TODO to be revised

@@ -97,7 +97,7 @@ var Wallet = /** @class */ (function (_super) {
                     locale: srcMnemonic_1.locale || "en"
                 }); });
                 var mnemonic = _this.mnemonic;
-                var node = hdnode_1.HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
+                var node = hdnode_1.HDNode.fromMnemonic(_this.account, mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
                 if (node.privateKey !== _this._signingKey().privateKey) {
                     logger.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
                 }
@@ -203,20 +203,25 @@ var Wallet = /** @class */ (function (_super) {
         }
         return (0, json_wallets_1.encryptKeystore)(this, password, options, progressCallback);
     };
-    // TODO to be revised
     /**
      *  Static methods to create Wallet instances.
      */
-    Wallet.createRandom = function (options) {
-        var entropy = (0, random_1.randomBytes)(16);
-        if (!options) {
-            options = {};
-        }
-        if (options.extraEntropy) {
-            entropy = (0, bytes_1.arrayify)((0, bytes_1.hexDataSlice)((0, keccak256_1.keccak256)((0, bytes_1.concat)([entropy, options.extraEntropy])), 0, 16));
-        }
-        var mnemonic = (0, hdnode_1.entropyToMnemonic)(entropy, options.locale);
-        return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
+    Wallet.createRandom = function (creator, options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var entropy, newAccountId, mnemonic;
+            return __generator(this, function (_a) {
+                entropy = (0, random_1.randomBytes)(16);
+                if (!options) {
+                    options = {};
+                }
+                if (options.extraEntropy) {
+                    entropy = (0, bytes_1.arrayify)((0, bytes_1.hexDataSlice)((0, keccak256_1.keccak256)((0, bytes_1.concat)([entropy, options.extraEntropy])), 0, 16));
+                }
+                newAccountId = "0.0.98";
+                mnemonic = (0, hdnode_1.entropyToMnemonic)(entropy, options.locale);
+                return [2 /*return*/, Wallet.fromMnemonic(newAccountId, mnemonic, options.path, options.locale)];
+            });
+        });
     };
     Wallet.fromEncryptedJson = function (json, password, progressCallback) {
         return (0, json_wallets_1.decryptJsonWallet)(json, password, progressCallback).then(function (account) {
@@ -226,12 +231,11 @@ var Wallet = /** @class */ (function (_super) {
     Wallet.fromEncryptedJsonSync = function (json, password) {
         return new Wallet((0, json_wallets_1.decryptJsonWalletSync)(json, password));
     };
-    // TODO to be revised
-    Wallet.fromMnemonic = function (mnemonic, path, wordlist) {
+    Wallet.fromMnemonic = function (accountLike, mnemonic, path, wordlist) {
         if (!path) {
             path = hdnode_1.defaultPath;
         }
-        return new Wallet(hdnode_1.HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+        return new Wallet(hdnode_1.HDNode.fromMnemonic(accountLike, mnemonic, null, wordlist).derivePath(path));
     };
     return Wallet;
 }(abstract_signer_1.Signer));

@@ -1,4 +1,4 @@
-import { Account } from "@ethersproject/address";
+import { Account, AccountLike } from "@ethersproject/address";
 import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
 import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner, HederaAccount } from "@ethersproject/abstract-signer";
 import { Bytes, SignatureLike } from "@ethersproject/bytes";
@@ -26,10 +26,10 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     /**
      *  Static methods to create Wallet instances.
      */
-    static createRandom(options?: any): Wallet;
+    static createRandom(creator: Signer, options?: any): Promise<Wallet>;
     static fromEncryptedJson(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<Wallet>;
     static fromEncryptedJsonSync(json: string, password: Bytes | string): Wallet;
-    static fromMnemonic(mnemonic: string, path?: string, wordlist?: Wordlist): Wallet;
+    static fromMnemonic(accountLike: AccountLike, mnemonic: string, path?: string, wordlist?: Wordlist): Wallet;
 }
 export declare function verifyMessage(message: Bytes | string, signature: SignatureLike): string;
 export declare function verifyTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, signature: SignatureLike): string;
