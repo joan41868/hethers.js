@@ -70,7 +70,7 @@ describe('Test HD Node Derivation from Seed', function() {
                 assert.equal(node.privateKey, nodeTest.privateKey,
                     'Generates privateKey - ' + nodeTest.privateKey);
 
-                let wallet = new ethers.Wallet(node.privateKey);
+                let wallet = new ethers.Wallet({address: node.address, privateKey: node.privateKey});
                 assert.equal(wallet.address.toLowerCase(), nodeTest.address,
                     'Generates address - ' + nodeTest.privateKey);
             });
@@ -107,7 +107,7 @@ describe('Test HD Node Derivation from Mnemonic', function() {
                 assert.equal(node.mnemonic.path, nodeTest.path,
                     'Matches mnemonic.path - ' + nodeTest.privateKey);
 
-                let wallet = new ethers.Wallet(node.privateKey);
+                let wallet = new ethers.Wallet({address: node.address, privateKey: node.privateKey});
                 assert.equal(wallet.address.toLowerCase(), nodeTest.address,
                     'Generates address - ' + nodeTest.privateKey);
             });

@@ -1335,37 +1335,37 @@ describe("Test Events", function() {
     });
 });
 
-describe("Bad ENS resolution", function() {
-    const provider = providerFunctions[0].create("ropsten");
+// describe("Bad ENS resolution", function() {
+//     const provider = providerFunctions[0].create("ropsten");
 
-    it("signer has a bad ENS name", async function() {
-        this.timeout(300000);
+//     it("signer has a bad ENS name", async function() {
+//         this.timeout(300000);
 
-        const wallet = new ethers.Wallet(ethers.utils.id("random-wallet"), provider);
+//         const wallet = new ethers.Wallet(ethers.utils.id("random-wallet"), provider);
 
-        // If "to" is specified as an ENS name, it cannot resolve to null
-        try {
-            const tx = await wallet.sendTransaction({ to: "junk", value: 1 });
-            console.log("TX", tx);
-            assert.ok(false, "failed to throw an exception");
-        } catch (error) {
-            assert.ok(error.argument === "tx.to" && error.value === "junk");
-        }
+//         // If "to" is specified as an ENS name, it cannot resolve to null
+//         try {
+//             const tx = await wallet.sendTransaction({ to: "junk", value: 1 });
+//             console.log("TX", tx);
+//             assert.ok(false, "failed to throw an exception");
+//         } catch (error) {
+//             assert.ok(error.argument === "tx.to" && error.value === "junk");
+//         }
 
-        // But promises that resolve to null are ok
-        const tos = [ null, Promise.resolve(null) ];
-        for (let i = 0; i < tos.length; i++) {
-            const to = tos[i];
-            try {
-                const tx = await wallet.sendTransaction({ to, value: 1 });
-                console.log("TX", tx);
-            } catch (error) {
-                assert.ok(error.code === "INSUFFICIENT_FUNDS");
-            }
-        }
-    });
+//         // But promises that resolve to null are ok
+//         const tos = [ null, Promise.resolve(null) ];
+//         for (let i = 0; i < tos.length; i++) {
+//             const to = tos[i];
+//             try {
+//                 const tx = await wallet.sendTransaction({ to, value: 1 });
+//                 console.log("TX", tx);
+//             } catch (error) {
+//                 assert.ok(error.code === "INSUFFICIENT_FUNDS");
+//             }
+//         }
+//     });
 
-});
+// });
 
 describe("Resolve ENS avatar", function() {
     [
