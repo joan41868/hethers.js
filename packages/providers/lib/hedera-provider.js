@@ -69,7 +69,7 @@ function sleep(timeout) {
     });
 }
 // resolves network string to a hedera network name
-function getNetwork(net) {
+function resolveNetwork(net) {
     switch (net) {
         case 'mainnet':
             return sdk_1.NetworkName.Mainnet;
@@ -78,11 +78,12 @@ function getNetwork(net) {
         case 'testnet':
             return sdk_1.NetworkName.Testnet;
         default:
-            throw new Error("Invalid network name");
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
     }
 }
 // resolves the mirror node url from the given provider network.
-function resolveMirrorNetGetTransactionUrl(net) {
+function resolveMirrorNetworkUrl(net) {
     switch (net) {
         case 'mainnet':
             return 'https://mainnet.mirrornode.hedera.com';
@@ -95,6 +96,7 @@ function resolveMirrorNetGetTransactionUrl(net) {
             return null;
     }
 }
+// contains predefined, sdk acceptable hedera network strings
 var HederaNetworks;
 (function (HederaNetworks) {
     HederaNetworks["TESTNET"] = "testnet";
@@ -112,12 +114,12 @@ var DefaultHederaProvider = /** @class */ (function (_super) {
     function DefaultHederaProvider(network) {
         var _this = _super.call(this, 'testnet') || this;
         _this.hederaNetwork = network;
-        _this.hederaClient = sdk_1.Client.forName(getNetwork(network));
+        _this.hederaClient = sdk_1.Client.forName(resolveNetwork(network));
         return _this;
     }
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
-     *  It returns the HBar balance of the given address.
+     *  It returns the tinybar balance of the given address.
      *
      * @param addressOrName The address to check balance of
      * @param blockTag -  not used. Will throw if used.
@@ -136,7 +138,7 @@ var DefaultHederaProvider = /** @class */ (function (_super) {
                         _c.label = 2;
                     case 2:
                         if (_a) {
-                            logger.throwArgumentError("Cannot use blockTag for hedera services.", "", "");
+                            logger.throwArgumentError("Cannot use blockTag for hedera services.", "blockTag", blockTag);
                             return [2 /*return*/, bignumber_1.BigNumber.from(0)];
                         }
                         return [4 /*yield*/, addressOrName];
@@ -170,15 +172,15 @@ var DefaultHederaProvider = /** @class */ (function (_super) {
                     case 1:
                         txId = _a.sent();
                         ep = '/api/v1/transactions';
-                        url = resolveMirrorNetGetTransactionUrl(this.hederaNetwork);
+                        url = resolveMirrorNetworkUrl(this.hederaNetwork);
                         maxRetries = 10;
                         counter = 0;
                         _a.label = 2;
                     case 2:
                         if (!true) return [3 /*break*/, 5];
                         if (counter >= maxRetries) {
-                            logger.info('Giving up after 10 retries.');
-                            return [2 /*return*/, []];
+                            logger.warn("Giving up after " + maxRetries + " retries.");
+                            return [2 /*return*/, null];
                         }
                         return [4 /*yield*/, axios_1.default.get(url + ep)];
                     case 3:
@@ -188,8 +190,10 @@ var DefaultHederaProvider = /** @class */ (function (_super) {
                         if (filtered.length > 0) {
                             return [2 /*return*/, filtered[0]];
                         }
-                        return [4 /*yield*/, sleep(1000)];
+                        // retry each 0.5 seconds
+                        return [4 /*yield*/, sleep(500)];
                     case 4:
+                        // retry each 0.5 seconds
                         _a.sent();
                         counter++;
                         return [3 /*break*/, 2];
@@ -198,6 +202,9 @@ var DefaultHederaProvider = /** @class */ (function (_super) {
             });
         });
     };
+    /**
+     * Allows us to get the underlying gRPC client and execute gRPC calls.
+     */
     DefaultHederaProvider.prototype.getClient = function () {
         return this.hederaClient;
     };

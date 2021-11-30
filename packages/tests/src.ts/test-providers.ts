@@ -5,6 +5,9 @@ import assert from "assert";
 //import Web3HttpProvider from "web3-providers-http";
 
 import { ethers } from "ethers";
+import { DefaultHederaProvider } from "@ethersproject/providers";
+import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
+import { getAddressFromAccount } from "ethers/lib/utils";
 
 const bnify = ethers.BigNumber.from;
 
@@ -1392,4 +1395,20 @@ describe("Resolve ENS avatar", function() {
             assert.equal(test.value, avatar, "avatar url");
         });
     });
+});
+
+
+describe("Test Hedera Provider", function () {
+   it('Gets the balance', async () => {
+      const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+      const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
+      const solAddr = getAddressFromAccount(accountConfig);
+      const balance = await provider.getBalance(solAddr);
+      // the balance of 0.0.98 cannot be negative
+      assert.strictEqual(true, balance.gte(0));
+   });
+
+   it("Gets the transaction record", async () => {
+
+   });
 });

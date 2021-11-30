@@ -1,7 +1,7 @@
 import { BaseProvider } from "./base-provider";
 import { Client } from '@hashgraph/sdk';
 import { BigNumber } from "@ethersproject/bignumber";
-import { BlockTag } from "@ethersproject/abstract-provider";
+import { BlockTag, TransactionResponse } from "@ethersproject/abstract-provider";
 export declare enum HederaNetworks {
     TESTNET = "testnet",
     PREVIEWNET = "previewnet",
@@ -19,7 +19,7 @@ export declare class DefaultHederaProvider extends BaseProvider {
     constructor(network: string);
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
-     *  It returns the HBar balance of the given address.
+     *  It returns the tinybar balance of the given address.
      *
      * @param addressOrName The address to check balance of
      * @param blockTag -  not used. Will throw if used.
@@ -30,7 +30,10 @@ export declare class DefaultHederaProvider extends BaseProvider {
      *
      * @param txId - id of the transaction to search for
      */
-    getTransaction(txId: string | Promise<string>): Promise<any>;
+    getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
+    /**
+     * Allows us to get the underlying gRPC client and execute gRPC calls.
+     */
     getClient(): Client;
 }
 //# sourceMappingURL=hedera-provider.d.ts.map

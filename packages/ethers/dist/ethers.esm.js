@@ -95240,7 +95240,7 @@ function sleep(timeout) {
     });
 }
 // resolves network string to a hedera network name
-function getNetwork$1(net) {
+function resolveNetwork(net) {
     switch (net) {
         case 'mainnet':
             return NetworkName.Mainnet;
@@ -95249,11 +95249,12 @@ function getNetwork$1(net) {
         case 'testnet':
             return NetworkName.Testnet;
         default:
-            throw new Error("Invalid network name");
+            logger$H.throwArgumentError("Invalid network name", "network", net);
+            return null;
     }
 }
 // resolves the mirror node url from the given provider network.
-function resolveMirrorNetGetTransactionUrl(net) {
+function resolveMirrorNetworkUrl(net) {
     switch (net) {
         case 'mainnet':
             return 'https://mainnet.mirrornode.hedera.com';
@@ -95266,6 +95267,7 @@ function resolveMirrorNetGetTransactionUrl(net) {
             return null;
     }
 }
+// contains predefined, sdk acceptable hedera network strings
 var HederaNetworks;
 (function (HederaNetworks) {
     HederaNetworks["TESTNET"] = "testnet";
@@ -95282,11 +95284,11 @@ class DefaultHederaProvider extends BaseProvider {
     constructor(network) {
         super('testnet');
         this.hederaNetwork = network;
-        this.hederaClient = NodeClient.forName(getNetwork$1(network));
+        this.hederaClient = NodeClient.forName(resolveNetwork(network));
     }
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
-     *  It returns the HBar balance of the given address.
+     *  It returns the tinybar balance of the given address.
      *
      * @param addressOrName The address to check balance of
      * @param blockTag -  not used. Will throw if used.
@@ -95294,7 +95296,7 @@ class DefaultHederaProvider extends BaseProvider {
     getBalance(addressOrName, blockTag) {
         return __awaiter$g(this, void 0, void 0, function* () {
             if (blockTag || (yield blockTag)) {
-                logger$H.throwArgumentError("Cannot use blockTag for hedera services.", "", "");
+                logger$H.throwArgumentError("Cannot use blockTag for hedera services.", "blockTag", blockTag);
                 return BigNumber.from(0);
             }
             addressOrName = yield addressOrName;
@@ -95317,13 +95319,14 @@ class DefaultHederaProvider extends BaseProvider {
         return __awaiter$g(this, void 0, void 0, function* () {
             txId = yield txId;
             const ep = '/api/v1/transactions';
-            const url = resolveMirrorNetGetTransactionUrl(this.hederaNetwork);
+            const url = resolveMirrorNetworkUrl(this.hederaNetwork);
+            // The following logic will be refactored/moved to tx.wait() method
             const maxRetries = 10;
             let counter = 0;
             while (true) {
                 if (counter >= maxRetries) {
-                    logger$H.info('Giving up after 10 retries.');
-                    return [];
+                    logger$H.warn(`Giving up after ${maxRetries} retries.`);
+                    return null;
                 }
                 const { data } = yield axios$1.get(url + ep);
                 const filtered = data.transactions
@@ -95331,11 +95334,15 @@ class DefaultHederaProvider extends BaseProvider {
                 if (filtered.length > 0) {
                     return filtered[0];
                 }
-                yield sleep(1000);
+                // retry each 0.5 seconds
+                yield sleep(500);
                 counter++;
             }
         });
     }
+    /**
+     * Allows us to get the underlying gRPC client and execute gRPC calls.
+     */
     getClient() {
         return this.hederaClient;
     }
