@@ -1,15 +1,13 @@
-import {BaseProvider} from "./base-provider";
-import {AccountBalanceQuery, AccountId, Client, NetworkName,} from '@hashgraph/sdk';
-import {BigNumber} from "@ethersproject/bignumber";
-import {BlockTag} from "@ethersproject/abstract-provider";
-import {getAccountFromAddress} from "ethers/lib/utils";
+import { BaseProvider } from "./base-provider";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, } from '@hashgraph/sdk';
+import { BigNumber } from "@ethersproject/bignumber";
+import { BlockTag, TransactionResponse } from "@ethersproject/abstract-provider";
+import { getAccountFromAddress } from "ethers/lib/utils";
 import axios from 'axios';
-import {Logger} from '@ethersproject/logger';
-import {version} from "./_version";
+import { Logger } from '@ethersproject/logger';
+import { version } from "./_version";
 
 const logger = new Logger(version);
-
-// utilities which can later be moved to separate file
 
 function sleep(timeout: number) {
     return new Promise(res => {
@@ -17,7 +15,8 @@ function sleep(timeout: number) {
     })
 }
 
-function getNetwork(net: string) {
+// resolves network string to a hedera network name
+function resolveNetwork(net: string) {
     switch (net) {
         case 'mainnet':
             return NetworkName.Mainnet;
@@ -26,16 +25,13 @@ function getNetwork(net: string) {
         case 'testnet':
             return NetworkName.Testnet;
         default:
-            throw new Error("Invalid network name");
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
     }
 }
 
-/**
- * Currently, the URLs are hardcoded, as the hedera SDK does not expose them
- *
- * @param net - the network
- */
-function resolveMirrorNetGetTransactionUrl(net: string) :string {
+// resolves the mirror node url from the given provider network.
+function resolveMirrorNetworkUrl(net: string): string {
     switch (net) {
         case 'mainnet':
             return 'https://mainnet.mirrornode.hedera.com';
@@ -44,63 +40,89 @@ function resolveMirrorNetGetTransactionUrl(net: string) :string {
         case 'testnet':
             return 'https://testnet.mirrornode.hedera.com';
         default:
-            throw new Error("Invalid network name");
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
     }
 }
 
+// contains predefined, sdk acceptable hedera network strings
+export enum HederaNetworks {
+    TESTNET = "testnet",
+    PREVIEWNET = "previewnet",
+    MAINNET = "mainnet"
+}
 
-export class HederaProvider extends BaseProvider {
+/**
+ * The hedera provider uses the hashgraph module to establish a connection to the Hedera network.
+ * As every provider, this one also gives us read-only access.
+ *
+ * Constructable with a string, which automatically resolves to a hedera network via the hashgraph SDK.
+ */
+export class DefaultHederaProvider extends BaseProvider {
     private readonly hederaClient: Client;
     private readonly hederaNetwork: string;
 
     constructor(network: string) {
         super('testnet');
         this.hederaNetwork = network;
-        this.hederaClient = Client.forName(getNetwork(network))
+        this.hederaClient = Client.forName(resolveNetwork(network))
     }
 
     /**
+     *  AccountBalance query implementation, using the hashgraph sdk.
+     *  It returns the tinybar balance of the given address.
      *
      * @param addressOrName The address to check balance of
-     * @param blockTag - not used
+     * @param blockTag -  not used. Will throw if used.
      */
     async getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber> {
+        if (blockTag || await blockTag) {
+            logger.throwArgumentError("Cannot use blockTag for hedera services.", "blockTag", blockTag);
+            return BigNumber.from(0);
+        }
         addressOrName = await addressOrName;
-        const {shard, realm, num} = getAccountFromAddress(addressOrName);
+        const { shard, realm, num } = getAccountFromAddress(addressOrName);
         const shardNum = BigNumber.from(shard).toNumber();
         const realmNum = BigNumber.from(realm).toNumber();
         const accountNum = BigNumber.from(num).toNumber();
         const balance = await new AccountBalanceQuery()
-            .setAccountId(new AccountId({shard: shardNum, realm: realmNum, num: accountNum}))
+            .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
             .execute(this.hederaClient);
         return BigNumber.from(balance.hbars.toTinybars().toNumber());
     }
 
     /**
+     * Transaction record query implementation using the mirror node REST API.
      *
      * @param txId - id of the transaction to search for
      */
-    async getTransaction(txId: string | Promise<string>): Promise<any> {
+    async getTransaction(txId: string | Promise<string>): Promise<TransactionResponse> {
         txId = await txId;
         const ep = '/api/v1/transactions';
-        const url = resolveMirrorNetGetTransactionUrl(this.hederaNetwork);
+        const url = resolveMirrorNetworkUrl(this.hederaNetwork);
+        // The following logic will be refactored/moved to tx.wait() method
         const maxRetries = 10;
         let counter = 0;
         while (true) {
             if (counter >= maxRetries) {
-                logger.info('Giving up after 10 retries.')
-                return [];
+                logger.warn(`Giving up after ${maxRetries} retries.`);
+                return null;
             }
-            const {data} = await axios.get(url + ep);
-            const filtered = data.transactions.filter((e: { transaction_id: string | Promise<string>; }) => e.transaction_id === txId);
+            const { data } = await axios.get(url + ep);
+            const filtered = data.transactions
+                .filter((e: { transaction_id: string | Promise<string>; }) => e.transaction_id === txId);
             if (filtered.length > 0) {
                 return filtered[0];
             }
-            await sleep(1000);
+            // retry each 0.5 seconds
+            await sleep(500);
             counter++;
         }
     }
 
+    /**
+     * Allows us to get the underlying gRPC client and execute gRPC calls.
+     */
     public getClient(): Client {
         return this.hederaClient;
     }

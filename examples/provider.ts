@@ -1,14 +1,15 @@
-import {HederaProvider} from "@ethersproject/providers";
-import {getAddressFromAccount} from "ethers/lib/utils";
-import {AccountId, TransferTransaction} from "@hashgraph/sdk";
+import { DefaultHederaProvider } from "@ethersproject/providers";
+import { getAddressFromAccount } from "ethers/lib/utils";
+import { AccountId, TransferTransaction } from "@hashgraph/sdk";
+import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
 
 (async () => {
     // TODO: replace with yours when testing.
     const accountNum = 0;
     const pkey = '';
 
-    const provider = new HederaProvider("testnet");
-    const accountConfig = {shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum)};
+    const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+    const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
     const solAddr = getAddressFromAccount(accountConfig);
     console.log(`Using account with num ${accountNum} <->`, solAddr);
 
@@ -29,9 +30,9 @@ import {AccountId, TransferTransaction} from "@hashgraph/sdk";
     }), pkey);
 
     const tx = new TransferTransaction()
-        .addHbarTransfer("0.0." + accountConfig.num, -1)
-        .addHbarTransfer("0.0.98", 1);
-    const txId =  await tx.execute(provider.getClient());
+        .addHbarTransfer(`0.0.${accountConfig.num}`, -0.25) // sending 0.25 Hbars to the 98 acc
+        .addHbarTransfer("0.0.98", 0.25);
+    const txId = await tx.execute(provider.getClient());
 
     // get the record of the transfer txn
     // @ts-ignore -> tsc suggests that the long object chain may lead to null object

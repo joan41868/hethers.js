@@ -95234,12 +95234,12 @@ var __awaiter$g = (window && window.__awaiter) || function (thisArg, _arguments,
     });
 };
 const logger$H = new Logger(version$m);
-// utilities which can later be moved to separate file
 function sleep(timeout) {
     return new Promise(res => {
         setTimeout(res, timeout);
     });
 }
+// resolves network string to a hedera network name
 function getNetwork$1(net) {
     switch (net) {
         case 'mainnet':
@@ -95252,11 +95252,7 @@ function getNetwork$1(net) {
             throw new Error("Invalid network name");
     }
 }
-/**
- * Currently, the URLs are hardcoded, as the hedera SDK does not expose them
- *
- * @param net - the network
- */
+// resolves the mirror node url from the given provider network.
 function resolveMirrorNetGetTransactionUrl(net) {
     switch (net) {
         case 'mainnet':
@@ -95266,22 +95262,41 @@ function resolveMirrorNetGetTransactionUrl(net) {
         case 'testnet':
             return 'https://testnet.mirrornode.hedera.com';
         default:
-            throw new Error("Invalid network name");
+            logger$H.throwArgumentError("Invalid network name", "network", net);
+            return null;
     }
 }
-class HederaProvider extends BaseProvider {
+var HederaNetworks;
+(function (HederaNetworks) {
+    HederaNetworks["TESTNET"] = "testnet";
+    HederaNetworks["PREVIEWNET"] = "previewnet";
+    HederaNetworks["MAINNET"] = "mainnet";
+})(HederaNetworks || (HederaNetworks = {}));
+/**
+ * The hedera provider uses the hashgraph module to establish a connection to the Hedera network.
+ * As every provider, this one also gives us read-only access.
+ *
+ * Constructable with a string, which automatically resolves to a hedera network via the hashgraph SDK.
+ */
+class DefaultHederaProvider extends BaseProvider {
     constructor(network) {
         super('testnet');
         this.hederaNetwork = network;
         this.hederaClient = NodeClient.forName(getNetwork$1(network));
     }
     /**
+     *  AccountBalance query implementation, using the hashgraph sdk.
+     *  It returns the HBar balance of the given address.
      *
      * @param addressOrName The address to check balance of
-     * @param blockTag - not used
+     * @param blockTag -  not used. Will throw if used.
      */
     getBalance(addressOrName, blockTag) {
         return __awaiter$g(this, void 0, void 0, function* () {
+            if (blockTag || (yield blockTag)) {
+                logger$H.throwArgumentError("Cannot use blockTag for hedera services.", "", "");
+                return BigNumber.from(0);
+            }
             addressOrName = yield addressOrName;
             const { shard, realm, num } = utils$1.getAccountFromAddress(addressOrName);
             const shardNum = BigNumber.from(shard).toNumber();
@@ -95294,6 +95309,7 @@ class HederaProvider extends BaseProvider {
         });
     }
     /**
+     * Transaction record query implementation using the mirror node REST API.
      *
      * @param txId - id of the transaction to search for
      */
@@ -95310,7 +95326,8 @@ class HederaProvider extends BaseProvider {
                     return [];
                 }
                 const { data } = yield axios$1.get(url + ep);
-                const filtered = data.transactions.filter((e) => e.transaction_id === txId);
+                const filtered = data.transactions
+                    .filter((e) => e.transaction_id === txId);
                 if (filtered.length > 0) {
                     return filtered[0];
                 }
@@ -95390,7 +95407,7 @@ var index$4 = /*#__PURE__*/Object.freeze({
 	Web3Provider: Web3Provider,
 	WebSocketProvider: WebSocketProvider,
 	IpcProvider: IpcProvider,
-	HederaProvider: HederaProvider,
+	DefaultHederaProvider: DefaultHederaProvider,
 	JsonRpcSigner: JsonRpcSigner,
 	getDefaultProvider: getDefaultProvider,
 	getNetwork: getNetwork,

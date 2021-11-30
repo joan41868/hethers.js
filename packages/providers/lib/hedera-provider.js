@@ -54,7 +54,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HederaProvider = void 0;
+exports.DefaultHederaProvider = exports.HederaNetworks = void 0;
 var base_provider_1 = require("./base-provider");
 var sdk_1 = require("@hashgraph/sdk");
 var bignumber_1 = require("@ethersproject/bignumber");
@@ -63,12 +63,12 @@ var axios_1 = __importDefault(require("axios"));
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
-// utilities which can later be moved to separate file
 function sleep(timeout) {
     return new Promise(function (res) {
         setTimeout(res, timeout);
     });
 }
+// resolves network string to a hedera network name
 function getNetwork(net) {
     switch (net) {
         case 'mainnet':
@@ -81,11 +81,7 @@ function getNetwork(net) {
             throw new Error("Invalid network name");
     }
 }
-/**
- * Currently, the URLs are hardcoded, as the hedera SDK does not expose them
- *
- * @param net - the network
- */
+// resolves the mirror node url from the given provider network.
 function resolveMirrorNetGetTransactionUrl(net) {
     switch (net) {
         case 'mainnet':
@@ -95,49 +91,77 @@ function resolveMirrorNetGetTransactionUrl(net) {
         case 'testnet':
             return 'https://testnet.mirrornode.hedera.com';
         default:
-            throw new Error("Invalid network name");
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
     }
 }
-var HederaProvider = /** @class */ (function (_super) {
-    __extends(HederaProvider, _super);
-    function HederaProvider(network) {
+var HederaNetworks;
+(function (HederaNetworks) {
+    HederaNetworks["TESTNET"] = "testnet";
+    HederaNetworks["PREVIEWNET"] = "previewnet";
+    HederaNetworks["MAINNET"] = "mainnet";
+})(HederaNetworks = exports.HederaNetworks || (exports.HederaNetworks = {}));
+/**
+ * The hedera provider uses the hashgraph module to establish a connection to the Hedera network.
+ * As every provider, this one also gives us read-only access.
+ *
+ * Constructable with a string, which automatically resolves to a hedera network via the hashgraph SDK.
+ */
+var DefaultHederaProvider = /** @class */ (function (_super) {
+    __extends(DefaultHederaProvider, _super);
+    function DefaultHederaProvider(network) {
         var _this = _super.call(this, 'testnet') || this;
         _this.hederaNetwork = network;
         _this.hederaClient = sdk_1.Client.forName(getNetwork(network));
         return _this;
     }
     /**
+     *  AccountBalance query implementation, using the hashgraph sdk.
+     *  It returns the HBar balance of the given address.
      *
      * @param addressOrName The address to check balance of
-     * @param blockTag - not used
+     * @param blockTag -  not used. Will throw if used.
      */
-    HederaProvider.prototype.getBalance = function (addressOrName, blockTag) {
+    DefaultHederaProvider.prototype.getBalance = function (addressOrName, blockTag) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, addressOrName];
+            var _a, _b, shard, realm, num, shardNum, realmNum, accountNum, balance;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        _a = blockTag;
+                        if (_a) return [3 /*break*/, 2];
+                        return [4 /*yield*/, blockTag];
                     case 1:
-                        addressOrName = _b.sent();
-                        _a = (0, utils_1.getAccountFromAddress)(addressOrName), shard = _a.shard, realm = _a.realm, num = _a.num;
+                        _a = (_c.sent());
+                        _c.label = 2;
+                    case 2:
+                        if (_a) {
+                            logger.throwArgumentError("Cannot use blockTag for hedera services.", "", "");
+                            return [2 /*return*/, bignumber_1.BigNumber.from(0)];
+                        }
+                        return [4 /*yield*/, addressOrName];
+                    case 3:
+                        addressOrName = _c.sent();
+                        _b = (0, utils_1.getAccountFromAddress)(addressOrName), shard = _b.shard, realm = _b.realm, num = _b.num;
                         shardNum = bignumber_1.BigNumber.from(shard).toNumber();
                         realmNum = bignumber_1.BigNumber.from(realm).toNumber();
                         accountNum = bignumber_1.BigNumber.from(num).toNumber();
                         return [4 /*yield*/, new sdk_1.AccountBalanceQuery()
                                 .setAccountId(new sdk_1.AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
                                 .execute(this.hederaClient)];
-                    case 2:
-                        balance = _b.sent();
+                    case 4:
+                        balance = _c.sent();
                         return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
                 }
             });
         });
     };
     /**
+     * Transaction record query implementation using the mirror node REST API.
      *
      * @param txId - id of the transaction to search for
      */
-    HederaProvider.prototype.getTransaction = function (txId) {
+    DefaultHederaProvider.prototype.getTransaction = function (txId) {
         return __awaiter(this, void 0, void 0, function () {
             var ep, url, maxRetries, counter, data, filtered;
             return __generator(this, function (_a) {
@@ -159,7 +183,8 @@ var HederaProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, axios_1.default.get(url + ep)];
                     case 3:
                         data = (_a.sent()).data;
-                        filtered = data.transactions.filter(function (e) { return e.transaction_id === txId; });
+                        filtered = data.transactions
+                            .filter(function (e) { return e.transaction_id === txId; });
                         if (filtered.length > 0) {
                             return [2 /*return*/, filtered[0]];
                         }
@@ -173,10 +198,10 @@ var HederaProvider = /** @class */ (function (_super) {
             });
         });
     };
-    HederaProvider.prototype.getClient = function () {
+    DefaultHederaProvider.prototype.getClient = function () {
         return this.hederaClient;
     };
-    return HederaProvider;
+    return DefaultHederaProvider;
 }(base_provider_1.BaseProvider));
-exports.HederaProvider = HederaProvider;
+exports.DefaultHederaProvider = DefaultHederaProvider;
 //# sourceMappingURL=hedera-provider.js.map
