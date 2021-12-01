@@ -1,11 +1,10 @@
 import { getAddressFromAccount } from "ethers/lib/utils";
-import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
 import * as ethers from 'ethers';
 
 (async () => {
 
     const accountNum = 98;
-    const provider = ethers.getDefaultProvider(HederaNetworks.TESTNET);
+    const provider = ethers.getDefaultProvider('hederaTestnet');
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
     const solAddr = getAddressFromAccount(accountConfig);
     console.log(`Using account with num ${accountNum} <->`, solAddr);

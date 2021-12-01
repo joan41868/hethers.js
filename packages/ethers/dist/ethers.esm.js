@@ -17507,6 +17507,82 @@ const logger$q = new Logger(version$k);
 function isRenetworkable(value) {
     return (value && typeof (value.renetwork) === "function");
 }
+function ethDefaultProvider(network) {
+    const func = function (providers, options) {
+        if (options == null) {
+            options = {};
+        }
+        const providerList = [];
+        if (providers.InfuraProvider) {
+            try {
+                providerList.push(new providers.InfuraProvider(network, options.infura));
+            }
+            catch (error) { }
+        }
+        if (providers.EtherscanProvider) {
+            try {
+                providerList.push(new providers.EtherscanProvider(network, options.etherscan));
+            }
+            catch (error) { }
+        }
+        if (providers.AlchemyProvider) {
+            try {
+                providerList.push(new providers.AlchemyProvider(network, options.alchemy));
+            }
+            catch (error) { }
+        }
+        if (providers.PocketProvider) {
+            // These networks are currently faulty on Pocket as their
+            // network does not handle the Berlin hardfork, which is
+            // live on these ones.
+            // @TODO: This goes away once Pocket has upgraded their nodes
+            const skip = ["goerli", "ropsten", "rinkeby"];
+            try {
+                const provider = new providers.PocketProvider(network);
+                if (provider.network && skip.indexOf(provider.network.name) === -1) {
+                    providerList.push(provider);
+                }
+            }
+            catch (error) { }
+        }
+        if (providers.CloudflareProvider) {
+            try {
+                providerList.push(new providers.CloudflareProvider(network));
+            }
+            catch (error) { }
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+        if (providers.FallbackProvider) {
+            let quorum = 1;
+            if (options.quorum != null) {
+                quorum = options.quorum;
+            }
+            else if (network === "homestead") {
+                quorum = 2;
+            }
+            return new providers.FallbackProvider(providerList, quorum);
+        }
+        return providerList[0];
+    };
+    func.renetwork = function (network) {
+        return ethDefaultProvider(network);
+    };
+    return func;
+}
+function etcDefaultProvider(url, network) {
+    const func = function (providers, options) {
+        if (providers.JsonRpcProvider) {
+            return new providers.JsonRpcProvider(url, network);
+        }
+        return null;
+    };
+    func.renetwork = function (network) {
+        return etcDefaultProvider(url, network);
+    };
+    return func;
+}
 function hederaDefaultProvider(network) {
     const func = function (providers, options) {
         if (options == null) {
@@ -17529,19 +17605,90 @@ function hederaDefaultProvider(network) {
 }
 const networks = {
     unspecified: { chainId: 0, name: "unspecified" },
+    // ethereum
+    homestead: {
+        chainId: 1,
+        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+        name: "homestead",
+        _defaultProvider: ethDefaultProvider("homestead")
+    },
     mainnet: {
-        chainId: 290,
-        name: 'mainnet',
-        _defaultProvider: hederaDefaultProvider("mainnet")
+        chainId: 1,
+        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+        name: "homestead",
+        _defaultProvider: ethDefaultProvider("homestead")
+    },
+    morden: { chainId: 2, name: "morden" },
+    ropsten: {
+        chainId: 3,
+        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+        name: "ropsten",
+        _defaultProvider: ethDefaultProvider("ropsten")
     },
     testnet: {
+        chainId: 3,
+        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+        name: "ropsten",
+        _defaultProvider: ethDefaultProvider("ropsten")
+    },
+    rinkeby: {
+        chainId: 4,
+        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+        name: "rinkeby",
+        _defaultProvider: ethDefaultProvider("rinkeby")
+    },
+    kovan: {
+        chainId: 42,
+        name: "kovan",
+        _defaultProvider: ethDefaultProvider("kovan")
+    },
+    goerli: {
+        chainId: 5,
+        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+        name: "goerli",
+        _defaultProvider: ethDefaultProvider("goerli")
+    },
+    // ETC (See: #351)
+    classic: {
+        chainId: 61,
+        name: "classic",
+        _defaultProvider: etcDefaultProvider("https:/\/www.ethercluster.com/etc", "classic")
+    },
+    classicMorden: { chainId: 62, name: "classicMorden" },
+    classicMordor: {
+        chainId: 63,
+        name: "classicMordor",
+        _defaultProvider: etcDefaultProvider("https://www.ethercluster.com/mordor", "classicMordor")
+    },
+    classicTestnet: {
+        chainId: 63,
+        name: "classicMordor",
+        _defaultProvider: etcDefaultProvider("https://www.ethercluster.com/mordor", "classicMordor")
+    },
+    classicKotti: {
+        chainId: 6,
+        name: "classicKotti",
+        _defaultProvider: etcDefaultProvider("https:/\/www.ethercluster.com/kotti", "classicKotti")
+    },
+    xdai: { chainId: 100, name: "xdai" },
+    matic: { chainId: 137, name: "matic" },
+    maticmum: { chainId: 80001, name: "maticmum" },
+    bnb: { chainId: 56, name: "bnb" },
+    bnbt: { chainId: 97, name: "bnbt" },
+    // hedera networks
+    hederaMainnet: {
+        chainId: 290,
+        name: 'hederaMainnet',
+        _defaultProvider: hederaDefaultProvider("mainnet")
+    },
+    hederaTestnet: {
         chainId: 291,
-        name: 'testnet',
+        name: 'hederaTestnet',
         _defaultProvider: hederaDefaultProvider("testnet")
     },
-    previewnet: {
+    hederaPreviewnet: {
         chainId: 292,
-        name: 'previewnet',
+        name: 'hederaPreviewnet',
         _defaultProvider: hederaDefaultProvider("previewnet")
     }
 };
