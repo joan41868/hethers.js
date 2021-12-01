@@ -63,14 +63,14 @@ describe('Test HD Node Derivation from Seed', function() {
         it('Derives the HD nodes - ' + test.name, function() {
             this.timeout(10000);
 
-            let rootNode = ethers.utils.HDNode.fromSeed(test.seed);
+            let rootNode = ethers.utils.HDNode.fromSeed("0.0.1", test.seed);
             test.hdnodes.forEach((nodeTest) => {
 
                 let node = rootNode.derivePath(nodeTest.path);
                 assert.equal(node.privateKey, nodeTest.privateKey,
                     'Generates privateKey - ' + nodeTest.privateKey);
 
-                let wallet = new ethers.Wallet(node.privateKey);
+                let wallet = new ethers.Wallet({ address: nodeTest.address, privateKey: node.privateKey});
                 assert.equal(wallet.address.toLowerCase(), nodeTest.address,
                     'Generates address - ' + nodeTest.privateKey);
             });
@@ -152,12 +152,12 @@ describe('Test HD Mnemonic Phrases', function testMnemonic() {
 });
 
 describe("HD Extended Keys", function() {
-    const root = ethers.utils.HDNode.fromSeed("0xdeadbeefdeadbeefdeadbeefdeadbeef");
+    const root = ethers.utils.HDNode.fromSeed("0.0.1", "0xdeadbeefdeadbeefdeadbeefdeadbeef");
     const root42 = root.derivePath("42");
 
     it("exports and imports xpriv extended keys", function() {
         const xpriv = root.extendedKey;
-        const node = ethers.utils.HDNode.fromExtendedKey(xpriv);
+        const node = ethers.utils.HDNode.fromExtendedKey("0.0.1", xpriv);
 
         assert.equal(root.address, node.address, "address matches");
 
@@ -167,7 +167,7 @@ describe("HD Extended Keys", function() {
 
     it("exports and imports xpub extended keys", function() {
         const xpub = root.neuter().extendedKey;
-        const node = ethers.utils.HDNode.fromExtendedKey(xpub);
+        const node = ethers.utils.HDNode.fromExtendedKey("0.0.1", xpub);
 
         assert.equal(root.address, node.address, "address matches");
 
@@ -183,7 +183,7 @@ describe("HD error cases", function() {
         "m/44/foobar"
     ];
 
-    const root = ethers.utils.HDNode.fromSeed("0xdeadbeefdeadbeefdeadbeefdeadbeef");
+    const root = ethers.utils.HDNode.fromSeed("0.0.1", "0xdeadbeefdeadbeefdeadbeefdeadbeef");
 
     testInvalid.forEach((path) => {
         it(`fails on path "${ path }"`, function() {
