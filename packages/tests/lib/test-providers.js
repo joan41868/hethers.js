@@ -42,6 +42,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
 //import Web3HttpProvider from "web3-providers-http";
 var ethers_1 = require("ethers");
+var providers_1 = require("@ethersproject/providers");
+var hedera_provider_1 = require("@ethersproject/providers/lib/hedera-provider");
+var utils_1 = require("ethers/lib/utils");
 var bnify = ethers_1.ethers.BigNumber.from;
 var blockchainData = {
     homestead: {
@@ -1540,5 +1543,42 @@ describe("Resolve ENS avatar", function () {
             });
         });
     });
+});
+describe("Test Hedera Provider", function () {
+    var _this = this;
+    var provider = new providers_1.DefaultHederaProvider(hedera_provider_1.HederaNetworks.TESTNET);
+    it('Gets the balance', function () { return __awaiter(_this, void 0, void 0, function () {
+        var accountConfig, solAddr, balance;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
+                    solAddr = (0, utils_1.getAddressFromAccount)(accountConfig);
+                    return [4 /*yield*/, provider.getBalance(solAddr)];
+                case 1:
+                    balance = _a.sent();
+                    // the balance of 0.0.98 cannot be negative
+                    assert_1.default.strictEqual(true, balance.gte(0));
+                    return [2 /*return*/];
+            }
+        });
+    }); });
+    it("Gets txn record", function () { return __awaiter(_this, void 0, void 0, function () {
+        var record;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, provider.getTransaction("0.0.15680048-1638189529-145876922")];
+                case 1:
+                    record = _a.sent();
+                    // @ts-ignore
+                    assert_1.default.strictEqual(record.transaction_id, "0.0.15680048-1638189529-145876922");
+                    // @ts-ignore
+                    assert_1.default.strictEqual(record.transfers.length, 3);
+                    // @ts-ignore
+                    assert_1.default.strictEqual(record.valid_duration_seconds, '120');
+                    return [2 /*return*/];
+            }
+        });
+    }); });
 });
 //# sourceMappingURL=test-providers.js.map

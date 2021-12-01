@@ -5,6 +5,9 @@ import assert from "assert";
 //import Web3HttpProvider from "web3-providers-http";
 
 import { ethers } from "ethers";
+import { DefaultHederaProvider } from "@ethersproject/providers";
+import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
+import { getAddressFromAccount } from "ethers/lib/utils";
 
 const bnify = ethers.BigNumber.from;
 
@@ -1392,4 +1395,27 @@ describe("Resolve ENS avatar", function() {
             assert.equal(test.value, avatar, "avatar url");
         });
     });
+});
+
+
+describe("Test Hedera Provider", function () {
+    const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+    it('Gets the balance', async () => {
+      const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
+      const solAddr = getAddressFromAccount(accountConfig);
+      const balance = await provider.getBalance(solAddr);
+      // the balance of 0.0.98 cannot be negative
+      assert.strictEqual(true, balance.gte(0));
+   });
+
+   it("Gets txn record", async () => {
+       /* the test contains ignores as of the not yet refactored BaseProvider */
+       const record = await provider.getTransaction(`0.0.15680048-1638189529-145876922`);
+       // @ts-ignore
+       assert.strictEqual(record.transaction_id, `0.0.15680048-1638189529-145876922`);
+       // @ts-ignore
+       assert.strictEqual(record.transfers.length, 3);
+       // @ts-ignore
+       assert.strictEqual(record.valid_duration_seconds, '120');
+   });
 });

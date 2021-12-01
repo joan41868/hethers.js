@@ -40,7 +40,6 @@ import { Deferrable } from "@ethersproject/properties";
 import { Utf8ErrorFunc } from "@ethersproject/strings";
 import { AccessList, AccessListish } from "@ethersproject/transactions";
 import { ConnectionInfo, FetchJsonResponse, OnceBlockable, OncePollable, PollOptions } from "@ethersproject/web";
-
 ////////////////////////
 // Exports
 
