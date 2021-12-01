@@ -13,11 +13,18 @@ import { pbkdf2 } from "@ethersproject/pbkdf2";
 import { defineReadOnly } from "@ethersproject/properties";
 import { SigningKey } from "@ethersproject/signing-key";
 import { computeHmac, ripemd160, sha256, SupportedAlgorithm } from "@ethersproject/sha2";
-import { computeAddress } from "@ethersproject/transactions";
 import { Wordlist, wordlists } from "@ethersproject/wordlists";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import {
+    Account,
+    AccountLike,
+    getAccountFromAddress,
+    getAddress,
+    getAddressFromAccount,
+    isAddress
+} from "@ethersproject/address";
 const logger = new Logger(version);
 
 const N = BigNumber.from("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
@@ -79,7 +86,10 @@ export class HDNode implements ExternallyOwnedAccount {
     readonly fingerprint: string;
     readonly parentFingerprint: string;
 
+    // EVM Address
     readonly address: string;
+    // Hedera account
+    readonly account: Account;
 
     readonly mnemonic?: Mnemonic;
     readonly path: string;
@@ -96,7 +106,7 @@ export class HDNode implements ExternallyOwnedAccount {
      *   - fromMnemonic
      *   - fromSeed
      */
-    constructor(constructorGuard: any, privateKey: string, publicKey: string, parentFingerprint: string, chainCode: string, index: number, depth: number, mnemonicOrPath: Mnemonic | string) {
+    constructor(constructorGuard: any, accountLike: AccountLike, privateKey: string, publicKey: string, parentFingerprint: string, chainCode: string, index: number, depth: number, mnemonicOrPath: Mnemonic | string) {
         logger.checkNew(new.target, HDNode);
 
         /* istanbul ignore if */
@@ -115,9 +125,14 @@ export class HDNode implements ExternallyOwnedAccount {
 
         defineReadOnly(this, "parentFingerprint", parentFingerprint);
         defineReadOnly(this, "fingerprint", hexDataSlice(ripemd160(sha256(this.publicKey)), 0, 4));
-
-        defineReadOnly(this, "address", computeAddress(this.publicKey));
-
+        if (typeof (accountLike) == "string" && isAddress(accountLike)) {
+            defineReadOnly(this, "address", getAddress(accountLike));
+            defineReadOnly(this, "account", getAccountFromAddress(accountLike));
+        } else {
+            const addr = getAddressFromAccount(accountLike);
+            defineReadOnly(this, "address", addr);
+            defineReadOnly(this, "account", getAccountFromAddress(addr));
+        }
         defineReadOnly(this, "chainCode", chainCode);
 
         defineReadOnly(this, "index", index);
@@ -160,7 +175,7 @@ export class HDNode implements ExternallyOwnedAccount {
     }
 
     neuter(): HDNode {
-        return new HDNode(_constructorGuard, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
+        return new HDNode(_constructorGuard, this.account, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
     }
 
     private _derive(index: number): HDNode {
@@ -219,7 +234,7 @@ export class HDNode implements ExternallyOwnedAccount {
             });
         }
 
-        return new HDNode(_constructorGuard, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
+        return new HDNode(_constructorGuard, this.account, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
     }
 
     derivePath(path: string): HDNode {
@@ -251,16 +266,16 @@ export class HDNode implements ExternallyOwnedAccount {
     }
 
 
-    static _fromSeed(seed: BytesLike, mnemonic: Mnemonic): HDNode {
+    static _fromSeed(accountLike: AccountLike, seed: BytesLike, mnemonic: Mnemonic): HDNode {
         const seedArray: Uint8Array = arrayify(seed);
         if (seedArray.length < 16 || seedArray.length > 64) { throw new Error("invalid seed"); }
 
         const I: Uint8Array = arrayify(computeHmac(SupportedAlgorithm.sha512, MasterSecret, seedArray));
 
-        return new HDNode(_constructorGuard, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
+        return new HDNode(_constructorGuard, accountLike, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
     }
 
-    static fromMnemonic(mnemonic: string, password?: string, wordlist?: string | Wordlist): HDNode {
+    static fromMnemonic(accountLike: AccountLike, mnemonic: string, password?: string, wordlist?: string | Wordlist): HDNode {
 
         // If a locale name was passed in, find the associated wordlist
         wordlist = getWordlist(wordlist);
@@ -268,18 +283,18 @@ export class HDNode implements ExternallyOwnedAccount {
         // Normalize the case and spacing in the mnemonic (throws if the mnemonic is invalid)
         mnemonic = entropyToMnemonic(mnemonicToEntropy(mnemonic, wordlist), wordlist);
 
-        return HDNode._fromSeed(mnemonicToSeed(mnemonic, password), {
+        return HDNode._fromSeed(accountLike, mnemonicToSeed(mnemonic, password), {
             phrase: mnemonic,
             path: "m",
             locale: wordlist.locale
         });
     }
 
-    static fromSeed(seed: BytesLike): HDNode {
-        return HDNode._fromSeed(seed, null);
+    static fromSeed(accountLike: AccountLike, seed: BytesLike): HDNode {
+        return HDNode._fromSeed(accountLike, seed, null);
     }
 
-    static fromExtendedKey(extendedKey: string): HDNode {
+    static fromExtendedKey(accountLike: AccountLike, extendedKey: string): HDNode {
         const bytes = Base58.decode(extendedKey);
 
         if (bytes.length !== 82 || base58check(bytes.slice(0, 78)) !== extendedKey) {
@@ -295,12 +310,12 @@ export class HDNode implements ExternallyOwnedAccount {
         switch (hexlify(bytes.slice(0, 4))) {
             // Public Key
             case "0x0488b21e": case "0x043587cf":
-                return new HDNode(_constructorGuard, null, hexlify(key), parentFingerprint, chainCode, index, depth, null);
+                return new HDNode(_constructorGuard, accountLike, null, hexlify(key), parentFingerprint, chainCode, index, depth, null);
 
             // Private Key
             case "0x0488ade4": case "0x04358394 ":
                 if (key[0] !== 0) { break; }
-                return new HDNode(_constructorGuard, hexlify(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
+                return new HDNode(_constructorGuard, accountLike, hexlify(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
         }
 
         return logger.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");

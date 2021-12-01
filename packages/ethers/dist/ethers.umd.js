@@ -16635,7 +16635,7 @@
 	     *   - fromMnemonic
 	     *   - fromSeed
 	     */
-	    function HDNode(constructorGuard, privateKey, publicKey, parentFingerprint, chainCode, index, depth, mnemonicOrPath) {
+	    function HDNode(constructorGuard, accountLike, privateKey, publicKey, parentFingerprint, chainCode, index, depth, mnemonicOrPath) {
 	        var _newTarget = this.constructor;
 	        logger.checkNew(_newTarget, HDNode);
 	        /* istanbul ignore if */
@@ -16653,7 +16653,15 @@
 	        }
 	        (0, lib$3.defineReadOnly)(this, "parentFingerprint", parentFingerprint);
 	        (0, lib$3.defineReadOnly)(this, "fingerprint", (0, lib$1.hexDataSlice)((0, lib$h.ripemd160)((0, lib$h.sha256)(this.publicKey)), 0, 4));
-	        (0, lib$3.defineReadOnly)(this, "address", (0, lib$e.computeAddress)(this.publicKey));
+	        if (typeof (accountLike) == "string" && (0, lib$6.isAddress)(accountLike)) {
+	            (0, lib$3.defineReadOnly)(this, "address", (0, lib$6.getAddress)(accountLike));
+	            (0, lib$3.defineReadOnly)(this, "account", (0, lib$6.getAccountFromAddress)(accountLike));
+	        }
+	        else {
+	            var addr = (0, lib$6.getAddressFromAccount)(accountLike);
+	            (0, lib$3.defineReadOnly)(this, "address", addr);
+	            (0, lib$3.defineReadOnly)(this, "account", (0, lib$6.getAccountFromAddress)(addr));
+	        }
 	        (0, lib$3.defineReadOnly)(this, "chainCode", chainCode);
 	        (0, lib$3.defineReadOnly)(this, "index", index);
 	        (0, lib$3.defineReadOnly)(this, "depth", depth);
@@ -16696,7 +16704,7 @@
 	        configurable: true
 	    });
 	    HDNode.prototype.neuter = function () {
-	        return new HDNode(_constructorGuard, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
+	        return new HDNode(_constructorGuard, this.account, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
 	    };
 	    HDNode.prototype._derive = function (index) {
 	        if (index > 0xffffffff) {
@@ -16750,7 +16758,7 @@
 	                locale: (srcMnemonic.locale || "en")
 	            });
 	        }
-	        return new HDNode(_constructorGuard, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
+	        return new HDNode(_constructorGuard, this.account, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
 	    };
 	    HDNode.prototype.derivePath = function (path) {
 	        var components = path.split("/");
@@ -16783,29 +16791,29 @@
 	        }
 	        return result;
 	    };
-	    HDNode._fromSeed = function (seed, mnemonic) {
+	    HDNode._fromSeed = function (accountLike, seed, mnemonic) {
 	        var seedArray = (0, lib$1.arrayify)(seed);
 	        if (seedArray.length < 16 || seedArray.length > 64) {
 	            throw new Error("invalid seed");
 	        }
 	        var I = (0, lib$1.arrayify)((0, lib$h.computeHmac)(lib$h.SupportedAlgorithm.sha512, MasterSecret, seedArray));
-	        return new HDNode(_constructorGuard, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
+	        return new HDNode(_constructorGuard, accountLike, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
 	    };
-	    HDNode.fromMnemonic = function (mnemonic, password, wordlist) {
+	    HDNode.fromMnemonic = function (accountLike, mnemonic, password, wordlist) {
 	        // If a locale name was passed in, find the associated wordlist
 	        wordlist = getWordlist(wordlist);
 	        // Normalize the case and spacing in the mnemonic (throws if the mnemonic is invalid)
 	        mnemonic = entropyToMnemonic(mnemonicToEntropy(mnemonic, wordlist), wordlist);
-	        return HDNode._fromSeed(mnemonicToSeed(mnemonic, password), {
+	        return HDNode._fromSeed(accountLike, mnemonicToSeed(mnemonic, password), {
 	            phrase: mnemonic,
 	            path: "m",
 	            locale: wordlist.locale
 	        });
 	    };
-	    HDNode.fromSeed = function (seed) {
-	        return HDNode._fromSeed(seed, null);
+	    HDNode.fromSeed = function (accountLike, seed) {
+	        return HDNode._fromSeed(accountLike, seed, null);
 	    };
-	    HDNode.fromExtendedKey = function (extendedKey) {
+	    HDNode.fromExtendedKey = function (accountLike, extendedKey) {
 	        var bytes = lib$g.Base58.decode(extendedKey);
 	        if (bytes.length !== 82 || base58check(bytes.slice(0, 78)) !== extendedKey) {
 	            logger.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
@@ -16819,14 +16827,14 @@
 	            // Public Key
 	            case "0x0488b21e":
 	            case "0x043587cf":
-	                return new HDNode(_constructorGuard, null, (0, lib$1.hexlify)(key), parentFingerprint, chainCode, index, depth, null);
+	                return new HDNode(_constructorGuard, accountLike, null, (0, lib$1.hexlify)(key), parentFingerprint, chainCode, index, depth, null);
 	            // Private Key
 	            case "0x0488ade4":
 	            case "0x04358394 ":
 	                if (key[0] !== 0) {
 	                    break;
 	                }
-	                return new HDNode(_constructorGuard, (0, lib$1.hexlify)(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
+	                return new HDNode(_constructorGuard, accountLike, (0, lib$1.hexlify)(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
 	        }
 	        return logger.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
 	    };
@@ -19072,7 +19080,7 @@
 	                    locale: srcMnemonic_1.locale || "en"
 	                }); });
 	                var mnemonic = _this.mnemonic;
-	                var node = lib$k.HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
+	                var node = lib$k.HDNode.fromMnemonic(_this.account, mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
 	                if (node.privateKey !== _this._signingKey().privateKey) {
 	                    logger.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
 	                }
@@ -19178,20 +19186,25 @@
 	        }
 	        return (0, lib$m.encryptKeystore)(this, password, options, progressCallback);
 	    };
-	    // TODO to be revised
 	    /**
 	     *  Static methods to create Wallet instances.
 	     */
-	    Wallet.createRandom = function (options) {
-	        var entropy = (0, lib$l.randomBytes)(16);
-	        if (!options) {
-	            options = {};
-	        }
-	        if (options.extraEntropy) {
-	            entropy = (0, lib$1.arrayify)((0, lib$1.hexDataSlice)((0, lib$4.keccak256)((0, lib$1.concat)([entropy, options.extraEntropy])), 0, 16));
-	        }
-	        var mnemonic = (0, lib$k.entropyToMnemonic)(entropy, options.locale);
-	        return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
+	    Wallet.createRandom = function (creator, options) {
+	        return __awaiter(this, void 0, void 0, function () {
+	            var entropy, newAccountId, mnemonic;
+	            return __generator(this, function (_a) {
+	                entropy = (0, lib$l.randomBytes)(16);
+	                if (!options) {
+	                    options = {};
+	                }
+	                if (options.extraEntropy) {
+	                    entropy = (0, lib$1.arrayify)((0, lib$1.hexDataSlice)((0, lib$4.keccak256)((0, lib$1.concat)([entropy, options.extraEntropy])), 0, 16));
+	                }
+	                newAccountId = "0.0.98";
+	                mnemonic = (0, lib$k.entropyToMnemonic)(entropy, options.locale);
+	                return [2 /*return*/, Wallet.fromMnemonic(newAccountId, mnemonic, options.path, options.locale)];
+	            });
+	        });
 	    };
 	    Wallet.fromEncryptedJson = function (json, password, progressCallback) {
 	        return (0, lib$m.decryptJsonWallet)(json, password, progressCallback).then(function (account) {
@@ -19201,12 +19214,11 @@
 	    Wallet.fromEncryptedJsonSync = function (json, password) {
 	        return new Wallet((0, lib$m.decryptJsonWalletSync)(json, password));
 	    };
-	    // TODO to be revised
-	    Wallet.fromMnemonic = function (mnemonic, path, wordlist) {
+	    Wallet.fromMnemonic = function (accountLike, mnemonic, path, wordlist) {
 	        if (!path) {
 	            path = lib$k.defaultPath;
 	        }
-	        return new Wallet(lib$k.HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+	        return new Wallet(lib$k.HDNode.fromMnemonic(accountLike, mnemonic, null, wordlist).derivePath(path));
 	    };
 	    return Wallet;
 	}(lib$c.Signer));

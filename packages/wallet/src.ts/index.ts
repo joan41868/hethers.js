@@ -1,6 +1,13 @@
 "use strict";
 
-import {Account, getAccountFromAddress, getAddress, getAddressFromAccount, parseAccount} from "@ethersproject/address";
+import {
+    Account,
+    AccountLike,
+    getAccountFromAddress,
+    getAddress,
+    getAddressFromAccount,
+    parseAccount
+} from "@ethersproject/address";
 import {Provider, TransactionRequest} from "@ethersproject/abstract-provider";
 import {
     ExternallyOwnedAccount,
@@ -73,7 +80,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
                     }
                 ));
                 const mnemonic = this.mnemonic;
-                const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
+                const node = HDNode.fromMnemonic(this.account, mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
                 if (node.privateKey !== this._signingKey().privateKey) {
                     logger.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
                 }
@@ -168,11 +175,10 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         return encryptKeystore(this, password, options, progressCallback);
     }
 
-    // TODO to be revised
     /**
      *  Static methods to create Wallet instances.
      */
-    static createRandom(options?: any): Wallet {
+    static async createRandom(creator: Signer, options?: any): Promise<Wallet> {
         let entropy: Uint8Array = randomBytes(16);
 
         if (!options) {
@@ -183,8 +189,10 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
             entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
         }
 
+        // TODO accountId = creator.createAccount(options);
+        const newAccountId = "0.0.98";
         const mnemonic = entropyToMnemonic(entropy, options.locale);
-        return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
+        return Wallet.fromMnemonic(newAccountId, mnemonic, options.path, options.locale);
     }
 
     static fromEncryptedJson(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<Wallet> {
@@ -197,12 +205,11 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         return new Wallet(decryptJsonWalletSync(json, password));
     }
 
-    // TODO to be revised
-    static fromMnemonic(mnemonic: string, path?: string, wordlist?: Wordlist): Wallet {
+    static fromMnemonic(accountLike: AccountLike, mnemonic: string, path?: string, wordlist?: Wordlist): Wallet {
         if (!path) {
             path = defaultPath;
         }
-        return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+        return new Wallet(HDNode.fromMnemonic(accountLike, mnemonic, null, wordlist).derivePath(path));
     }
 }
 

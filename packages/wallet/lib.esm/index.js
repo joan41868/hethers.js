@@ -50,7 +50,7 @@ export class Wallet extends Signer {
                     locale: srcMnemonic.locale || "en"
                 }));
                 const mnemonic = this.mnemonic;
-                const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
+                const node = HDNode.fromMnemonic(this.account, mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
                 if (node.privateKey !== this._signingKey().privateKey) {
                     logger.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
                 }
@@ -133,20 +133,23 @@ export class Wallet extends Signer {
         }
         return encryptKeystore(this, password, options, progressCallback);
     }
-    // TODO to be revised
     /**
      *  Static methods to create Wallet instances.
      */
-    static createRandom(options) {
-        let entropy = randomBytes(16);
-        if (!options) {
-            options = {};
-        }
-        if (options.extraEntropy) {
-            entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
-        }
-        const mnemonic = entropyToMnemonic(entropy, options.locale);
-        return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
+    static createRandom(creator, options) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let entropy = randomBytes(16);
+            if (!options) {
+                options = {};
+            }
+            if (options.extraEntropy) {
+                entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
+            }
+            // TODO accountId = creator.createAccount(options);
+            const newAccountId = "0.0.98";
+            const mnemonic = entropyToMnemonic(entropy, options.locale);
+            return Wallet.fromMnemonic(newAccountId, mnemonic, options.path, options.locale);
+        });
     }
     static fromEncryptedJson(json, password, progressCallback) {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
@@ -156,12 +159,11 @@ export class Wallet extends Signer {
     static fromEncryptedJsonSync(json, password) {
         return new Wallet(decryptJsonWalletSync(json, password));
     }
-    // TODO to be revised
-    static fromMnemonic(mnemonic, path, wordlist) {
+    static fromMnemonic(accountLike, mnemonic, path, wordlist) {
         if (!path) {
             path = defaultPath;
         }
-        return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+        return new Wallet(HDNode.fromMnemonic(accountLike, mnemonic, null, wordlist).derivePath(path));
     }
 }
 // TODO to be revised
