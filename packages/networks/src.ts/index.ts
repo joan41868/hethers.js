@@ -102,6 +102,31 @@ function etcDefaultProvider(url: string, network: string | Network): Renetworkab
     return func;
 }
 
+function hederaDefaultProvider(network: string | Network): Renetworkable {
+    const func = function (providers: any, options?: any): any {
+        if (options == null) {
+            options = {};
+        }
+        const providerList: Array<any> = [];
+
+        // TODO: JSON RPC provider, FallbackProvider for hedera
+        if (providers.DefaultHederaProvider) {
+            providerList.push(new providers.DefaultHederaProvider(network));
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+
+        return providerList[0];
+    };
+
+    func.renetwork = function (network: Network) {
+        return hederaDefaultProvider(network);
+    };
+
+    return func;
+}
+
 const homestead: Network = {
     chainId: 1,
     ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -179,6 +204,23 @@ const networks: { [name: string]: Network } = {
 
     bnb: { chainId: 56, name: "bnb" },
     bnbt: { chainId: 97, name: "bnbt" },
+
+    // hedera networks
+    hederaMainnet: {
+        chainId: 290,
+        name: 'hederaMainnet',
+        _defaultProvider: hederaDefaultProvider("mainnet")
+    },
+    hederaTestnet: {
+        chainId: 291,
+        name: 'hederaTestnet',
+        _defaultProvider: hederaDefaultProvider("testnet")
+    },
+    hederaPreviewnet: {
+        chainId: 292,
+        name: 'hederaPreviewnet',
+        _defaultProvider: hederaDefaultProvider("previewnet")
+    }
 }
 
 /**

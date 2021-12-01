@@ -1,13 +1,11 @@
-import { DefaultHederaProvider } from "@ethersproject/providers";
 import { getAddressFromAccount } from "ethers/lib/utils";
-import { AccountId, TransferTransaction } from "@hashgraph/sdk";
-import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
+import * as hethers  from "ethers";
 
 (async () => {
     // TODO: replace with yours when testing.
     const accountNum = 98;
 
-    const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+    const provider = hethers.providers.getDefaultProvider("hederaTestnet");
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
     const solAddr = getAddressFromAccount(accountConfig);
     console.log(`Using account with num ${accountNum} <->`, solAddr);

@@ -1418,4 +1418,9 @@ describe("Test Hedera Provider", function () {
        // @ts-ignore
        assert.strictEqual(record.valid_duration_seconds, '120');
    });
+
+   it("Is able to get hedera provider as default", async() => {
+      let defaultProvider = ethers.providers.getDefaultProvider("hederaTestnet");
+      assert.strictEqual(defaultProvider, provider);
+   });
 });

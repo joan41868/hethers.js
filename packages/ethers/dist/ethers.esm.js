@@ -17584,6 +17584,26 @@ function etcDefaultProvider(url, network) {
     };
     return func;
 }
+function hederaDefaultProvider(network) {
+    const func = function (providers, options) {
+        if (options == null) {
+            options = {};
+        }
+        const providerList = [];
+        // TODO: JSON RPC provider, FallbackProvider for hedera
+        if (providers.DefaultHederaProvider) {
+            providerList.push(new providers.DefaultHederaProvider(network));
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+        return providerList[0];
+    };
+    func.renetwork = function (network) {
+        return hederaDefaultProvider(network);
+    };
+    return func;
+}
 const homestead = {
     chainId: 1,
     ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -17644,6 +17664,22 @@ const networks = {
     maticmum: { chainId: 80001, name: "maticmum" },
     bnb: { chainId: 56, name: "bnb" },
     bnbt: { chainId: 97, name: "bnbt" },
+    // hedera networks
+    hederaMainnet: {
+        chainId: 290,
+        name: 'hederaMainnet',
+        _defaultProvider: hederaDefaultProvider("mainnet")
+    },
+    hederaTestnet: {
+        chainId: 291,
+        name: 'hederaTestnet',
+        _defaultProvider: hederaDefaultProvider("testnet")
+    },
+    hederaPreviewnet: {
+        chainId: 292,
+        name: 'hederaPreviewnet',
+        _defaultProvider: hederaDefaultProvider("previewnet")
+    }
 };
 /**
  *  getNetwork
@@ -95363,6 +95399,7 @@ function getDefaultProvider(network, options) {
     }
     return n._defaultProvider({
         FallbackProvider,
+        DefaultHederaProvider,
         AlchemyProvider,
         CloudflareProvider,
         EtherscanProvider,

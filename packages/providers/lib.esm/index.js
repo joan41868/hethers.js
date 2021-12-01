@@ -51,6 +51,7 @@ function getDefaultProvider(network, options) {
     }
     return n._defaultProvider({
         FallbackProvider,
+        DefaultHederaProvider,
         AlchemyProvider,
         CloudflareProvider,
         EtherscanProvider,

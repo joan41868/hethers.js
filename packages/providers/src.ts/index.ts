@@ -74,7 +74,7 @@ function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
 
     return n._defaultProvider({
         FallbackProvider,
-
+        DefaultHederaProvider,
         AlchemyProvider,
         CloudflareProvider,
         EtherscanProvider,
