@@ -17504,6 +17504,7 @@ const version$k = "networks/5.5.0";
 
 "use strict";
 const logger$q = new Logger(version$k);
+;
 function isRenetworkable(value) {
     return (value && typeof (value.renetwork) === "function");
 }
@@ -17583,54 +17584,30 @@ function etcDefaultProvider(url, network) {
     };
     return func;
 }
-function hederaDefaultProvider(network) {
-    const func = function (providers, options) {
-        if (options == null) {
-            options = {};
-        }
-        const providerList = [];
-        // TODO: JSON RPC provider, FallbackProvider for hedera
-        if (providers.DefaultHederaProvider) {
-            providerList.push(new providers.DefaultHederaProvider(network));
-        }
-        if (providerList.length === 0) {
-            return null;
-        }
-        return providerList[0];
-    };
-    func.renetwork = function (network) {
-        return hederaDefaultProvider(network);
-    };
-    return func;
-}
+const homestead = {
+    chainId: 1,
+    ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+    name: "homestead",
+    _defaultProvider: ethDefaultProvider("homestead")
+};
+const ropsten = {
+    chainId: 3,
+    ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+    name: "ropsten",
+    _defaultProvider: ethDefaultProvider("ropsten")
+};
+const classicMordor = {
+    chainId: 63,
+    name: "classicMordor",
+    _defaultProvider: etcDefaultProvider("https://www.ethercluster.com/mordor", "classicMordor")
+};
 const networks = {
     unspecified: { chainId: 0, name: "unspecified" },
-    // ethereum
-    homestead: {
-        chainId: 1,
-        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-        name: "homestead",
-        _defaultProvider: ethDefaultProvider("homestead")
-    },
-    mainnet: {
-        chainId: 1,
-        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-        name: "homestead",
-        _defaultProvider: ethDefaultProvider("homestead")
-    },
+    homestead: homestead,
+    mainnet: homestead,
     morden: { chainId: 2, name: "morden" },
-    ropsten: {
-        chainId: 3,
-        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-        name: "ropsten",
-        _defaultProvider: ethDefaultProvider("ropsten")
-    },
-    testnet: {
-        chainId: 3,
-        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-        name: "ropsten",
-        _defaultProvider: ethDefaultProvider("ropsten")
-    },
+    ropsten: ropsten,
+    testnet: ropsten,
     rinkeby: {
         chainId: 4,
         ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -17655,16 +17632,8 @@ const networks = {
         _defaultProvider: etcDefaultProvider("https:/\/www.ethercluster.com/etc", "classic")
     },
     classicMorden: { chainId: 62, name: "classicMorden" },
-    classicMordor: {
-        chainId: 63,
-        name: "classicMordor",
-        _defaultProvider: etcDefaultProvider("https://www.ethercluster.com/mordor", "classicMordor")
-    },
-    classicTestnet: {
-        chainId: 63,
-        name: "classicMordor",
-        _defaultProvider: etcDefaultProvider("https://www.ethercluster.com/mordor", "classicMordor")
-    },
+    classicMordor: classicMordor,
+    classicTestnet: classicMordor,
     classicKotti: {
         chainId: 6,
         name: "classicKotti",
@@ -17675,22 +17644,6 @@ const networks = {
     maticmum: { chainId: 80001, name: "maticmum" },
     bnb: { chainId: 56, name: "bnb" },
     bnbt: { chainId: 97, name: "bnbt" },
-    // hedera networks
-    hederaMainnet: {
-        chainId: 290,
-        name: 'hederaMainnet',
-        _defaultProvider: hederaDefaultProvider("mainnet")
-    },
-    hederaTestnet: {
-        chainId: 291,
-        name: 'hederaTestnet',
-        _defaultProvider: hederaDefaultProvider("testnet")
-    },
-    hederaPreviewnet: {
-        chainId: 292,
-        name: 'hederaPreviewnet',
-        _defaultProvider: hederaDefaultProvider("previewnet")
-    }
 };
 /**
  *  getNetwork
@@ -95383,7 +95336,7 @@ const logger$I = new Logger(version$m);
 // Helper Functions
 function getDefaultProvider(network, options) {
     if (network == null) {
-        network = "testnet";
+        network = "homestead";
     }
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof (network) === "string") {
@@ -95410,7 +95363,6 @@ function getDefaultProvider(network, options) {
     }
     return n._defaultProvider({
         FallbackProvider,
-        DefaultHederaProvider,
         AlchemyProvider,
         CloudflareProvider,
         EtherscanProvider,
