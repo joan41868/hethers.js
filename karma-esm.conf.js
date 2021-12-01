@@ -26,7 +26,6 @@ module.exports = function(config) {
         // https://peter.sh/experiments/chromium-command-line-switches/
         flags: [
           '--disable-extensions',
-
           // Enable this to help debug CORS issues (otherwise fetch throws a useless TypeError)
           //'--disable-web-security',
 

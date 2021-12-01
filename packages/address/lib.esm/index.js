@@ -1,6 +1,6 @@
 "use strict";
-import { arrayify, concat, hexDataLength, hexDataSlice, isHexString, stripZeros } from "@ethersproject/bytes";
-import { BigNumber, _base16To36, _base36To16 } from "@ethersproject/bignumber";
+import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, isHexString, stripZeros } from "@ethersproject/bytes";
+import { _base16To36, _base36To16, BigNumber } from "@ethersproject/bignumber";
 import { keccak256 } from "@ethersproject/keccak256";
 import { encode } from "@ethersproject/rlp";
 import { Logger } from "@ethersproject/logger";
@@ -49,7 +49,9 @@ const safeDigits = Math.floor(log10(MAX_SAFE_INTEGER));
 function ibanChecksum(address) {
     address = address.toUpperCase();
     address = address.substring(4) + address.substring(0, 2) + "00";
-    let expanded = address.split("").map((c) => { return ibanLookup[c]; }).join("");
+    let expanded = address.split("").map((c) => {
+        return ibanLookup[c];
+    }).join("");
     // Javascript can handle integers safely up to 15 (decimal) digits
     while (expanded.length >= safeDigits) {
         let block = expanded.substring(0, safeDigits);
@@ -100,7 +102,8 @@ export function isAddress(address) {
         getAddress(address);
         return true;
     }
-    catch (error) { }
+    catch (error) {
+    }
     return false;
 }
 export function getIcapAddress(address) {
@@ -130,5 +133,44 @@ export function getCreate2Address(from, salt, initCodeHash) {
         logger.throwArgumentError("initCodeHash must be 32 bytes", "initCodeHash", initCodeHash);
     }
     return getAddress(hexDataSlice(keccak256(concat(["0xff", getAddress(from), salt, initCodeHash])), 12));
+}
+export function getAddressFromAccount(accountLike) {
+    let parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
+    const buffer = new Uint8Array(20);
+    const view = new DataView(buffer.buffer, 0, 20);
+    view.setInt32(0, Number(parsedAccount.shard));
+    view.setBigInt64(4, parsedAccount.realm);
+    view.setBigInt64(12, parsedAccount.num);
+    return hexlify(buffer);
+}
+export function getAccountFromAddress(address) {
+    if (typeof (address) !== "string") {
+        logger.throwArgumentError("invalid address", "address", address);
+    }
+    let buffer = arrayify(address);
+    const view = new DataView(buffer.buffer, 0, 20);
+    return {
+        shard: BigInt(view.getInt32(0)),
+        realm: BigInt(view.getBigInt64(4)),
+        num: BigInt(view.getBigInt64(12))
+    };
+}
+export function parseAccount(account) {
+    let result = null;
+    if (typeof (account) !== "string") {
+        logger.throwArgumentError("invalid account", "account", account);
+    }
+    if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
+        let parsedAccount = account.split(',');
+        result = {
+            shard: BigInt(parsedAccount[0]),
+            realm: BigInt(parsedAccount[1]),
+            num: BigInt(parsedAccount[2])
+        };
+    }
+    else {
+        logger.throwArgumentError("invalid account", "account", account);
+    }
+    return result;
 }
 //# sourceMappingURL=index.js.map
