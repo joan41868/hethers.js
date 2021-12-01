@@ -95328,7 +95328,7 @@ class DefaultHederaProvider extends BaseProvider {
         return __awaiter$g(this, void 0, void 0, function* () {
             if (blockTag || (yield blockTag)) {
                 logger$H.throwArgumentError("Cannot use blockTag for hedera services.", "blockTag", blockTag);
-                return BigNumber.from(0);
+                return BigNumber.from(-1);
             }
             addressOrName = yield addressOrName;
             const { shard, realm, num } = utils$1.getAccountFromAddress(addressOrName);

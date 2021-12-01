@@ -72,7 +72,7 @@ export class DefaultHederaProvider extends BaseProvider {
     async getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber> {
         if (blockTag || await blockTag) {
             logger.throwArgumentError("Cannot use blockTag for hedera services.", "blockTag", blockTag);
-            return BigNumber.from(0);
+            return BigNumber.from(-1);
         }
         addressOrName = await addressOrName;
         const { shard, realm, num } = getAccountFromAddress(addressOrName);

@@ -102,6 +102,7 @@ function etcDefaultProvider(url: string, network: string | Network): Renetworkab
     return func;
 }
 
+
 function hederaDefaultProvider(network: string | Network): Renetworkable {
     const func = function (providers: any, options?: any): any {
         if (options == null) {

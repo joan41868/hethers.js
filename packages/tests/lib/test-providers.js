@@ -1547,14 +1547,13 @@ describe("Resolve ENS avatar", function () {
 describe("Test Hedera Provider", function () {
     var _this = this;
     var provider = new providers_1.DefaultHederaProvider(hedera_provider_1.HederaNetworks.TESTNET);
+    var accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
+    var solAddr = (0, utils_1.getAddressFromAccount)(accountConfig);
     it('Gets the balance', function () { return __awaiter(_this, void 0, void 0, function () {
-        var accountConfig, solAddr, balance;
+        var balance;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
-                    solAddr = (0, utils_1.getAddressFromAccount)(accountConfig);
-                    return [4 /*yield*/, provider.getBalance(solAddr)];
+                case 0: return [4 /*yield*/, provider.getBalance(solAddr)];
                 case 1:
                     balance = _a.sent();
                     // the balance of 0.0.98 cannot be negative
@@ -1576,6 +1575,27 @@ describe("Test Hedera Provider", function () {
                     assert_1.default.strictEqual(record.transfers.length, 3);
                     // @ts-ignore
                     assert_1.default.strictEqual(record.valid_duration_seconds, '120');
+                    return [2 /*return*/];
+            }
+        });
+    }); });
+    it("Is able to get hedera provider as default", function () { return __awaiter(_this, void 0, void 0, function () {
+        var defaultProvider, chainIDDerivedProvider, balance;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    defaultProvider = ethers_1.ethers.providers.getDefaultProvider("hederaTestnet");
+                    assert_1.default.notStrictEqual(defaultProvider, null);
+                    chainIDDerivedProvider = ethers_1.ethers.providers.getDefaultProvider(291);
+                    assert_1.default.notStrictEqual(chainIDDerivedProvider, null);
+                    return [4 /*yield*/, defaultProvider.getBalance(solAddr)];
+                case 1:
+                    balance = _a.sent();
+                    assert_1.default.strictEqual(true, balance.gte(0));
+                    return [4 /*yield*/, chainIDDerivedProvider.getBalance(solAddr)];
+                case 2:
+                    balance = _a.sent();
+                    assert_1.default.strictEqual(true, balance.gte(0));
                     return [2 /*return*/];
             }
         });

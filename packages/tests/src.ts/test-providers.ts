@@ -1400,9 +1400,10 @@ describe("Resolve ENS avatar", function() {
 
 describe("Test Hedera Provider", function () {
     const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+    const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
+    const solAddr = getAddressFromAccount(accountConfig);
+
     it('Gets the balance', async () => {
-      const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
-      const solAddr = getAddressFromAccount(accountConfig);
       const balance = await provider.getBalance(solAddr);
       // the balance of 0.0.98 cannot be negative
       assert.strictEqual(true, balance.gte(0));
@@ -1421,6 +1422,16 @@ describe("Test Hedera Provider", function () {
 
    it("Is able to get hedera provider as default", async() => {
       let defaultProvider = ethers.providers.getDefaultProvider("hederaTestnet");
-      assert.strictEqual(defaultProvider, provider);
+      assert.notStrictEqual(defaultProvider, null);
+
+      const chainIDDerivedProvider = ethers.providers.getDefaultProvider(291);
+      assert.notStrictEqual(chainIDDerivedProvider, null);
+
+      // ensure providers are usable
+      let balance = await defaultProvider.getBalance(solAddr);
+      assert.strictEqual(true, balance.gte(0));
+
+      balance = await chainIDDerivedProvider.getBalance(solAddr);
+      assert.strictEqual(true, balance.gte(0));
    });
 });

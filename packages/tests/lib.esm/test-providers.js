@@ -1271,9 +1271,9 @@ describe("Resolve ENS avatar", function () {
 });
 describe("Test Hedera Provider", function () {
     const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+    const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
+    const solAddr = getAddressFromAccount(accountConfig);
     it('Gets the balance', () => __awaiter(this, void 0, void 0, function* () {
-        const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
-        const solAddr = getAddressFromAccount(accountConfig);
         const balance = yield provider.getBalance(solAddr);
         // the balance of 0.0.98 cannot be negative
         assert.strictEqual(true, balance.gte(0));
@@ -1287,6 +1287,17 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(record.transfers.length, 3);
         // @ts-ignore
         assert.strictEqual(record.valid_duration_seconds, '120');
+    }));
+    it("Is able to get hedera provider as default", () => __awaiter(this, void 0, void 0, function* () {
+        let defaultProvider = ethers.providers.getDefaultProvider("hederaTestnet");
+        assert.notStrictEqual(defaultProvider, null);
+        const chainIDDerivedProvider = ethers.providers.getDefaultProvider(291);
+        assert.notStrictEqual(chainIDDerivedProvider, null);
+        // ensure providers are usable
+        let balance = yield defaultProvider.getBalance(solAddr);
+        assert.strictEqual(true, balance.gte(0));
+        balance = yield chainIDDerivedProvider.getBalance(solAddr);
+        assert.strictEqual(true, balance.gte(0));
     }));
 });
 //# sourceMappingURL=test-providers.js.map
