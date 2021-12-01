@@ -44,7 +44,7 @@ const logger = new Logger(version);
 // Helper Functions
 
 function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
-    if (network == null) { network = "homestead"; }
+    if (network == null) { network = "testnet"; }
 
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof(network) === "string") {
@@ -74,7 +74,7 @@ function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
 
     return n._defaultProvider({
         FallbackProvider,
-
+        DefaultHederaProvider,
         AlchemyProvider,
         CloudflareProvider,
         EtherscanProvider,

@@ -52,7 +52,7 @@ var logger = new logger_1.Logger(_version_1.version);
 // Helper Functions
 function getDefaultProvider(network, options) {
     if (network == null) {
-        network = "homestead";
+        network = "testnet";
     }
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof (network) === "string") {
@@ -79,6 +79,7 @@ function getDefaultProvider(network, options) {
     }
     return n._defaultProvider({
         FallbackProvider: fallback_provider_1.FallbackProvider,
+        DefaultHederaProvider: default_hedera_provider_1.DefaultHederaProvider,
         AlchemyProvider: alchemy_provider_1.AlchemyProvider,
         CloudflareProvider: cloudflare_provider_1.CloudflareProvider,
         EtherscanProvider: etherscan_provider_1.EtherscanProvider,

@@ -1,13 +1,11 @@
-import { DefaultHederaProvider } from "@ethersproject/providers";
 import { getAddressFromAccount } from "ethers/lib/utils";
-import { AccountId, TransferTransaction } from "@hashgraph/sdk";
 import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
+import * as ethers from 'ethers';
 
 (async () => {
-    // TODO: replace with yours when testing.
-    const accountNum = 98;
 
-    const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+    const accountNum = 98;
+    const provider = ethers.getDefaultProvider(HederaNetworks.TESTNET);
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
     const solAddr = getAddressFromAccount(accountConfig);
     console.log(`Using account with num ${accountNum} <->`, solAddr);
@@ -21,6 +19,7 @@ import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
     console.log(balance2);
     console.log(balance2.toNumber());
 
+    // getting the record of some transaction I found on Dragonglass
     const txId = `0.0.15680048-1638189529-145876922`;
     const record = await provider.getTransaction(txId);
     console.log(record);
