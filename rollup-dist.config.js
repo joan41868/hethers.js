@@ -6,6 +6,7 @@
 import commonjs from '@rollup/plugin-commonjs';
 import resolveNode from "@rollup/plugin-node-resolve";
 import replace from "@rollup/plugin-replace";
+import json from "@rollup/plugin-json";
 
 import sourcemaps from 'rollup-plugin-sourcemaps';
 
@@ -76,9 +77,8 @@ function addEllipticReplace(plugins) {
 
 function getUmdConfig() {
     const plugins = [ ];
-
+    plugins.push(json());
     plugins.push(sourcemaps());
-
     addUtilsReplace(plugins);
     addEllipticReplace(plugins);
     addLangReplace(plugins);
@@ -93,18 +93,19 @@ function getUmdConfig() {
         output: {
             file: `packages/ethers/dist/ethers.umd.js`,
             format: "umd",
-            name: "ethers",
+            name: "hethers",
             sourcemap: true
         },
         context: "window",
         treeshake: false,
-        plugins
+        plugins,
+        external: ['long', 'util', 'fs', 'crypto']
     };
 }
 
 function getEsmConfig() {
     const plugins = [ ];
-
+    plugins.push(json());
     plugins.push(sourcemaps());
 
     addUtilsReplace(plugins);

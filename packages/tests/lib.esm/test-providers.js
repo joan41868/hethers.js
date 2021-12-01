@@ -11,6 +11,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import assert from "assert";
 //import Web3HttpProvider from "web3-providers-http";
 import { ethers } from "ethers";
+import { DefaultHederaProvider } from "@ethersproject/providers";
+import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
+import { getAddressFromAccount } from "ethers/lib/utils";
 const bnify = ethers.BigNumber.from;
 const blockchainData = {
     homestead: {
@@ -1261,5 +1264,15 @@ describe("Resolve ENS avatar", function () {
             });
         });
     });
+});
+describe("Test Hedera Provider", function () {
+    it('Gets the balance', () => __awaiter(this, void 0, void 0, function* () {
+        const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+        const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
+        const solAddr = getAddressFromAccount(accountConfig);
+        const balance = yield provider.getBalance(solAddr);
+        // the balance of 0.0.98 cannot be negative
+        assert.strictEqual(true, balance.gte(0));
+    }));
 });
 //# sourceMappingURL=test-providers.js.map

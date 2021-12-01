@@ -64,5 +64,7 @@
   "sideEffects": false,
   "tarballHash": "0xe256cf0c00e87e5204aa13facde13261c0cb1c35355f18f238117265f1f31c2d",
   "types": "./lib/index.d.ts",
-  "version": "5.5.1"
+  "version": "5.5.1",
+  "devDependencies": {
+  }
 }

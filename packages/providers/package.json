@@ -31,6 +31,10 @@
     "@ethersproject/strings": "^5.5.0",
     "@ethersproject/transactions": "^5.5.0",
     "@ethersproject/web": "^5.5.0",
+    "@hashgraph/proto": "^2.0.1-beta.1",
+    "@hashgraph/sdk": "^2.5.0",
+    "@types/axios": "^0.14.0",
+    "axios": "^0.24.0",
     "bech32": "1.1.4",
     "ws": "7.4.6"
   },
@@ -68,5 +72,6 @@
   "sideEffects": false,
   "tarballHash": "0x2582ad9a43f5113ef9143cf4f5b35cc5fe0cc709861834d5f5236ab06b2f4476",
   "types": "./lib/index.d.ts",
-  "version": "5.5.0"
+  "version": "5.5.0",
+  "devDependencies": {}
 }

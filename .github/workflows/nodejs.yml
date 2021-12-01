@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node-version: [ 10.x, 12.x, 13.x ]
+        node-version: [ 12.x, 13.x ]
 
     steps:
       - name: Use Node.js ${{ matrix.node-version }}
@@ -25,7 +25,6 @@ jobs:
 
 #      - name: Install node-hid requirements
 #        run: sudo apt-get install libusb-1.0-0 libusb-1.0-0-dev libudev-dev
-
       - name: Install dependencies (and link per package)
         run: npm ci
 
