@@ -28,7 +28,8 @@ export class BrainWallet extends ethers.Wallet {
         }
         return scrypt.scrypt(passwordBytes, usernameBytes, (1 << 18), 8, 1, 32, progressCallback).then((key) => {
             if (legacy) {
-                return new BrainWallet({ address: "", privateKey: key.toString() });
+                //TODO compiles, but has to be fixed!
+                return new BrainWallet({ address: "0.0.1", privateKey: key.toString() });
             }
             const mnemonic = ethers.utils.entropyToMnemonic(ethers.utils.arrayify(key).slice(0, 16));
             return new BrainWallet(ethers.Wallet.fromMnemonic(mnemonic));

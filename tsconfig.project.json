@@ -105,12 +105,12 @@
     {
       "path": "./packages/asm"
     },
-    // {
-    //   "path": "./packages/cli"
-    // },
-    // {
-    //   "path": "./packages/experimental"
-    // },
+    {
+      "path": "./packages/cli"
+    },
+    {
+      "path": "./packages/experimental"
+    },
     {
       "path": "./packages/hardware-wallets"
     },

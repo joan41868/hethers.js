@@ -19165,7 +19165,6 @@
 	            });
 	        });
 	    };
-	    // TODO to be revised
 	    Wallet.prototype.encrypt = function (password, options, progressCallback) {
 	        if (typeof (options) === "function" && !progressCallback) {
 	            progressCallback = options;
@@ -19194,13 +19193,11 @@
 	        var mnemonic = (0, lib$k.entropyToMnemonic)(entropy, options.locale);
 	        return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
 	    };
-	    // TODO to be revised
 	    Wallet.fromEncryptedJson = function (json, password, progressCallback) {
 	        return (0, lib$m.decryptJsonWallet)(json, password, progressCallback).then(function (account) {
 	            return new Wallet(account);
 	        });
 	    };
-	    // TODO to be revised
 	    Wallet.fromEncryptedJsonSync = function (json, password) {
 	        return new Wallet((0, lib$m.decryptJsonWalletSync)(json, password));
 	    };

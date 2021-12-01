@@ -17208,7 +17208,6 @@ class Wallet extends Signer {
             return joinSignature(this._signingKey().signDigest(TypedDataEncoder.hash(populated.domain, types, populated.value)));
         });
     }
-    // TODO to be revised
     encrypt(password, options, progressCallback) {
         if (typeof (options) === "function" && !progressCallback) {
             progressCallback = options;
@@ -17237,13 +17236,11 @@ class Wallet extends Signer {
         const mnemonic = entropyToMnemonic(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     }
-    // TODO to be revised
     static fromEncryptedJson(json, password, progressCallback) {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
             return new Wallet(account);
         });
     }
-    // TODO to be revised
     static fromEncryptedJsonSync(json, password) {
         return new Wallet(decryptJsonWalletSync(json, password));
     }

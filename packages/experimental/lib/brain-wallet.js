@@ -52,7 +52,8 @@ var BrainWallet = /** @class */ (function (_super) {
         }
         return scrypt_js_1.default.scrypt(passwordBytes, usernameBytes, (1 << 18), 8, 1, 32, progressCallback).then(function (key) {
             if (legacy) {
-                return new BrainWallet({ address: "", privateKey: key.toString() });
+                //TODO compiles, but has to be fixed!
+                return new BrainWallet({ address: "0.0.1", privateKey: key.toString() });
             }
             var mnemonic = ethers_1.ethers.utils.entropyToMnemonic(ethers_1.ethers.utils.arrayify(key).slice(0, 16));
             return new BrainWallet(ethers_1.ethers.Wallet.fromMnemonic(mnemonic));

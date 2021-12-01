@@ -260,7 +260,7 @@ describe('Test Interface Signatures', function () {
         var rawTx = "0xf8aa028502540be4008316e36094334eec1482109bd802d9e72a447848de3bcc106380b844a9059cbb000000000000000000000000851b9167b7cbf772d38efaf89705b35022880a070000000000000000000000000000000000000000000000000de0b6b3a764000026a03200bf26e5f10f7eda59c0aad9adc2334dda79e785b9b004342524d97a66fca9a0450b07a4dc450bb472e08f8370350fa365fcef6db1a95309ae4c06c9d0748092";
         var tx = ethers_1.ethers.utils.parseTransaction(rawTx);
         var descr = iface.parseTransaction(tx);
-        assert_1.default.equal(descr.args[0], '0x851b9167B7cbf772D38eFaf89705b35022880A07', 'parsed tx - args[0]');
+        assert_1.default.equal(descr.args[0], '0x851b9167B7cbf772D38eFaf89705b35022880A07'.toLowerCase(), 'parsed tx - args[0]');
         assert_1.default.equal(descr.args[1].toString(), '1000000000000000000', 'parsed tx - args[1]');
         assert_1.default.equal(descr.name, 'transfer', 'parsed tx - name');
         assert_1.default.equal(descr.signature, 'transfer(address,uint256)', 'parsed tx - signature');
@@ -575,7 +575,7 @@ describe('Test EIP-838 Error Codes', function () {
                         assert_1.default.equal(error_1.code, ethers_1.ethers.utils.Logger.errors.CALL_EXCEPTION, "error.code");
                         assert_1.default.equal(error_1.errorSignature, "TestError1(address,uint256)", "error.errorSignature");
                         assert_1.default.equal(error_1.errorName, "TestError1", "error.errorName");
-                        assert_1.default.equal(error_1.errorArgs[0], addr, "error.errorArgs[0]");
+                        assert_1.default.equal(error_1.errorArgs[0], addr.toLowerCase(), "error.errorArgs[0]");
                         assert_1.default.equal(error_1.errorArgs.addr, addr, "error.errorArgs.addr");
                         assert_1.default.equal(error_1.errorArgs[1], 42, "error.errorArgs[1]");
                         assert_1.default.equal(error_1.errorArgs.value, 42, "error.errorArgs.value");
