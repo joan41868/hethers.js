@@ -1418,4 +1418,12 @@ describe("Test Hedera Provider", function () {
        // @ts-ignore
        assert.strictEqual(record.valid_duration_seconds, '120');
    });
+
+   it("Is available via getDefaultProvider", async () => {
+       let defaultProvider = ethers.providers.getDefaultProvider("hederaTestnet");
+       assert.strictEqual(provider, defaultProvider);
+        // 291 is the hedera testnet chain ID
+       defaultProvider = ethers.providers.getDefaultProvider(291);
+       assert.strictEqual(defaultProvider, provider);
+   })
 });

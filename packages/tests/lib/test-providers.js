@@ -1580,5 +1580,16 @@ describe("Test Hedera Provider", function () {
             }
         });
     }); });
+    it("Is available via getDefaultProvider", function () { return __awaiter(_this, void 0, void 0, function () {
+        var defaultProvider;
+        return __generator(this, function (_a) {
+            defaultProvider = ethers_1.ethers.providers.getDefaultProvider("hederaTestnet");
+            assert_1.default.strictEqual(provider, defaultProvider);
+            // 291 is the hedera testnet chain ID
+            defaultProvider = ethers_1.ethers.providers.getDefaultProvider(291);
+            assert_1.default.strictEqual(defaultProvider, provider);
+            return [2 /*return*/];
+        });
+    }); });
 });
 //# sourceMappingURL=test-providers.js.map

@@ -1270,13 +1270,30 @@ describe("Resolve ENS avatar", function () {
     });
 });
 describe("Test Hedera Provider", function () {
+    const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
     it('Gets the balance', () => __awaiter(this, void 0, void 0, function* () {
-        const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
         const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
         const solAddr = getAddressFromAccount(accountConfig);
         const balance = yield provider.getBalance(solAddr);
         // the balance of 0.0.98 cannot be negative
         assert.strictEqual(true, balance.gte(0));
+    }));
+    it("Gets txn record", () => __awaiter(this, void 0, void 0, function* () {
+        /* the test contains ignores as of the not yet refactored BaseProvider */
+        const record = yield provider.getTransaction(`0.0.15680048-1638189529-145876922`);
+        // @ts-ignore
+        assert.strictEqual(record.transaction_id, `0.0.15680048-1638189529-145876922`);
+        // @ts-ignore
+        assert.strictEqual(record.transfers.length, 3);
+        // @ts-ignore
+        assert.strictEqual(record.valid_duration_seconds, '120');
+    }));
+    it("Is available via getDefaultProvider", () => __awaiter(this, void 0, void 0, function* () {
+        let defaultProvider = ethers.providers.getDefaultProvider("hederaTestnet");
+        assert.strictEqual(provider, defaultProvider);
+        // 291 is the hedera testnet chain ID
+        defaultProvider = ethers.providers.getDefaultProvider(291);
+        assert.strictEqual(defaultProvider, provider);
     }));
 });
 //# sourceMappingURL=test-providers.js.map
