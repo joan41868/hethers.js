@@ -652,9 +652,9 @@ var Plugin = /** @class */ (function () {
                         if (argParser.consumeFlag("infura")) {
                             providers.push(new ethers_1.ethers.providers.InfuraProvider(network));
                         }
-                        if (argParser.consumeFlag("nodesmith")) {
-                            providers.push(new ethers_1.ethers.providers.NodesmithProvider(network));
-                        }
+                        // if (argParser.consumeFlag("nodesmith")) {
+                        //     providers.push(new ethers.providers.NodesmithProvider(network));
+                        // }
                         if (argParser.consumeFlag("offline")) {
                             providers.push(new OfflineProvider(network));
                         }

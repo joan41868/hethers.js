@@ -22563,9 +22563,6 @@ class FallbackProvider extends BaseProvider {
 }
 
 "use strict";
-const IpcProvider = null;
-
-"use strict";
 const logger$B = new Logger(version$m);
 const defaultProjectId = "84842078b09946638c03157f83405213";
 class InfuraWebSocketProvider extends WebSocketProvider {
@@ -22737,156 +22734,8 @@ class JsonRpcBatchProvider extends JsonRpcProvider {
     }
 }
 
-/* istanbul ignore file */
 "use strict";
 const logger$C = new Logger(version$m);
-// Special API key provided by Nodesmith for ethers.js
-const defaultApiKey$2 = "ETHERS_JS_SHARED";
-class NodesmithProvider extends UrlJsonRpcProvider {
-    static getApiKey(apiKey) {
-        if (apiKey && typeof (apiKey) !== "string") {
-            logger$C.throwArgumentError("invalid apiKey", "apiKey", apiKey);
-        }
-        return apiKey || defaultApiKey$2;
-    }
-    static getUrl(network, apiKey) {
-        logger$C.warn("NodeSmith will be discontinued on 2019-12-20; please migrate to another platform.");
-        let host = null;
-        switch (network.name) {
-            case "homestead":
-                host = "https://ethereum.api.nodesmith.io/v1/mainnet/jsonrpc";
-                break;
-            case "ropsten":
-                host = "https://ethereum.api.nodesmith.io/v1/ropsten/jsonrpc";
-                break;
-            case "rinkeby":
-                host = "https://ethereum.api.nodesmith.io/v1/rinkeby/jsonrpc";
-                break;
-            case "goerli":
-                host = "https://ethereum.api.nodesmith.io/v1/goerli/jsonrpc";
-                break;
-            case "kovan":
-                host = "https://ethereum.api.nodesmith.io/v1/kovan/jsonrpc";
-                break;
-            default:
-                logger$C.throwArgumentError("unsupported network", "network", arguments[0]);
-        }
-        return (host + "?apiKey=" + apiKey);
-    }
-}
-
-"use strict";
-const logger$D = new Logger(version$m);
-// These are load-balancer-based application IDs
-const defaultApplicationIds = {
-    homestead: "6004bcd10040261633ade990",
-    ropsten: "6004bd4d0040261633ade991",
-    rinkeby: "6004bda20040261633ade994",
-    goerli: "6004bd860040261633ade992",
-};
-class PocketProvider extends UrlJsonRpcProvider {
-    constructor(network, apiKey) {
-        // We need a bit of creativity in the constructor because
-        // Pocket uses different default API keys based on the network
-        if (apiKey == null) {
-            const n = getStatic(new.target, "getNetwork")(network);
-            if (n) {
-                const applicationId = defaultApplicationIds[n.name];
-                if (applicationId) {
-                    apiKey = {
-                        applicationId: applicationId,
-                        loadBalancer: true
-                    };
-                }
-            }
-            // If there was any issue above, we don't know this network
-            if (apiKey == null) {
-                logger$D.throwError("unsupported network", Logger.errors.INVALID_ARGUMENT, {
-                    argument: "network",
-                    value: network
-                });
-            }
-        }
-        super(network, apiKey);
-    }
-    static getApiKey(apiKey) {
-        // Most API Providers allow null to get the default configuration, but
-        // Pocket requires the network to decide the default provider, so we
-        // rely on hijacking the constructor to add a sensible default for us
-        if (apiKey == null) {
-            logger$D.throwArgumentError("PocketProvider.getApiKey does not support null apiKey", "apiKey", apiKey);
-        }
-        const apiKeyObj = {
-            applicationId: null,
-            loadBalancer: false,
-            applicationSecretKey: null
-        };
-        // Parse applicationId and applicationSecretKey
-        if (typeof (apiKey) === "string") {
-            apiKeyObj.applicationId = apiKey;
-        }
-        else if (apiKey.applicationSecretKey != null) {
-            logger$D.assertArgument((typeof (apiKey.applicationId) === "string"), "applicationSecretKey requires an applicationId", "applicationId", apiKey.applicationId);
-            logger$D.assertArgument((typeof (apiKey.applicationSecretKey) === "string"), "invalid applicationSecretKey", "applicationSecretKey", "[REDACTED]");
-            apiKeyObj.applicationId = apiKey.applicationId;
-            apiKeyObj.applicationSecretKey = apiKey.applicationSecretKey;
-            apiKeyObj.loadBalancer = !!apiKey.loadBalancer;
-        }
-        else if (apiKey.applicationId) {
-            logger$D.assertArgument((typeof (apiKey.applicationId) === "string"), "apiKey.applicationId must be a string", "apiKey.applicationId", apiKey.applicationId);
-            apiKeyObj.applicationId = apiKey.applicationId;
-            apiKeyObj.loadBalancer = !!apiKey.loadBalancer;
-        }
-        else {
-            logger$D.throwArgumentError("unsupported PocketProvider apiKey", "apiKey", apiKey);
-        }
-        return apiKeyObj;
-    }
-    static getUrl(network, apiKey) {
-        let host = null;
-        switch (network ? network.name : "unknown") {
-            case "homestead":
-                host = "eth-mainnet.gateway.pokt.network";
-                break;
-            case "ropsten":
-                host = "eth-ropsten.gateway.pokt.network";
-                break;
-            case "rinkeby":
-                host = "eth-rinkeby.gateway.pokt.network";
-                break;
-            case "goerli":
-                host = "eth-goerli.gateway.pokt.network";
-                break;
-            default:
-                logger$D.throwError("unsupported network", Logger.errors.INVALID_ARGUMENT, {
-                    argument: "network",
-                    value: network
-                });
-        }
-        let url = null;
-        if (apiKey.loadBalancer) {
-            url = `https:/\/${host}/v1/lb/${apiKey.applicationId}`;
-        }
-        else {
-            url = `https:/\/${host}/v1/${apiKey.applicationId}`;
-        }
-        const connection = { url };
-        // Initialize empty headers
-        connection.headers = {};
-        // Apply application secret key
-        if (apiKey.applicationSecretKey != null) {
-            connection.user = "";
-            connection.password = apiKey.applicationSecretKey;
-        }
-        return connection;
-    }
-    isCommunityResource() {
-        return (this.applicationId === defaultApplicationIds[this.network.name]);
-    }
-}
-
-"use strict";
-const logger$E = new Logger(version$m);
 let _nextId = 1;
 function buildWeb3LegacyFetcher(provider, sendFunc) {
     const fetcher = "Web3LegacyFetcher";
@@ -22968,9 +22817,9 @@ function buildEip1193Fetcher(provider) {
 }
 class Web3Provider extends JsonRpcProvider {
     constructor(provider, network) {
-        logger$E.checkNew(new.target, Web3Provider);
+        logger$C.checkNew(new.target, Web3Provider);
         if (provider == null) {
-            logger$E.throwArgumentError("missing provider", "provider", provider);
+            logger$C.throwArgumentError("missing provider", "provider", provider);
         }
         let path = null;
         let jsonRpcFetchFunc = null;
@@ -22998,7 +22847,7 @@ class Web3Provider extends JsonRpcProvider {
                 jsonRpcFetchFunc = buildWeb3LegacyFetcher(provider, provider.send.bind(provider));
             }
             else {
-                logger$E.throwArgumentError("unsupported provider", "provider", provider);
+                logger$C.throwArgumentError("unsupported provider", "provider", provider);
             }
             if (!path) {
                 path = "unknown:";
@@ -91266,7 +91115,7 @@ const regexBytes = new RegExp("^bytes([0-9]+)$");
 const regexNumber = new RegExp("^(u?int)([0-9]*)$");
 const regexArray = new RegExp("^(.*)\\[([0-9]*)\\]$");
 const Zeros$1 = "0000000000000000000000000000000000000000000000000000000000000000";
-const logger$F = new Logger(version$o);
+const logger$D = new Logger(version$o);
 function _pack(type, value, isArray) {
     switch (type) {
         case "address":
@@ -91290,7 +91139,7 @@ function _pack(type, value, isArray) {
         //let signed = (match[1] === "int")
         let size = parseInt(match[2] || "256");
         if ((match[2] && String(size) !== match[2]) || (size % 8 !== 0) || size === 0 || size > 256) {
-            logger$F.throwArgumentError("invalid number type", "type", type);
+            logger$D.throwArgumentError("invalid number type", "type", type);
         }
         if (isArray) {
             size = 256;
@@ -91302,10 +91151,10 @@ function _pack(type, value, isArray) {
     if (match) {
         const size = parseInt(match[1]);
         if (String(size) !== match[1] || size === 0 || size > 32) {
-            logger$F.throwArgumentError("invalid bytes type", "type", type);
+            logger$D.throwArgumentError("invalid bytes type", "type", type);
         }
         if (arrayify(value).byteLength !== size) {
-            logger$F.throwArgumentError(`invalid value for ${type}`, "value", value);
+            logger$D.throwArgumentError(`invalid value for ${type}`, "value", value);
         }
         if (isArray) {
             return arrayify((value + Zeros$1).substring(0, 66));
@@ -91317,7 +91166,7 @@ function _pack(type, value, isArray) {
         const baseType = match[1];
         const count = parseInt(match[2] || String(value.length));
         if (count != value.length) {
-            logger$F.throwArgumentError(`invalid array length for ${type}`, "value", value);
+            logger$D.throwArgumentError(`invalid array length for ${type}`, "value", value);
         }
         const result = [];
         value.forEach(function (value) {
@@ -91325,12 +91174,12 @@ function _pack(type, value, isArray) {
         });
         return concat(result);
     }
-    return logger$F.throwArgumentError("invalid type", "type", type);
+    return logger$D.throwArgumentError("invalid type", "type", type);
 }
 // @TODO: Array Enum
 function pack$1(types, values) {
     if (types.length != values.length) {
-        logger$F.throwArgumentError("wrong number of values; expected ${ types.length }", "values", values);
+        logger$D.throwArgumentError("wrong number of values; expected ${ types.length }", "values", values);
     }
     const tight = [];
     types.forEach(function (type, index) {
@@ -91355,7 +91204,7 @@ var lib_esm$j = /*#__PURE__*/Object.freeze({
 const version$p = "units/5.5.0";
 
 "use strict";
-const logger$G = new Logger(version$p);
+const logger$E = new Logger(version$p);
 const names = [
     "wei",
     "kwei",
@@ -91370,7 +91219,7 @@ const names = [
 function commify(value) {
     const comps = String(value).split(".");
     if (comps.length > 2 || !comps[0].match(/^-?[0-9]*$/) || (comps[1] && !comps[1].match(/^[0-9]*$/)) || value === "." || value === "-.") {
-        logger$G.throwArgumentError("invalid value", "value", value);
+        logger$E.throwArgumentError("invalid value", "value", value);
     }
     // Make sure we have at least one whole digit (0 if none)
     let whole = comps[0];
@@ -91418,7 +91267,7 @@ function formatUnits(value, unitName) {
 }
 function parseUnits(value, unitName) {
     if (typeof (value) !== "string") {
-        logger$G.throwArgumentError("value must be a string", "value", value);
+        logger$E.throwArgumentError("value must be a string", "value", value);
     }
     if (typeof (unitName) === "string") {
         const index = names.indexOf(unitName);
@@ -95269,7 +95118,7 @@ var __awaiter$g = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$H = new Logger(version$m);
+const logger$F = new Logger(version$m);
 // resolves network string to a hedera network name
 function resolveNetwork(net) {
     switch (net) {
@@ -95280,7 +95129,7 @@ function resolveNetwork(net) {
         case 'testnet':
             return NetworkName.Testnet;
         default:
-            logger$H.throwArgumentError("Invalid network name", "network", net);
+            logger$F.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
 }
@@ -95294,7 +95143,7 @@ function resolveMirrorNetworkUrl(net) {
         case 'testnet':
             return 'https://testnet.mirrornode.hedera.com';
         default:
-            logger$H.throwArgumentError("Invalid network name", "network", net);
+            logger$F.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
 }
@@ -95327,7 +95176,7 @@ class DefaultHederaProvider extends BaseProvider {
     getBalance(addressOrName, blockTag) {
         return __awaiter$g(this, void 0, void 0, function* () {
             if (blockTag || (yield blockTag)) {
-                logger$H.throwArgumentError("Cannot use blockTag for hedera services.", "blockTag", blockTag);
+                logger$F.throwArgumentError("Cannot use blockTag for hedera services.", "blockTag", blockTag);
                 return BigNumber.from(-1);
             }
             addressOrName = yield addressOrName;
@@ -95367,7 +95216,7 @@ class DefaultHederaProvider extends BaseProvider {
 }
 
 "use strict";
-const logger$I = new Logger(version$m);
+const logger$G = new Logger(version$m);
 ////////////////////////
 // Helper Functions
 function getDefaultProvider(network, options) {
@@ -95386,13 +95235,13 @@ function getDefaultProvider(network, options) {
                 case "ws":
                     return new WebSocketProvider(network);
                 default:
-                    logger$I.throwArgumentError("unsupported URL scheme", "network", network);
+                    logger$G.throwArgumentError("unsupported URL scheme", "network", network);
             }
         }
     }
     const n = getNetwork(network);
     if (!n || !n._defaultProvider) {
-        logger$I.throwError("unsupported getDefaultProvider network", Logger.errors.NETWORK_ERROR, {
+        logger$G.throwError("unsupported getDefaultProvider network", Logger.errors.NETWORK_ERROR, {
             operation: "getDefaultProvider",
             network: network
         });
@@ -95422,12 +95271,9 @@ var index$4 = /*#__PURE__*/Object.freeze({
 	InfuraWebSocketProvider: InfuraWebSocketProvider,
 	JsonRpcProvider: JsonRpcProvider,
 	JsonRpcBatchProvider: JsonRpcBatchProvider,
-	NodesmithProvider: NodesmithProvider,
-	PocketProvider: PocketProvider,
 	StaticJsonRpcProvider: StaticJsonRpcProvider,
 	Web3Provider: Web3Provider,
 	WebSocketProvider: WebSocketProvider,
-	IpcProvider: IpcProvider,
 	DefaultHederaProvider: DefaultHederaProvider,
 	JsonRpcSigner: JsonRpcSigner,
 	getDefaultProvider: getDefaultProvider,
@@ -95548,7 +95394,7 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 const version$q = "ethers/5.5.1";
 
 "use strict";
-const logger$J = new Logger(version$q);
+const logger$H = new Logger(version$q);
 
 var ethers = /*#__PURE__*/Object.freeze({
 	__proto__: null,
@@ -95564,7 +95410,7 @@ var ethers = /*#__PURE__*/Object.freeze({
 	FixedNumber: FixedNumber,
 	constants: index,
 	get errors () { return ErrorCode; },
-	logger: logger$J,
+	logger: logger$H,
 	utils: utils$4,
 	wordlists: wordlists,
 	version: version$q,
@@ -95580,5 +95426,5 @@ try {
 }
 catch (error) { }
 
-export { BaseContract, BigNumber, Contract, ContractFactory, FixedNumber, Signer, VoidSigner, Wallet, Wordlist, index as constants, ErrorCode as errors, ethers, getDefaultProvider, logger$J as logger, index$4 as providers, utils$4 as utils, version$q as version, wordlists };
+export { BaseContract, BigNumber, Contract, ContractFactory, FixedNumber, Signer, VoidSigner, Wallet, Wordlist, index as constants, ErrorCode as errors, ethers, getDefaultProvider, logger$H as logger, index$4 as providers, utils$4 as utils, version$q as version, wordlists };
 //# sourceMappingURL=ethers.esm.js.map

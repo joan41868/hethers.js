@@ -546,9 +546,9 @@ export abstract class Plugin {
             providers.push(new ethers.providers.InfuraProvider(network));
         }
 
-        if (argParser.consumeFlag("nodesmith")) {
-            providers.push(new ethers.providers.NodesmithProvider(network));
-        }
+        // if (argParser.consumeFlag("nodesmith")) {
+        //     providers.push(new ethers.providers.NodesmithProvider(network));
+        // }
 
         if (argParser.consumeFlag("offline")) {
             providers.push(new OfflineProvider(network));
