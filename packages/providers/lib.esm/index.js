@@ -50,14 +50,12 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
-        FallbackProvider,
         DefaultHederaProvider,
+        FallbackProvider,
         AlchemyProvider,
         EtherscanProvider,
         InfuraProvider,
         JsonRpcProvider,
-        PocketProvider,
-        IpcProvider,
     }, options);
 }
 ////////////////////////

@@ -583,15 +583,6 @@ var providerFunctions = [
             return new ethers_1.ethers.providers.AlchemyProvider(network, getApiKeys(network).alchemy);
         }
     },
-    /*
-    {
-        name: "CloudflareProvider",
-        networks: [ "default", "homestead" ],
-        create: (network: string) => {
-            return new ethers.providers.CloudflareProvider(network);
-        }
-    },
-    */
     {
         name: "InfuraProvider",
         networks: allNetworks,
@@ -612,40 +603,6 @@ var providerFunctions = [
             return new ethers_1.ethers.providers.EtherscanProvider(network, getApiKeys(network).etherscan);
         }
     },
-    {
-        name: "NodesmithProvider",
-        networks: [],
-        create: function (network) {
-            throw new Error("not tested");
-        }
-    },
-    {
-        name: "PocketProvider",
-        // note: sans-kovan
-        // @TODO: Pocket is being incredibly unreliable right now; removing it so
-        // we can pass the CI
-        //networks: [ "default", "homestead", "ropsten", "rinkeby", "goerli" ],
-        networks: ["default", "homestead"],
-        create: function (network) {
-            if (network == "default") {
-                return new ethers_1.ethers.providers.PocketProvider(null, {
-                    applicationId: getApiKeys(network).pocket,
-                    loadBalancer: true
-                });
-            }
-            return new ethers_1.ethers.providers.PocketProvider(network, {
-                applicationId: getApiKeys(network).pocket,
-                loadBalancer: true
-            });
-        }
-    },
-    {
-        name: "Web3Provider",
-        networks: [],
-        create: function (network) {
-            throw new Error("not tested");
-        }
-    }
 ];
 // This wallet can be funded and used for various test cases
 var fundWallet = ethers_1.ethers.Wallet.createRandom();
@@ -1550,10 +1507,12 @@ describe("Test Hedera Provider", function () {
     var accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
     var solAddr = (0, utils_1.getAddressFromAccount)(accountConfig);
     it('Gets the balance', function () { return __awaiter(_this, void 0, void 0, function () {
-        var balance;
+        var provider, balance;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, provider.getBalance(solAddr)];
+                case 0:
+                    provider = new providers_1.DefaultHederaProvider(hedera_provider_1.HederaNetworks.TESTNET);
+                    return [4 /*yield*/, provider.getBalance(solAddr)];
                 case 1:
                     balance = _a.sent();
                     // the balance of 0.0.98 cannot be negative

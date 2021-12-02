@@ -586,15 +586,6 @@ const providerFunctions: Array<ProviderDescription> = [
             return new ethers.providers.AlchemyProvider(network, getApiKeys(network).alchemy);
         }
     },
-    /*
-    {
-        name: "CloudflareProvider",
-        networks: [ "default", "homestead" ],
-        create: (network: string) => {
-            return new ethers.providers.CloudflareProvider(network);
-        }
-    },
-    */
     {
         name: "InfuraProvider",
         networks: allNetworks,
@@ -615,40 +606,6 @@ const providerFunctions: Array<ProviderDescription> = [
             return new ethers.providers.EtherscanProvider(network, getApiKeys(network).etherscan);
         }
     },
-    {
-        name: "NodesmithProvider",
-        networks: [ ],
-        create: (network: string) => {
-            throw new Error("not tested");
-        }
-    },
-    {
-        name: "PocketProvider",
-        // note: sans-kovan
-        // @TODO: Pocket is being incredibly unreliable right now; removing it so
-        // we can pass the CI
-        //networks: [ "default", "homestead", "ropsten", "rinkeby", "goerli" ],
-        networks: [ "default", "homestead" ],
-        create: (network: string) => {
-            if (network == "default") {
-                return new ethers.providers.PocketProvider(null, {
-                    applicationId: getApiKeys(network).pocket,
-                    loadBalancer: true
-                });
-            }
-            return new ethers.providers.PocketProvider(network, {
-                applicationId: getApiKeys(network).pocket,
-                loadBalancer: true
-            });
-        }
-    },
-    {
-        name: "Web3Provider",
-        networks: [ ],
-        create: (network: string) => {
-            throw new Error("not tested");
-        }
-    }
 ];
 
 // This wallet can be funded and used for various test cases
@@ -1024,7 +981,6 @@ describe("Test Provider Methods", function() {
                     // timeout logic to success, not allow a done() called multiple
                     // times because our logic returns after the timeout has occurred.
                     this.timeout(2 * (1000 + timeout * 1000 * attempts));
-
                     // Wait for the funding transaction to be mined
                     if (extras.funding) { await fundReceipt; }
 
@@ -1404,9 +1360,10 @@ describe("Test Hedera Provider", function () {
     const solAddr = getAddressFromAccount(accountConfig);
 
     it('Gets the balance', async () => {
-      const balance = await provider.getBalance(solAddr);
-      // the balance of 0.0.98 cannot be negative
-      assert.strictEqual(true, balance.gte(0));
+       const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+       const balance = await provider.getBalance(solAddr);
+       // the balance of 0.0.98 cannot be negative
+       assert.strictEqual(true, balance.gte(0));
    });
 
    it("Gets txn record", async () => {

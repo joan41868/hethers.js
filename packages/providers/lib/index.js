@@ -78,14 +78,12 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
-        FallbackProvider: fallback_provider_1.FallbackProvider,
         DefaultHederaProvider: default_hedera_provider_1.DefaultHederaProvider,
+        FallbackProvider: fallback_provider_1.FallbackProvider,
         AlchemyProvider: alchemy_provider_1.AlchemyProvider,
         EtherscanProvider: etherscan_provider_1.EtherscanProvider,
         InfuraProvider: infura_provider_1.InfuraProvider,
         JsonRpcProvider: json_rpc_provider_1.JsonRpcProvider,
-        PocketProvider: pocket_provider_1.PocketProvider,
-        IpcProvider: ipc_provider_1.IpcProvider,
     }, options);
 }
 exports.getDefaultProvider = getDefaultProvider;

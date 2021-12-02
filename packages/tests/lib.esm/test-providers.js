@@ -552,15 +552,6 @@ const providerFunctions = [
             return new ethers.providers.AlchemyProvider(network, getApiKeys(network).alchemy);
         }
     },
-    /*
-    {
-        name: "CloudflareProvider",
-        networks: [ "default", "homestead" ],
-        create: (network: string) => {
-            return new ethers.providers.CloudflareProvider(network);
-        }
-    },
-    */
     {
         name: "InfuraProvider",
         networks: allNetworks,
@@ -581,40 +572,6 @@ const providerFunctions = [
             return new ethers.providers.EtherscanProvider(network, getApiKeys(network).etherscan);
         }
     },
-    {
-        name: "NodesmithProvider",
-        networks: [],
-        create: (network) => {
-            throw new Error("not tested");
-        }
-    },
-    {
-        name: "PocketProvider",
-        // note: sans-kovan
-        // @TODO: Pocket is being incredibly unreliable right now; removing it so
-        // we can pass the CI
-        //networks: [ "default", "homestead", "ropsten", "rinkeby", "goerli" ],
-        networks: ["default", "homestead"],
-        create: (network) => {
-            if (network == "default") {
-                return new ethers.providers.PocketProvider(null, {
-                    applicationId: getApiKeys(network).pocket,
-                    loadBalancer: true
-                });
-            }
-            return new ethers.providers.PocketProvider(network, {
-                applicationId: getApiKeys(network).pocket,
-                loadBalancer: true
-            });
-        }
-    },
-    {
-        name: "Web3Provider",
-        networks: [],
-        create: (network) => {
-            throw new Error("not tested");
-        }
-    }
 ];
 // This wallet can be funded and used for various test cases
 const fundWallet = ethers.Wallet.createRandom();
@@ -1274,6 +1231,7 @@ describe("Test Hedera Provider", function () {
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
     const solAddr = getAddressFromAccount(accountConfig);
     it('Gets the balance', () => __awaiter(this, void 0, void 0, function* () {
+        const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
         const balance = yield provider.getBalance(solAddr);
         // the balance of 0.0.98 cannot be negative
         assert.strictEqual(true, balance.gte(0));
