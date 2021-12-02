@@ -1277,7 +1277,7 @@ describe("Test Hedera Provider", function () {
         const balance = yield provider.getBalance(solAddr);
         // the balance of 0.0.98 cannot be negative
         assert.strictEqual(true, balance.gte(0));
-    }));
+    })).timeout(12000);
     it("Gets txn record", () => __awaiter(this, void 0, void 0, function* () {
         /* the test contains ignores as of the not yet refactored BaseProvider */
         const record = yield provider.getTransaction(`0.0.15680048-1638189529-145876922`);
@@ -1287,7 +1287,7 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(record.transfers.length, 3);
         // @ts-ignore
         assert.strictEqual(record.valid_duration_seconds, '120');
-    }));
+    })).timeout(12000);
     it("Is able to get hedera provider as default", () => __awaiter(this, void 0, void 0, function* () {
         let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
         assert.notStrictEqual(defaultProvider, null);
@@ -1302,6 +1302,6 @@ describe("Test Hedera Provider", function () {
         assert.notStrictEqual(defaultMainnetProvider, null);
         balance = yield defaultMainnetProvider.getBalance(solAddr);
         assert.strictEqual(true, balance.gte(0));
-    }));
+    })).timeout(12000);
 }).timeout(12000);
 //# sourceMappingURL=test-providers.js.map

@@ -1407,7 +1407,7 @@ describe("Test Hedera Provider", function () {
       const balance = await provider.getBalance(solAddr);
       // the balance of 0.0.98 cannot be negative
       assert.strictEqual(true, balance.gte(0));
-   });
+   }).timeout(12000);
 
    it("Gets txn record", async () => {
        /* the test contains ignores as of the not yet refactored BaseProvider */
@@ -1418,7 +1418,7 @@ describe("Test Hedera Provider", function () {
        assert.strictEqual(record.transfers.length, 3);
        // @ts-ignore
        assert.strictEqual(record.valid_duration_seconds, '120');
-   });
+   }).timeout(12000);
 
    it("Is able to get hedera provider as default", async() => {
       let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
@@ -1438,5 +1438,5 @@ describe("Test Hedera Provider", function () {
       assert.notStrictEqual(defaultMainnetProvider, null);
       balance = await defaultMainnetProvider.getBalance(solAddr);
       assert.strictEqual(true, balance.gte(0));
-   });
+   }).timeout(12000);
 }).timeout(12000);

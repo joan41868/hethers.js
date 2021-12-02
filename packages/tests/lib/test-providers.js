@@ -1561,7 +1561,7 @@ describe("Test Hedera Provider", function () {
                     return [2 /*return*/];
             }
         });
-    }); });
+    }); }).timeout(12000);
     it("Gets txn record", function () { return __awaiter(_this, void 0, void 0, function () {
         var record;
         return __generator(this, function (_a) {
@@ -1578,7 +1578,7 @@ describe("Test Hedera Provider", function () {
                     return [2 /*return*/];
             }
         });
-    }); });
+    }); }).timeout(12000);
     it("Is able to get hedera provider as default", function () { return __awaiter(_this, void 0, void 0, function () {
         var defaultProvider, chainIDDerivedProvider, balance, defaultMainnetProvider;
         return __generator(this, function (_a) {
@@ -1605,6 +1605,6 @@ describe("Test Hedera Provider", function () {
                     return [2 /*return*/];
             }
         });
-    }); });
+    }); }).timeout(12000);
 }).timeout(12000);
 //# sourceMappingURL=test-providers.js.map
