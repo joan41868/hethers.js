@@ -568,7 +568,7 @@ var providerFunctions = [
         networks: allNetworks,
         create: function (network) {
             if (network == "default") {
-                return ethers_1.ethers.getDefaultProvider(null, getApiKeys(network));
+                return ethers_1.ethers.getDefaultProvider("homestead", getApiKeys(network));
             }
             return ethers_1.ethers.getDefaultProvider(network, getApiKeys(network));
         }
@@ -1580,7 +1580,7 @@ describe("Test Hedera Provider", function () {
         });
     }); });
     it("Is able to get hedera provider as default", function () { return __awaiter(_this, void 0, void 0, function () {
-        var defaultProvider, chainIDDerivedProvider, balance;
+        var defaultProvider, chainIDDerivedProvider, balance, defaultMainnetProvider;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -1594,6 +1594,12 @@ describe("Test Hedera Provider", function () {
                     assert_1.default.strictEqual(true, balance.gte(0));
                     return [4 /*yield*/, chainIDDerivedProvider.getBalance(solAddr)];
                 case 2:
+                    balance = _a.sent();
+                    assert_1.default.strictEqual(true, balance.gte(0));
+                    defaultMainnetProvider = ethers_1.ethers.providers.getDefaultProvider();
+                    assert_1.default.notStrictEqual(defaultMainnetProvider, null);
+                    return [4 /*yield*/, defaultMainnetProvider.getBalance(solAddr)];
+                case 3:
                     balance = _a.sent();
                     assert_1.default.strictEqual(true, balance.gte(0));
                     return [2 /*return*/];

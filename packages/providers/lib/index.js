@@ -54,7 +54,6 @@ function getDefaultProvider(network, options) {
     if (network == null) {
         network = "mainnet";
     }
-    // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof (network) === "string") {
         // Handle http and ws (and their secure variants)
@@ -78,8 +77,8 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
-        FallbackProvider: fallback_provider_1.FallbackProvider,
         DefaultHederaProvider: default_hedera_provider_1.DefaultHederaProvider,
+        FallbackProvider: fallback_provider_1.FallbackProvider,
         AlchemyProvider: alchemy_provider_1.AlchemyProvider,
         CloudflareProvider: cloudflare_provider_1.CloudflareProvider,
         EtherscanProvider: etherscan_provider_1.EtherscanProvider,

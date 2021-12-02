@@ -537,7 +537,7 @@ const providerFunctions = [
         networks: allNetworks,
         create: (network) => {
             if (network == "default") {
-                return ethers.getDefaultProvider(null, getApiKeys(network));
+                return ethers.getDefaultProvider("homestead", getApiKeys(network));
             }
             return ethers.getDefaultProvider(network, getApiKeys(network));
         }
@@ -1297,6 +1297,10 @@ describe("Test Hedera Provider", function () {
         let balance = yield defaultProvider.getBalance(solAddr);
         assert.strictEqual(true, balance.gte(0));
         balance = yield chainIDDerivedProvider.getBalance(solAddr);
+        assert.strictEqual(true, balance.gte(0));
+        let defaultMainnetProvider = ethers.providers.getDefaultProvider();
+        assert.notStrictEqual(defaultMainnetProvider, null);
+        balance = yield defaultMainnetProvider.getBalance(solAddr);
         assert.strictEqual(true, balance.gte(0));
     }));
 });

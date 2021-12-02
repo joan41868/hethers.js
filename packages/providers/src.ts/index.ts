@@ -45,7 +45,6 @@ const logger = new Logger(version);
 
 function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
     if (network == null) { network = "mainnet"; }
-    // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
 
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof(network) === "string") {
@@ -73,8 +72,8 @@ function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
     }
 
     return n._defaultProvider({
-        FallbackProvider,
         DefaultHederaProvider,
+        FallbackProvider,
         AlchemyProvider,
         CloudflareProvider,
         EtherscanProvider,
