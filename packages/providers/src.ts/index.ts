@@ -76,13 +76,10 @@ function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
         FallbackProvider,
         DefaultHederaProvider,
         AlchemyProvider,
-        CloudflareProvider,
         EtherscanProvider,
         InfuraProvider,
         JsonRpcProvider,
-        NodesmithProvider,
         PocketProvider,
-        Web3Provider,
 
         IpcProvider,
     }, options);

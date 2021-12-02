@@ -81,13 +81,10 @@ function getDefaultProvider(network, options) {
         FallbackProvider: fallback_provider_1.FallbackProvider,
         DefaultHederaProvider: default_hedera_provider_1.DefaultHederaProvider,
         AlchemyProvider: alchemy_provider_1.AlchemyProvider,
-        CloudflareProvider: cloudflare_provider_1.CloudflareProvider,
         EtherscanProvider: etherscan_provider_1.EtherscanProvider,
         InfuraProvider: infura_provider_1.InfuraProvider,
         JsonRpcProvider: json_rpc_provider_1.JsonRpcProvider,
-        NodesmithProvider: nodesmith_provider_1.NodesmithProvider,
         PocketProvider: pocket_provider_1.PocketProvider,
-        Web3Provider: web3_provider_1.Web3Provider,
         IpcProvider: ipc_provider_1.IpcProvider,
     }, options);
 }

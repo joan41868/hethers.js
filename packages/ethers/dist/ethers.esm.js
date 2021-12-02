@@ -95401,13 +95401,10 @@ function getDefaultProvider(network, options) {
         FallbackProvider,
         DefaultHederaProvider,
         AlchemyProvider,
-        CloudflareProvider,
         EtherscanProvider,
         InfuraProvider,
         JsonRpcProvider,
-        NodesmithProvider,
         PocketProvider,
-        Web3Provider,
         IpcProvider,
     }, options);
 }
