@@ -40,7 +40,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
-//import Web3HttpProvider from "web3-providers-http";
+// import Web3HttpProvider from "web3-providers-http";
 var ethers_1 = require("ethers");
 var providers_1 = require("@ethersproject/providers");
 var hedera_provider_1 = require("@ethersproject/providers/lib/hedera-provider");
@@ -1548,6 +1548,7 @@ describe("Test Hedera Provider", function () {
     var provider = new providers_1.DefaultHederaProvider(hedera_provider_1.HederaNetworks.TESTNET);
     var accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
     var solAddr = (0, utils_1.getAddressFromAccount)(accountConfig);
+    var timeout = 15000;
     it('Gets the balance', function () {
         return __awaiter(this, void 0, void 0, function () {
             var balance;
@@ -1558,12 +1559,11 @@ describe("Test Hedera Provider", function () {
                         balance = _a.sent();
                         // the balance of 0.0.98 cannot be negative
                         assert_1.default.strictEqual(true, balance.gte(0));
-                        this.done();
                         return [2 /*return*/];
                 }
             });
         });
-    }).timeout(12000);
+    }).timeout(timeout);
     it("Gets txn record", function () {
         return __awaiter(this, void 0, void 0, function () {
             var record;
@@ -1578,15 +1578,14 @@ describe("Test Hedera Provider", function () {
                         assert_1.default.strictEqual(record.transfers.length, 3);
                         // @ts-ignore
                         assert_1.default.strictEqual(record.valid_duration_seconds, '120');
-                        this.done();
                         return [2 /*return*/];
                 }
             });
         });
-    }).timeout(12000);
+    }).timeout(timeout);
     it("Is able to get hedera provider as default", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var defaultProvider, chainIDDerivedProvider, balance, defaultMainnetProvider;
+            var defaultProvider, chainIDDerivedProvider, balance;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1602,17 +1601,27 @@ describe("Test Hedera Provider", function () {
                     case 2:
                         balance = _a.sent();
                         assert_1.default.strictEqual(true, balance.gte(0));
-                        defaultMainnetProvider = ethers_1.ethers.providers.getDefaultProvider();
-                        assert_1.default.notStrictEqual(defaultMainnetProvider, null);
-                        return [4 /*yield*/, defaultMainnetProvider.getBalance(solAddr)];
-                    case 3:
-                        balance = _a.sent();
-                        assert_1.default.strictEqual(true, balance.gte(0));
-                        this.done();
                         return [2 /*return*/];
                 }
             });
         });
-    }).timeout(12000);
+    }).timeout(timeout * 4);
+    it("Defaults the provider to hedera mainnet", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var defaultMainnetProvider, balance;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        defaultMainnetProvider = ethers_1.ethers.providers.getDefaultProvider();
+                        assert_1.default.notStrictEqual(defaultMainnetProvider, null);
+                        return [4 /*yield*/, defaultMainnetProvider.getBalance(solAddr)];
+                    case 1:
+                        balance = _a.sent();
+                        assert_1.default.strictEqual(true, balance.gte(0));
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout * 4);
 });
 //# sourceMappingURL=test-providers.js.map

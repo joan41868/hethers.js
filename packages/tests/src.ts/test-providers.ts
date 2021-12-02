@@ -2,7 +2,7 @@
 
 import assert from "assert";
 
-//import Web3HttpProvider from "web3-providers-http";
+// import Web3HttpProvider from "web3-providers-http";
 
 import { ethers } from "ethers";
 import { DefaultHederaProvider } from "@ethersproject/providers";
@@ -1402,13 +1402,12 @@ describe("Test Hedera Provider", function () {
     const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
     const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
     const solAddr = getAddressFromAccount(accountConfig);
-
+    const timeout = 15000;
     it('Gets the balance', async function () {
       const balance = await provider.getBalance(solAddr);
       // the balance of 0.0.98 cannot be negative
       assert.strictEqual(true, balance.gte(0));
-      this.done();
-    }).timeout(12000);
+    }).timeout(timeout);
 
    it("Gets txn record", async function (){
        /* the test contains ignores as of the not yet refactored BaseProvider */
@@ -1419,8 +1418,7 @@ describe("Test Hedera Provider", function () {
        assert.strictEqual(record.transfers.length, 3);
        // @ts-ignore
        assert.strictEqual(record.valid_duration_seconds, '120');
-       this.done();
-   }).timeout(12000);
+   }).timeout(timeout);
 
    it("Is able to get hedera provider as default", async function() {
       let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
@@ -1435,11 +1433,12 @@ describe("Test Hedera Provider", function () {
 
       balance = await chainIDDerivedProvider.getBalance(solAddr);
       assert.strictEqual(true, balance.gte(0));
+   }).timeout(timeout * 4);
 
-      let defaultMainnetProvider = ethers.providers.getDefaultProvider();
-      assert.notStrictEqual(defaultMainnetProvider, null);
-      balance = await defaultMainnetProvider.getBalance(solAddr);
-      assert.strictEqual(true, balance.gte(0));
-      this.done();
-   }).timeout(12000);
-})
+   it("Defaults the provider to hedera mainnet", async function() {
+       let defaultMainnetProvider = ethers.providers.getDefaultProvider();
+       assert.notStrictEqual(defaultMainnetProvider, null);
+       const balance = await defaultMainnetProvider.getBalance(solAddr);
+       assert.strictEqual(true, balance.gte(0));
+   }).timeout(timeout * 4);
+});
