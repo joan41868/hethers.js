@@ -1439,4 +1439,4 @@ describe("Test Hedera Provider", function () {
       balance = await defaultMainnetProvider.getBalance(solAddr);
       assert.strictEqual(true, balance.gte(0));
    });
-});
+}).timeout(12000);

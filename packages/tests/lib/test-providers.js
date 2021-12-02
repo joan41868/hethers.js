@@ -1606,5 +1606,5 @@ describe("Test Hedera Provider", function () {
             }
         });
     }); });
-});
+}).timeout(12000);
 //# sourceMappingURL=test-providers.js.map

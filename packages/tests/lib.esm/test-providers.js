@@ -1303,5 +1303,5 @@ describe("Test Hedera Provider", function () {
         balance = yield defaultMainnetProvider.getBalance(solAddr);
         assert.strictEqual(true, balance.gte(0));
     }));
-});
+}).timeout(12000);
 //# sourceMappingURL=test-providers.js.map
