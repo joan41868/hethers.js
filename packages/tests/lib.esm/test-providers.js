@@ -1289,7 +1289,7 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(record.valid_duration_seconds, '120');
     }));
     it("Is able to get hedera provider as default", () => __awaiter(this, void 0, void 0, function* () {
-        let defaultProvider = ethers.providers.getDefaultProvider("hederaTestnet");
+        let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
         assert.notStrictEqual(defaultProvider, null);
         const chainIDDerivedProvider = ethers.providers.getDefaultProvider(291);
         assert.notStrictEqual(chainIDDerivedProvider, null);

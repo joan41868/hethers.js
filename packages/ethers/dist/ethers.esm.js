@@ -17667,17 +17667,17 @@ const networks = {
     // hedera networks
     hederaMainnet: {
         chainId: 290,
-        name: 'hederaMainnet',
+        name: 'mainnet',
         _defaultProvider: hederaDefaultProvider("mainnet")
     },
     hederaTestnet: {
         chainId: 291,
-        name: 'hederaTestnet',
+        name: 'testnet',
         _defaultProvider: hederaDefaultProvider("testnet")
     },
     hederaPreviewnet: {
         chainId: 292,
-        name: 'hederaPreviewnet',
+        name: 'previewnet',
         _defaultProvider: hederaDefaultProvider("previewnet")
     }
 };
@@ -95372,11 +95372,11 @@ const logger$I = new Logger(version$m);
 // Helper Functions
 function getDefaultProvider(network, options) {
     if (network == null) {
-        network = "homestead";
+        network = "mainnet";
     }
+    // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof (network) === "string") {
-        // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
         // Handle http and ws (and their secure variants)
         const match = network.match(/^(ws|http)s?:/i);
         if (match) {

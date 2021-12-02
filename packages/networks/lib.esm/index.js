@@ -165,17 +165,17 @@ const networks = {
     // hedera networks
     hederaMainnet: {
         chainId: 290,
-        name: 'hederaMainnet',
+        name: 'mainnet',
         _defaultProvider: hederaDefaultProvider("mainnet")
     },
     hederaTestnet: {
         chainId: 291,
-        name: 'hederaTestnet',
+        name: 'testnet',
         _defaultProvider: hederaDefaultProvider("testnet")
     },
     hederaPreviewnet: {
         chainId: 292,
-        name: 'hederaPreviewnet',
+        name: 'previewnet',
         _defaultProvider: hederaDefaultProvider("previewnet")
     }
 };

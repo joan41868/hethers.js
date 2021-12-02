@@ -1584,7 +1584,7 @@ describe("Test Hedera Provider", function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    defaultProvider = ethers_1.ethers.providers.getDefaultProvider("hederaTestnet");
+                    defaultProvider = ethers_1.ethers.providers.getDefaultProvider(hedera_provider_1.HederaNetworks.TESTNET);
                     assert_1.default.notStrictEqual(defaultProvider, null);
                     chainIDDerivedProvider = ethers_1.ethers.providers.getDefaultProvider(291);
                     assert_1.default.notStrictEqual(chainIDDerivedProvider, null);

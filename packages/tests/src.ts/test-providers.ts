@@ -1421,7 +1421,7 @@ describe("Test Hedera Provider", function () {
    });
 
    it("Is able to get hedera provider as default", async() => {
-      let defaultProvider = ethers.providers.getDefaultProvider("hederaTestnet");
+      let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
       assert.notStrictEqual(defaultProvider, null);
 
       const chainIDDerivedProvider = ethers.providers.getDefaultProvider(291);
