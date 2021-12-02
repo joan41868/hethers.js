@@ -26,7 +26,7 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     /**
      *  Static methods to create Wallet instances.
      */
-    static createRandom(creator: Signer, options?: any): Promise<Wallet>;
+    static createRandom(options?: any): Promise<Wallet>;
     static fromEncryptedJson(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<Wallet>;
     static fromEncryptedJsonSync(json: string, password: Bytes | string): Wallet;
     static fromMnemonic(accountLike: AccountLike, mnemonic: string, path?: string, wordlist?: Wordlist): Wallet;

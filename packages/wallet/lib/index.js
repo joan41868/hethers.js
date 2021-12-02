@@ -206,7 +206,7 @@ var Wallet = /** @class */ (function (_super) {
     /**
      *  Static methods to create Wallet instances.
      */
-    Wallet.createRandom = function (creator, options) {
+    Wallet.createRandom = function (options) {
         return __awaiter(this, void 0, void 0, function () {
             var entropy, newAccountId, mnemonic;
             return __generator(this, function (_a) {

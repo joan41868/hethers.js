@@ -136,7 +136,7 @@ export class Wallet extends Signer {
     /**
      *  Static methods to create Wallet instances.
      */
-    static createRandom(creator, options) {
+    static createRandom(options) {
         return __awaiter(this, void 0, void 0, function* () {
             let entropy = randomBytes(16);
             if (!options) {
