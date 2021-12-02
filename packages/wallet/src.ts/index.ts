@@ -178,7 +178,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
     /**
      *  Static methods to create Wallet instances.
      */
-    static async createRandom(creator: Signer, options?: any): Promise<Wallet> {
+    static async createRandom(options?: any): Promise<Wallet> {
         let entropy: Uint8Array = randomBytes(16);
 
         if (!options) {
