@@ -1,5 +1,6 @@
 import { BytesLike } from "@ethersproject/bytes";
 import { BigNumberish } from "@ethersproject/bignumber";
+export declare function getChecksumAddress(address: string): string;
 export declare function getAddress(address: string): string;
 export declare function isAddress(address: string): boolean;
 export declare function getIcapAddress(address: string): string;
