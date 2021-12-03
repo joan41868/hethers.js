@@ -1,23 +1,4 @@
 'use strict';
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -61,7 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
 var ethers_1 = require("ethers");
 var testcases_1 = require("@ethersproject/testcases");
-var utils = __importStar(require("./utils"));
+// import * as utils from "./utils";
 describe('Test JSON Wallets', function () {
     var tests = (0, testcases_1.loadTests)('wallets');
     tests.forEach(function (test) {
@@ -114,20 +95,31 @@ describe('Test JSON Wallets', function () {
     });
     // A few extra test cases to test encrypting/decrypting
     ['one', 'two', 'three'].forEach(function (i) {
-        var password = 'foobar' + i;
-        var wallet = ethers_1.ethers.Wallet.createRandom({ path: "m/56'/82", extraEntropy: utils.randomHexString('test-' + i, 32) });
-        it('encrypts and decrypts a random wallet - ' + i, function () {
-            this.timeout(1200000);
-            return wallet.encrypt(password).then(function (json) {
-                return ethers_1.ethers.Wallet.fromEncryptedJson(json, password).then(function (decryptedWallet) {
-                    assert_1.default.equal(decryptedWallet.address, wallet.address, 'decrypted wallet - ' + wallet.privateKey);
-                    assert_1.default.equal(decryptedWallet.mnemonic.phrase, wallet.mnemonic.phrase, "decrypted wallet mnemonic - " + wallet.privateKey);
-                    assert_1.default.equal(decryptedWallet.mnemonic.path, wallet.mnemonic.path, "decrypted wallet path - " + wallet.privateKey);
-                    return decryptedWallet.encrypt(password).then(function (encryptedWallet) {
-                        var parsedWallet = JSON.parse(encryptedWallet);
-                        assert_1.default.equal(decryptedWallet.address.toLowerCase().substring(2), parsedWallet.address, 're-encrypted wallet - ' + wallet.privateKey);
-                    });
-                });
+        return __awaiter(this, void 0, void 0, function () {
+            var password, wallet;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        password = 'foobar' + i;
+                        return [4 /*yield*/, ethers_1.ethers.Wallet.createRandom()];
+                    case 1:
+                        wallet = _a.sent();
+                        it('encrypts and decrypts a random wallet - ' + i, function () {
+                            this.timeout(1200000);
+                            return wallet.encrypt(password).then(function (json) {
+                                return ethers_1.ethers.Wallet.fromEncryptedJson(json, password).then(function (decryptedWallet) {
+                                    assert_1.default.strictEqual(decryptedWallet.address, wallet.address, 'decrypted wallet - ' + wallet.address);
+                                    assert_1.default.strictEqual(decryptedWallet.mnemonic.phrase, wallet.mnemonic.phrase, "decrypted wallet mnemonic - " + wallet.mnemonic.phrase);
+                                    assert_1.default.strictEqual(decryptedWallet.mnemonic.path, wallet.mnemonic.path, "decrypted wallet path - " + wallet.mnemonic.path);
+                                    return decryptedWallet.encrypt(password).then(function (encryptedWallet) {
+                                        var parsedWallet = JSON.parse(encryptedWallet);
+                                        assert_1.default.strictEqual(decryptedWallet.address.toLowerCase().substring(2), parsedWallet.address, 're-encrypted wallet - ' + wallet.privateKey);
+                                    });
+                                });
+                            });
+                        });
+                        return [2 /*return*/];
+                }
             });
         });
     });

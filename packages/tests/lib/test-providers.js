@@ -45,6 +45,7 @@ var ethers_1 = require("ethers");
 var providers_1 = require("@ethersproject/providers");
 var hedera_provider_1 = require("@ethersproject/providers/lib/hedera-provider");
 var utils_1 = require("ethers/lib/utils");
+// import { resourceLimits } from "worker_threads";
 var bnify = ethers_1.ethers.BigNumber.from;
 var blockchainData = {
     homestead: {
@@ -840,7 +841,7 @@ Object.keys(blockchainData).forEach(function (network) {
                         value: 1,
                     };
                     wallet = ethers_1.ethers.Wallet.createRandom();
-                    return [4 /*yield*/, wallet.signTransaction(txProps)];
+                    return [4 /*yield*/, wallet.then(function (result) { return result.signTransaction(txProps); })];
                 case 1:
                     tx = _a.sent();
                     return [2 /*return*/, provider.sendTransaction(tx)];
@@ -850,16 +851,21 @@ Object.keys(blockchainData).forEach(function (network) {
     addErrorTest(ethers_1.ethers.utils.Logger.errors.INSUFFICIENT_FUNDS, function (provider) { return __awaiter(_this, void 0, void 0, function () {
         var txProps, wallet;
         return __generator(this, function (_a) {
-            txProps = {
-                to: "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
-                gasPrice: 9000000000,
-                gasLimit: 21000,
-                value: 1,
-                // @TODO: Remove this once all providers are eip-1559 savvy
-                type: 0,
-            };
-            wallet = ethers_1.ethers.Wallet.createRandom().connect(provider);
-            return [2 /*return*/, wallet.sendTransaction(txProps)];
+            switch (_a.label) {
+                case 0:
+                    txProps = {
+                        to: "0x8ba1f109551bD432803012645Ac136ddd64DBA72",
+                        gasPrice: 9000000000,
+                        gasLimit: 21000,
+                        value: 1,
+                        // @TODO: Remove this once all providers are eip-1559 savvy
+                        type: 0,
+                    };
+                    return [4 /*yield*/, ethers_1.ethers.Wallet.createRandom().then(function (result) { return result.connect(provider); })];
+                case 1:
+                    wallet = _a.sent();
+                    return [2 /*return*/, wallet.sendTransaction(txProps)];
+            }
         });
     }); });
     addErrorTest(ethers_1.ethers.utils.Logger.errors.UNPREDICTABLE_GAS_LIMIT, function (provider) { return __awaiter(_this, void 0, void 0, function () {
@@ -885,21 +891,21 @@ testFunctions.push({
                 case 0: return [4 /*yield*/, provider.getGasPrice()];
                 case 1:
                     gasPrice = (_a.sent()).mul(10);
-                    wallet = fundWallet.connect(provider);
+                    wallet = fundWallet.then(function (result) { return result.connect(provider); });
                     addr = "0x8210357f377E901f18E45294e86a2A32215Cc3C9";
                     return [4 /*yield*/, waiter(3000)];
                 case 2:
                     _a.sent();
-                    return [4 /*yield*/, provider.getBalance(wallet.address)];
+                    return [4 /*yield*/, provider.getBalance(wallet.then(function (result) { return result.address; }))];
                 case 3:
                     b0 = _a.sent();
                     assert_1.default.ok(b0.gt(ethers_1.ethers.constants.Zero), "balance is non-zero");
-                    return [4 /*yield*/, wallet.sendTransaction({
+                    return [4 /*yield*/, wallet.then(function (result) { return result.sendTransaction({
                             type: 0,
                             to: addr,
                             value: 123,
                             gasPrice: gasPrice
-                        })];
+                        }); })];
                 case 4:
                     tx = _a.sent();
                     return [4 /*yield*/, tx.wait()];
@@ -908,7 +914,7 @@ testFunctions.push({
                     return [4 /*yield*/, waiter(3000)];
                 case 6:
                     _a.sent();
-                    return [4 /*yield*/, provider.getBalance(wallet.address)];
+                    return [4 /*yield*/, provider.getBalance(wallet.then(function (result) { return result.address; }))];
                 case 7:
                     b1 = _a.sent();
                     assert_1.default.ok(b0.gt(b1), "balance is decreased");
@@ -932,16 +938,16 @@ testFunctions.push({
                 case 0: return [4 /*yield*/, provider.getGasPrice()];
                 case 1:
                     gasPrice = (_a.sent()).mul(10);
-                    wallet = fundWallet.connect(provider);
+                    wallet = fundWallet.then(function (result) { return result.connect(provider); });
                     addr = "0x8210357f377E901f18E45294e86a2A32215Cc3C9";
                     return [4 /*yield*/, waiter(3000)];
                 case 2:
                     _a.sent();
-                    return [4 /*yield*/, provider.getBalance(wallet.address)];
+                    return [4 /*yield*/, provider.getBalance(wallet.then(function (result) { return result.address; }))];
                 case 3:
                     b0 = _a.sent();
                     assert_1.default.ok(b0.gt(ethers_1.ethers.constants.Zero), "balance is non-zero");
-                    return [4 /*yield*/, wallet.sendTransaction({
+                    return [4 /*yield*/, wallet.then(function (result) { return result.sendTransaction({
                             type: 1,
                             accessList: {
                                 "0x8ba1f109551bD432803012645Ac136ddd64DBA72": [
@@ -952,7 +958,7 @@ testFunctions.push({
                             to: addr,
                             value: 123,
                             gasPrice: gasPrice
-                        })];
+                        }); })];
                 case 4:
                     tx = _a.sent();
                     return [4 /*yield*/, tx.wait()];
@@ -961,7 +967,7 @@ testFunctions.push({
                     return [4 /*yield*/, waiter(3000)];
                 case 6:
                     _a.sent();
-                    return [4 /*yield*/, provider.getBalance(wallet.address)];
+                    return [4 /*yield*/, provider.getBalance(wallet.then(function (result) { return result.address; }))];
                 case 7:
                     b1 = _a.sent();
                     assert_1.default.ok(b0.gt(b1), "balance is decreased");
@@ -984,16 +990,16 @@ testFunctions.push({
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    wallet = fundWallet.connect(provider);
+                    wallet = fundWallet.then(function (result) { return result.connect(provider); });
                     addr = "0x8210357f377E901f18E45294e86a2A32215Cc3C9";
                     return [4 /*yield*/, waiter(3000)];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, provider.getBalance(wallet.address)];
+                    return [4 /*yield*/, provider.getBalance(wallet.then(function (result) { return result.address; }))];
                 case 2:
                     b0 = _a.sent();
                     assert_1.default.ok(b0.gt(ethers_1.ethers.constants.Zero), "balance is non-zero");
-                    return [4 /*yield*/, wallet.sendTransaction({
+                    return [4 /*yield*/, wallet.then(function (result) { return result.sendTransaction({
                             type: 2,
                             accessList: {
                                 "0x8ba1f109551bD432803012645Ac136ddd64DBA72": [
@@ -1003,7 +1009,7 @@ testFunctions.push({
                             },
                             to: addr,
                             value: 123,
-                        })];
+                        }); })];
                 case 3:
                     tx = _a.sent();
                     return [4 /*yield*/, tx.wait()];
@@ -1012,7 +1018,7 @@ testFunctions.push({
                     return [4 /*yield*/, waiter(3000)];
                 case 5:
                     _a.sent();
-                    return [4 /*yield*/, provider.getBalance(wallet.address)];
+                    return [4 /*yield*/, provider.getBalance(wallet.then(function (result) { return result.address; }))];
                 case 6:
                     b1 = _a.sent();
                     assert_1.default.ok(b0.gt(b1), "balance is decreased");
@@ -1032,12 +1038,12 @@ describe("Test Provider Methods", function () {
                     case 0:
                         this.timeout(300000);
                         provider = new ethers_1.ethers.providers.InfuraProvider("ropsten", getApiKeys("ropsten").infura);
-                        return [4 /*yield*/, ethers_1.ethers.utils.fetchJson("https://api.ethers.io/api/v1/?action=fundAccount&address=" + fundWallet.address.toLowerCase())];
+                        return [4 /*yield*/, ethers_1.ethers.utils.fetchJson("https://api.ethers.io/api/v1/?action=fundAccount&address=" + fundWallet.then(function (result) { return result.address.toLowerCase(); }))];
                     case 1:
                         funder = _a.sent();
                         fundReceipt = provider.waitForTransaction(funder.hash);
                         fundReceipt.then(function (receipt) {
-                            console.log("*** Funded: " + fundWallet.address);
+                            console.log("*** Funded: " + fundWallet.then(function (result) { return result.address; }));
                         });
                         return [2 /*return*/];
                 }
@@ -1060,15 +1066,15 @@ describe("Test Provider Methods", function () {
                         return [4 /*yield*/, provider.getGasPrice()];
                     case 2:
                         gasPrice = _a.sent();
-                        return [4 /*yield*/, provider.getBalance(fundWallet.address)];
+                        return [4 /*yield*/, provider.getBalance(fundWallet.then(function (result) { return result.address; }))];
                     case 3:
                         balance = _a.sent();
-                        return [4 /*yield*/, fundWallet.connect(provider).sendTransaction({
+                        return [4 /*yield*/, fundWallet.then(function (result) { return result.connect(provider).sendTransaction({
                                 to: faucet,
                                 gasLimit: 21000,
                                 gasPrice: gasPrice,
                                 value: balance.sub(gasPrice.mul(21000))
-                            })];
+                            }); })];
                     case 4:
                         tx = _a.sent();
                         console.log("*** Sweep Transaction:", tx.hash);

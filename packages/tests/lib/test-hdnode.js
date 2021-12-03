@@ -27,7 +27,9 @@ function checkRandom(name) {
 var isBrowser = (typeof (navigator) !== "undefined");
 describe('Test HD Node Derivation is Case Agnostic', function () {
     var tests = (0, testcases_1.loadTests)('hdnode');
+    var counter = 0;
     tests.forEach(function (test) {
+        counter++;
         if (!checkRandom(test.name)) {
             return;
         }
@@ -37,9 +39,9 @@ describe('Test HD Node Derivation is Case Agnostic', function () {
         it("Normalizes case - " + test.name, function () {
             this.timeout(10000);
             var wordlist = (ethers_1.ethers.wordlists)[test.locale];
-            var rootNode = ethers_1.ethers.utils.HDNode.fromMnemonic(test.mnemonic, test.password || null, wordlist);
+            var rootNode = ethers_1.ethers.utils.HDNode.fromMnemonic(("0.0" + counter), test.mnemonic, test.password || null, wordlist);
             var altMnemonic = randomCase(test.name, test.mnemonic);
-            var altNode = ethers_1.ethers.utils.HDNode.fromMnemonic(altMnemonic, test.password || null, wordlist);
+            var altNode = ethers_1.ethers.utils.HDNode.fromMnemonic(("0.0" + counter), altMnemonic, test.password || null, wordlist);
             assert_1.default.equal(altNode.privateKey, rootNode.privateKey, altMnemonic);
         });
     });
@@ -121,9 +123,8 @@ describe('Test HD Mnemonic Phrases', function testMnemonic() {
         });
     });
 });
-describe.only("HD Extended Keys", function () {
+describe("HD Extended Keys", function () {
     var root = ethers_1.ethers.utils.HDNode.fromSeed("0.0.1", "0xdeadbeefdeadbeefdeadbeefdeadbeef");
-    console.log(root);
     var root42 = root.derivePath("42");
     it("exports and imports xpriv extended keys", function () {
         var xpriv = root.extendedKey;
