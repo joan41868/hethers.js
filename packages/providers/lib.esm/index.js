@@ -24,11 +24,10 @@ const logger = new Logger(version);
 // Helper Functions
 function getDefaultProvider(network, options) {
     if (network == null) {
-        network = "homestead";
+        network = "mainnet";
     }
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof (network) === "string") {
-        // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
         // Handle http and ws (and their secure variants)
         const match = network.match(/^(ws|http)s?:/i);
         if (match) {
@@ -50,6 +49,7 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
+        DefaultHederaProvider,
         FallbackProvider,
         AlchemyProvider,
         CloudflareProvider,

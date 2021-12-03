@@ -52,11 +52,10 @@ var logger = new logger_1.Logger(_version_1.version);
 // Helper Functions
 function getDefaultProvider(network, options) {
     if (network == null) {
-        network = "homestead";
+        network = "mainnet";
     }
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof (network) === "string") {
-        // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
         // Handle http and ws (and their secure variants)
         var match = network.match(/^(ws|http)s?:/i);
         if (match) {
@@ -78,6 +77,7 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
+        DefaultHederaProvider: default_hedera_provider_1.DefaultHederaProvider,
         FallbackProvider: fallback_provider_1.FallbackProvider,
         AlchemyProvider: alchemy_provider_1.AlchemyProvider,
         CloudflareProvider: cloudflare_provider_1.CloudflareProvider,

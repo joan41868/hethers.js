@@ -2,7 +2,7 @@
 
 import assert from "assert";
 
-//import Web3HttpProvider from "web3-providers-http";
+// import Web3HttpProvider from "web3-providers-http";
 
 import { ethers } from "ethers";
 import { DefaultHederaProvider } from "@ethersproject/providers";
@@ -571,7 +571,7 @@ const providerFunctions: Array<ProviderDescription> = [
         networks: allNetworks,
         create: (network: string) => {
             if (network == "default") {
-                return ethers.getDefaultProvider(null, getApiKeys(network));
+                return ethers.getDefaultProvider("homestead", getApiKeys(network));
             }
             return ethers.getDefaultProvider(network, getApiKeys(network));
         }
@@ -1400,15 +1400,16 @@ describe("Resolve ENS avatar", function() {
 
 describe("Test Hedera Provider", function () {
     const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
-    it('Gets the balance', async () => {
-      const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
-      const solAddr = getAddressFromAccount(accountConfig);
+    const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
+    const solAddr = getAddressFromAccount(accountConfig);
+    const timeout = 15000;
+    it('Gets the balance', async function () {
       const balance = await provider.getBalance(solAddr);
       // the balance of 0.0.98 cannot be negative
       assert.strictEqual(true, balance.gte(0));
-   });
+    }).timeout(timeout);
 
-   it("Gets txn record", async () => {
+   it("Gets txn record", async function (){
        /* the test contains ignores as of the not yet refactored BaseProvider */
        const record = await provider.getTransaction(`0.0.15680048-1638189529-145876922`);
        // @ts-ignore
@@ -1417,5 +1418,27 @@ describe("Test Hedera Provider", function () {
        assert.strictEqual(record.transfers.length, 3);
        // @ts-ignore
        assert.strictEqual(record.valid_duration_seconds, '120');
-   });
+   }).timeout(timeout);
+
+   it("Is able to get hedera provider as default", async function() {
+      let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
+      assert.notStrictEqual(defaultProvider, null);
+
+      const chainIDDerivedProvider = ethers.providers.getDefaultProvider(291);
+      assert.notStrictEqual(chainIDDerivedProvider, null);
+
+      // ensure providers are usable
+      let balance = await defaultProvider.getBalance(solAddr);
+      assert.strictEqual(true, balance.gte(0));
+
+      balance = await chainIDDerivedProvider.getBalance(solAddr);
+      assert.strictEqual(true, balance.gte(0));
+   }).timeout(timeout * 4);
+
+   it("Defaults the provider to hedera mainnet", async function() {
+       let defaultMainnetProvider = ethers.providers.getDefaultProvider();
+       assert.notStrictEqual(defaultMainnetProvider, null);
+       const balance = await defaultMainnetProvider.getBalance(solAddr);
+       assert.strictEqual(true, balance.gte(0));
+   }).timeout(timeout * 4);
 });

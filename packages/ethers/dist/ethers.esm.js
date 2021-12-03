@@ -17584,6 +17584,26 @@ function etcDefaultProvider(url, network) {
     };
     return func;
 }
+function hederaDefaultProvider(network) {
+    const func = function (providers, options) {
+        if (options == null) {
+            options = {};
+        }
+        const providerList = [];
+        // TODO: JSON RPC provider, FallbackProvider for hedera
+        if (providers.DefaultHederaProvider) {
+            providerList.push(new providers.DefaultHederaProvider(network));
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+        return providerList[0];
+    };
+    func.renetwork = function (network) {
+        return hederaDefaultProvider(network);
+    };
+    return func;
+}
 const homestead = {
     chainId: 1,
     ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -17604,10 +17624,8 @@ const classicMordor = {
 const networks = {
     unspecified: { chainId: 0, name: "unspecified" },
     homestead: homestead,
-    mainnet: homestead,
     morden: { chainId: 2, name: "morden" },
     ropsten: ropsten,
-    testnet: ropsten,
     rinkeby: {
         chainId: 4,
         ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -17644,6 +17662,22 @@ const networks = {
     maticmum: { chainId: 80001, name: "maticmum" },
     bnb: { chainId: 56, name: "bnb" },
     bnbt: { chainId: 97, name: "bnbt" },
+    // hedera networks
+    mainnet: {
+        chainId: 290,
+        name: 'mainnet',
+        _defaultProvider: hederaDefaultProvider("mainnet")
+    },
+    testnet: {
+        chainId: 291,
+        name: 'testnet',
+        _defaultProvider: hederaDefaultProvider("testnet")
+    },
+    previewnet: {
+        chainId: 292,
+        name: 'previewnet',
+        _defaultProvider: hederaDefaultProvider("previewnet")
+    }
 };
 /**
  *  getNetwork
@@ -95292,7 +95326,7 @@ class DefaultHederaProvider extends BaseProvider {
         return __awaiter$g(this, void 0, void 0, function* () {
             if (blockTag || (yield blockTag)) {
                 logger$H.throwArgumentError("Cannot use blockTag for hedera services.", "blockTag", blockTag);
-                return BigNumber.from(0);
+                return BigNumber.from(-1);
             }
             addressOrName = yield addressOrName;
             const { shard, realm, num } = utils$1.getAccountFromAddress(addressOrName);
@@ -95336,11 +95370,10 @@ const logger$I = new Logger(version$m);
 // Helper Functions
 function getDefaultProvider(network, options) {
     if (network == null) {
-        network = "homestead";
+        network = "mainnet";
     }
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof (network) === "string") {
-        // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
         // Handle http and ws (and their secure variants)
         const match = network.match(/^(ws|http)s?:/i);
         if (match) {
@@ -95362,6 +95395,7 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
+        DefaultHederaProvider,
         FallbackProvider,
         AlchemyProvider,
         CloudflareProvider,
