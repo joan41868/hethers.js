@@ -29,7 +29,9 @@ const isBrowser = (typeof(navigator) !== "undefined");
 
 describe('Test HD Node Derivation is Case Agnostic', function() {
     let tests: Array<TestCase.HDWallet> = loadTests('hdnode');
+    let counter = 0;
     tests.forEach((test) => {
+        counter++;
         if (!checkRandom(test.name)) { return; }
 
         if (isBrowser && test.locale !== "en") { return; }
@@ -38,10 +40,10 @@ describe('Test HD Node Derivation is Case Agnostic', function() {
             this.timeout(10000);
             let wordlist = (<{ [ locale: string ]: ethers.Wordlist }>(ethers.wordlists))[test.locale];
 
-            let rootNode = ethers.utils.HDNode.fromMnemonic(test.mnemonic, test.password || null, wordlist);
+            let rootNode = ethers.utils.HDNode.fromMnemonic(("0.0"+counter), test.mnemonic, test.password || null, wordlist);
 
             let altMnemonic = randomCase(test.name, test.mnemonic);
-            let altNode = ethers.utils.HDNode.fromMnemonic(altMnemonic, test.password || null, wordlist);
+            let altNode = ethers.utils.HDNode.fromMnemonic(("0.0"+counter), altMnemonic, test.password || null, wordlist);
 
             assert.equal(altNode.privateKey, rootNode.privateKey, altMnemonic);
         });

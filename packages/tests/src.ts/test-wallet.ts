@@ -5,7 +5,7 @@ import assert from "assert";
 import { ethers } from "ethers";
 import { loadTests, TestCase } from "@ethersproject/testcases";
 
-import * as utils from "./utils";
+// import * as utils from "./utils";
 
 
 describe('Test JSON Wallets', function() {
@@ -67,24 +67,24 @@ describe('Test JSON Wallets', function() {
     });
 
     // A few extra test cases to test encrypting/decrypting
-    ['one', 'two', 'three'].forEach(function(i) {
+    ['one', 'two', 'three'].forEach(async function(i) {
         let password = 'foobar' + i;
-        let wallet = ethers.Wallet.createRandom({ path: "m/56'/82", extraEntropy: utils.randomHexString('test-' + i, 32) });
+        let wallet = await ethers.Wallet.createRandom();
 
         it('encrypts and decrypts a random wallet - ' + i, function() {
             this.timeout(1200000);
 
             return wallet.encrypt(password).then((json: string) => {
                 return ethers.Wallet.fromEncryptedJson(json, password).then((decryptedWallet) => {
-                    assert.equal(decryptedWallet.address, wallet.address,
-                        'decrypted wallet - ' + wallet.privateKey);
-                    assert.equal(decryptedWallet.mnemonic.phrase, wallet.mnemonic.phrase,
-                        "decrypted wallet mnemonic - " + wallet.privateKey);
-                    assert.equal(decryptedWallet.mnemonic.path, wallet.mnemonic.path,
-                        "decrypted wallet path - " + wallet.privateKey);
+                    assert.strictEqual(decryptedWallet.address, wallet.address,
+                        'decrypted wallet - ' + wallet.address);
+                    assert.strictEqual(decryptedWallet.mnemonic.phrase, wallet.mnemonic.phrase,
+                        "decrypted wallet mnemonic - " + wallet.mnemonic.phrase);
+                    assert.strictEqual(decryptedWallet.mnemonic.path, wallet.mnemonic.path,
+                        "decrypted wallet path - " + wallet.mnemonic.path);
                     return decryptedWallet.encrypt(password).then((encryptedWallet) => {
                         let parsedWallet = JSON.parse(encryptedWallet);
-                        assert.equal(decryptedWallet.address.toLowerCase().substring(2), parsedWallet.address,
+                        assert.strictEqual(decryptedWallet.address.toLowerCase().substring(2), parsedWallet.address,
                             're-encrypted wallet - ' + wallet.privateKey);
                     });
                 });

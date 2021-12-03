@@ -41,7 +41,7 @@ export class BrainWallet extends ethers.Wallet {
 
             }
             const mnemonic = ethers.utils.entropyToMnemonic(ethers.utils.arrayify(key).slice(0, 16));
-            return new BrainWallet(ethers.Wallet.fromMnemonic(mnemonic));
+            return new BrainWallet(ethers.Wallet.fromMnemonic("0.0.1",mnemonic));
         });
     }
 

@@ -8,6 +8,7 @@ import { ethers } from "ethers";
 import { DefaultHederaProvider } from "@ethersproject/providers";
 import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
 import { getAddressFromAccount } from "ethers/lib/utils";
+// import { resourceLimits } from "worker_threads";
 
 const bnify = ethers.BigNumber.from;
 
@@ -652,7 +653,7 @@ const providerFunctions: Array<ProviderDescription> = [
 ];
 
 // This wallet can be funded and used for various test cases
-const fundWallet = ethers.Wallet.createRandom();
+let fundWallet = ethers.Wallet.createRandom();
 
 
 const testFunctions: Array<TestDescription> = [ ];
@@ -818,7 +819,7 @@ Object.keys(blockchainData).forEach((network) => {
         };
 
         const wallet = ethers.Wallet.createRandom();
-        const tx = await wallet.signTransaction(txProps);
+        const tx = await wallet.then(result => result.signTransaction(txProps));
         return provider.sendTransaction(tx);
     });
 
@@ -833,7 +834,7 @@ Object.keys(blockchainData).forEach((network) => {
             type: 0,
         };
 
-        const wallet = ethers.Wallet.createRandom().connect(provider);
+        const wallet = await ethers.Wallet.createRandom().then(result => result.connect(provider));
         return wallet.sendTransaction(txProps);
     });
 
@@ -855,27 +856,27 @@ testFunctions.push({
     execute: async (provider: ethers.providers.Provider) => {
         const gasPrice = (await provider.getGasPrice()).mul(10);
 
-        const wallet = fundWallet.connect(provider);
+        const wallet = fundWallet.then(result => result.connect(provider));
 
         const addr = "0x8210357f377E901f18E45294e86a2A32215Cc3C9";
 
         await waiter(3000);
 
-        const b0 = await provider.getBalance(wallet.address);
+        const b0 = await provider.getBalance(wallet.then(result => result.address));
         assert.ok(b0.gt(ethers.constants.Zero), "balance is non-zero");
 
-        const tx = await wallet.sendTransaction({
+        const tx = await wallet.then(result => result.sendTransaction({
             type: 0,
             to: addr,
             value: 123,
             gasPrice: gasPrice
-        });
+        }));
 
         await tx.wait();
 
         await waiter(3000);
 
-        const b1 = await provider.getBalance(wallet.address);
+        const b1 = await provider.getBalance(wallet.then(result => result.address));
         assert.ok(b0.gt(b1), "balance is decreased");
     }
 });
@@ -891,16 +892,16 @@ testFunctions.push({
     execute: async (provider: ethers.providers.Provider) => {
         const gasPrice = (await provider.getGasPrice()).mul(10);
 
-        const wallet = fundWallet.connect(provider);
+        const wallet = fundWallet.then(result => result.connect(provider));
 
         const addr = "0x8210357f377E901f18E45294e86a2A32215Cc3C9";
 
         await waiter(3000);
 
-        const b0 = await provider.getBalance(wallet.address);
+        const b0 = await provider.getBalance(wallet.then(result => result.address));
         assert.ok(b0.gt(ethers.constants.Zero), "balance is non-zero");
 
-        const tx = await wallet.sendTransaction({
+        const tx = await wallet.then(result => result.sendTransaction({
             type: 1,
             accessList: {
                 "0x8ba1f109551bD432803012645Ac136ddd64DBA72": [
@@ -911,13 +912,13 @@ testFunctions.push({
             to: addr,
             value: 123,
             gasPrice: gasPrice
-        });
+        }));
 
         await tx.wait();
 
         await waiter(3000);
 
-        const b1 = await provider.getBalance(wallet.address);
+        const b1 = await provider.getBalance(wallet.then(result => result.address));
         assert.ok(b0.gt(b1), "balance is decreased");
     }
 });
@@ -932,16 +933,16 @@ testFunctions.push({
         return (provider === "AlchemyProvider");
     },
     execute: async (provider: ethers.providers.Provider) => {
-        const wallet = fundWallet.connect(provider);
+        const wallet = fundWallet.then(result => result.connect(provider));
 
         const addr = "0x8210357f377E901f18E45294e86a2A32215Cc3C9";
 
         await waiter(3000);
 
-        const b0 = await provider.getBalance(wallet.address);
+        const b0 = await provider.getBalance(wallet.then(result => result.address));
         assert.ok(b0.gt(ethers.constants.Zero), "balance is non-zero");
 
-        const tx = await wallet.sendTransaction({
+        const tx = await wallet.then(result => result.sendTransaction({
             type: 2,
             accessList: {
                 "0x8ba1f109551bD432803012645Ac136ddd64DBA72": [
@@ -951,13 +952,13 @@ testFunctions.push({
             },
             to: addr,
             value: 123,
-        });
+        }));
 
         await tx.wait();
 
         await waiter(3000);
 
-        const b1 = await provider.getBalance(wallet.address);
+        const b1 = await provider.getBalance(wallet.then(result => result.address));
         assert.ok(b0.gt(b1), "balance is decreased");
     }
 });
@@ -971,10 +972,10 @@ describe("Test Provider Methods", function() {
 
         // Get some ether from the faucet
         const provider = new ethers.providers.InfuraProvider("ropsten", getApiKeys("ropsten").infura);
-        const funder = await ethers.utils.fetchJson(`https:/\/api.ethers.io/api/v1/?action=fundAccount&address=${ fundWallet.address.toLowerCase() }`);
+        const funder = await ethers.utils.fetchJson(`https:/\/api.ethers.io/api/v1/?action=fundAccount&address=${ fundWallet.then(result => result.address.toLowerCase()) }`);
         fundReceipt = provider.waitForTransaction(funder.hash);
         fundReceipt.then((receipt) => {
-            console.log(`*** Funded: ${ fundWallet.address }`);
+            console.log(`*** Funded: ${ fundWallet.then(result => result.address) }`);
         });
     });
 
@@ -987,13 +988,13 @@ describe("Test Provider Methods", function() {
         // Refund all unused ether to the faucet
         const provider = new ethers.providers.InfuraProvider("ropsten", getApiKeys("ropsten").infura);
         const gasPrice = await provider.getGasPrice();
-        const balance = await provider.getBalance(fundWallet.address);
-        const tx = await fundWallet.connect(provider).sendTransaction({
+        const balance = await provider.getBalance(fundWallet.then(result => result.address));
+        const tx = await fundWallet.then(result => result.connect(provider).sendTransaction({
             to: faucet,
             gasLimit: 21000,
             gasPrice: gasPrice,
             value: balance.sub(gasPrice.mul(21000))
-        });
+        }));
 
         console.log(`*** Sweep Transaction:`, tx.hash);
     });
