@@ -2,7 +2,7 @@
 
 import assert from "assert";
 
-//import Web3HttpProvider from "web3-providers-http";
+// import Web3HttpProvider from "web3-providers-http";
 
 import { ethers } from "ethers";
 import { DefaultHederaProvider } from "@ethersproject/providers";
@@ -571,7 +571,7 @@ const providerFunctions: Array<ProviderDescription> = [
         networks: allNetworks,
         create: (network: string) => {
             if (network == "default") {
-                return ethers.getDefaultProvider(null, getApiKeys(network));
+                return ethers.getDefaultProvider("homestead", getApiKeys(network));
             }
             return ethers.getDefaultProvider(network, getApiKeys(network));
         }
@@ -1283,7 +1283,7 @@ describe("Test Hedera Provider", function () {
        assert.strictEqual(true, balance.gte(0));
    });
 
-   it("Gets txn record", async () => {
+   it("Gets txn record", async function (){
        /* the test contains ignores as of the not yet refactored BaseProvider */
        const record = await provider.getTransaction(`0.0.15680048-1638189529-145876922`);
        // @ts-ignore

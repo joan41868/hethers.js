@@ -124,10 +124,8 @@ var classicMordor = {
 var networks = {
     unspecified: { chainId: 0, name: "unspecified" },
     homestead: homestead,
-    mainnet: homestead,
     morden: { chainId: 2, name: "morden" },
     ropsten: ropsten,
-    testnet: ropsten,
     rinkeby: {
         chainId: 4,
         ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -165,17 +163,17 @@ var networks = {
     bnb: { chainId: 56, name: "bnb" },
     bnbt: { chainId: 97, name: "bnbt" },
     // hedera networks
-    hederaMainnet: {
+    mainnet: {
         chainId: 290,
         name: 'mainnet',
         _defaultProvider: hederaDefaultProvider("mainnet")
     },
-    hederaTestnet: {
+    testnet: {
         chainId: 291,
         name: 'testnet',
         _defaultProvider: hederaDefaultProvider("testnet")
     },
-    hederaPreviewnet: {
+    previewnet: {
         chainId: 292,
         name: 'previewnet',
         _defaultProvider: hederaDefaultProvider("previewnet")

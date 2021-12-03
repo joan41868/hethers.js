@@ -167,7 +167,7 @@ describe("Test Contract Transaction Population", function() {
     const fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
 
     const contract = new ethers.Contract(testAddress, abi);
-    const contractConnected = contract.connect(ethers.getDefaultProvider());
+    const contractConnected = contract.connect(ethers.getDefaultProvider("homestead"));
 
     it("standard population", async function() {
         const tx = await contract.populateTransaction.balanceOf(testAddress);
