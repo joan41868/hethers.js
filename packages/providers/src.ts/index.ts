@@ -22,6 +22,7 @@ import { BaseProvider, EnsProvider, EnsResolver, Resolver } from "./base-provide
 import { AlchemyProvider, AlchemyWebSocketProvider } from "./alchemy-provider";
 import { CloudflareProvider } from "./cloudflare-provider";
 import { EtherscanProvider } from "./etherscan-provider";
+import { Web3Provider } from "./web3-provider";
 import { FallbackProvider, FallbackProviderConfig } from "./fallback-provider";
 import { InfuraProvider, InfuraWebSocketProvider } from "./infura-provider";
 import { JsonRpcProvider, JsonRpcSigner } from "./json-rpc-provider";
@@ -30,10 +31,17 @@ import { StaticJsonRpcProvider, UrlJsonRpcProvider } from "./url-json-rpc-provid
 import { WebSocketProvider } from "./websocket-provider";
 import { ExternalProvider, JsonRpcFetchFunc } from "./web3-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
-import { CommunityResourcable, Formatter, isCommunityResourcable, isCommunityResource, showThrottleMessage } from "./formatter";
+import {
+    CommunityResourcable,
+    Formatter,
+    isCommunityResourcable,
+    isCommunityResource,
+    showThrottleMessage
+} from "./formatter";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+
 const logger = new Logger(version);
 
 ////////////////////////
@@ -43,7 +51,7 @@ function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
     if (network == null) { network = "mainnet"; }
 
     // If passed a URL, figure out the right type of provider based on the scheme
-    if (typeof(network) === "string") {
+    if (typeof (network) === "string") {
 
         // Handle http and ws (and their secure variants)
         const match = network.match(/^(ws|http)s?:/i);
@@ -94,7 +102,7 @@ export {
     // Concrete Providers
 
     FallbackProvider,
-
+    Web3Provider,
     AlchemyProvider,
     AlchemyWebSocketProvider,
     CloudflareProvider,

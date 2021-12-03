@@ -5,12 +5,12 @@ import { BaseProvider, Resolver } from "./base-provider";
 import { AlchemyProvider, AlchemyWebSocketProvider } from "./alchemy-provider";
 import { CloudflareProvider } from "./cloudflare-provider";
 import { EtherscanProvider } from "./etherscan-provider";
+import { Web3Provider } from "./web3-provider";
 import { FallbackProvider } from "./fallback-provider";
 import { InfuraProvider, InfuraWebSocketProvider } from "./infura-provider";
 import { JsonRpcProvider, JsonRpcSigner } from "./json-rpc-provider";
 import { JsonRpcBatchProvider } from "./json-rpc-batch-provider";
 import { StaticJsonRpcProvider, UrlJsonRpcProvider } from "./url-json-rpc-provider";
-import { Web3Provider } from "./web3-provider";
 import { WebSocketProvider } from "./websocket-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
 import { Formatter, isCommunityResourcable, isCommunityResource, showThrottleMessage } from "./formatter";
@@ -23,7 +23,6 @@ function getDefaultProvider(network, options) {
     if (network == null) {
         network = "mainnet";
     }
-    // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof (network) === "string") {
         // Handle http and ws (and their secure variants)
@@ -62,7 +61,7 @@ export {
 Provider, BaseProvider, Resolver, UrlJsonRpcProvider, 
 ///////////////////////
 // Concrete Providers
-FallbackProvider, AlchemyProvider, AlchemyWebSocketProvider, CloudflareProvider, EtherscanProvider, InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider, JsonRpcBatchProvider, StaticJsonRpcProvider, Web3Provider, WebSocketProvider, DefaultHederaProvider, 
+FallbackProvider, Web3Provider, AlchemyProvider, AlchemyWebSocketProvider, CloudflareProvider, EtherscanProvider, InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider, JsonRpcBatchProvider, StaticJsonRpcProvider, WebSocketProvider, DefaultHederaProvider, 
 ///////////////////////
 // Signer
 JsonRpcSigner, 

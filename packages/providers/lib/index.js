@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Formatter = exports.showThrottleMessage = exports.isCommunityResourcable = exports.isCommunityResource = exports.getNetwork = exports.getDefaultProvider = exports.JsonRpcSigner = exports.DefaultHederaProvider = exports.WebSocketProvider = exports.Web3Provider = exports.StaticJsonRpcProvider = exports.JsonRpcBatchProvider = exports.JsonRpcProvider = exports.InfuraWebSocketProvider = exports.InfuraProvider = exports.EtherscanProvider = exports.CloudflareProvider = exports.AlchemyWebSocketProvider = exports.AlchemyProvider = exports.FallbackProvider = exports.UrlJsonRpcProvider = exports.Resolver = exports.BaseProvider = exports.Provider = void 0;
+exports.Formatter = exports.showThrottleMessage = exports.isCommunityResourcable = exports.isCommunityResource = exports.getNetwork = exports.getDefaultProvider = exports.JsonRpcSigner = exports.DefaultHederaProvider = exports.WebSocketProvider = exports.StaticJsonRpcProvider = exports.JsonRpcBatchProvider = exports.JsonRpcProvider = exports.InfuraWebSocketProvider = exports.InfuraProvider = exports.EtherscanProvider = exports.CloudflareProvider = exports.AlchemyWebSocketProvider = exports.AlchemyProvider = exports.Web3Provider = exports.FallbackProvider = exports.UrlJsonRpcProvider = exports.Resolver = exports.BaseProvider = exports.Provider = void 0;
 var abstract_provider_1 = require("@ethersproject/abstract-provider");
 Object.defineProperty(exports, "Provider", { enumerable: true, get: function () { return abstract_provider_1.Provider; } });
 var networks_1 = require("@ethersproject/networks");
@@ -15,6 +15,8 @@ var cloudflare_provider_1 = require("./cloudflare-provider");
 Object.defineProperty(exports, "CloudflareProvider", { enumerable: true, get: function () { return cloudflare_provider_1.CloudflareProvider; } });
 var etherscan_provider_1 = require("./etherscan-provider");
 Object.defineProperty(exports, "EtherscanProvider", { enumerable: true, get: function () { return etherscan_provider_1.EtherscanProvider; } });
+var web3_provider_1 = require("./web3-provider");
+Object.defineProperty(exports, "Web3Provider", { enumerable: true, get: function () { return web3_provider_1.Web3Provider; } });
 var fallback_provider_1 = require("./fallback-provider");
 Object.defineProperty(exports, "FallbackProvider", { enumerable: true, get: function () { return fallback_provider_1.FallbackProvider; } });
 var infura_provider_1 = require("./infura-provider");
@@ -28,8 +30,6 @@ Object.defineProperty(exports, "JsonRpcBatchProvider", { enumerable: true, get: 
 var url_json_rpc_provider_1 = require("./url-json-rpc-provider");
 Object.defineProperty(exports, "StaticJsonRpcProvider", { enumerable: true, get: function () { return url_json_rpc_provider_1.StaticJsonRpcProvider; } });
 Object.defineProperty(exports, "UrlJsonRpcProvider", { enumerable: true, get: function () { return url_json_rpc_provider_1.UrlJsonRpcProvider; } });
-var web3_provider_1 = require("./web3-provider");
-Object.defineProperty(exports, "Web3Provider", { enumerable: true, get: function () { return web3_provider_1.Web3Provider; } });
 var websocket_provider_1 = require("./websocket-provider");
 Object.defineProperty(exports, "WebSocketProvider", { enumerable: true, get: function () { return websocket_provider_1.WebSocketProvider; } });
 var default_hedera_provider_1 = require("./default-hedera-provider");
@@ -48,7 +48,6 @@ function getDefaultProvider(network, options) {
     if (network == null) {
         network = "mainnet";
     }
-    // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
     // If passed a URL, figure out the right type of provider based on the scheme
     if (typeof (network) === "string") {
         // Handle http and ws (and their secure variants)
