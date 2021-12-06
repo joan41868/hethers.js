@@ -12,26 +12,37 @@ describe('Private key generation', function () {
         if (!test.privateKey) {
             return;
         }
-        it(('correctly converts private key - ' + test.name), function () {
+        it.only(('correctly converts private key - ' + test.name), function () {
             var wallet = new ethers_1.ethers.Wallet({ address: test.address, privateKey: test.privateKey });
-            // wallet._signingKey().publicKey = test.publicKey;
+            assert_1.default.strictEqual(wallet._signingKey().privateKey, test.privateKey, 'correctly computes privateKey - ' + test.privateKey);
+            assert_1.default.strictEqual(wallet.address, ethers_1.ethers.utils.getAddress(test.address), 'correctly populates address - ' + test.address);
+            var accountObjFromAddress = ethers_1.ethers.utils.getAccountFromAddress(test.address);
+            assert_1.default.strictEqual(wallet.account.shard, accountObjFromAddress.shard, 'correctly populates account shard from address - ' + accountObjFromAddress.shard);
+            assert_1.default.strictEqual(wallet.account.realm, accountObjFromAddress.realm, 'correctly populates account realm from address - ' + accountObjFromAddress.realm);
+            assert_1.default.strictEqual(wallet.account.num, accountObjFromAddress.num, 'correctly populates account num from address - ' + accountObjFromAddress.num);
             if (test.publicKey) {
-                assert_1.default.equal(wallet._signingKey().publicKey, test.publicKey, 'correctly computes publicKey - ' + test.publicKey);
+                assert_1.default.strictEqual(wallet._signingKey().publicKey, test.publicKey, 'correctly computes publicKey - ' + test.publicKey);
             }
-            assert_1.default.equal(wallet.address.toLowerCase(), test.address.toLowerCase(), 'correctly computes privateKey - ' + test.privateKey);
+            if (test.account) {
+                assert_1.default.strictEqual(wallet.address, ethers_1.ethers.utils.getAddress(ethers_1.ethers.utils.getAddressFromAccount(test.account)), 'correctly populates address from account - ' + test.account);
+                var accountObjFromAccount = ethers_1.ethers.utils.parseAccount(test.account);
+                assert_1.default.strictEqual(wallet.account.shard, accountObjFromAccount.shard, 'correctly populates account shard from account - ' + accountObjFromAccount.shard);
+                assert_1.default.strictEqual(wallet.account.realm, accountObjFromAccount.realm, 'correctly populates account realm from account - ' + accountObjFromAccount.realm);
+                assert_1.default.strictEqual(wallet.account.num, accountObjFromAccount.num, 'correctly populates account num from account - ' + accountObjFromAccount.num);
+            }
         });
     });
 });
 describe('Checksum and ICAP address generation', function () {
     var tests = (0, testcases_1.loadTests)('accounts');
     tests.forEach(function (test) {
-        it(('correctly transforms address - ' + test.name), function () {
-            assert_1.default.equal(ethers_1.ethers.utils.getAddress(test.address), test.checksumAddress, 'correctly computes checksum address from address');
-            assert_1.default.equal(ethers_1.ethers.utils.getIcapAddress(test.address), test.icapAddress, 'correctly computes ICAP address from address');
-            assert_1.default.equal(ethers_1.ethers.utils.getAddress(test.checksumAddress), test.checksumAddress, 'correctly computes checksum address from checksum address');
-            assert_1.default.equal(ethers_1.ethers.utils.getIcapAddress(test.checksumAddress), test.icapAddress, 'correctly computes ICAP address from checksum address');
-            assert_1.default.equal(ethers_1.ethers.utils.getAddress(test.icapAddress), test.checksumAddress, 'correctly computes checksum address from icap address');
-            assert_1.default.equal(ethers_1.ethers.utils.getIcapAddress(test.icapAddress), test.icapAddress, 'correctly computes ICAP address from icap address');
+        it.only(('correctly transforms address - ' + test.name), function () {
+            assert_1.default.strictEqual(ethers_1.ethers.utils.getAddress(test.address), test.checksumAddress, 'correctly computes checksum address from address');
+            assert_1.default.strictEqual(ethers_1.ethers.utils.getIcapAddress(test.address), test.icapAddress, 'correctly computes ICAP address from address');
+            assert_1.default.strictEqual(ethers_1.ethers.utils.getAddress(test.checksumAddress), test.checksumAddress, 'correctly computes checksum address from checksum address');
+            assert_1.default.strictEqual(ethers_1.ethers.utils.getIcapAddress(test.checksumAddress), test.icapAddress, 'correctly computes ICAP address from checksum address');
+            assert_1.default.strictEqual(ethers_1.ethers.utils.getAddress(test.icapAddress), test.checksumAddress, 'correctly computes checksum address from icap address');
+            assert_1.default.strictEqual(ethers_1.ethers.utils.getIcapAddress(test.icapAddress), test.icapAddress, 'correctly computes ICAP address from icap address');
         });
     });
 });
