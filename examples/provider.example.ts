@@ -5,7 +5,7 @@ import * as hethers  from "ethers";
     // TODO: replace with yours when testing.
     const accountNum = 98;
 
-    const provider = hethers.providers.getDefaultProvider("hederaTestnet");
+    const provider = hethers.providers.getDefaultProvider("testnet");
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
     const solAddr = getAddressFromAccount(accountConfig);
     console.log(`Using account with num ${accountNum} <->`, solAddr);
