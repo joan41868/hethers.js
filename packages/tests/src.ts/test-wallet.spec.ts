@@ -34,6 +34,16 @@ describe('Test JSON Wallets', function() {
             assert.equal(walletAddress.toLowerCase(), test.address,
                 'generate correct address - '  + wallet.address);
 
+            // Test connect
+            {
+                const provider = ethers.providers.getDefaultProvider();
+                const walletConnected = wallet.connect(provider);
+                assert.equal(walletConnected.provider, provider, "provider is connected");
+                assert.ok((wallet.provider == null), "original wallet provider is null");
+                assert.equal(walletConnected.address.toLowerCase(), test.address,
+                    "connected correct address - "  + wallet.address);
+            }
+
             // Make sure it can accept a SigningKey
             {
                 const wallet2 = new ethers.Wallet(wallet._signingKey());
