@@ -108,7 +108,7 @@ describe('Test HD Mnemonic Phrases', function testMnemonic() {
         if (isBrowser && test.locale !== "en") {
             return;
         }
-        it(('converts mnemonic phrases - ' + test.name), function () {
+        it.only(('converts mnemonic phrases - ' + test.name), function () {
             this.timeout(1000000);
             assert_1.default.equal(ethers_1.ethers.utils.mnemonicToSeed(test.mnemonic, test.password), test.seed, 'Converts mnemonic to seed - ' + test.mnemonic + ':' + test.password);
             // Test default english
@@ -126,14 +126,14 @@ describe('Test HD Mnemonic Phrases', function testMnemonic() {
 describe("HD Extended Keys", function () {
     var root = ethers_1.ethers.utils.HDNode.fromSeed("0.0.1", "0xdeadbeefdeadbeefdeadbeefdeadbeef");
     var root42 = root.derivePath("42");
-    it("exports and imports xpriv extended keys", function () {
+    it.only("exports and imports xpriv extended keys", function () {
         var xpriv = root.extendedKey;
         var node = ethers_1.ethers.utils.HDNode.fromExtendedKey("0.0.1", xpriv);
         assert_1.default.equal(root.address, node.address, "address matches");
         var node42 = node.derivePath("42");
         assert_1.default.equal(root42.address, node42.address, "address matches");
     });
-    it("exports and imports xpub extended keys", function () {
+    it.only("exports and imports xpub extended keys", function () {
         var xpub = root.neuter().extendedKey;
         var node = ethers_1.ethers.utils.HDNode.fromExtendedKey("0.0.1", xpub);
         assert_1.default.equal(root.address, node.address, "address matches");
@@ -149,7 +149,7 @@ describe("HD error cases", function () {
     ];
     var root = ethers_1.ethers.utils.HDNode.fromSeed("0.0.1", "0xdeadbeefdeadbeefdeadbeefdeadbeef");
     testInvalid.forEach(function (path) {
-        it("fails on path \"" + path + "\"", function () {
+        it.only("fails on path \"" + path + "\"", function () {
             assert_1.default.throws(function () {
                 root.derivePath(path);
             }, function (error) {
@@ -157,7 +157,7 @@ describe("HD error cases", function () {
             });
         });
     });
-    it("fails to derive child of hardened key", function () {
+    it.only("fails to derive child of hardened key", function () {
         // Deriving non-hardened should work...
         var node = root.neuter().derivePath("44");
         assert_1.default.throws(function () {
@@ -170,7 +170,7 @@ describe("HD error cases", function () {
     // The zero-mnemonic, with and without correct checksum
     var zeroMnemonicCS = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
     var zeroMnemonic = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon";
-    it("fails on invalid mnemonic length", function () {
+    it.only("fails on invalid mnemonic length", function () {
         var shortMnemonic = "abandon abandon abandon abandon";
         // Test the validate functions
         assert_1.default.ok(ethers_1.ethers.utils.isValidMnemonic(zeroMnemonicCS));
@@ -182,14 +182,14 @@ describe("HD error cases", function () {
             return true;
         });
     });
-    it("fails on invalid checksum", function () {
+    it.only("fails on invalid checksum", function () {
         assert_1.default.throws(function () {
             ethers_1.ethers.utils.mnemonicToEntropy(zeroMnemonic);
         }, function (error) {
             return true;
         });
     });
-    it("fails on unknown locale", function () {
+    it.only("fails on unknown locale", function () {
         assert_1.default.throws(function () {
             ethers_1.ethers.utils.HDNode.fromMnemonic(zeroMnemonicCS, "foobar", "xx");
         }, function (error) {
