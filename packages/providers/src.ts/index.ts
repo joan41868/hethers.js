@@ -19,17 +19,7 @@ import { Network, Networkish } from "@ethersproject/networks";
 
 import { BaseProvider, EnsProvider, EnsResolver, Resolver } from "./base-provider";
 
-import { AlchemyProvider, AlchemyWebSocketProvider } from "./alchemy-provider";
-import { CloudflareProvider } from "./cloudflare-provider";
-import { EtherscanProvider } from "./etherscan-provider";
-import { Web3Provider } from "./web3-provider";
-import { FallbackProvider, FallbackProviderConfig } from "./fallback-provider";
-import { InfuraProvider, InfuraWebSocketProvider } from "./infura-provider";
-import { JsonRpcProvider, JsonRpcSigner } from "./json-rpc-provider";
-import { JsonRpcBatchProvider } from "./json-rpc-batch-provider";
-import { StaticJsonRpcProvider, UrlJsonRpcProvider } from "./url-json-rpc-provider";
-import { WebSocketProvider } from "./websocket-provider";
-import { ExternalProvider, JsonRpcFetchFunc } from "./web3-provider";
+import { FallbackProviderConfig } from "./fallback-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
 import {
     CommunityResourcable,
@@ -57,10 +47,8 @@ function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
         const match = network.match(/^(ws|http)s?:/i);
         if (match) {
             switch (match[1]) {
-                case "http":
-                    return new JsonRpcProvider(network);
-                case "ws":
-                    return new WebSocketProvider(network);
+                // case "http":
+                //     return new JsonRpcProvider(network);
                 default:
                     logger.throwArgumentError("unsupported URL scheme", "network", network);
             }
@@ -77,11 +65,6 @@ function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
 
     return n._defaultProvider({
         DefaultHederaProvider,
-        FallbackProvider,
-        AlchemyProvider,
-        EtherscanProvider,
-        InfuraProvider,
-        JsonRpcProvider,
     }, options);
 }
 
@@ -96,30 +79,15 @@ export {
 
     Resolver,
 
-    UrlJsonRpcProvider,
 
     ///////////////////////
     // Concrete Providers
 
-    FallbackProvider,
-    Web3Provider,
-    AlchemyProvider,
-    AlchemyWebSocketProvider,
-    CloudflareProvider,
-    EtherscanProvider,
-    InfuraProvider,
-    InfuraWebSocketProvider,
-    JsonRpcProvider,
-    JsonRpcBatchProvider,
-    StaticJsonRpcProvider,
-    WebSocketProvider,
 
     DefaultHederaProvider,
 
     ///////////////////////
     // Signer
-
-    JsonRpcSigner,
 
 
     ///////////////////////
@@ -151,9 +119,6 @@ export {
     TransactionReceipt,
     TransactionRequest,
     TransactionResponse,
-
-    ExternalProvider,
-    JsonRpcFetchFunc,
 
     FallbackProviderConfig,
 
