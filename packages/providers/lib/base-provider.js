@@ -630,11 +630,12 @@ var BaseProvider = /** @class */ (function (_super) {
             _this._ready().catch(function (error) { });
         }
         else {
+            // defineReadOnly(this, "_network", getNetwork(network));
             _this._network = (0, networks_1.getNetwork)(network);
             _this._networkPromise = Promise.resolve(_this._network);
             var knownNetwork = (0, properties_1.getStatic)(_newTarget, "getNetwork")(network);
             if (knownNetwork) {
-                _this._network = knownNetwork;
+                (0, properties_1.defineReadOnly)(_this, "_network", knownNetwork);
                 _this.emit("network", knownNetwork, null);
             }
             else {
@@ -645,7 +646,7 @@ var BaseProvider = /** @class */ (function (_super) {
         _this._lastBlockNumber = -2;
         _this._pollingInterval = 4000;
         _this._fastQueryDate = 0;
-        _this.hederaClient = sdk_1.Client.forName(resolveNetwork(network));
+        _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(network));
         return _this;
     }
     BaseProvider.prototype._ready = function () {
@@ -682,7 +683,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         // Possible this call stacked so do not call defineReadOnly again
                         if (this._network == null) {
                             if (this.anyNetwork) {
-                                this._network = network;
+                                // this._network = network;
+                                (0, properties_1.defineReadOnly)(this, "_network", network);
                             }
                             else {
                                 this._network = network;
@@ -941,16 +943,9 @@ var BaseProvider = /** @class */ (function (_super) {
     // can change, such as when connected to a JSON-RPC backend
     BaseProvider.prototype.detectNetwork = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var _a;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        _a = this;
-                        return [4 /*yield*/, this._networkPromise];
-                    case 1:
-                        _a._network = _b.sent();
-                        return [2 /*return*/, this._networkPromise];
-                }
+            return __generator(this, function (_a) {
+                this._networkPromise = Promise.resolve(this._network);
+                return [2 /*return*/, this._networkPromise];
             });
         });
     };
@@ -1330,7 +1325,17 @@ var BaseProvider = /** @class */ (function (_super) {
                                 .execute(this.hederaClient)];
                     case 3:
                         balance = _b.sent();
-                        return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
+                        try {
+                            return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
+                        }
+                        catch (error) {
+                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                    method: "AccountBalanceQuery",
+                                    params: { address: addressOrName },
+                                    error: error
+                                })];
+                        }
+                        return [2 /*return*/];
                 }
             });
         });
@@ -1801,7 +1806,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (txId) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, accId, ep, url, data, filtered;
+            var _a, accId, ep, data, filtered;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1812,8 +1817,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         txId = _b.sent();
                         _a = txId.split("-"), accId = _a[0];
                         ep = '/api/v1/transactions?account.id=' + accId;
-                        url = resolveMirrorNetworkUrl(this.network);
-                        return [4 /*yield*/, axios_1.default.get(url + ep)];
+                        return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + ep)];
                     case 3:
                         data = (_b.sent()).data;
                         _b.label = 4;
@@ -1826,7 +1830,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (filtered.length > 0) {
                             return [2 /*return*/, filtered[0]];
                         }
-                        return [4 /*yield*/, axios_1.default.get(url + data.links.next)];
+                        return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + data.links.next)];
                     case 5:
                         (data = (_b.sent()).data);
                         return [3 /*break*/, 4];
@@ -2235,7 +2239,7 @@ var BaseProvider = /** @class */ (function (_super) {
 }(abstract_provider_1.Provider));
 exports.BaseProvider = BaseProvider;
 // resolves network string to a hedera network name
-function resolveNetwork(net) {
+function mapNetworkToHederaNetworkName(net) {
     switch (net) {
         case 'mainnet':
             return sdk_1.NetworkName.Mainnet;
@@ -2243,20 +2247,6 @@ function resolveNetwork(net) {
             return sdk_1.NetworkName.Previewnet;
         case 'testnet':
             return sdk_1.NetworkName.Testnet;
-        default:
-            logger.throwArgumentError("Invalid network name", "network", net);
-            return null;
-    }
-}
-// resolves the mirror node url from the given provider network.
-function resolveMirrorNetworkUrl(net) {
-    switch (net.name) {
-        case 'mainnet':
-            return 'https://mainnet.mirrornode.hedera.com';
-        case 'previewnet':
-            return 'https://previewnet.mirrornode.hedera.com';
-        case 'testnet':
-            return 'https://testnet.mirrornode.hedera.com';
         default:
             logger.throwArgumentError("Invalid network name", "network", net);
             return null;
