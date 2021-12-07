@@ -2,19 +2,6 @@
 import { Provider } from "@ethersproject/abstract-provider";
 import { getNetwork } from "@ethersproject/networks";
 import { BaseProvider, Resolver } from "./base-provider";
-import { AlchemyProvider, AlchemyWebSocketProvider } from "./alchemy-provider";
-import { CloudflareProvider } from "./cloudflare-provider";
-import { EtherscanProvider } from "./etherscan-provider";
-import { FallbackProvider } from "./fallback-provider";
-import { IpcProvider } from "./ipc-provider";
-import { InfuraProvider, InfuraWebSocketProvider } from "./infura-provider";
-import { JsonRpcProvider, JsonRpcSigner } from "./json-rpc-provider";
-import { JsonRpcBatchProvider } from "./json-rpc-batch-provider";
-import { NodesmithProvider } from "./nodesmith-provider";
-import { PocketProvider } from "./pocket-provider";
-import { StaticJsonRpcProvider, UrlJsonRpcProvider } from "./url-json-rpc-provider";
-import { Web3Provider } from "./web3-provider";
-import { WebSocketProvider } from "./websocket-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
 import { Formatter, isCommunityResourcable, isCommunityResource, showThrottleMessage } from "./formatter";
 import { Logger } from "@ethersproject/logger";
@@ -32,10 +19,8 @@ function getDefaultProvider(network, options) {
         const match = network.match(/^(ws|http)s?:/i);
         if (match) {
             switch (match[1]) {
-                case "http":
-                    return new JsonRpcProvider(network);
-                case "ws":
-                    return new WebSocketProvider(network);
+                // case "http":
+                //     return new JsonRpcProvider(network);
                 default:
                     logger.throwArgumentError("unsupported URL scheme", "network", network);
             }
@@ -50,29 +35,18 @@ function getDefaultProvider(network, options) {
     }
     return n._defaultProvider({
         DefaultHederaProvider,
-        FallbackProvider,
-        AlchemyProvider,
-        CloudflareProvider,
-        EtherscanProvider,
-        InfuraProvider,
-        JsonRpcProvider,
-        NodesmithProvider,
-        PocketProvider,
-        Web3Provider,
-        IpcProvider,
     }, options);
 }
 ////////////////////////
 // Exports
 export { 
 // Abstract Providers (or Abstract-ish)
-Provider, BaseProvider, Resolver, UrlJsonRpcProvider, 
+Provider, BaseProvider, Resolver, 
 ///////////////////////
 // Concrete Providers
-FallbackProvider, AlchemyProvider, AlchemyWebSocketProvider, CloudflareProvider, EtherscanProvider, InfuraProvider, InfuraWebSocketProvider, JsonRpcProvider, JsonRpcBatchProvider, NodesmithProvider, PocketProvider, StaticJsonRpcProvider, Web3Provider, WebSocketProvider, IpcProvider, DefaultHederaProvider, 
+DefaultHederaProvider, 
 ///////////////////////
 // Signer
-JsonRpcSigner, 
 ///////////////////////
 // Functions
 getDefaultProvider, getNetwork, isCommunityResource, isCommunityResourcable, showThrottleMessage, 

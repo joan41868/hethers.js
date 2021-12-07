@@ -15,7 +15,7 @@ type DefaultProviderFunc = (providers: any, options?: any) => any;
 
 interface Renetworkable extends DefaultProviderFunc {
     renetwork: (network: Network) => DefaultProviderFunc;
-};
+}
 
 function isRenetworkable(value: any): value is Renetworkable {
     return (value && typeof(value.renetwork) === "function");
@@ -101,7 +101,6 @@ function etcDefaultProvider(url: string, network: string | Network): Renetworkab
 
     return func;
 }
-
 
 function hederaDefaultProvider(network: string | Network): Renetworkable {
     const func = function (providers: any, options?: any): any {

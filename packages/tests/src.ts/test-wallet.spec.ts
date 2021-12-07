@@ -4,8 +4,7 @@ import assert from "assert";
 
 import { ethers } from "ethers";
 import { loadTests, TestCase } from "@ethersproject/testcases";
-
-import * as utils from "./utils";
+import * as utils from './utils';
 
 
 describe('Test JSON Wallets', function() {
@@ -37,7 +36,7 @@ describe('Test JSON Wallets', function() {
 
             // Test connect
             {
-                const provider = new ethers.providers.EtherscanProvider();
+                const provider = ethers.providers.getDefaultProvider();
                 const walletConnected = wallet.connect(provider);
                 assert.equal(walletConnected.provider, provider, "provider is connected");
                 assert.ok((wallet.provider == null), "original wallet provider is null");

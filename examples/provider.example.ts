@@ -6,7 +6,6 @@ import * as hethers  from "ethers";
     const accountNum = 98;
 
     const provider = hethers.providers.getDefaultProvider("testnet");
-    console.log(provider);
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
     const solAddr = getAddressFromAccount(accountConfig);
     console.log(`Using account with num ${accountNum} <->`, solAddr);
