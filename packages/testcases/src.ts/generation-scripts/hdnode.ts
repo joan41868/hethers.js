@@ -90,8 +90,7 @@ testcases.push({
     });
 });
 
-console.log("@TODO: This should be 1024");
-for (let i = 0; i < 10; i++) {
+for (let i = 0; i < 1024; i++) {
     let strength = 16 + 4 * randomNumber('random-1-' + i, 0, 5);
     let entropy = randomHexString('random-2-' + i, strength);
 

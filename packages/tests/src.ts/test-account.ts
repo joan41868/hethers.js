@@ -19,13 +19,13 @@ describe('Private key generation', function() {
     let tests: Array<TestCase> = loadTests('accounts');
     tests.forEach((test) => {
         if (!test.privateKey) { return; }
-        it.only(('correctly converts private key - ' + test.name), function() {
-            let wallet = new ethers.Wallet({address: test.address, privateKey: test.privateKey});             
-            assert.strictEqual(wallet._signingKey().privateKey, test.privateKey,
-                'correctly computes privateKey - ' + test.privateKey);   
-            assert.strictEqual(wallet.address, ethers.utils.getAddress(test.address),
-                'correctly populates address - ' + test.address);      
-            
+        it(('correctly converts private key - ' + test.name), function() {
+            let wallet = new ethers.Wallet({address: test.address, privateKey: test.privateKey});
+            assert.strictEqual(wallet.privateKey, test.privateKey,
+                'correctly computes privateKey - ' + test.privateKey);
+            assert.strictEqual(wallet.address.toLowerCase(), test.address,
+                'correctly populates address - ' + test.address);
+
             let accountObjFromAddress = ethers.utils.getAccountFromAddress(test.address);
             assert.strictEqual(wallet.account.shard, accountObjFromAddress.shard,
                 'correctly populates account shard from address - ' + accountObjFromAddress.shard);
@@ -35,11 +35,11 @@ describe('Private key generation', function() {
                 'correctly populates account num from address - ' + accountObjFromAddress.num);
 
             if (test.publicKey) {
-                assert.strictEqual(wallet._signingKey().publicKey, test.publicKey,
+                assert.strictEqual(wallet.publicKey, test.publicKey,
                     'correctly computes publicKey - ' + test.publicKey);
             } 
             if (test.account) {
-                assert.strictEqual(wallet.address, ethers.utils.getAddress(ethers.utils.getAddressFromAccount(test.account)),
+                assert.strictEqual(wallet.address.toLowerCase(), ethers.utils.getAddressFromAccount(test.account),
                     'correctly populates address from account - ' + test.account);
                 
                 let accountObjFromAccount = ethers.utils.parseAccount(test.account);
@@ -57,7 +57,7 @@ describe('Private key generation', function() {
 describe('Checksum and ICAP address generation', function() {
     let tests: Array<TestCase> = loadTests('accounts');
     tests.forEach((test) => {
-        it.only(('correctly transforms address - ' + test.name), function() {
+        it(('correctly transforms address - ' + test.name), function() {
             assert.strictEqual(ethers.utils.getAddress(test.address), test.checksumAddress,
                 'correctly computes checksum address from address');
             assert.strictEqual(ethers.utils.getIcapAddress(test.address), test.icapAddress,

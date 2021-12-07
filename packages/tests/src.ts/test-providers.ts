@@ -963,7 +963,7 @@ testFunctions.push({
     }
 });
 
-describe("Test Provider Methods", function() {
+describe.skip("Test Provider Methods", function() {
     let fundReceipt: Promise<ethers.providers.TransactionReceipt> = null;
     const faucet = "0x8210357f377E901f18E45294e86a2A32215Cc3C9";
 

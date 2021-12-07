@@ -284,7 +284,7 @@ describe('Test Interface Signatures', function() {
     });
 
     // See: https://github.com/ethers-io/ethers.js/issues/370
-    it ('parses transaction function', function() {
+    it('parses transaction function', function() {
         let iface = new ethers.utils.Interface([ "function transfer(address from, uint amount)" ]);
 
         // Transaction: 0x820cc57bc77be44d8f4f024a18e18f64a8b6e62a82a3d7897db5970dbe181ba1
@@ -292,7 +292,7 @@ describe('Test Interface Signatures', function() {
         let tx = ethers.utils.parseTransaction(rawTx);
 
         let descr = iface.parseTransaction(tx);
-        assert.equal(descr.args[0], '0x851b9167B7cbf772D38eFaf89705b35022880A07'.toLowerCase(), 'parsed tx - args[0]');
+        assert.equal(descr.args[0], '0x851b9167B7cbf772D38eFaf89705b35022880A07', 'parsed tx - args[0]');
         assert.equal(descr.args[1].toString(), '1000000000000000000', 'parsed tx - args[1]');
         assert.equal(descr.name, 'transfer', 'parsed tx - name');
         assert.equal(descr.signature, 'transfer(address,uint256)', 'parsed tx - signature');
@@ -652,7 +652,7 @@ describe('Test EIP-838 Error Codes', function() {
             assert.equal(error.code, ethers.utils.Logger.errors.CALL_EXCEPTION, "error.code");
             assert.equal(error.errorSignature, "TestError1(address,uint256)", "error.errorSignature");
             assert.equal(error.errorName, "TestError1", "error.errorName");
-            assert.equal(error.errorArgs[0], addr.toLowerCase(), "error.errorArgs[0]");
+            assert.equal(error.errorArgs[0], addr, "error.errorArgs[0]");
             assert.equal(error.errorArgs.addr, addr, "error.errorArgs.addr");
             assert.equal(error.errorArgs[1], 42, "error.errorArgs[1]");
             assert.equal(error.errorArgs.value, 42, "error.errorArgs.value");

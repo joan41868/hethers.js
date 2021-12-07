@@ -1027,7 +1027,7 @@ testFunctions.push({
         });
     }); }
 });
-describe("Test Provider Methods", function () {
+describe.skip("Test Provider Methods", function () {
     var fundReceipt = null;
     var faucet = "0x8210357f377E901f18E45294e86a2A32215Cc3C9";
     before(function () {
