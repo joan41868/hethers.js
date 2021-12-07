@@ -70,6 +70,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
         respTime: number;
     }>;
     readonly anyNetwork: boolean;
+    private hederaClient;
     /**
      *  ready
      *
@@ -108,7 +109,13 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     }): Promise<TransactionReceipt>;
     getBlockNumber(): Promise<number>;
     getGasPrice(): Promise<BigNumber>;
-    getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
+    /**
+     *  AccountBalance query implementation, using the hashgraph sdk.
+     *  It returns the tinybar balance of the given address.
+     *
+     * @param addressOrName The address to check balance of
+     */
+    getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
     getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number>;
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
@@ -122,7 +129,12 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     _getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>, includeTransactions?: boolean): Promise<Block | BlockWithTransactions>;
     getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<Block>;
     getBlockWithTransactions(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<BlockWithTransactions>;
-    getTransaction(transactionHash: string | Promise<string>): Promise<TransactionResponse>;
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param txId - id of the transaction to search for
+     */
+    getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
     getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getEtherPrice(): Promise<number>;
