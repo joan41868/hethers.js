@@ -192,7 +192,7 @@ describe("Test Contract Transaction Population", function () {
     var testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     var fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
     var contract = new ethers_1.ethers.Contract(testAddress, abi);
-    var contractConnected = contract.connect(ethers_1.ethers.getDefaultProvider());
+    var contractConnected = contract.connect(ethers_1.ethers.getDefaultProvider("homestead"));
     it("standard population", function () {
         return __awaiter(this, void 0, void 0, function () {
             var tx;

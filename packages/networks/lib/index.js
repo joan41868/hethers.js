@@ -4,7 +4,6 @@ exports.getNetwork = void 0;
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
-;
 function isRenetworkable(value) {
     return (value && typeof (value.renetwork) === "function");
 }
@@ -84,6 +83,26 @@ function etcDefaultProvider(url, network) {
     };
     return func;
 }
+function hederaDefaultProvider(network) {
+    var func = function (providers, options) {
+        if (options == null) {
+            options = {};
+        }
+        var providerList = [];
+        // TODO: JSON RPC provider, FallbackProvider for hedera
+        if (providers.DefaultHederaProvider) {
+            providerList.push(new providers.DefaultHederaProvider(network));
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+        return providerList[0];
+    };
+    func.renetwork = function (network) {
+        return hederaDefaultProvider(network);
+    };
+    return func;
+}
 var homestead = {
     chainId: 1,
     ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -104,10 +123,8 @@ var classicMordor = {
 var networks = {
     unspecified: { chainId: 0, name: "unspecified" },
     homestead: homestead,
-    mainnet: homestead,
     morden: { chainId: 2, name: "morden" },
     ropsten: ropsten,
-    testnet: ropsten,
     rinkeby: {
         chainId: 4,
         ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -144,6 +161,22 @@ var networks = {
     maticmum: { chainId: 80001, name: "maticmum" },
     bnb: { chainId: 56, name: "bnb" },
     bnbt: { chainId: 97, name: "bnbt" },
+    // hedera networks
+    mainnet: {
+        chainId: 290,
+        name: 'mainnet',
+        _defaultProvider: hederaDefaultProvider("mainnet")
+    },
+    testnet: {
+        chainId: 291,
+        name: 'testnet',
+        _defaultProvider: hederaDefaultProvider("testnet")
+    },
+    previewnet: {
+        chainId: 292,
+        name: 'previewnet',
+        _defaultProvider: hederaDefaultProvider("previewnet")
+    }
 };
 /**
  *  getNetwork

@@ -19,45 +19,36 @@ import { Network, Networkish } from "@ethersproject/networks";
 
 import { BaseProvider, EnsProvider, EnsResolver, Resolver } from "./base-provider";
 
-import { AlchemyProvider, AlchemyWebSocketProvider } from "./alchemy-provider";
-import { CloudflareProvider } from "./cloudflare-provider";
-import { EtherscanProvider } from "./etherscan-provider";
-import { FallbackProvider, FallbackProviderConfig } from "./fallback-provider";
-import { IpcProvider } from "./ipc-provider";
-import { InfuraProvider, InfuraWebSocketProvider } from "./infura-provider";
-import { JsonRpcProvider, JsonRpcSigner } from "./json-rpc-provider";
-import { JsonRpcBatchProvider } from "./json-rpc-batch-provider";
-import { NodesmithProvider } from "./nodesmith-provider";
-import { PocketProvider } from "./pocket-provider";
-import { StaticJsonRpcProvider, UrlJsonRpcProvider } from "./url-json-rpc-provider";
-import { Web3Provider } from "./web3-provider";
-import { WebSocketProvider } from "./websocket-provider";
-import { ExternalProvider, JsonRpcFetchFunc } from "./web3-provider";
+import { FallbackProviderConfig } from "./fallback-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
-import { CommunityResourcable, Formatter, isCommunityResourcable, isCommunityResource, showThrottleMessage } from "./formatter";
+import {
+    CommunityResourcable,
+    Formatter,
+    isCommunityResourcable,
+    isCommunityResource,
+    showThrottleMessage
+} from "./formatter";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+
 const logger = new Logger(version);
 
 ////////////////////////
 // Helper Functions
 
 function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
-    if (network == null) { network = "homestead"; }
+    if (network == null) { network = "mainnet"; }
 
     // If passed a URL, figure out the right type of provider based on the scheme
-    if (typeof(network) === "string") {
-        // @TODO: Add support for IpcProvider; maybe if it ends in ".ipc"?
+    if (typeof (network) === "string") {
 
         // Handle http and ws (and their secure variants)
         const match = network.match(/^(ws|http)s?:/i);
         if (match) {
             switch (match[1]) {
-                case "http":
-                    return new JsonRpcProvider(network);
-                case "ws":
-                    return new WebSocketProvider(network);
+                // case "http":
+                //     return new JsonRpcProvider(network);
                 default:
                     logger.throwArgumentError("unsupported URL scheme", "network", network);
             }
@@ -73,18 +64,7 @@ function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
     }
 
     return n._defaultProvider({
-        FallbackProvider,
-
-        AlchemyProvider,
-        CloudflareProvider,
-        EtherscanProvider,
-        InfuraProvider,
-        JsonRpcProvider,
-        NodesmithProvider,
-        PocketProvider,
-        Web3Provider,
-
-        IpcProvider,
+        DefaultHederaProvider,
     }, options);
 }
 
@@ -99,34 +79,15 @@ export {
 
     Resolver,
 
-    UrlJsonRpcProvider,
 
     ///////////////////////
     // Concrete Providers
 
-    FallbackProvider,
 
-    AlchemyProvider,
-    AlchemyWebSocketProvider,
-    CloudflareProvider,
-    EtherscanProvider,
-    InfuraProvider,
-    InfuraWebSocketProvider,
-    JsonRpcProvider,
-    JsonRpcBatchProvider,
-    NodesmithProvider,
-    PocketProvider,
-    StaticJsonRpcProvider,
-    Web3Provider,
-    WebSocketProvider,
-
-    IpcProvider,
     DefaultHederaProvider,
 
     ///////////////////////
     // Signer
-
-    JsonRpcSigner,
 
 
     ///////////////////////
@@ -158,9 +119,6 @@ export {
     TransactionReceipt,
     TransactionRequest,
     TransactionResponse,
-
-    ExternalProvider,
-    JsonRpcFetchFunc,
 
     FallbackProviderConfig,
 

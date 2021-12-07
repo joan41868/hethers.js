@@ -15,7 +15,7 @@ type DefaultProviderFunc = (providers: any, options?: any) => any;
 
 interface Renetworkable extends DefaultProviderFunc {
     renetwork: (network: Network) => DefaultProviderFunc;
-};
+}
 
 function isRenetworkable(value: any): value is Renetworkable {
     return (value && typeof(value.renetwork) === "function");
@@ -102,6 +102,31 @@ function etcDefaultProvider(url: string, network: string | Network): Renetworkab
     return func;
 }
 
+function hederaDefaultProvider(network: string | Network): Renetworkable {
+    const func = function (providers: any, options?: any): any {
+        if (options == null) {
+            options = {};
+        }
+        const providerList: Array<any> = [];
+
+        // TODO: JSON RPC provider, FallbackProvider for hedera
+        if (providers.DefaultHederaProvider) {
+            providerList.push(new providers.DefaultHederaProvider(network));
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+
+        return providerList[0];
+    };
+
+    func.renetwork = function (network: Network) {
+        return hederaDefaultProvider(network);
+    };
+
+    return func;
+}
+
 const homestead: Network = {
     chainId: 1,
     ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -126,12 +151,10 @@ const networks: { [name: string]: Network } = {
     unspecified: { chainId: 0, name: "unspecified" },
 
     homestead: homestead,
-    mainnet: homestead,
 
     morden: { chainId: 2, name: "morden" },
 
     ropsten: ropsten,
-    testnet: ropsten,
 
     rinkeby: {
         chainId: 4,
@@ -179,6 +202,23 @@ const networks: { [name: string]: Network } = {
 
     bnb: { chainId: 56, name: "bnb" },
     bnbt: { chainId: 97, name: "bnbt" },
+
+    // hedera networks
+    mainnet: {
+        chainId: 290,
+        name: 'mainnet',
+        _defaultProvider: hederaDefaultProvider("mainnet")
+    },
+    testnet: {
+        chainId: 291,
+        name: 'testnet',
+        _defaultProvider: hederaDefaultProvider("testnet")
+    },
+    previewnet: {
+        chainId: 292,
+        name: 'previewnet',
+        _defaultProvider: hederaDefaultProvider("previewnet")
+    }
 }
 
 /**

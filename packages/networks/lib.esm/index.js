@@ -2,7 +2,6 @@
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
-;
 function isRenetworkable(value) {
     return (value && typeof (value.renetwork) === "function");
 }
@@ -82,6 +81,26 @@ function etcDefaultProvider(url, network) {
     };
     return func;
 }
+function hederaDefaultProvider(network) {
+    const func = function (providers, options) {
+        if (options == null) {
+            options = {};
+        }
+        const providerList = [];
+        // TODO: JSON RPC provider, FallbackProvider for hedera
+        if (providers.DefaultHederaProvider) {
+            providerList.push(new providers.DefaultHederaProvider(network));
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+        return providerList[0];
+    };
+    func.renetwork = function (network) {
+        return hederaDefaultProvider(network);
+    };
+    return func;
+}
 const homestead = {
     chainId: 1,
     ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -102,10 +121,8 @@ const classicMordor = {
 const networks = {
     unspecified: { chainId: 0, name: "unspecified" },
     homestead: homestead,
-    mainnet: homestead,
     morden: { chainId: 2, name: "morden" },
     ropsten: ropsten,
-    testnet: ropsten,
     rinkeby: {
         chainId: 4,
         ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
@@ -142,6 +159,22 @@ const networks = {
     maticmum: { chainId: 80001, name: "maticmum" },
     bnb: { chainId: 56, name: "bnb" },
     bnbt: { chainId: 97, name: "bnbt" },
+    // hedera networks
+    mainnet: {
+        chainId: 290,
+        name: 'mainnet',
+        _defaultProvider: hederaDefaultProvider("mainnet")
+    },
+    testnet: {
+        chainId: 291,
+        name: 'testnet',
+        _defaultProvider: hederaDefaultProvider("testnet")
+    },
+    previewnet: {
+        chainId: 292,
+        name: 'previewnet',
+        _defaultProvider: hederaDefaultProvider("previewnet")
+    }
 };
 /**
  *  getNetwork

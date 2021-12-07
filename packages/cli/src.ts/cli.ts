@@ -530,28 +530,28 @@ export abstract class Plugin {
         let network = (argParser.consumeOption("network") || "homestead");
         let providers: Array<ethers.providers.BaseProvider> = [ ];
 
-        let rpc: Array<ethers.providers.JsonRpcProvider> = [ ];
+        // let rpc: Array<ethers.providers.JsonRpcProvider> = [ ];
         argParser.consumeOptions("rpc").forEach((url) => {
-            let provider = new ethers.providers.JsonRpcProvider(url)
-            providers.push(provider);
-            rpc.push(provider);
+            // let provider = new ethers.providers.JsonRpcProvider(url)
+            // providers.push(provider);
+            // rpc.push(provider);
         });
 
         if (argParser.consumeFlag("alchemy")) {
-            providers.push(new ethers.providers.AlchemyProvider(network));
+            // providers.push(new ethers.providers.AlchemyProvider(network));
         }
 
         if (argParser.consumeFlag("etherscan")) {
-            providers.push(new ethers.providers.EtherscanProvider(network));
+            // providers.push(new ethers.providers.EtherscanProvider(network));
         }
 
         if (argParser.consumeFlag("infura")) {
-            providers.push(new ethers.providers.InfuraProvider(network));
+            // providers.push(new ethers.providers.InfuraProvider(network));
         }
 
-        if (argParser.consumeFlag("nodesmith")) {
-            providers.push(new ethers.providers.NodesmithProvider(network));
-        }
+        // if (argParser.consumeFlag("nodesmith")) {
+        //     providers.push(new ethers.providers.NodesmithProvider(network));
+        // }
 
         if (argParser.consumeFlag("offline")) {
             providers.push(new OfflineProvider(network));
@@ -560,7 +560,7 @@ export abstract class Plugin {
         if (providers.length === 1) {
             ethers.utils.defineReadOnly(this, "provider", providers[0]);
         } else if (providers.length) {
-            ethers.utils.defineReadOnly(this, "provider", new ethers.providers.FallbackProvider(providers));
+            // ethers.utils.defineReadOnly(this, "provider", new ethers.providers.FallbackProvider(providers));
         } else {
             ethers.utils.defineReadOnly(this, "provider", ethers.getDefaultProvider(network));
         }
@@ -598,18 +598,18 @@ export abstract class Plugin {
                     break;
 
                 case "account-rpc":
-                    if (rpc.length !== 1) {
-                        this.throwUsageError("--account-rpc requires exactly one JSON-RPC provider");
-                    }
+                    // if (rpc.length !== 1) {
+                    //     this.throwUsageError("--account-rpc requires exactly one JSON-RPC provider");
+                    // }
 
                     try {
-                        let signer: ethers.providers.JsonRpcSigner = null;
-                        if (account.value.match(/^[0-9]+$/)) {
-                            signer = rpc[0].getSigner(parseInt(account.value));
-                        } else {
-                            signer = rpc[0].getSigner(ethers.utils.getAddress(account.value));
-                        }
-                        accounts.push(new WrappedSigner(signer.getAddress(), () => Promise.resolve(signer), this));
+                        // let signer: ethers.providers.JsonRpcSigner = null;
+                        // if (account.value.match(/^[0-9]+$/)) {
+                            // signer = rpc[0].getSigner(parseInt(account.value));
+                        // } else {
+                            // signer = rpc[0].getSigner(ethers.utils.getAddress(account.value));
+                        // }
+                        // accounts.push(new WrappedSigner(signer.getAddress(), () => Promise.resolve(signer), this));
                     } catch (error) {
                         this.throwUsageError("invalid --account-rpc - " + account.value);
                     }
