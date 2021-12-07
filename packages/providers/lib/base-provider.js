@@ -941,6 +941,8 @@ var BaseProvider = /** @class */ (function (_super) {
     });
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
+    // With the current hedera implementation, we do not support a changeable networks,
+    // thus we do not need to query at this level
     BaseProvider.prototype.detectNetwork = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {

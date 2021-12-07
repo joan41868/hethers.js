@@ -1898,7 +1898,6 @@ function mapNetworkToHederaNetworkName(net: Network | string | number | Promise<
     }
 }
 
-
 /**
  * Encapsulates the required properties for searching by transaction_id and status SUCCESS
  */

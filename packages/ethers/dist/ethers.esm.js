@@ -70823,7 +70823,7 @@ function getCall(channel, path, options) {
  * object and handles serialization and deseraizliation.
  */
 class BaseInterceptingCall {
-    constructor(call,
+    constructor(call, 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     methodDefinition) {
         this.call = call;
@@ -70935,7 +70935,7 @@ class BaseUnaryInterceptingCall extends BaseInterceptingCall {
  */
 class BaseStreamingInterceptingCall extends BaseInterceptingCall {
 }
-function getBottomInterceptingCall(channel, options,
+function getBottomInterceptingCall(channel, options, 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 methodDefinition) {
     const call = getCall(channel, methodDefinition.path, options);
@@ -70946,7 +70946,7 @@ methodDefinition) {
         return new BaseUnaryInterceptingCall(call, methodDefinition);
     }
 }
-function getInterceptingCall(interceptorArgs,
+function getInterceptingCall(interceptorArgs, 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 methodDefinition, options, channel) {
     if (interceptorArgs.clientInterceptors.length > 0 &&
@@ -83701,7 +83701,7 @@ class ServerWritableStreamImpl extends stream_1.Writable {
     getDeadline() {
         return this.call.getDeadline();
     }
-    _write(chunk, encoding,
+    _write(chunk, encoding, 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     callback) {
         try {
@@ -90975,6 +90975,7 @@ class BaseProvider extends Provider {
             this._ready().catch((error) => { });
         }
         else {
+            // defineReadOnly(this, "_network", getNetwork(network));
             this._network = getNetwork(network);
             this._networkPromise = Promise.resolve(this._network);
             const knownNetwork = getStatic(new.target, "getNetwork")(network);
@@ -91238,6 +91239,8 @@ class BaseProvider extends Provider {
     }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
+    // With the current hedera implementation, we do not support a changeable networks,
+    // thus we do not need to query at this level
     detectNetwork() {
         return __awaiter$9(this, void 0, void 0, function* () {
             this._networkPromise = Promise.resolve(this._network);
