@@ -1257,20 +1257,26 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     async getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
         await this.getNetwork();
-        const params = await resolveProperties({
-            address: this._getAddress(addressOrName),
-            blockTag: this._getBlockTag(blockTag)
-        });
-
-        const result = await this.perform("getCode", params);
+        addressOrName = await addressOrName;
+        const { shard, realm, num } = getAccountFromAddress(addressOrName);
+        const shardNum = BigNumber.from(shard).toNumber();
+        const realmNum = BigNumber.from(realm).toNumber();
+        const accountNum = BigNumber.from(num).toNumber();
+        const endpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;       
         try {
-            return hexlify(result);
+            let { data } = await axios.get(this.mirrorNodeUrl + endpoint);
+            console.log("REST Api call: " + this.mirrorNodeUrl + endpoint);
+            if (data.bytecode != null) {
+                return hexlify(data.bytecode);
+            }
+            return null;
         } catch (error) {
             return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                 method: "getCode",
-                params, result, error
+                params: {address: addressOrName},
+                error
             });
-        }
+        } 
     }
 
     async getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
