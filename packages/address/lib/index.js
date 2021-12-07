@@ -124,13 +124,16 @@ function parseAccount(account) {
     if (typeof (account) !== "string") {
         logger.throwArgumentError("invalid account", "account", account);
     }
-    if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
+    if (account.match(/^[0-9]+\.[0-9]+\.[0-9]+$/)) {
         var parsedAccount = account.split('.');
         result = {
             shard: BigInt(parsedAccount[0]),
             realm: BigInt(parsedAccount[1]),
             num: BigInt(parsedAccount[2])
         };
+    }
+    else if (isAddress(account)) {
+        result = getAccountFromAddress(account);
     }
     else {
         logger.throwArgumentError("invalid account", "account", account);

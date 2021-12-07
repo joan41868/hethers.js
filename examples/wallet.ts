@@ -22,46 +22,49 @@ const hethers = require("ethers");
 	console.log(wallet2);
 
 	/**
-	 * Example 3: Instantiation of random Wallet
-	 * TODO not creating new account at Hedera yet
+	 * Example 3: Instantiation of Wallet using Hedera Alias
 	 */
-	const newWallet = await hethers.Wallet.createRandom(wallet1);
+	const hederaAlias = {
+		alias: "0.0.BMAiA3xjpm4sULCFp5YuREmQDwJ7bbjrvFhi/ZnWaFNrRFGTh330h4aPqg8zZkJh7qzVjaNOWy1qpdt8bRbDFlc=",
+		privateKey: "0xc59f86eef3511f27450d3baf2139ae535061c4743a7f02a6e89fed014d551b4a"
+	}
+	const wallet3 = new hethers.Wallet(hederaAlias);
+	console.log(wallet3);
+
+	/**
+	 * Example 4: Instantiation of random Wallet
+	 */
+	const newWallet = hethers.Wallet.createRandom();
 	console.log(newWallet);
 
 	/**
-	 * Example 4: Instantiation of Wallet from mnemonic
+	 * Example 5: Instantiation of Wallet from mnemonic
 	 */
 	const mnemonic = "bullet network weekend dash ahead kick donkey require blame ability punch surprise";
-	const mnemonicWallet1 = hethers.Wallet.fromMnemonic("0.0.4", mnemonic);
+	const mnemonicWallet1 = hethers.Wallet.fromMnemonic(mnemonic);
 	console.log(mnemonicWallet1);
-	const mnemonicWallet2 = hethers.Wallet.fromMnemonic({shard: BigInt(0), realm: BigInt(0), num: BigInt(4)}, mnemonic);
-	console.log(mnemonicWallet2);
-	const mnemonicWallet3 = hethers.Wallet.fromMnemonic("0x0000000000000000000000000000000000000004", mnemonic);
-	console.log(mnemonicWallet3);
 
 	/**
-	 * Example 5: Instantiation of HDNode from seed
+	 * Example 6: Instantiation of Wallet using SigningKey
 	 */
-	const seedHDWallet = hethers.utils.HDNode.fromSeed("0.0.1", "0xdeadbeefdeadbeefdeadbeefdeadbeef");
-	console.log(seedHDWallet);
+	const fromSigningKey = new hethers.Wallet(wallet1._signingKey());
+	console.log(fromSigningKey);
 
 	/**
-	 * Example 6: Instantiation of HDNode from mnemonic
+	 * Example 7: Instantiation of Wallet using Private Key
 	 */
-	const mnemonicHDWallet = hethers.utils.HDNode.fromMnemonic("0.0.1", mnemonic);
-	console.log(mnemonicHDWallet);
+	const fromPk = new hethers.Wallet("0xc59f86eef3511f27450d3baf2139ae535061c4743a7f02a6e89fed014d551b4a");
+	console.log(fromPk);
 
 	/**
-	 * Example 7: Instantiation of HDNode from extended key
+	 * Example 8: Connecting Wallet to Account
 	 */
-	const extendedKeyWallet = hethers.utils.HDNode.fromExtendedKey("0.0.1", seedHDWallet.neuter().extendedKey);
-	console.log(extendedKeyWallet);
-
-	/**
-	 * Example 8: Derive path from HDNode
-	 */
-	const derivedWallet = seedHDWallet.derivePath("42");
-	console.log(derivedWallet);
+	const connected1 = fromPk.connectAccount("0.0.1")
+	const connected2 = fromPk.connectAccount("0x0000000000000000000000000000000000000001")
+	const connected3 = fromPk.connectAccount({shard: BigInt(0), realm: BigInt(0), num: BigInt(1)})
+	console.log(connected1);
+	console.log(connected2);
+	console.log(connected3);
 
 	/**
 	 * Example 9: Encryption of Wallet

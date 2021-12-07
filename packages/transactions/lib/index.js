@@ -19,7 +19,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parse = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAddress = exports.TransactionTypes = void 0;
+exports.parse = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
 var address_1 = require("@ethersproject/address");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
@@ -30,6 +30,7 @@ var RLP = __importStar(require("@ethersproject/rlp"));
 var signing_key_1 = require("@ethersproject/signing-key");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
+var utils_1 = require("ethers/lib/utils");
 var logger = new logger_1.Logger(_version_1.version);
 var TransactionTypes;
 (function (TransactionTypes) {
@@ -68,6 +69,15 @@ function computeAddress(key) {
     return (0, address_1.getAddress)((0, bytes_1.hexDataSlice)((0, keccak256_1.keccak256)((0, bytes_1.hexDataSlice)(publicKey, 1)), 12));
 }
 exports.computeAddress = computeAddress;
+function computeAlias(key) {
+    var publicKey = (0, signing_key_1.computePublicKey)(key);
+    return computeAliasFromPubKey(publicKey);
+}
+exports.computeAlias = computeAlias;
+function computeAliasFromPubKey(pubKey) {
+    return "0.0." + utils_1.base64.encode(pubKey);
+}
+exports.computeAliasFromPubKey = computeAliasFromPubKey;
 function recoverAddress(digest, signature) {
     return computeAddress((0, signing_key_1.recoverPublicKey)((0, bytes_1.arrayify)(digest), signature));
 }

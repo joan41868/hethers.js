@@ -25,7 +25,7 @@ function hasMnemonic(value: any): value is { mnemonic: Mnemonic } {
 }
 
 export interface _KeystoreAccount {
-    address: string;
+    address?: string;
     privateKey: string;
     mnemonic?: Mnemonic;
 
@@ -33,7 +33,7 @@ export interface _KeystoreAccount {
 }
 
 export class KeystoreAccount extends Description<_KeystoreAccount> implements ExternallyOwnedAccount {
-    readonly address: string;
+    readonly address?: string;
     readonly privateKey: string;
     readonly mnemonic?: Mnemonic;
 
@@ -91,15 +91,15 @@ function _getAccount(data: any, key: Uint8Array): KeystoreAccount {
 
     const mnemonicKey = key.slice(32, 64);
 
-    if (!data.address) {
-        throw new Error("no address provided");
+    let address;
+    if (data.address) {
+        address = data.address.toLowerCase();
+        if (address.substring(0, 2) !== "0x") { address = "0x" + address; }
     }
-    let check = data.address.toLowerCase();
-    if (check.substring(0, 2) !== "0x") { check = "0x" + check; }
 
     const account: _KeystoreAccount = {
         _isKeystoreAccount: true,
-        address: getAddress(check),
+        address: address ? getAddress(address) : undefined,
         privateKey: hexlify(privateKey)
     };
 
@@ -315,8 +315,9 @@ export function encrypt(account: ExternallyOwnedAccount, password: Bytes | strin
         const mac = keccak256(concat([macPrefix, ciphertext]))
 
         // See: https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition
+        // As per Version 3, the address field is OPTIONAL
         const data: { [key: string]: any } = {
-            address: account.address.substring(2).toLowerCase(),
+            address: account.address ? account.address.substring(2).toLowerCase() : undefined,
             id: uuidV4(uuidRandom),
             version: 3,
             Crypto: {

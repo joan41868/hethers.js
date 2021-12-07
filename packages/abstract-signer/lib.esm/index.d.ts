@@ -2,6 +2,7 @@ import { BlockTag, FeeData, Provider, TransactionRequest, TransactionResponse } 
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable } from "@ethersproject/properties";
+import { Account } from "@ethersproject/address";
 export interface TypedDataDomain {
     name?: string;
     version?: string;
@@ -14,11 +15,9 @@ export interface TypedDataField {
     type: string;
 }
 export interface ExternallyOwnedAccount {
-    readonly address: string;
-    readonly privateKey: string;
-}
-export interface HederaAccount {
-    readonly account: string;
+    readonly address?: string;
+    readonly account?: Account;
+    readonly alias?: string;
     readonly privateKey: string;
 }
 export interface TypedDataSigner {

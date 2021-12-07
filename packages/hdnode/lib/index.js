@@ -12,7 +12,7 @@ var sha2_1 = require("@ethersproject/sha2");
 var wordlists_1 = require("@ethersproject/wordlists");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
-var address_1 = require("@ethersproject/address");
+var transactions_1 = require("@ethersproject/transactions");
 var logger = new logger_1.Logger(_version_1.version);
 var N = bignumber_1.BigNumber.from("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
 // "Bitcoin seed"
@@ -47,7 +47,6 @@ function getWordlist(wordlist) {
 }
 var _constructorGuard = {};
 exports.defaultPath = "m/44'/60'/0'/0/0";
-;
 var HDNode = /** @class */ (function () {
     /**
      *  This constructor should not be called directly.
@@ -56,7 +55,7 @@ var HDNode = /** @class */ (function () {
      *   - fromMnemonic
      *   - fromSeed
      */
-    function HDNode(constructorGuard, accountLike, privateKey, publicKey, parentFingerprint, chainCode, index, depth, mnemonicOrPath) {
+    function HDNode(constructorGuard, privateKey, publicKey, parentFingerprint, chainCode, index, depth, mnemonicOrPath) {
         var _newTarget = this.constructor;
         logger.checkNew(_newTarget, HDNode);
         /* istanbul ignore if */
@@ -72,17 +71,9 @@ var HDNode = /** @class */ (function () {
             (0, properties_1.defineReadOnly)(this, "privateKey", null);
             (0, properties_1.defineReadOnly)(this, "publicKey", (0, bytes_1.hexlify)(publicKey));
         }
+        (0, properties_1.defineReadOnly)(this, "alias", (0, transactions_1.computeAlias)(this.privateKey));
         (0, properties_1.defineReadOnly)(this, "parentFingerprint", parentFingerprint);
         (0, properties_1.defineReadOnly)(this, "fingerprint", (0, bytes_1.hexDataSlice)((0, sha2_1.ripemd160)((0, sha2_1.sha256)(this.publicKey)), 0, 4));
-        if (typeof (accountLike) == "string" && (0, address_1.isAddress)(accountLike)) {
-            (0, properties_1.defineReadOnly)(this, "address", (0, address_1.getAddress)(accountLike));
-            (0, properties_1.defineReadOnly)(this, "account", (0, address_1.getAccountFromAddress)(accountLike));
-        }
-        else {
-            var addr = (0, address_1.getAddressFromAccount)(accountLike);
-            (0, properties_1.defineReadOnly)(this, "address", addr);
-            (0, properties_1.defineReadOnly)(this, "account", (0, address_1.getAccountFromAddress)(addr));
-        }
         (0, properties_1.defineReadOnly)(this, "chainCode", chainCode);
         (0, properties_1.defineReadOnly)(this, "index", index);
         (0, properties_1.defineReadOnly)(this, "depth", depth);
@@ -125,7 +116,7 @@ var HDNode = /** @class */ (function () {
         configurable: true
     });
     HDNode.prototype.neuter = function () {
-        return new HDNode(_constructorGuard, this.account, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
+        return new HDNode(_constructorGuard, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
     };
     HDNode.prototype._derive = function (index) {
         if (index > 0xffffffff) {
@@ -179,7 +170,7 @@ var HDNode = /** @class */ (function () {
                 locale: (srcMnemonic.locale || "en")
             });
         }
-        return new HDNode(_constructorGuard, this.account, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
+        return new HDNode(_constructorGuard, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
     };
     HDNode.prototype.derivePath = function (path) {
         var components = path.split("/");
@@ -212,29 +203,29 @@ var HDNode = /** @class */ (function () {
         }
         return result;
     };
-    HDNode._fromSeed = function (accountLike, seed, mnemonic) {
+    HDNode._fromSeed = function (seed, mnemonic) {
         var seedArray = (0, bytes_1.arrayify)(seed);
         if (seedArray.length < 16 || seedArray.length > 64) {
             throw new Error("invalid seed");
         }
         var I = (0, bytes_1.arrayify)((0, sha2_1.computeHmac)(sha2_1.SupportedAlgorithm.sha512, MasterSecret, seedArray));
-        return new HDNode(_constructorGuard, accountLike, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
+        return new HDNode(_constructorGuard, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
     };
-    HDNode.fromMnemonic = function (accountLike, mnemonic, password, wordlist) {
+    HDNode.fromMnemonic = function (mnemonic, password, wordlist) {
         // If a locale name was passed in, find the associated wordlist
         wordlist = getWordlist(wordlist);
         // Normalize the case and spacing in the mnemonic (throws if the mnemonic is invalid)
         mnemonic = entropyToMnemonic(mnemonicToEntropy(mnemonic, wordlist), wordlist);
-        return HDNode._fromSeed(accountLike, mnemonicToSeed(mnemonic, password), {
+        return HDNode._fromSeed(mnemonicToSeed(mnemonic, password), {
             phrase: mnemonic,
             path: "m",
             locale: wordlist.locale
         });
     };
-    HDNode.fromSeed = function (accountLike, seed) {
-        return HDNode._fromSeed(accountLike, seed, null);
+    HDNode.fromSeed = function (seed) {
+        return HDNode._fromSeed(seed, null);
     };
-    HDNode.fromExtendedKey = function (accountLike, extendedKey) {
+    HDNode.fromExtendedKey = function (extendedKey) {
         var bytes = basex_1.Base58.decode(extendedKey);
         if (bytes.length !== 82 || base58check(bytes.slice(0, 78)) !== extendedKey) {
             logger.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
@@ -248,14 +239,14 @@ var HDNode = /** @class */ (function () {
             // Public Key
             case "0x0488b21e":
             case "0x043587cf":
-                return new HDNode(_constructorGuard, accountLike, null, (0, bytes_1.hexlify)(key), parentFingerprint, chainCode, index, depth, null);
+                return new HDNode(_constructorGuard, null, (0, bytes_1.hexlify)(key), parentFingerprint, chainCode, index, depth, null);
             // Private Key
             case "0x0488ade4":
             case "0x04358394 ":
                 if (key[0] !== 0) {
                     break;
                 }
-                return new HDNode(_constructorGuard, accountLike, (0, bytes_1.hexlify)(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
+                return new HDNode(_constructorGuard, (0, bytes_1.hexlify)(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
         }
         return logger.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
     };

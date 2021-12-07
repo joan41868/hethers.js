@@ -53,16 +53,16 @@ function _getAccount(data, key) {
         });
     }
     const mnemonicKey = key.slice(32, 64);
-    if (!data.address) {
-        throw new Error("no address provided");
-    }
-    let check = data.address.toLowerCase();
-    if (check.substring(0, 2) !== "0x") {
-        check = "0x" + check;
+    let address;
+    if (data.address) {
+        address = data.address.toLowerCase();
+        if (address.substring(0, 2) !== "0x") {
+            address = "0x" + address;
+        }
     }
     const account = {
         _isKeystoreAccount: true,
-        address: getAddress(check),
+        address: address ? getAddress(address) : undefined,
         privateKey: hexlify(privateKey)
     };
     // Version 0.1 x-ethers metadata must contain an encrypted mnemonic phrase
@@ -258,8 +258,9 @@ export function encrypt(account, password, options, progressCallback) {
         // Compute the message authentication code, used to check the password
         const mac = keccak256(concat([macPrefix, ciphertext]));
         // See: https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition
+        // As per Version 3, the address field is OPTIONAL
         const data = {
-            address: account.address.substring(2).toLowerCase(),
+            address: account.address ? account.address.substring(2).toLowerCase() : undefined,
             id: uuidV4(uuidRandom),
             version: 3,
             Crypto: {

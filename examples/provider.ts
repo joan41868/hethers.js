@@ -1,6 +1,5 @@
 import { DefaultHederaProvider } from "@ethersproject/providers";
 import { getAddressFromAccount } from "ethers/lib/utils";
-import { AccountId, TransferTransaction } from "@hashgraph/sdk";
 import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
 
 (async () => {
