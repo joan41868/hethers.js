@@ -71,6 +71,9 @@ var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 var formatter_1 = require("./formatter");
+var address_1 = require("@ethersproject/address");
+var sdk_1 = require("@hashgraph/sdk");
+var axios_1 = __importDefault(require("axios"));
 //////////////////////////////
 // Event Serializeing
 function checkTopic(topic) {
@@ -609,7 +612,6 @@ var BaseProvider = /** @class */ (function (_super) {
         var _this = this;
         logger.checkNew(_newTarget, abstract_provider_1.Provider);
         _this = _super.call(this) || this;
-        // Events being listened to
         _this._events = [];
         _this._emitted = { block: -2 };
         _this.formatter = _newTarget.getFormatter();
@@ -628,6 +630,9 @@ var BaseProvider = /** @class */ (function (_super) {
             _this._ready().catch(function (error) { });
         }
         else {
+            // defineReadOnly(this, "_network", getNetwork(network));
+            _this._network = (0, networks_1.getNetwork)(network);
+            _this._networkPromise = Promise.resolve(_this._network);
             var knownNetwork = (0, properties_1.getStatic)(_newTarget, "getNetwork")(network);
             if (knownNetwork) {
                 (0, properties_1.defineReadOnly)(_this, "_network", knownNetwork);
@@ -641,6 +646,8 @@ var BaseProvider = /** @class */ (function (_super) {
         _this._lastBlockNumber = -2;
         _this._pollingInterval = 4000;
         _this._fastQueryDate = 0;
+        _this.mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
+        _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(network));
         return _this;
     }
     BaseProvider.prototype._ready = function () {
@@ -677,10 +684,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         // Possible this call stacked so do not call defineReadOnly again
                         if (this._network == null) {
                             if (this.anyNetwork) {
-                                this._network = network;
+                                // this._network = network;
+                                (0, properties_1.defineReadOnly)(this, "_network", network);
                             }
                             else {
-                                (0, properties_1.defineReadOnly)(this, "_network", network);
+                                this._network = network;
                             }
                             this.emit("network", network, null);
                         }
@@ -720,7 +728,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     // @TODO: Remove this and just use getNetwork
     BaseProvider.getNetwork = function (network) {
-        return (0, networks_1.getNetwork)((network == null) ? "homestead" : network);
+        return (0, networks_1.getNetwork)((network == null) ? "mainnet" : network);
     };
     // Fetches the blockNumber, but will reuse any result that is less
     // than maxAge old or has been requested since the last request
@@ -934,12 +942,13 @@ var BaseProvider = /** @class */ (function (_super) {
     });
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
+    // With the current hedera implementation, we do not support a changeable networks,
+    // thus we do not need to query at this level
     BaseProvider.prototype.detectNetwork = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, logger.throwError("provider does not support network detection", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                        operation: "provider.detectNetwork"
-                    })];
+                this._networkPromise = Promise.resolve(this._network);
+                return [2 /*return*/, this._networkPromise];
             });
         });
     };
@@ -1293,35 +1302,44 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.getBalance = function (addressOrName, blockTag) {
+    /**
+     *  AccountBalance query implementation, using the hashgraph sdk.
+     *  It returns the tinybar balance of the given address.
+     *
+     * @param addressOrName The address to check balance of
+     */
+    BaseProvider.prototype.getBalance = function (addressOrName) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_7;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                address: this._getAddress(addressOrName),
-                                blockTag: this._getBlockTag(blockTag)
-                            })];
+                        _b.sent();
+                        return [4 /*yield*/, addressOrName];
                     case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("getBalance", params)];
+                        addressOrName = _b.sent();
+                        _a = (0, address_1.getAccountFromAddress)(addressOrName), shard = _a.shard, realm = _a.realm, num = _a.num;
+                        shardNum = bignumber_1.BigNumber.from(shard).toNumber();
+                        realmNum = bignumber_1.BigNumber.from(realm).toNumber();
+                        accountNum = bignumber_1.BigNumber.from(num).toNumber();
+                        _b.label = 3;
                     case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, bignumber_1.BigNumber.from(result)];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getBalance",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
+                        _b.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, new sdk_1.AccountBalanceQuery()
+                                .setAccountId(new sdk_1.AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                                .execute(this.hederaClient)];
+                    case 4:
+                        balance = _b.sent();
+                        return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
+                    case 5:
+                        error_7 = _b.sent();
+                        return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                method: "AccountBalanceQuery",
+                                params: { address: addressOrName },
+                                error: error_7
+                            })];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
@@ -1482,7 +1500,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         return __awaiter(this, void 0, void 0, function () {
-            var hexTx, tx, blockNumber, hash, error_7;
+            var hexTx, tx, blockNumber, hash, error_8;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1506,10 +1524,10 @@ var BaseProvider = /** @class */ (function (_super) {
                         hash = _a.sent();
                         return [2 /*return*/, this._wrapTransaction(tx, hash, blockNumber)];
                     case 6:
-                        error_7 = _a.sent();
-                        error_7.transaction = tx;
-                        error_7.transactionHash = tx.hash;
-                        throw error_7;
+                        error_8 = _a.sent();
+                        error_8.transaction = tx;
+                        error_8.transactionHash = tx.hash;
+                        throw error_8;
                     case 7: return [2 /*return*/];
                 }
             });
@@ -1682,7 +1700,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getBlock = function (blockHashOrBlockTag, includeTransactions) {
         return __awaiter(this, void 0, void 0, function () {
-            var blockNumber, params, _a, error_8;
+            var blockNumber, params, _a, error_9;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -1710,7 +1728,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [3 /*break*/, 6];
                     case 5:
-                        error_8 = _b.sent();
+                        error_9 = _b.sent();
                         logger.throwArgumentError("invalid block hash or block tag", "blockHashOrBlockTag", blockHashOrBlockTag);
                         return [3 /*break*/, 6];
                     case 6: return [2 /*return*/, (0, web_1.poll)(function () { return __awaiter(_this, void 0, void 0, function () {
@@ -1785,51 +1803,29 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.getBlockWithTransactions = function (blockHashOrBlockTag) {
         return (this._getBlock(blockHashOrBlockTag, true));
     };
-    BaseProvider.prototype.getTransaction = function (transactionHash) {
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param txId - id of the transaction to search for
+     */
+    BaseProvider.prototype.getTransaction = function (txId) {
         return __awaiter(this, void 0, void 0, function () {
-            var params;
-            var _this = this;
+            var ep, data, filtered;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
                         _a.sent();
-                        return [4 /*yield*/, transactionHash];
+                        return [4 /*yield*/, txId];
                     case 2:
-                        transactionHash = _a.sent();
-                        params = { transactionHash: this.formatter.hash(transactionHash, true) };
-                        return [2 /*return*/, (0, web_1.poll)(function () { return __awaiter(_this, void 0, void 0, function () {
-                                var result, tx, blockNumber, confirmations;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0: return [4 /*yield*/, this.perform("getTransaction", params)];
-                                        case 1:
-                                            result = _a.sent();
-                                            if (result == null) {
-                                                if (this._emitted["t:" + transactionHash] == null) {
-                                                    return [2 /*return*/, null];
-                                                }
-                                                return [2 /*return*/, undefined];
-                                            }
-                                            tx = this.formatter.transactionResponse(result);
-                                            if (!(tx.blockNumber == null)) return [3 /*break*/, 2];
-                                            tx.confirmations = 0;
-                                            return [3 /*break*/, 4];
-                                        case 2:
-                                            if (!(tx.confirmations == null)) return [3 /*break*/, 4];
-                                            return [4 /*yield*/, this._getInternalBlockNumber(100 + 2 * this.pollingInterval)];
-                                        case 3:
-                                            blockNumber = _a.sent();
-                                            confirmations = (blockNumber - tx.blockNumber) + 1;
-                                            if (confirmations <= 0) {
-                                                confirmations = 1;
-                                            }
-                                            tx.confirmations = confirmations;
-                                            _a.label = 4;
-                                        case 4: return [2 /*return*/, this._wrapTransaction(tx)];
-                                    }
-                                });
-                            }); }, { oncePoll: this })];
+                        txId = _a.sent();
+                        ep = '/api/v1/transactions/' + txId;
+                        return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + ep)];
+                    case 3:
+                        data = (_a.sent()).data;
+                        filtered = data.transactions
+                            .filter(function (e) { return e.result === "SUCCESS"; });
+                        return [2 /*return*/, filtered.length > 0 ? filtered[0] : null];
                 }
             });
         });
@@ -1950,7 +1946,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_9;
+            var address, error_10;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1963,8 +1959,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_9 = _a.sent();
-                        if (error_9.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_10 = _a.sent();
+                        if (error_10.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];
@@ -1975,7 +1971,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var network, transaction, _a, _b, error_10;
+            var network, transaction, _a, _b, error_11;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1996,11 +1992,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.call(transaction)];
                     case 3: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                     case 4:
-                        error_10 = _c.sent();
-                        if (error_10.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_11 = _c.sent();
+                        if (error_11.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
-                        throw error_10;
+                        throw error_11;
                     case 5: return [2 /*return*/];
                 }
             });
@@ -2233,4 +2229,32 @@ var BaseProvider = /** @class */ (function (_super) {
     return BaseProvider;
 }(abstract_provider_1.Provider));
 exports.BaseProvider = BaseProvider;
+// resolves network string to a hedera network name
+function mapNetworkToHederaNetworkName(net) {
+    switch (net) {
+        case 'mainnet':
+            return sdk_1.NetworkName.Mainnet;
+        case 'previewnet':
+            return sdk_1.NetworkName.Previewnet;
+        case 'testnet':
+            return sdk_1.NetworkName.Testnet;
+        default:
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
+    }
+}
+// resolves the mirror node url from the given provider network.
+function resolveMirrorNetworkUrl(net) {
+    switch (net.name) {
+        case 'mainnet':
+            return 'https://mainnet.mirrornode.hedera.com';
+        case 'previewnet':
+            return 'https://previewnet.mirrornode.hedera.com';
+        case 'testnet':
+            return 'https://testnet.mirrornode.hedera.com';
+        default:
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
+    }
+}
 //# sourceMappingURL=base-provider.js.map

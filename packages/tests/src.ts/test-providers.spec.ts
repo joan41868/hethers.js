@@ -6,8 +6,8 @@ import assert from "assert";
 
 import { ethers } from "ethers";
 import { DefaultHederaProvider } from "@ethersproject/providers";
-import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
 import { getAddressFromAccount } from "ethers/lib/utils";
+import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-provider";
 
 const bnify = ethers.BigNumber.from;
 
