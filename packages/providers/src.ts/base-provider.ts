@@ -584,7 +584,7 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     readonly anyNetwork: boolean;
     private readonly hederaClient: Client;
-    protected mirrorNodeUrl: string;
+    private readonly mirrorNodeUrl: string;
 
 
     /**
@@ -640,6 +640,7 @@ export class BaseProvider extends Provider implements EnsProvider {
         this._pollingInterval = 4000;
 
         this._fastQueryDate = 0;
+        this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
         this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(network));
     }
 
@@ -929,7 +930,7 @@ export class BaseProvider extends Provider implements EnsProvider {
         // only an external call for backends which can have the underlying
         // network change spontaneously
         const currentNetwork = await this.detectNetwork();
-        if (network.chainId && network.chainId !== currentNetwork.chainId) {
+        if (network.chainId !== currentNetwork.chainId) {
 
             // We are allowing network changes, things can get complex fast;
             // make sure you know what you are doing if you use "any"
@@ -1217,18 +1218,19 @@ export class BaseProvider extends Provider implements EnsProvider {
      * @param addressOrName The address to check balance of
      */
     async getBalance(addressOrName: string | Promise<string>): Promise<BigNumber> {
-        await this.getNetwork();
-        addressOrName = await addressOrName;
-        const { shard, realm, num } = getAccountFromAddress(addressOrName);
-        const shardNum = BigNumber.from(shard).toNumber();
-        const realmNum = BigNumber.from(realm).toNumber();
-        const accountNum = BigNumber.from(num).toNumber();
-        const balance = await new AccountBalanceQuery()
-            .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
-            .execute(this.hederaClient);
-        try{
+        try {
+
+            await this.getNetwork();
+            addressOrName = await addressOrName;
+            const { shard, realm, num } = getAccountFromAddress(addressOrName);
+            const shardNum = BigNumber.from(shard).toNumber();
+            const realmNum = BigNumber.from(realm).toNumber();
+            const accountNum = BigNumber.from(num).toNumber();
+            const balance = await new AccountBalanceQuery()
+                .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                .execute(this.hederaClient);
             return BigNumber.from(balance.hbars.toTinybars().toNumber());
-        }catch (error) {
+        } catch (error) {
             return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                 method: "AccountBalanceQuery",
                 params: {address: addressOrName},
@@ -1887,11 +1889,17 @@ function mapNetworkToHederaNetworkName(net: Network | string | number | Promise<
     }
 }
 
-/**
- * Encapsulates the required properties for searching by transaction_id and status SUCCESS
- */
-declare type HederaTxRecordLike = {
-    result: string,
-    transaction_id: string | Promise<string>,
-};
-
+// resolves the mirror node url from the given provider network.
+function resolveMirrorNetworkUrl(net: Network): string {
+    switch (net.name) {
+        case 'mainnet':
+            return 'https://mainnet.mirrornode.hedera.com';
+        case 'previewnet':
+            return 'https://previewnet.mirrornode.hedera.com';
+        case 'testnet':
+            return 'https://testnet.mirrornode.hedera.com';
+        default:
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
+    }
+}

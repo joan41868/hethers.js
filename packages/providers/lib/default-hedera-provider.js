@@ -17,7 +17,6 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DefaultHederaProvider = exports.HederaNetworks = void 0;
 var base_provider_1 = require("./base-provider");
-var ethers_1 = require("ethers");
 // contains predefined, sdk acceptable hedera network strings
 var HederaNetworks;
 (function (HederaNetworks) {
@@ -38,32 +37,10 @@ var DefaultHederaProvider = /** @class */ (function (_super) {
         if (options == null) {
             options = {};
         }
-        // automatically resolve to a mirror node URL by the given network ( will select test mirror node for testnet )
-        if (!options.mirrorNodeUrl) {
-            _this.mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
-        }
-        else {
-            // always prefer the given URL if explicitly given
-            _this.mirrorNodeUrl = options.mirrorNodeUrl;
-        }
         _this.consensusNodeUrl = options.consensusNodeUrl;
         return _this;
     }
     return DefaultHederaProvider;
 }(base_provider_1.BaseProvider));
 exports.DefaultHederaProvider = DefaultHederaProvider;
-// resolves the mirror node url from the given provider network.
-function resolveMirrorNetworkUrl(net) {
-    switch (net.name) {
-        case 'mainnet':
-            return 'https://mainnet.mirrornode.hedera.com';
-        case 'previewnet':
-            return 'https://previewnet.mirrornode.hedera.com';
-        case 'testnet':
-            return 'https://testnet.mirrornode.hedera.com';
-        default:
-            ethers_1.logger.throwArgumentError("Invalid network name", "network", net);
-            return null;
-    }
-}
 //# sourceMappingURL=default-hedera-provider.js.map

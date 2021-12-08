@@ -1,6 +1,5 @@
 import { BaseProvider } from "./base-provider";
-import { Network, Networkish } from "@ethersproject/networks";
-import { logger } from "ethers";
+import { Networkish } from "@ethersproject/networks";
 
 // contains predefined, sdk acceptable hedera network strings
 export enum HederaNetworks {
@@ -17,7 +16,6 @@ export enum HederaNetworks {
  */
 export class DefaultHederaProvider extends BaseProvider {
     consensusNodeUrl: string;
-
     constructor(network: Networkish, options?: {
         mirrorNodeUrl?: string,
         consensusNodeUrl?: string
@@ -26,29 +24,7 @@ export class DefaultHederaProvider extends BaseProvider {
         if (options == null) {
             options = {};
         }
-        // automatically resolve to a mirror node URL by the given network ( will select test mirror node for testnet )
-        if (!options.mirrorNodeUrl) {
-            this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
-        } else {
-            // always prefer the given URL if explicitly given
-            this.mirrorNodeUrl = options.mirrorNodeUrl;
-        }
         this.consensusNodeUrl = options.consensusNodeUrl;
     }
 }
 
-
-// resolves the mirror node url from the given provider network.
-function resolveMirrorNetworkUrl(net: Network): string {
-    switch (net.name) {
-        case 'mainnet':
-            return 'https://mainnet.mirrornode.hedera.com';
-        case 'previewnet':
-            return 'https://previewnet.mirrornode.hedera.com';
-        case 'testnet':
-            return 'https://testnet.mirrornode.hedera.com';
-        default:
-            logger.throwArgumentError("Invalid network name", "network", net);
-            return null;
-    }
-}

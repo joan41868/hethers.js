@@ -646,6 +646,7 @@ var BaseProvider = /** @class */ (function (_super) {
         _this._lastBlockNumber = -2;
         _this._pollingInterval = 4000;
         _this._fastQueryDate = 0;
+        _this.mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
         _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(network));
         return _this;
     }
@@ -962,7 +963,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.detectNetwork()];
                     case 2:
                         currentNetwork = _a.sent();
-                        if (!(network.chainId && network.chainId !== currentNetwork.chainId)) return [3 /*break*/, 5];
+                        if (!(network.chainId !== currentNetwork.chainId)) return [3 /*break*/, 5];
                         if (!this.anyNetwork) return [3 /*break*/, 4];
                         this._network = currentNetwork;
                         // Reset all internal block number guards and caches
@@ -1309,10 +1310,12 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getBalance = function (addressOrName) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance;
+            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_7;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 0:
+                        _b.trys.push([0, 4, , 5]);
+                        return [4 /*yield*/, this.getNetwork()];
                     case 1:
                         _b.sent();
                         return [4 /*yield*/, addressOrName];
@@ -1327,17 +1330,15 @@ var BaseProvider = /** @class */ (function (_super) {
                                 .execute(this.hederaClient)];
                     case 3:
                         balance = _b.sent();
-                        try {
-                            return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "AccountBalanceQuery",
-                                    params: { address: addressOrName },
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
+                        return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
+                    case 4:
+                        error_7 = _b.sent();
+                        return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                method: "AccountBalanceQuery",
+                                params: { address: addressOrName },
+                                error: error_7
+                            })];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -1498,7 +1499,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         return __awaiter(this, void 0, void 0, function () {
-            var hexTx, tx, blockNumber, hash, error_7;
+            var hexTx, tx, blockNumber, hash, error_8;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1522,10 +1523,10 @@ var BaseProvider = /** @class */ (function (_super) {
                         hash = _a.sent();
                         return [2 /*return*/, this._wrapTransaction(tx, hash, blockNumber)];
                     case 6:
-                        error_7 = _a.sent();
-                        error_7.transaction = tx;
-                        error_7.transactionHash = tx.hash;
-                        throw error_7;
+                        error_8 = _a.sent();
+                        error_8.transaction = tx;
+                        error_8.transactionHash = tx.hash;
+                        throw error_8;
                     case 7: return [2 /*return*/];
                 }
             });
@@ -1698,7 +1699,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getBlock = function (blockHashOrBlockTag, includeTransactions) {
         return __awaiter(this, void 0, void 0, function () {
-            var blockNumber, params, _a, error_8;
+            var blockNumber, params, _a, error_9;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -1726,7 +1727,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [3 /*break*/, 6];
                     case 5:
-                        error_8 = _b.sent();
+                        error_9 = _b.sent();
                         logger.throwArgumentError("invalid block hash or block tag", "blockHashOrBlockTag", blockHashOrBlockTag);
                         return [3 /*break*/, 6];
                     case 6: return [2 /*return*/, (0, web_1.poll)(function () { return __awaiter(_this, void 0, void 0, function () {
@@ -1942,7 +1943,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_9;
+            var address, error_10;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1955,8 +1956,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_9 = _a.sent();
-                        if (error_9.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_10 = _a.sent();
+                        if (error_10.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];
@@ -1967,7 +1968,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var network, transaction, _a, _b, error_10;
+            var network, transaction, _a, _b, error_11;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1988,11 +1989,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.call(transaction)];
                     case 3: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                     case 4:
-                        error_10 = _c.sent();
-                        if (error_10.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_11 = _c.sent();
+                        if (error_11.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
-                        throw error_10;
+                        throw error_11;
                     case 5: return [2 /*return*/];
                 }
             });
@@ -2234,6 +2235,20 @@ function mapNetworkToHederaNetworkName(net) {
             return sdk_1.NetworkName.Previewnet;
         case 'testnet':
             return sdk_1.NetworkName.Testnet;
+        default:
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
+    }
+}
+// resolves the mirror node url from the given provider network.
+function resolveMirrorNetworkUrl(net) {
+    switch (net.name) {
+        case 'mainnet':
+            return 'https://mainnet.mirrornode.hedera.com';
+        case 'previewnet':
+            return 'https://previewnet.mirrornode.hedera.com';
+        case 'testnet':
+            return 'https://testnet.mirrornode.hedera.com';
         default:
             logger.throwArgumentError("Invalid network name", "network", net);
             return null;
