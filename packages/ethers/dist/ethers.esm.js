@@ -6844,6 +6844,27 @@ const version$6 = "address/5.5.0";
 
 "use strict";
 const logger$7 = new Logger(version$6);
+function getChecksumAddress(address) {
+    if (!isHexString(address, 20)) {
+        logger$7.throwArgumentError("invalid address", "address", address);
+    }
+    address = address.toLowerCase();
+    const chars = address.substring(2).split("");
+    const expanded = new Uint8Array(40);
+    for (let i = 0; i < 40; i++) {
+        expanded[i] = chars[i].charCodeAt(0);
+    }
+    const hashed = arrayify(keccak256(expanded));
+    for (let i = 0; i < 40; i += 2) {
+        if ((hashed[i >> 1] >> 4) >= 8) {
+            chars[i] = chars[i].toUpperCase();
+        }
+        if ((hashed[i >> 1] & 0x0f) >= 8) {
+            chars[i + 1] = chars[i + 1].toUpperCase();
+        }
+    }
+    return "0x" + chars.join("");
+}
 // Shims for environments that are missing some required constants and functions
 const MAX_SAFE_INTEGER = 0x1fffffffffffff;
 function log10(x) {
@@ -6881,17 +6902,37 @@ function ibanChecksum(address) {
     return checksum;
 }
 function getAddress(address) {
-    if (typeof (address) !== "string" || !address.match(/^(0x)?[0-9a-fA-F]{40}$/)) {
+    let result = null;
+    if (typeof (address) !== "string") {
         logger$7.throwArgumentError("invalid address", "address", address);
     }
-    // Missing the 0x prefix
-    if (address.substring(0, 2) !== "0x") {
-        address = "0x" + address;
+    if (address.match(/^(0x)?[0-9a-fA-F]{40}$/)) {
+        // Missing the 0x prefix
+        if (address.substring(0, 2) !== "0x") {
+            address = "0x" + address;
+        }
+        result = getChecksumAddress(address);
+        // It is a checksummed address with a bad checksum
+        if (address.match(/([A-F].*[a-f])|([a-f].*[A-F])/) && result !== address) {
+            logger$7.throwArgumentError("bad address checksum", "address", address);
+        }
+        // Maybe ICAP? (we only support direct mode)
     }
-    if (!isHexString(address, 20)) {
+    else if (address.match(/^XE[0-9]{2}[0-9A-Za-z]{30,31}$/)) {
+        // It is an ICAP address with a bad checksum
+        if (address.substring(2, 4) !== ibanChecksum(address)) {
+            logger$7.throwArgumentError("bad icap checksum", "address", address);
+        }
+        result = _base36To16(address.substring(4));
+        while (result.length < 40) {
+            result = "0" + result;
+        }
+        result = getChecksumAddress("0x" + result);
+    }
+    else {
         logger$7.throwArgumentError("invalid address", "address", address);
     }
-    return address.toLowerCase();
+    return result;
 }
 function isAddress(address) {
     try {
@@ -6972,6 +7013,7 @@ function parseAccount(account) {
 
 var lib_esm$5 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
+	getChecksumAddress: getChecksumAddress,
 	getAddress: getAddress,
 	isAddress: isAddress,
 	getIcapAddress: getIcapAddress,
@@ -16764,8 +16806,8 @@ var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatBytes32String = exports.Utf8ErrorFuncs = exports.toUtf8String = exports.toUtf8CodePoints = exports.toUtf8Bytes = exports._toEscapedUtf8String = exports.nameprep = exports.hexDataSlice = exports.hexDataLength = exports.hexZeroPad = exports.hexValue = exports.hexStripZeros = exports.hexConcat = exports.isHexString = exports.hexlify = exports.base64 = exports.base58 = exports.TransactionDescription = exports.LogDescription = exports.Interface = exports.SigningKey = exports.HDNode = exports.defaultPath = exports.isBytesLike = exports.isBytes = exports.zeroPad = exports.stripZeros = exports.concat = exports.arrayify = exports.shallowCopy = exports.resolveProperties = exports.getStatic = exports.defineReadOnly = exports.deepCopy = exports.checkProperties = exports.poll = exports.fetchJson = exports._fetchData = exports.RLP = exports.Logger = exports.checkResultErrors = exports.FormatTypes = exports.ParamType = exports.FunctionFragment = exports.EventFragment = exports.ErrorFragment = exports.ConstructorFragment = exports.Fragment = exports.defaultAbiCoder = exports.AbiCoder = void 0;
-exports.getAccountFromAddress = exports.getAddressFromAccount = exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.serializeTransaction = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseEther = exports.formatEther = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.isValidName = exports.namehash = exports.hashMessage = exports.parseBytes32String = void 0;
-exports.parseAccount = void 0;
+exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAlias = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.serializeTransaction = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseEther = exports.formatEther = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getChecksumAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.isValidName = exports.namehash = exports.hashMessage = exports.parseBytes32String = void 0;
+exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = void 0;
 
 Object.defineProperty(exports, "AbiCoder", { enumerable: true, get: function () { return abi_1.AbiCoder; } });
 Object.defineProperty(exports, "checkResultErrors", { enumerable: true, get: function () { return abi_1.checkResultErrors; } });
@@ -16783,6 +16825,7 @@ Object.defineProperty(exports, "ParamType", { enumerable: true, get: function ()
 Object.defineProperty(exports, "TransactionDescription", { enumerable: true, get: function () { return abi_1.TransactionDescription; } });
 
 Object.defineProperty(exports, "getAddress", { enumerable: true, get: function () { return address_1.getAddress; } });
+Object.defineProperty(exports, "getChecksumAddress", { enumerable: true, get: function () { return address_1.getChecksumAddress; } });
 Object.defineProperty(exports, "getCreate2Address", { enumerable: true, get: function () { return address_1.getCreate2Address; } });
 Object.defineProperty(exports, "getContractAddress", { enumerable: true, get: function () { return address_1.getContractAddress; } });
 Object.defineProperty(exports, "getIcapAddress", { enumerable: true, get: function () { return address_1.getIcapAddress; } });
@@ -16868,6 +16911,7 @@ Object.defineProperty(exports, "Utf8ErrorFuncs", { enumerable: true, get: functi
 
 Object.defineProperty(exports, "accessListify", { enumerable: true, get: function () { return transactions_1.accessListify; } });
 Object.defineProperty(exports, "computeAddress", { enumerable: true, get: function () { return transactions_1.computeAddress; } });
+Object.defineProperty(exports, "computeAlias", { enumerable: true, get: function () { return transactions_1.computeAlias; } });
 Object.defineProperty(exports, "parseTransaction", { enumerable: true, get: function () { return transactions_1.parse; } });
 Object.defineProperty(exports, "recoverAddress", { enumerable: true, get: function () { return transactions_1.recoverAddress; } });
 Object.defineProperty(exports, "serializeTransaction", { enumerable: true, get: function () { return transactions_1.serialize; } });
@@ -92972,6 +93016,7 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 	id: id,
 	_TypedDataEncoder: TypedDataEncoder,
 	getAddress: getAddress,
+	getChecksumAddress: getChecksumAddress,
 	getIcapAddress: getIcapAddress,
 	getContractAddress: getContractAddress,
 	getCreate2Address: getCreate2Address,
@@ -92999,6 +93044,7 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 	get TransactionTypes () { return TransactionTypes; },
 	getJsonWalletAddress: getJsonWalletAddress,
 	computeAddress: computeAddress,
+	computeAlias: computeAlias,
 	recoverAddress: recoverAddress,
 	computePublicKey: computePublicKey,
 	recoverPublicKey: recoverPublicKey,
