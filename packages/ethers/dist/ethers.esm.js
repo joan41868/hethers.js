@@ -91876,18 +91876,9 @@ class BaseProvider extends Provider {
         return __awaiter$9(this, void 0, void 0, function* () {
             yield this.getNetwork();
             txId = yield txId;
-            const [accId, ,] = txId.split("-");
-            const ep = '/api/v1/transactions?account.id=' + accId;
+            const ep = '/api/v1/transactions/' + txId;
             let { data } = yield axios$1.get(this.mirrorNodeUrl + ep);
-            while (data.links.next != null) {
-                const filtered = data.transactions
-                    .filter((e) => e.transaction_id.toString() === txId && e.result === 'SUCCESS');
-                if (filtered.length > 0) {
-                    return filtered[0];
-                }
-                ({ data } = yield axios$1.get(this.mirrorNodeUrl + data.links.next));
-            }
-            return null;
+            return data.transactions.length > 0 ? data.transactions[0] : null;
         });
     }
     getTransactionReceipt(transactionHash) {

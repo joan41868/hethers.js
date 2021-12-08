@@ -1552,20 +1552,9 @@ export class BaseProvider extends Provider implements EnsProvider {
     async getTransaction(txId: string | Promise<string>): Promise<TransactionResponse> {
         await this.getNetwork();
         txId = await txId;
-        const [ accId, , ] = txId.split("-");
-        const ep = '/api/v1/transactions?account.id=' + accId;
+        const ep = '/api/v1/transactions/'+txId;
         let { data } = await axios.get(this.mirrorNodeUrl + ep);
-        while (data.links.next != null) {
-            const filtered = data.transactions
-                .filter((e: HederaTxRecordLike) =>
-                    e.transaction_id.toString() === txId && e.result === 'SUCCESS');
-
-            if (filtered.length > 0) {
-                return filtered[0];
-            }
-            ({ data } = await axios.get(this.mirrorNodeUrl + data.links.next));
-        }
-        return null;
+        return data.transactions.length > 0 ? data.transactions[0] : null;
     }
 
     async getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt> {

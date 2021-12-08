@@ -1808,35 +1808,20 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (txId) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, accId, ep, data, filtered;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var ep, data;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
-                        _b.sent();
+                        _a.sent();
                         return [4 /*yield*/, txId];
                     case 2:
-                        txId = _b.sent();
-                        _a = txId.split("-"), accId = _a[0];
-                        ep = '/api/v1/transactions?account.id=' + accId;
+                        txId = _a.sent();
+                        ep = '/api/v1/transactions/' + txId;
                         return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + ep)];
                     case 3:
-                        data = (_b.sent()).data;
-                        _b.label = 4;
-                    case 4:
-                        if (!(data.links.next != null)) return [3 /*break*/, 6];
-                        filtered = data.transactions
-                            .filter(function (e) {
-                            return e.transaction_id.toString() === txId && e.result === 'SUCCESS';
-                        });
-                        if (filtered.length > 0) {
-                            return [2 /*return*/, filtered[0]];
-                        }
-                        return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + data.links.next)];
-                    case 5:
-                        (data = (_b.sent()).data);
-                        return [3 /*break*/, 4];
-                    case 6: return [2 /*return*/, null];
+                        data = (_a.sent()).data;
+                        return [2 /*return*/, data.transactions.length > 0 ? data.transactions[0] : null];
                 }
             });
         });
