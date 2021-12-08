@@ -15,8 +15,6 @@ describe('Private key generation', function () {
         it(('correctly converts private key - ' + test.name), function () {
             var wallet = new ethers_1.ethers.Wallet({ address: test.address, privateKey: test.privateKey });
             assert_1.default.strictEqual(wallet.privateKey, test.privateKey, 'correctly computes privateKey - ' + test.privateKey);
-            // assert.strictEqual(wallet.address, ethers.utils.getAddress(test.address),
-            //     'correctly populates address - ' + test.address);      
             assert_1.default.strictEqual(wallet.address.toLowerCase(), test.address, 'correctly populates address - ' + test.address);
             var accountObjFromAddress = ethers_1.ethers.utils.getAccountFromAddress(test.address);
             assert_1.default.strictEqual(wallet.account.shard, accountObjFromAddress.shard, 'correctly populates account shard from address - ' + accountObjFromAddress.shard);
@@ -26,8 +24,6 @@ describe('Private key generation', function () {
                 assert_1.default.strictEqual(wallet.publicKey, test.publicKey, 'correctly computes publicKey - ' + test.publicKey);
             }
             if (test.account) {
-                // assert.strictEqual(wallet.address, ethers.utils.getAddress(ethers.utils.getAddressFromAccount(test.account)),
-                //     'correctly populates address from account - ' + test.account);
                 assert_1.default.strictEqual(wallet.address.toLowerCase(), ethers_1.ethers.utils.getAddressFromAccount(test.account), 'correctly populates address from account - ' + test.account);
                 var accountObjFromAccount = ethers_1.ethers.utils.parseAccount(test.account);
                 assert_1.default.strictEqual(wallet.account.shard, accountObjFromAccount.shard, 'correctly populates account shard from account - ' + accountObjFromAccount.shard);
