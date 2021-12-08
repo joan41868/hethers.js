@@ -1313,9 +1313,7 @@ var BaseProvider = /** @class */ (function (_super) {
             var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_7;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0:
-                        _b.trys.push([0, 4, , 5]);
-                        return [4 /*yield*/, this.getNetwork()];
+                    case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
                         _b.sent();
                         return [4 /*yield*/, addressOrName];
@@ -1325,20 +1323,23 @@ var BaseProvider = /** @class */ (function (_super) {
                         shardNum = bignumber_1.BigNumber.from(shard).toNumber();
                         realmNum = bignumber_1.BigNumber.from(realm).toNumber();
                         accountNum = bignumber_1.BigNumber.from(num).toNumber();
+                        _b.label = 3;
+                    case 3:
+                        _b.trys.push([3, 5, , 6]);
                         return [4 /*yield*/, new sdk_1.AccountBalanceQuery()
                                 .setAccountId(new sdk_1.AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
                                 .execute(this.hederaClient)];
-                    case 3:
+                    case 4:
                         balance = _b.sent();
                         return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
-                    case 4:
+                    case 5:
                         error_7 = _b.sent();
                         return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "AccountBalanceQuery",
                                 params: { address: addressOrName },
                                 error: error_7
                             })];
-                    case 5: return [2 /*return*/];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
@@ -1809,7 +1810,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (txId) {
         return __awaiter(this, void 0, void 0, function () {
-            var ep, data;
+            var ep, data, filtered;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1822,7 +1823,9 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + ep)];
                     case 3:
                         data = (_a.sent()).data;
-                        return [2 /*return*/, data.transactions.length > 0 ? data.transactions[0] : null];
+                        filtered = data.transactions
+                            .filter(function (e) { return e.result === "SUCCESS"; });
+                        return [2 /*return*/, filtered.length > 0 ? filtered[0] : null];
                 }
             });
         });

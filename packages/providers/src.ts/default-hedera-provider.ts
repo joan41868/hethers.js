@@ -12,19 +12,11 @@ export enum HederaNetworks {
  * The hedera provider uses the hashgraph module to establish a connection to the Hedera network.
  * As every provider, this one also gives us read-only access.
  *
- * Constructable with a string, which automatically resolves to a hedera network via the hashgraph SDK.
+ * Constructable with a string or a number, which automatically resolves to a hedera network via the hashgraph SDK.
  */
 export class DefaultHederaProvider extends BaseProvider {
-    consensusNodeUrl: string;
-    constructor(network: Networkish, options?: {
-        mirrorNodeUrl?: string,
-        consensusNodeUrl?: string
-    }) {
+    constructor(network: Networkish) {
         super(network);
-        if (options == null) {
-            options = {};
-        }
-        this.consensusNodeUrl = options.consensusNodeUrl;
     }
 }
 

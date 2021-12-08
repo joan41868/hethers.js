@@ -28,17 +28,12 @@ var HederaNetworks;
  * The hedera provider uses the hashgraph module to establish a connection to the Hedera network.
  * As every provider, this one also gives us read-only access.
  *
- * Constructable with a string, which automatically resolves to a hedera network via the hashgraph SDK.
+ * Constructable with a string or a number, which automatically resolves to a hedera network via the hashgraph SDK.
  */
 var DefaultHederaProvider = /** @class */ (function (_super) {
     __extends(DefaultHederaProvider, _super);
-    function DefaultHederaProvider(network, options) {
-        var _this = _super.call(this, network) || this;
-        if (options == null) {
-            options = {};
-        }
-        _this.consensusNodeUrl = options.consensusNodeUrl;
-        return _this;
+    function DefaultHederaProvider(network) {
+        return _super.call(this, network) || this;
     }
     return DefaultHederaProvider;
 }(base_provider_1.BaseProvider));

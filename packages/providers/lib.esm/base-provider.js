@@ -513,6 +513,7 @@ export class BaseProvider extends Provider {
         this._lastBlockNumber = -2;
         this._pollingInterval = 4000;
         this._fastQueryDate = 0;
+        this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
         this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(network));
     }
     _ready() {
@@ -776,7 +777,7 @@ export class BaseProvider extends Provider {
             // only an external call for backends which can have the underlying
             // network change spontaneously
             const currentNetwork = yield this.detectNetwork();
-            if (network.chainId && network.chainId !== currentNetwork.chainId) {
+            if (network.chainId !== currentNetwork.chainId) {
                 // We are allowing network changes, things can get complex fast;
                 // make sure you know what you are doing if you use "any"
                 if (this.anyNetwork) {
@@ -1064,10 +1065,10 @@ export class BaseProvider extends Provider {
             const shardNum = BigNumber.from(shard).toNumber();
             const realmNum = BigNumber.from(realm).toNumber();
             const accountNum = BigNumber.from(num).toNumber();
-            const balance = yield new AccountBalanceQuery()
-                .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
-                .execute(this.hederaClient);
             try {
+                const balance = yield new AccountBalanceQuery()
+                    .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                    .execute(this.hederaClient);
                 return BigNumber.from(balance.hbars.toTinybars().toNumber());
             }
             catch (error) {
@@ -1400,7 +1401,9 @@ export class BaseProvider extends Provider {
             txId = yield txId;
             const ep = '/api/v1/transactions/' + txId;
             let { data } = yield axios.get(this.mirrorNodeUrl + ep);
-            return data.transactions.length > 0 ? data.transactions[0] : null;
+            const filtered = data.transactions
+                .filter((e) => e.result === "SUCCESS");
+            return filtered.length > 0 ? filtered[0] : null;
         });
     }
     getTransactionReceipt(transactionHash) {
@@ -1711,6 +1714,20 @@ function mapNetworkToHederaNetworkName(net) {
             return NetworkName.Previewnet;
         case 'testnet':
             return NetworkName.Testnet;
+        default:
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
+    }
+}
+// resolves the mirror node url from the given provider network.
+function resolveMirrorNetworkUrl(net) {
+    switch (net.name) {
+        case 'mainnet':
+            return 'https://mainnet.mirrornode.hedera.com';
+        case 'previewnet':
+            return 'https://previewnet.mirrornode.hedera.com';
+        case 'testnet':
+            return 'https://testnet.mirrornode.hedera.com';
         default:
             logger.throwArgumentError("Invalid network name", "network", net);
             return null;

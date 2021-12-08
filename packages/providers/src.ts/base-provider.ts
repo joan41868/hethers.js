@@ -1218,14 +1218,13 @@ export class BaseProvider extends Provider implements EnsProvider {
      * @param addressOrName The address to check balance of
      */
     async getBalance(addressOrName: string | Promise<string>): Promise<BigNumber> {
+        await this.getNetwork();
+        addressOrName = await addressOrName;
+        const { shard, realm, num } = getAccountFromAddress(addressOrName);
+        const shardNum = BigNumber.from(shard).toNumber();
+        const realmNum = BigNumber.from(realm).toNumber();
+        const accountNum = BigNumber.from(num).toNumber();
         try {
-
-            await this.getNetwork();
-            addressOrName = await addressOrName;
-            const { shard, realm, num } = getAccountFromAddress(addressOrName);
-            const shardNum = BigNumber.from(shard).toNumber();
-            const realmNum = BigNumber.from(realm).toNumber();
-            const accountNum = BigNumber.from(num).toNumber();
             const balance = await new AccountBalanceQuery()
                 .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
                 .execute(this.hederaClient);
@@ -1556,7 +1555,9 @@ export class BaseProvider extends Provider implements EnsProvider {
         txId = await txId;
         const ep = '/api/v1/transactions/'+txId;
         let { data } = await axios.get(this.mirrorNodeUrl + ep);
-        return data.transactions.length > 0 ? data.transactions[0] : null;
+        const filtered = data.transactions
+            .filter((e: { result: string; }) => e.result === "SUCCESS");
+        return filtered.length > 0 ? filtered[0] : null;
     }
 
     async getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt> {
