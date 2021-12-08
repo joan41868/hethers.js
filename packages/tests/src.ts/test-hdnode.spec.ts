@@ -14,7 +14,7 @@ function randomCase(seed: string, text: string): string {
     }).join("");
 }
 
-// Too many test cases are caussing issues for the CI
+// Too many test cases are causing issues for the CI
 // Only run random cases under random-128
 function checkRandom(name: string): boolean {
     /*
@@ -159,20 +159,20 @@ describe("HD Extended Keys", function() {
         const xpriv = root.extendedKey;
         const node = ethers.utils.HDNode.fromExtendedKey(xpriv);
 
-        assert.equal(root.address, node.address, "address matches");
+        assert.strictEqual(root.alias, node.alias, "alias matches");
 
         const node42 = node.derivePath("42");
-        assert.equal(root42.address, node42.address, "address matches");
+        assert.strictEqual(root42.alias, node42.alias, "alias matches");
     });
 
     it("exports and imports xpub extended keys", function() {
         const xpub = root.neuter().extendedKey;
         const node = ethers.utils.HDNode.fromExtendedKey(xpub);
 
-        assert.equal(root.address, node.address, "address matches");
+        assert.strictEqual(root.alias, node.alias, "address matches");
 
         const node42 = node.derivePath("42");
-        assert.equal(root42.address, node42.address, "address matches");
+        assert.strictEqual(root42.alias, node42.alias, "address matches");
     });
 });
 

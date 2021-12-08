@@ -548,13 +548,11 @@ function loadAccount(arg, plugin, preventFile) {
                     return [2 /*return*/, loadAccount(content, plugin, true)];
                 case 2:
                     // Raw private key
-                    // TODO should be changed to account + private key OR address + private key
                     if (ethers_1.ethers.utils.isHexString(arg, 32)) {
                         signer_1 = new ethers_1.ethers.Wallet(arg, plugin.provider);
                         return [2 /*return*/, Promise.resolve(new WrappedSigner(signer_1.getAddress(), function () { return Promise.resolve(signer_1); }, plugin))];
                     }
                     // Mnemonic
-                    // TODO should be changed to account OR address + mnemonic
                     if (ethers_1.ethers.utils.isValidMnemonic(arg)) {
                         mnemonic_1 = arg;
                         signerPromise_1 = null;
