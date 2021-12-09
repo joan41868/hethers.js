@@ -299,9 +299,6 @@ function getRunner(config, currentBlockNumber, method, params) {
     return __awaiter(this, void 0, void 0, function* () {
         let provider = config.provider;
         switch (method) {
-            case "getBlockNumber":
-            case "getGasPrice":
-                return provider[method]();
             case "getEtherPrice":
                 if (provider.getEtherPrice) {
                     return provider.getEtherPrice();
@@ -319,11 +316,6 @@ function getRunner(config, currentBlockNumber, method, params) {
                     provider = yield waitForSync(config, currentBlockNumber);
                 }
                 return provider.getStorageAt(params.address, params.position, params.blockTag || "latest");
-            case "getBlock":
-                if (params.blockTag && isHexString(params.blockTag)) {
-                    provider = yield waitForSync(config, currentBlockNumber);
-                }
-                return provider[(params.includeTransactions ? "getBlockWithTransactions" : "getBlock")](params.blockTag || params.blockHash);
             case "call":
             case "estimateGas":
                 if (params.blockTag && isHexString(params.blockTag)) {

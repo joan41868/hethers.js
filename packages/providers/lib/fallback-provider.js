@@ -351,65 +351,54 @@ function getRunner(config, currentBlockNumber, method, params) {
                     provider = config.provider;
                     _a = method;
                     switch (_a) {
-                        case "getBlockNumber": return [3 /*break*/, 1];
-                        case "getGasPrice": return [3 /*break*/, 1];
-                        case "getEtherPrice": return [3 /*break*/, 2];
-                        case "getBalance": return [3 /*break*/, 3];
-                        case "getTransactionCount": return [3 /*break*/, 3];
-                        case "getCode": return [3 /*break*/, 3];
-                        case "getStorageAt": return [3 /*break*/, 6];
-                        case "getBlock": return [3 /*break*/, 9];
-                        case "call": return [3 /*break*/, 12];
-                        case "estimateGas": return [3 /*break*/, 12];
-                        case "getTransaction": return [3 /*break*/, 15];
-                        case "getTransactionReceipt": return [3 /*break*/, 15];
-                        case "getLogs": return [3 /*break*/, 16];
+                        case "getEtherPrice": return [3 /*break*/, 1];
+                        case "getBalance": return [3 /*break*/, 2];
+                        case "getTransactionCount": return [3 /*break*/, 2];
+                        case "getCode": return [3 /*break*/, 2];
+                        case "getStorageAt": return [3 /*break*/, 5];
+                        case "call": return [3 /*break*/, 8];
+                        case "estimateGas": return [3 /*break*/, 8];
+                        case "getTransaction": return [3 /*break*/, 11];
+                        case "getTransactionReceipt": return [3 /*break*/, 11];
+                        case "getLogs": return [3 /*break*/, 12];
                     }
-                    return [3 /*break*/, 19];
-                case 1: return [2 /*return*/, provider[method]()];
-                case 2:
+                    return [3 /*break*/, 15];
+                case 1:
                     if (provider.getEtherPrice) {
                         return [2 /*return*/, provider.getEtherPrice()];
                     }
-                    return [3 /*break*/, 19];
+                    return [3 /*break*/, 15];
+                case 2:
+                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 4];
+                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
                 case 3:
-                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 5];
-                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
-                case 4:
                     provider = _b.sent();
-                    _b.label = 5;
-                case 5: return [2 /*return*/, provider[method](params.address, params.blockTag || "latest")];
+                    _b.label = 4;
+                case 4: return [2 /*return*/, provider[method](params.address, params.blockTag || "latest")];
+                case 5:
+                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 7];
+                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
                 case 6:
-                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 8];
-                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
-                case 7:
                     provider = _b.sent();
-                    _b.label = 8;
-                case 8: return [2 /*return*/, provider.getStorageAt(params.address, params.position, params.blockTag || "latest")];
+                    _b.label = 7;
+                case 7: return [2 /*return*/, provider.getStorageAt(params.address, params.position, params.blockTag || "latest")];
+                case 8:
+                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 10];
+                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
                 case 9:
-                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 11];
-                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
-                case 10:
                     provider = _b.sent();
-                    _b.label = 11;
-                case 11: return [2 /*return*/, provider[(params.includeTransactions ? "getBlockWithTransactions" : "getBlock")](params.blockTag || params.blockHash)];
+                    _b.label = 10;
+                case 10: return [2 /*return*/, provider[method](params.transaction)];
+                case 11: return [2 /*return*/, provider[method](params.transactionHash)];
                 case 12:
-                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 14];
+                    filter = params.filter;
+                    if (!((filter.fromBlock && (0, bytes_1.isHexString)(filter.fromBlock)) || (filter.toBlock && (0, bytes_1.isHexString)(filter.toBlock)))) return [3 /*break*/, 14];
                     return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
                 case 13:
                     provider = _b.sent();
                     _b.label = 14;
-                case 14: return [2 /*return*/, provider[method](params.transaction)];
-                case 15: return [2 /*return*/, provider[method](params.transactionHash)];
-                case 16:
-                    filter = params.filter;
-                    if (!((filter.fromBlock && (0, bytes_1.isHexString)(filter.fromBlock)) || (filter.toBlock && (0, bytes_1.isHexString)(filter.toBlock)))) return [3 /*break*/, 18];
-                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
-                case 17:
-                    provider = _b.sent();
-                    _b.label = 18;
-                case 18: return [2 /*return*/, provider.getLogs(filter)];
-                case 19: return [2 /*return*/, logger.throwError("unknown method error", logger_1.Logger.errors.UNKNOWN_ERROR, {
+                case 14: return [2 /*return*/, provider.getLogs(filter)];
+                case 15: return [2 /*return*/, logger.throwError("unknown method error", logger_1.Logger.errors.UNKNOWN_ERROR, {
                         method: method,
                         params: params
                     })];

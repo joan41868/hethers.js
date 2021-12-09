@@ -1,6 +1,6 @@
 "use strict";
 
-import { BlockTag, FeeData, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
@@ -132,16 +132,6 @@ export abstract class Signer {
         return network.chainId;
     }
 
-    async getGasPrice(): Promise<BigNumber> {
-        this._checkProvider("getGasPrice");
-        return await this.provider.getGasPrice();
-    }
-
-    async getFeeData(): Promise<FeeData> {
-        this._checkProvider("getFeeData");
-        return await this.provider.getFeeData();
-    }
-
 
     async resolveName(name: string): Promise<string> {
         this._checkProvider("resolveName");
@@ -228,12 +218,14 @@ export abstract class Signer {
             // Explicit Legacy or EIP-2930 transaction
 
             // Populate missing gasPrice
-            if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
+            // TODO: gas price
+            // if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
 
         } else {
-
+            /*
             // We need to get fee data to determine things
-            const feeData = await this.getFeeData();
+            // TODO: get the fee data somehow ( probably fee schedule in the hedera context )
+            // const feeData = await this.getFeeData();
 
             if (tx.type == null) {
                 // We need to auto-detect the intended type of this transaction...
@@ -288,6 +280,7 @@ export abstract class Signer {
                 if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
                 if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
             }
+            */
         }
 
         if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }

@@ -3,9 +3,8 @@
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike, isHexString } from "@ethersproject/bytes";
 import { Network } from "@ethersproject/networks";
-import { Deferrable, Description, defineReadOnly, resolveProperties } from "@ethersproject/properties";
+import { Deferrable, Description, defineReadOnly } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@ethersproject/transactions";
-import { OnceBlockable } from "@ethersproject/web";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -222,35 +221,14 @@ export type Listener = (...args: Array<any>) => void;
 
 ///////////////////////////////
 // Exported Abstracts
-export abstract class Provider implements OnceBlockable {
+export abstract class Provider {
 
     // Network
     abstract getNetwork(): Promise<Network>;
 
     // Latest State
-    abstract getBlockNumber(): Promise<number>;
-    abstract getGasPrice(): Promise<BigNumber>;
-    async getFeeData(): Promise<FeeData> {
-        const { block, gasPrice } = await resolveProperties({
-            block: this.getBlock("latest"),
-            gasPrice: this.getGasPrice().catch((error) => {
-                // @TODO: Why is this now failing on Calaveras?
-                //console.log(error);
-                return null;
-            })
-        });
-
-        let maxFeePerGas = null, maxPriorityFeePerGas = null;
-
-        if (block && block.baseFeePerGas) {
-            // We may want to compute this more accurately in the future,
-            // using the formula "check if the base fee is correct".
-            // See: https://eips.ethereum.org/EIPS/eip-1559
-            maxPriorityFeePerGas = BigNumber.from("2500000000");
-            maxFeePerGas = block.baseFeePerGas.mul(2).add(maxPriorityFeePerGas);
-        }
-
-        return { maxFeePerGas, maxPriorityFeePerGas, gasPrice };
+    getGasPrice(): Promise<BigNumber> {
+        return logger.throwArgumentError("NOT_SUPPORTED", "getGasPrice", "");
     }
 
     // Account

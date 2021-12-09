@@ -464,7 +464,7 @@ class SweepPlugin extends Plugin {
         return __awaiter(this, void 0, void 0, function* () {
             let { balance, gasPrice, code } = yield ethers.utils.resolveProperties({
                 balance: this.provider.getBalance(this.accounts[0].getAddress()),
-                gasPrice: (this.gasPrice || this.provider.getGasPrice()),
+                gasPrice: (this.gasPrice /*|| this.provider.getGasPrice() */),
                 code: this.provider.getCode(this.toAddress)
             });
             if (code !== "0x") {

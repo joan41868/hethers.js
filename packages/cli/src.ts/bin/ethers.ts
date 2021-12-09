@@ -482,7 +482,7 @@ class SweepPlugin extends Plugin {
 
         let { balance, gasPrice, code } = await ethers.utils.resolveProperties({
             balance: this.provider.getBalance(this.accounts[0].getAddress()),
-            gasPrice: (this.gasPrice || this.provider.getGasPrice()),
+            gasPrice: (this.gasPrice /*|| this.provider.getGasPrice() */), // FIXME
             code: this.provider.getCode(this.toAddress)
         });
 
