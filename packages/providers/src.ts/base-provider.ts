@@ -1277,7 +1277,7 @@ export class BaseProvider extends Provider implements EnsProvider {
             }
             return "0x";
         } catch (error) {
-            if (error.response.status != 404 || throwOnNonExisting) {            
+            if (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting)) {            
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "ContractByteCodeQuery",
                     params: {address: addressOrName},

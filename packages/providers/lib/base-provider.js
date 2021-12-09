@@ -1411,7 +1411,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [2 /*return*/, "0x"];
                     case 5:
                         error_8 = _b.sent();
-                        if (error_8.response.status != 404 || throwOnNonExisting) {
+                        if (error_8.response.status != 404 || (error_8.response.status == 404 && throwOnNonExisting)) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "ContractByteCodeQuery",
                                 params: { address: addressOrName },
