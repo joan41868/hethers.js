@@ -1261,7 +1261,7 @@ export class BaseProvider extends Provider implements EnsProvider {
      *
      * @param addressOrName The address to obtain the bytecode of
      */
-    async getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
+    async getCode(addressOrName: string | Promise<string>, throwOnNonExisting?: boolean): Promise<string> {
         await this.getNetwork();
         addressOrName = await addressOrName;
         const { shard, realm, num } = getAccountFromAddress(addressOrName);
@@ -1275,12 +1275,14 @@ export class BaseProvider extends Provider implements EnsProvider {
                 return hexlify(data.bytecode);
             }
             return "0x";
-        } catch (error) {        
-            logger.warn("bad result from backend", Logger.errors.SERVER_ERROR, {
-                method: "ContractByteCodeQuery",
-                params: {address: addressOrName},
-                error
-            });
+        } catch (error) {
+            if (throwOnNonExisting) {
+                logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    method: "ContractByteCodeQuery",
+                    params: {address: addressOrName},
+                    error
+                });
+            }
             return "0x";
         }
     }

@@ -1381,7 +1381,7 @@ var BaseProvider = /** @class */ (function (_super) {
      *
      * @param addressOrName The address to obtain the bytecode of
      */
-    BaseProvider.prototype.getCode = function (addressOrName, blockTag) {
+    BaseProvider.prototype.getCode = function (addressOrName, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, shard, realm, num, shardNum, realmNum, accountNum, endpoint, data, error_7;
             return __generator(this, function (_b) {
@@ -1409,11 +1409,13 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [2 /*return*/, "0x"];
                     case 5:
                         error_7 = _b.sent();
-                        logger.warn("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                            method: "ContractByteCodeQuery",
-                            params: { address: addressOrName },
-                            error: error_7
-                        });
+                        if (throwOnNonExisting) {
+                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                method: "ContractByteCodeQuery",
+                                params: { address: addressOrName },
+                                error: error_7
+                            });
+                        }
                         return [2 /*return*/, "0x"];
                     case 6: return [2 /*return*/];
                 }

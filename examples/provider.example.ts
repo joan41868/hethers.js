@@ -35,6 +35,8 @@ import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-prov
     //not a contract 
     contractBytecode = await provider.getCode("0x0000000000000000000000000000000000000000");
     console.log(contractBytecode);
+    contractBytecode = await provider.getCode("0x0000000000000000000000000000000000000000", true);
+    console.log(contractBytecode);
 
 
     const expiredContractNum = 15067;

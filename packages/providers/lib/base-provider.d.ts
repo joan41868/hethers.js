@@ -124,7 +124,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      *
      * @param addressOrName The address to obtain the bytecode of
      */
-    getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
+    getCode(addressOrName: string | Promise<string>, throwOnNonExisting?: boolean): Promise<string>;
     getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse;
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
