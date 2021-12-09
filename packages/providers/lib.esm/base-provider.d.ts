@@ -71,7 +71,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     }>;
     readonly anyNetwork: boolean;
     private readonly hederaClient;
-    protected mirrorNodeUrl: string;
+    private readonly mirrorNodeUrl;
     /**
      *  ready
      *

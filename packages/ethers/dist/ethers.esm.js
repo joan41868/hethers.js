@@ -90991,6 +90991,7 @@ class BaseProvider extends Provider {
         this._lastBlockNumber = -2;
         this._pollingInterval = 4000;
         this._fastQueryDate = 0;
+        this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
         this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(network));
     }
     _ready() {
@@ -91254,7 +91255,7 @@ class BaseProvider extends Provider {
             // only an external call for backends which can have the underlying
             // network change spontaneously
             const currentNetwork = yield this.detectNetwork();
-            if (network.chainId && network.chainId !== currentNetwork.chainId) {
+            if (network.chainId !== currentNetwork.chainId) {
                 // We are allowing network changes, things can get complex fast;
                 // make sure you know what you are doing if you use "any"
                 if (this.anyNetwork) {
@@ -91542,10 +91543,10 @@ class BaseProvider extends Provider {
             const shardNum = BigNumber.from(shard).toNumber();
             const realmNum = BigNumber.from(realm).toNumber();
             const accountNum = BigNumber.from(num).toNumber();
-            const balance = yield new AccountBalanceQuery()
-                .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
-                .execute(this.hederaClient);
             try {
+                const balance = yield new AccountBalanceQuery()
+                    .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                    .execute(this.hederaClient);
                 return BigNumber.from(balance.hbars.toTinybars().toNumber());
             }
             catch (error) {
@@ -91876,18 +91877,11 @@ class BaseProvider extends Provider {
         return __awaiter$9(this, void 0, void 0, function* () {
             yield this.getNetwork();
             txId = yield txId;
-            const [accId, ,] = txId.split("-");
-            const ep = '/api/v1/transactions?account.id=' + accId;
+            const ep = '/api/v1/transactions/' + txId;
             let { data } = yield axios$1.get(this.mirrorNodeUrl + ep);
-            while (data.links.next != null) {
-                const filtered = data.transactions
-                    .filter((e) => e.transaction_id.toString() === txId && e.result === 'SUCCESS');
-                if (filtered.length > 0) {
-                    return filtered[0];
-                }
-                ({ data } = yield axios$1.get(this.mirrorNodeUrl + data.links.next));
-            }
-            return null;
+            const filtered = data.transactions
+                .filter((e) => e.result === "SUCCESS");
+            return filtered.length > 0 ? filtered[0] : null;
         });
     }
     getTransactionReceipt(transactionHash) {
@@ -92203,6 +92197,20 @@ function mapNetworkToHederaNetworkName(net) {
             return null;
     }
 }
+// resolves the mirror node url from the given provider network.
+function resolveMirrorNetworkUrl(net) {
+    switch (net.name) {
+        case 'mainnet':
+            return 'https://mainnet.mirrornode.hedera.com';
+        case 'previewnet':
+            return 'https://previewnet.mirrornode.hedera.com';
+        case 'testnet':
+            return 'https://testnet.mirrornode.hedera.com';
+        default:
+            logger$t.throwArgumentError("Invalid network name", "network", net);
+            return null;
+    }
+}
 
 // contains predefined, sdk acceptable hedera network strings
 var HederaNetworks;
@@ -92215,37 +92223,11 @@ var HederaNetworks;
  * The hedera provider uses the hashgraph module to establish a connection to the Hedera network.
  * As every provider, this one also gives us read-only access.
  *
- * Constructable with a string, which automatically resolves to a hedera network via the hashgraph SDK.
+ * Constructable with a string or a number, which automatically resolves to a hedera network via the hashgraph SDK.
  */
 class DefaultHederaProvider extends BaseProvider {
-    constructor(network, options) {
+    constructor(network) {
         super(network);
-        if (options == null) {
-            options = {};
-        }
-        // automatically resolve to a mirror node URL by the given network ( will select test mirror node for testnet )
-        if (!options.mirrorNodeUrl) {
-            this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
-        }
-        else {
-            // always prefer the given URL if explicitly given
-            this.mirrorNodeUrl = options.mirrorNodeUrl;
-        }
-        this.consensusNodeUrl = options.consensusNodeUrl;
-    }
-}
-// resolves the mirror node url from the given provider network.
-function resolveMirrorNetworkUrl(net) {
-    switch (net.name) {
-        case 'mainnet':
-            return 'https://mainnet.mirrornode.hedera.com';
-        case 'previewnet':
-            return 'https://previewnet.mirrornode.hedera.com';
-        case 'testnet':
-            return 'https://testnet.mirrornode.hedera.com';
-        default:
-            logger$x.throwArgumentError("Invalid network name", "network", net);
-            return null;
     }
 }
 
