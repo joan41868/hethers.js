@@ -1277,14 +1277,14 @@ export class BaseProvider extends Provider implements EnsProvider {
             }
             return "0x";
         } catch (error) {
-            if (throwOnNonExisting) {
+            if (error.response.status != 404 || throwOnNonExisting) {            
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "ContractByteCodeQuery",
                     params: {address: addressOrName},
                     error
                 });
-            }
-            return "0x";
+            } 
+            return "0x";         
         }
     }
 
