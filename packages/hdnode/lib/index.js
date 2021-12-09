@@ -66,12 +66,13 @@ var HDNode = /** @class */ (function () {
             var signingKey = new signing_key_1.SigningKey(privateKey);
             (0, properties_1.defineReadOnly)(this, "privateKey", signingKey.privateKey);
             (0, properties_1.defineReadOnly)(this, "publicKey", signingKey.compressedPublicKey);
+            (0, properties_1.defineReadOnly)(this, "alias", (0, transactions_1.computeAlias)(this.privateKey));
         }
         else {
             (0, properties_1.defineReadOnly)(this, "privateKey", null);
+            (0, properties_1.defineReadOnly)(this, "alias", null);
             (0, properties_1.defineReadOnly)(this, "publicKey", (0, bytes_1.hexlify)(publicKey));
         }
-        (0, properties_1.defineReadOnly)(this, "alias", (0, transactions_1.computeAlias)(this.privateKey));
         (0, properties_1.defineReadOnly)(this, "parentFingerprint", parentFingerprint);
         (0, properties_1.defineReadOnly)(this, "fingerprint", (0, bytes_1.hexDataSlice)((0, sha2_1.ripemd160)((0, sha2_1.sha256)(this.publicKey)), 0, 4));
         (0, properties_1.defineReadOnly)(this, "chainCode", chainCode);

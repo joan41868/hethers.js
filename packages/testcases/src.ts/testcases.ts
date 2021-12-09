@@ -20,7 +20,7 @@ export interface Hash {
 
 export interface HDWalletNode {
     path: string;
-    address: string;
+    alias: string;
     privateKey: string;
 };
 
