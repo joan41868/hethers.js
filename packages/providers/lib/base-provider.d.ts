@@ -118,6 +118,12 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      */
     getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
     getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number>;
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param addressOrName The address to obtain the bytecode of
+     */
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse;

@@ -32,7 +32,16 @@ import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-prov
     let contractBytecode = await provider.getCode(getAddressFromAccount(contractAccountConfig));
     console.log(contractBytecode);
 
-    contractBytecode = await provider.getCode(contractSolAddr);
+    //not a contract 
+    contractBytecode = await provider.getCode("0x0000000000000000000000000000000000000000");
+    console.log(contractBytecode);
+
+
+    const expiredContractNum = 15067;
+    const expiredContractAccountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(expiredContractNum) };
+    const expiredContractSolAddr = getAddressFromAccount(expiredContractAccountConfig);
+    //contract with an empty bytecode
+    contractBytecode = await provider.getCode(expiredContractSolAddr);
     console.log(contractBytecode);
 })();
 

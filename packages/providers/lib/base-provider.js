@@ -1375,6 +1375,12 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param addressOrName The address to obtain the bytecode of
+     */
     BaseProvider.prototype.getCode = function (addressOrName, blockTag) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, shard, realm, num, shardNum, realmNum, accountNum, endpoint, data, error_7;
@@ -1397,18 +1403,18 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + endpoint)];
                     case 4:
                         data = (_b.sent()).data;
-                        console.log("REST Api call: " + this.mirrorNodeUrl + endpoint);
                         if (data.bytecode != null) {
                             return [2 /*return*/, (0, bytes_1.hexlify)(data.bytecode)];
                         }
-                        return [2 /*return*/, null];
+                        return [2 /*return*/, "0x"];
                     case 5:
                         error_7 = _b.sent();
-                        return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                method: "getCode",
-                                params: { address: addressOrName },
-                                error: error_7
-                            })];
+                        logger.warn("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                            method: "ContractByteCodeQuery",
+                            params: { address: addressOrName },
+                            error: error_7
+                        });
+                        return [2 /*return*/, "0x"];
                     case 6: return [2 /*return*/];
                 }
             });

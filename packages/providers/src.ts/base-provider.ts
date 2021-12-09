@@ -1255,6 +1255,12 @@ export class BaseProvider extends Provider implements EnsProvider {
         }
     }
 
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param addressOrName The address to obtain the bytecode of
+     */
     async getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
         await this.getNetwork();
         addressOrName = await addressOrName;
@@ -1262,21 +1268,21 @@ export class BaseProvider extends Provider implements EnsProvider {
         const shardNum = BigNumber.from(shard).toNumber();
         const realmNum = BigNumber.from(realm).toNumber();
         const accountNum = BigNumber.from(num).toNumber();
-        const endpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;       
+        const endpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
         try {
             let { data } = await axios.get(this.mirrorNodeUrl + endpoint);
-            console.log("REST Api call: " + this.mirrorNodeUrl + endpoint);
             if (data.bytecode != null) {
                 return hexlify(data.bytecode);
             }
-            return null;
-        } catch (error) {
-            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                method: "getCode",
+            return "0x";
+        } catch (error) {        
+            logger.warn("bad result from backend", Logger.errors.SERVER_ERROR, {
+                method: "ContractByteCodeQuery",
                 params: {address: addressOrName},
                 error
             });
-        } 
+            return "0x";
+        }
     }
 
     async getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
