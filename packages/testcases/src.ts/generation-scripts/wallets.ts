@@ -1,13 +1,9 @@
 'use strict';
 
-// import fs from "fs";
-// import { resolve } from "path";
-
 const fs = require('fs');
-const asd = require('path');
+const path = require('path');
 const zlib = require('zlib');
 const ethers = require('ethers');
-// import { saveTests } from "..";
 const testcases = [];
 
 const mnemonics = {
@@ -15,9 +11,9 @@ const mnemonics = {
     '012363d61bdc53d0290a0f25e9c89f8257550fb8': 'service basket parent alcohol fault similar survey twelve hockey cloud walk panel'
 };
 
-const inputDir = asd.resolve(__dirname, "../../input/wallets");
+const inputDir = path.resolve(__dirname, "../../input/wallets");
 fs.readdirSync(inputDir).forEach((filename, index) => {
-   let content = fs.readFileSync(asd.resolve(inputDir, filename)).toString();
+   let content = fs.readFileSync(path.resolve(inputDir, filename)).toString();
    let data = JSON.parse(content);
    const comps = filename.split(".")[0].split("-");
    testcases.push({
@@ -36,7 +32,7 @@ fs.readdirSync(inputDir).forEach((filename, index) => {
 saveTests1("wallets", testcases);
 
 function saveTests1(tag, data) {
-    let filename = asd.resolve(__dirname, '../../testcases', tag + '.json.gz');
+    let filename = path.resolve(__dirname, '../../testcases', tag + '.json.gz');
 
     fs.writeFileSync(filename, zlib.gzipSync(JSON.stringify(data, undefined, ' ') + '\n'));
 
