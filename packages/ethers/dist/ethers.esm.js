@@ -9122,7 +9122,30 @@ class Provider {
     }
     // Latest State
     getGasPrice() {
-        return logger$e.throwArgumentError("NOT_SUPPORTED", "getGasPrice", "");
+        return logger$e.throwArgumentError("getGasPrice not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getGasPrice"
+        });
+    }
+    getTransactionCount(addressOrName, blockTag) {
+        return logger$e.throwArgumentError("getTransactionCount not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getTransactionCount"
+        });
+    }
+    getStorageAt(addressOrName, position, blockTag) {
+        return logger$e.throwArgumentError("getStorageAt not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getStorageAt"
+        });
+    }
+    // Queries
+    getBlock(blockHashOrBlockTag) {
+        return logger$e.throwArgumentError("getBlock not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getBlock"
+        });
+    }
+    getBlockWithTransactions(blockHashOrBlockTag) {
+        return logger$e.throwArgumentError("getBlockWithTransactions not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getBlockWithTransactions"
+        });
     }
     // Alias for "on"
     addListener(eventName, listener) {

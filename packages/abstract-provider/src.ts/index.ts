@@ -228,14 +228,24 @@ export abstract class Provider {
 
     // Latest State
     getGasPrice(): Promise<BigNumber> {
-        return logger.throwArgumentError("NOT_SUPPORTED", "getGasPrice", "");
+        return logger.throwArgumentError("getGasPrice not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getGasPrice"
+        });
     }
 
     // Account
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
-    abstract getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number>;
+    getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number> {
+        return logger.throwArgumentError("getTransactionCount not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getTransactionCount"
+        });
+    }
     abstract getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> ;
-    abstract getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
+    getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>{
+        return logger.throwArgumentError("getStorageAt not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getStorageAt"
+        });
+    }
 
     // Execution
     abstract sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
@@ -243,8 +253,17 @@ export abstract class Provider {
     abstract estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
 
     // Queries
-    abstract getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<Block>;
-    abstract getBlockWithTransactions(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<BlockWithTransactions>;
+    getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<Block> {
+        return logger.throwArgumentError("getBlock not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getBlock"
+        });
+    }
+    getBlockWithTransactions(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<BlockWithTransactions> {
+        return logger.throwArgumentError("getBlockWithTransactions not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getBlockWithTransactions"
+        });
+    }
+
     abstract getTransaction(transactionHash: string): Promise<TransactionResponse>;
     abstract getTransactionReceipt(transactionHash: string): Promise<TransactionReceipt>;
 

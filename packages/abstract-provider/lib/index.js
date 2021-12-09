@@ -105,7 +105,30 @@ var Provider = /** @class */ (function () {
     }
     // Latest State
     Provider.prototype.getGasPrice = function () {
-        return logger.throwArgumentError("NOT_SUPPORTED", "getGasPrice", "");
+        return logger.throwArgumentError("getGasPrice not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getGasPrice"
+        });
+    };
+    Provider.prototype.getTransactionCount = function (addressOrName, blockTag) {
+        return logger.throwArgumentError("getTransactionCount not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getTransactionCount"
+        });
+    };
+    Provider.prototype.getStorageAt = function (addressOrName, position, blockTag) {
+        return logger.throwArgumentError("getStorageAt not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getStorageAt"
+        });
+    };
+    // Queries
+    Provider.prototype.getBlock = function (blockHashOrBlockTag) {
+        return logger.throwArgumentError("getBlock not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getBlock"
+        });
+    };
+    Provider.prototype.getBlockWithTransactions = function (blockHashOrBlockTag) {
+        return logger.throwArgumentError("getBlockWithTransactions not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+            operation: "getBlockWithTransactions"
+        });
     };
     // Alias for "on"
     Provider.prototype.addListener = function (eventName, listener) {
