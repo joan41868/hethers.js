@@ -50,6 +50,7 @@ export interface Wallet {
     type: "crowdsale" | "secret-storage";
     hasAddress: boolean;
     address: string;
+    alias: string;
     privateKey: string;
     mnemonic?: string;
     password?: string;

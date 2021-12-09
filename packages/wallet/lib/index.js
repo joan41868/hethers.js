@@ -179,7 +179,8 @@ var Wallet = /** @class */ (function (_super) {
         var eoa = {
             privateKey: this._signingKey().privateKey,
             address: (0, address_1.getAddressFromAccount)(accountLike),
-            alias: this.alias
+            alias: this.alias,
+            mnemonic: this._mnemonic()
         };
         return new Wallet(eoa, this.provider);
     };

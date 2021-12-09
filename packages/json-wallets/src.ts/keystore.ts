@@ -135,7 +135,6 @@ function _getAccount(data: any, key: Uint8Array): KeystoreAccount {
             }
         }
     }
-
     return new KeystoreAccount(account);
 }
 
