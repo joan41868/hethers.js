@@ -320,16 +320,14 @@ function waitForSync(config, blockNumber) {
         var provider;
         return __generator(this, function (_a) {
             provider = (config.provider);
-            if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
-                return [2 /*return*/, provider];
-            }
+            // if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
+            //     return provider;
+            // }
             return [2 /*return*/, (0, web_1.poll)(function () {
                     return new Promise(function (resolve, reject) {
                         setTimeout(function () {
                             // We are synced
-                            if (provider.blockNumber >= blockNumber) {
-                                return resolve(provider);
-                            }
+                            // if (provider.blockNumber >= blockNumber) { return resolve(provider); }
                             // We're done; just quit
                             if (config.cancelled) {
                                 return resolve(null);
@@ -501,12 +499,11 @@ var FallbackProvider = /** @class */ (function (_super) {
                         // They were all an error; pick the first error
                         throw results[0];
                     case 2:
-                        if (!(this._highestBlockNumber === -1 && method !== "getBlockNumber")) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.getBlockNumber()];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4:
+                        // We need to make sure we are in sync with our backends, so we need
+                        // to know this before we can make a lot of calls
+                        if (this._highestBlockNumber === -1 && method !== "getBlockNumber") {
+                            // await this.getBlockNumber();
+                        }
                         processFunc = getProcessFunc(this, method, params);
                         configs = (0, random_1.shuffled)(this.providerConfigs.map(properties_1.shallowCopy));
                         configs.sort(function (a, b) { return (a.priority - b.priority); });
@@ -649,18 +646,18 @@ var FallbackProvider = /** @class */ (function (_super) {
                             });
                         };
                         this_1 = this;
-                        _a.label = 5;
-                    case 5:
-                        if (!true) return [3 /*break*/, 7];
+                        _a.label = 3;
+                    case 3:
+                        if (!true) return [3 /*break*/, 5];
                         return [5 /*yield**/, _loop_1()];
-                    case 6:
+                    case 4:
                         state_1 = _a.sent();
                         if (typeof state_1 === "object")
                             return [2 /*return*/, state_1.value];
                         if (state_1 === "break")
-                            return [3 /*break*/, 7];
-                        return [3 /*break*/, 5];
-                    case 7:
+                            return [3 /*break*/, 5];
+                        return [3 /*break*/, 3];
+                    case 5:
                         // Shut down any stallers; shouldn't be any
                         configs.forEach(function (c) {
                             if (c.staller) {

@@ -90562,9 +90562,6 @@ function getEventTag$1(eventName) {
 }
 //////////////////////////////
 // Helper Object
-function getTime() {
-    return (new Date()).getTime();
-}
 function stall(duration) {
     return new Promise((resolve) => {
         setTimeout(resolve, duration);
@@ -91040,69 +91037,6 @@ class BaseProvider extends Provider {
     static getNetwork(network) {
         return getNetwork((network == null) ? "mainnet" : network);
     }
-    // Fetches the blockNumber, but will reuse any result that is less
-    // than maxAge old or has been requested since the last request
-    _getInternalBlockNumber(maxAge) {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            yield this._ready();
-            // Allowing stale data up to maxAge old
-            if (maxAge > 0) {
-                // While there are pending internal block requests...
-                while (this._internalBlockNumber) {
-                    // ..."remember" which fetch we started with
-                    const internalBlockNumber = this._internalBlockNumber;
-                    try {
-                        // Check the result is not too stale
-                        const result = yield internalBlockNumber;
-                        if ((getTime() - result.respTime) <= maxAge) {
-                            return result.blockNumber;
-                        }
-                        // Too old; fetch a new value
-                        break;
-                    }
-                    catch (error) {
-                        // The fetch rejected; if we are the first to get the
-                        // rejection, drop through so we replace it with a new
-                        // fetch; all others blocked will then get that fetch
-                        // which won't match the one they "remembered" and loop
-                        if (this._internalBlockNumber === internalBlockNumber) {
-                            break;
-                        }
-                    }
-                }
-            }
-            const reqTime = getTime();
-            const checkInternalBlockNumber = resolveProperties({
-                blockNumber: this.perform("getBlockNumber", {}),
-                networkError: this.getNetwork().then((network) => (null), (error) => (error))
-            }).then(({ blockNumber, networkError }) => {
-                if (networkError) {
-                    // Unremember this bad internal block number
-                    if (this._internalBlockNumber === checkInternalBlockNumber) {
-                        this._internalBlockNumber = null;
-                    }
-                    throw networkError;
-                }
-                const respTime = getTime();
-                blockNumber = BigNumber.from(blockNumber).toNumber();
-                if (blockNumber < this._maxInternalBlockNumber) {
-                    blockNumber = this._maxInternalBlockNumber;
-                }
-                this._maxInternalBlockNumber = blockNumber;
-                this._setFastBlockNumber(blockNumber); // @TODO: Still need this?
-                return { blockNumber, reqTime, respTime };
-            });
-            this._internalBlockNumber = checkInternalBlockNumber;
-            // Swallow unhandled exceptions; if needed they are handled else where
-            checkInternalBlockNumber.catch((error) => {
-                // Don't null the dead (rejected) fetch, if it has already been updated
-                if (this._internalBlockNumber === checkInternalBlockNumber) {
-                    this._internalBlockNumber = null;
-                }
-            });
-            return (yield checkInternalBlockNumber).blockNumber;
-        });
-    }
     poll() {
         return __awaiter$8(this, void 0, void 0, function* () {
             const pollId = nextPollId++;
@@ -91110,13 +91044,13 @@ class BaseProvider extends Provider {
             const runners = [];
             let blockNumber = null;
             try {
-                blockNumber = yield this._getInternalBlockNumber(100 + this.pollingInterval / 2);
+                // blockNumber = await this._getInternalBlockNumber(100 + this.pollingInterval / 2);
             }
             catch (error) {
                 this.emit("error", error);
                 return;
             }
-            this._setFastBlockNumber(blockNumber);
+            // this._setFastBlockNumber(blockNumber);
             // Emit a poll event after we have the latest (fast) block number
             this.emit("poll", pollId, blockNumber);
             // If the block has not changed, meh.
@@ -91271,12 +91205,6 @@ class BaseProvider extends Provider {
             return network;
         });
     }
-    get blockNumber() {
-        this._getInternalBlockNumber(100 + this.pollingInterval / 2).then((blockNumber) => {
-            this._setFastBlockNumber(blockNumber);
-        }, (error) => { });
-        return (this._fastBlockNumber != null) ? this._fastBlockNumber : -1;
-    }
     get polling() {
         return (this._poller != null);
     }
@@ -91316,33 +91244,6 @@ class BaseProvider extends Provider {
         if (this._poller) {
             clearInterval(this._poller);
             this._poller = setInterval(() => { this.poll(); }, this._pollingInterval);
-        }
-    }
-    _getFastBlockNumber() {
-        const now = getTime();
-        // Stale block number, request a newer value
-        if ((now - this._fastQueryDate) > 2 * this._pollingInterval) {
-            this._fastQueryDate = now;
-            this._fastBlockNumberPromise = this.getBlockNumber().then((blockNumber) => {
-                if (this._fastBlockNumber == null || blockNumber > this._fastBlockNumber) {
-                    this._fastBlockNumber = blockNumber;
-                }
-                return this._fastBlockNumber;
-            });
-        }
-        return this._fastBlockNumberPromise;
-    }
-    _setFastBlockNumber(blockNumber) {
-        // Older block, maybe a stale request
-        if (this._fastBlockNumber != null && blockNumber < this._fastBlockNumber) {
-            return;
-        }
-        // Update the time we updated the blocknumber
-        this._fastQueryDate = getTime();
-        // Newer block number, use  it
-        if (this._fastBlockNumber == null || blockNumber > this._fastBlockNumber) {
-            this._fastBlockNumber = blockNumber;
-            this._fastBlockNumberPromise = Promise.resolve(blockNumber);
         }
     }
     waitForTransaction(transactionHash, confirmations, timeout) {
@@ -91494,11 +91395,6 @@ class BaseProvider extends Provider {
             });
         });
     }
-    getBlockNumber() {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            return this._getInternalBlockNumber(0);
-        });
-    }
     getGasPrice() {
         return __awaiter$8(this, void 0, void 0, function* () {
             yield this.getNetwork();
@@ -91647,24 +91543,10 @@ class BaseProvider extends Provider {
         });
         return result;
     }
+    // FIXME:
     sendTransaction(signedTransaction) {
         return __awaiter$8(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const hexTx = yield Promise.resolve(signedTransaction).then(t => hexlify(t));
-            const tx = this.formatter.transaction(signedTransaction);
-            if (tx.confirmations == null) {
-                tx.confirmations = 0;
-            }
-            const blockNumber = yield this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-            try {
-                const hash = yield this.perform("sendTransaction", { signedTransaction: hexTx });
-                return this._wrapTransaction(tx, hash, blockNumber);
-            }
-            catch (error) {
-                error.transaction = tx;
-                error.transactionHash = tx.hash;
-                throw error;
-            }
+            return null;
         });
     }
     _getTransactionRequest(transaction) {
@@ -91776,82 +91658,18 @@ class BaseProvider extends Provider {
         });
     }
     _getBlock(blockHashOrBlockTag, includeTransactions) {
+        const _super = Object.create(null, {
+            getBlock: { get: () => super.getBlock }
+        });
         return __awaiter$8(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            blockHashOrBlockTag = yield blockHashOrBlockTag;
-            // If blockTag is a number (not "latest", etc), this is the block number
-            let blockNumber = -128;
-            const params = {
-                includeTransactions: !!includeTransactions
-            };
-            if (isHexString(blockHashOrBlockTag, 32)) {
-                params.blockHash = blockHashOrBlockTag;
-            }
-            else {
-                try {
-                    params.blockTag = yield this._getBlockTag(blockHashOrBlockTag);
-                    if (isHexString(params.blockTag)) {
-                        blockNumber = parseInt(params.blockTag.substring(2), 16);
-                    }
-                }
-                catch (error) {
-                    logger$t.throwArgumentError("invalid block hash or block tag", "blockHashOrBlockTag", blockHashOrBlockTag);
-                }
-            }
-            return poll(() => __awaiter$8(this, void 0, void 0, function* () {
-                const block = yield this.perform("getBlock", params);
-                // Block was not found
-                if (block == null) {
-                    // For blockhashes, if we didn't say it existed, that blockhash may
-                    // not exist. If we did see it though, perhaps from a log, we know
-                    // it exists, and this node is just not caught up yet.
-                    if (params.blockHash != null) {
-                        if (this._emitted["b:" + params.blockHash] == null) {
-                            return null;
-                        }
-                    }
-                    // For block tags, if we are asking for a future block, we return null
-                    if (params.blockTag != null) {
-                        if (blockNumber > this._emitted.block) {
-                            return null;
-                        }
-                    }
-                    // Retry on the next block
-                    return undefined;
-                }
-                // Add transactions
-                if (includeTransactions) {
-                    let blockNumber = null;
-                    for (let i = 0; i < block.transactions.length; i++) {
-                        const tx = block.transactions[i];
-                        if (tx.blockNumber == null) {
-                            tx.confirmations = 0;
-                        }
-                        else if (tx.confirmations == null) {
-                            if (blockNumber == null) {
-                                blockNumber = yield this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                            }
-                            // Add the confirmations using the fast block number (pessimistic)
-                            let confirmations = (blockNumber - tx.blockNumber) + 1;
-                            if (confirmations <= 0) {
-                                confirmations = 1;
-                            }
-                            tx.confirmations = confirmations;
-                        }
-                    }
-                    const blockWithTxs = this.formatter.blockWithTransactions(block);
-                    blockWithTxs.transactions = blockWithTxs.transactions.map((tx) => this._wrapTransaction(tx));
-                    return blockWithTxs;
-                }
-                return this.formatter.block(block);
-            }), { oncePoll: this });
+            return _super.getBlock.call(this, blockHashOrBlockTag);
         });
     }
     getBlock(blockHashOrBlockTag) {
-        return (this._getBlock(blockHashOrBlockTag, false));
+        return super.getBlock(blockHashOrBlockTag);
     }
     getBlockWithTransactions(blockHashOrBlockTag) {
-        return (this._getBlock(blockHashOrBlockTag, true));
+        return super.getBlockWithTransactions(blockHashOrBlockTag);
     }
     /**
      * Transaction record query implementation using the mirror node REST API.
@@ -91891,13 +91709,12 @@ class BaseProvider extends Provider {
                     receipt.confirmations = 0;
                 }
                 else if (receipt.confirmations == null) {
-                    const blockNumber = yield this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+                    // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+                    //
                     // Add the confirmations using the fast block number (pessimistic)
-                    let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                    if (confirmations <= 0) {
-                        confirmations = 1;
-                    }
-                    receipt.confirmations = confirmations;
+                    // let confirmations = (blockNumber - receipt.blockNumber) + 1;
+                    // if (confirmations <= 0) { confirmations = 1; }
+                    // receipt.confirmations = confirmations;
                 }
                 return receipt;
             }), { oncePoll: this });
@@ -91925,17 +91742,16 @@ class BaseProvider extends Provider {
     _getBlockTag(blockTag) {
         return __awaiter$8(this, void 0, void 0, function* () {
             blockTag = yield blockTag;
-            if (typeof (blockTag) === "number" && blockTag < 0) {
-                if (blockTag % 1) {
-                    logger$t.throwArgumentError("invalid BlockTag", "blockTag", blockTag);
-                }
-                let blockNumber = yield this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                blockNumber += blockTag;
-                if (blockNumber < 0) {
-                    blockNumber = 0;
-                }
-                return this.formatter.blockTag(blockNumber);
-            }
+            // if (typeof(blockTag) === "number" && blockTag < 0) {
+            //     if (blockTag % 1) {
+            //         logger.throwArgumentError("invalid BlockTag", "blockTag", blockTag);
+            //     }
+            //
+            //     let blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+            //     blockNumber += blockTag;
+            //     if (blockNumber < 0) { blockNumber = 0; }
+            //     return this.formatter.blockTag(blockNumber)
+            // }
             return this.formatter.blockTag(blockTag);
         });
     }

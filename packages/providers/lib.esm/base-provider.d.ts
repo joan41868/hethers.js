@@ -86,19 +86,15 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     get ready(): Promise<Network>;
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
-    _getInternalBlockNumber(maxAge: number): Promise<number>;
     poll(): Promise<void>;
     resetEventsBlock(blockNumber: number): void;
     get network(): Network;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
-    get blockNumber(): number;
     get polling(): boolean;
     set polling(value: boolean);
     get pollingInterval(): number;
     set pollingInterval(value: number);
-    _getFastBlockNumber(): Promise<number>;
-    _setFastBlockNumber(blockNumber: number): void;
     waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
     _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: {
         data: string;
@@ -108,7 +104,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
         value: BigNumber;
         startBlock: number;
     }): Promise<TransactionReceipt>;
-    getBlockNumber(): Promise<number>;
     getGasPrice(): Promise<BigNumber>;
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.

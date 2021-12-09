@@ -326,16 +326,16 @@ function getProcessFunc(provider: FallbackProvider, method: string, params: { [ 
 async function waitForSync(config: RunningConfig, blockNumber: number): Promise<BaseProvider> {
     const provider = <BaseProvider>(config.provider);
 
-    if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
-        return provider;
-    }
+    // if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
+    //     return provider;
+    // }
 
     return poll(() => {
         return new Promise((resolve, reject) => {
             setTimeout(function() {
 
                 // We are synced
-                if (provider.blockNumber >= blockNumber) { return resolve(provider); }
+                // if (provider.blockNumber >= blockNumber) { return resolve(provider); }
 
                 // We're done; just quit
                 if (config.cancelled) { return resolve(null); }
@@ -489,7 +489,7 @@ export class FallbackProvider extends BaseProvider {
         // We need to make sure we are in sync with our backends, so we need
         // to know this before we can make a lot of calls
         if (this._highestBlockNumber === -1 && method !== "getBlockNumber") {
-            await this.getBlockNumber();
+            // await this.getBlockNumber();
         }
 
         const processFunc = getProcessFunc(this, method, params);

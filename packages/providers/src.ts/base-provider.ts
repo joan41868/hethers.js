@@ -5,8 +5,8 @@ import {
     Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { arrayify, concat, hexConcat, hexDataLength, hexDataSlice, hexlify, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import { BigNumber } from "@ethersproject/bignumber";
+import { arrayify, concat, hexConcat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { HashZero } from "@ethersproject/constants";
 import { namehash } from "@ethersproject/hash";
 import { getNetwork, Network, Networkish } from "@ethersproject/networks";
@@ -107,9 +107,6 @@ function getEventTag(eventName: EventType): string {
 //////////////////////////////
 // Helper Object
 
-function getTime() {
-    return (new Date()).getTime();
-}
 
 function stall(duration: number): Promise<void> {
     return new Promise((resolve) => {
@@ -709,79 +706,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         return getNetwork((network == null) ? "mainnet": network);
     }
 
-    // Fetches the blockNumber, but will reuse any result that is less
-    // than maxAge old or has been requested since the last request
-    async _getInternalBlockNumber(maxAge: number): Promise<number> {
-        await this._ready();
-
-        // Allowing stale data up to maxAge old
-        if (maxAge > 0) {
-
-            // While there are pending internal block requests...
-            while (this._internalBlockNumber) {
-
-                // ..."remember" which fetch we started with
-                const internalBlockNumber = this._internalBlockNumber;
-
-                try {
-                    // Check the result is not too stale
-                    const result = await internalBlockNumber;
-                    if ((getTime() - result.respTime) <= maxAge) {
-                        return result.blockNumber;
-                    }
-
-                    // Too old; fetch a new value
-                    break;
-
-                } catch(error) {
-
-                    // The fetch rejected; if we are the first to get the
-                    // rejection, drop through so we replace it with a new
-                    // fetch; all others blocked will then get that fetch
-                    // which won't match the one they "remembered" and loop
-                    if (this._internalBlockNumber === internalBlockNumber) {
-                        break;
-                    }
-                }
-            }
-        }
-
-        const reqTime = getTime();
-
-        const checkInternalBlockNumber = resolveProperties({
-            blockNumber: this.perform("getBlockNumber", { }),
-            networkError: this.getNetwork().then((network) => (null), (error) => (error))
-        }).then(({ blockNumber, networkError }) => {
-            if (networkError) {
-                // Unremember this bad internal block number
-                if (this._internalBlockNumber === checkInternalBlockNumber) {
-                    this._internalBlockNumber = null;
-                }
-                throw networkError;
-            }
-
-            const respTime = getTime();
-
-            blockNumber = BigNumber.from(blockNumber).toNumber();
-            if (blockNumber < this._maxInternalBlockNumber) { blockNumber = this._maxInternalBlockNumber; }
-
-            this._maxInternalBlockNumber = blockNumber;
-            this._setFastBlockNumber(blockNumber); // @TODO: Still need this?
-            return { blockNumber, reqTime, respTime };
-        });
-
-        this._internalBlockNumber = checkInternalBlockNumber;
-
-        // Swallow unhandled exceptions; if needed they are handled else where
-        checkInternalBlockNumber.catch((error) => {
-            // Don't null the dead (rejected) fetch, if it has already been updated
-            if (this._internalBlockNumber === checkInternalBlockNumber) {
-                this._internalBlockNumber = null;
-            }
-        });
-
-        return (await checkInternalBlockNumber).blockNumber;
-    }
 
     async poll(): Promise<void> {
         const pollId = nextPollId++;
@@ -791,12 +715,12 @@ export class BaseProvider extends Provider implements EnsProvider {
 
         let blockNumber: number = null;
         try {
-            blockNumber = await this._getInternalBlockNumber(100 + this.pollingInterval / 2);
+            // blockNumber = await this._getInternalBlockNumber(100 + this.pollingInterval / 2);
         } catch (error) {
             this.emit("error", error);
             return;
         }
-        this._setFastBlockNumber(blockNumber);
+        // this._setFastBlockNumber(blockNumber);
 
         // Emit a poll event after we have the latest (fast) block number
         this.emit("poll", pollId, blockNumber);
@@ -968,14 +892,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         return network;
     }
 
-    get blockNumber(): number {
-        this._getInternalBlockNumber(100 + this.pollingInterval / 2).then((blockNumber) => {
-            this._setFastBlockNumber(blockNumber);
-        }, (error) => { });
-
-        return (this._fastBlockNumber != null) ? this._fastBlockNumber: -1;
-    }
-
     get polling(): boolean {
         return (this._poller != null);
     }
@@ -1021,37 +937,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         if (this._poller) {
             clearInterval(this._poller);
             this._poller = setInterval(() => { this.poll(); }, this._pollingInterval);
-        }
-    }
-
-    _getFastBlockNumber(): Promise<number> {
-        const now = getTime();
-
-        // Stale block number, request a newer value
-        if ((now - this._fastQueryDate) > 2 * this._pollingInterval) {
-            this._fastQueryDate = now;
-            this._fastBlockNumberPromise = this.getBlockNumber().then((blockNumber) => {
-                if (this._fastBlockNumber == null || blockNumber > this._fastBlockNumber) {
-                    this._fastBlockNumber = blockNumber;
-                }
-                return this._fastBlockNumber;
-            });
-        }
-
-        return this._fastBlockNumberPromise;
-    }
-
-    _setFastBlockNumber(blockNumber: number): void {
-        // Older block, maybe a stale request
-        if (this._fastBlockNumber != null && blockNumber < this._fastBlockNumber) { return; }
-
-        // Update the time we updated the blocknumber
-        this._fastQueryDate = getTime();
-
-        // Newer block number, use  it
-        if (this._fastBlockNumber == null || blockNumber > this._fastBlockNumber) {
-            this._fastBlockNumber = blockNumber;
-            this._fastBlockNumberPromise = Promise.resolve(blockNumber);
         }
     }
 
@@ -1193,24 +1078,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         });
     }
 
-    async getBlockNumber(): Promise<number> {
-        return this._getInternalBlockNumber(0);
-    }
-
-    async getGasPrice(): Promise<BigNumber> {
-        await this.getNetwork();
-
-        const result = await this.perform("getGasPrice", { });
-        try {
-            return BigNumber.from(result);
-        } catch (error) {
-            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                method: "getGasPrice",
-                result, error
-            });
-        }
-    }
-
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
@@ -1238,24 +1105,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         }
     }
 
-    async getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number> {
-        await this.getNetwork();
-        const params = await resolveProperties({
-            address: this._getAddress(addressOrName),
-            blockTag: this._getBlockTag(blockTag)
-        });
-
-        const result = await this.perform("getTransactionCount", params);
-        try {
-            return BigNumber.from(result).toNumber();
-        } catch (error) {
-            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                method: "getTransactionCount",
-                params, result, error
-            });
-        }
-    }
-
     async getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
         await this.getNetwork();
         const params = await resolveProperties({
@@ -1269,24 +1118,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         } catch (error) {
             return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                 method: "getCode",
-                params, result, error
-            });
-        }
-    }
-
-    async getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
-        await this.getNetwork();
-        const params = await resolveProperties({
-            address: this._getAddress(addressOrName),
-            blockTag: this._getBlockTag(blockTag),
-            position: Promise.resolve(position).then((p) => hexValue(p))
-        });
-        const result = await this.perform("getStorageAt", params);
-        try {
-            return hexlify(result);
-        } catch (error) {
-            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                method: "getStorageAt",
                 params, result, error
             });
         }
@@ -1339,20 +1170,9 @@ export class BaseProvider extends Provider implements EnsProvider {
         return result;
     }
 
+    // FIXME:
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
-        await this.getNetwork();
-        const hexTx = await Promise.resolve(signedTransaction).then(t => hexlify(t));
-        const tx = this.formatter.transaction(signedTransaction);
-        if (tx.confirmations == null) { tx.confirmations = 0; }
-        const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-        try {
-            const hash = await this.perform("sendTransaction", { signedTransaction: hexTx });
-            return this._wrapTransaction(tx, hash, blockNumber);
-        } catch (error) {
-            (<any>error).transaction = tx;
-            (<any>error).transactionHash = tx.hash;
-            throw error;
-        }
+        return null;
     }
 
     async _getTransactionRequest(transaction: Deferrable<TransactionRequest>): Promise<Transaction> {
@@ -1460,90 +1280,8 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     async _getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>, includeTransactions?: boolean): Promise<Block | BlockWithTransactions> {
-        await this.getNetwork();
-
-        blockHashOrBlockTag = await blockHashOrBlockTag;
-
-        // If blockTag is a number (not "latest", etc), this is the block number
-        let blockNumber = -128;
-
-        const params: { [key: string]: any } = {
-            includeTransactions: !!includeTransactions
-        };
-
-        if (isHexString(blockHashOrBlockTag, 32)) {
-            params.blockHash = blockHashOrBlockTag;
-        } else {
-            try {
-                params.blockTag = await this._getBlockTag(blockHashOrBlockTag);
-                if (isHexString(params.blockTag)) {
-                    blockNumber = parseInt(params.blockTag.substring(2), 16);
-                }
-            } catch (error) {
-                logger.throwArgumentError("invalid block hash or block tag", "blockHashOrBlockTag", blockHashOrBlockTag);
-            }
-        }
-
-        return poll(async () => {
-            const block = await this.perform("getBlock", params);
-
-            // Block was not found
-            if (block == null) {
-
-                // For blockhashes, if we didn't say it existed, that blockhash may
-                // not exist. If we did see it though, perhaps from a log, we know
-                // it exists, and this node is just not caught up yet.
-                if (params.blockHash != null) {
-                    if (this._emitted["b:" + params.blockHash] == null) { return null; }
-                }
-
-                // For block tags, if we are asking for a future block, we return null
-                if (params.blockTag != null) {
-                    if (blockNumber > this._emitted.block) { return null; }
-                }
-
-                // Retry on the next block
-                return undefined;
-            }
-
-            // Add transactions
-            if (includeTransactions) {
-                let blockNumber: number = null;
-                for (let i = 0; i < block.transactions.length; i++) {
-                    const tx = block.transactions[i];
-                    if (tx.blockNumber == null) {
-                        tx.confirmations = 0;
-
-                    } else if (tx.confirmations == null) {
-                        if (blockNumber == null) {
-                            blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                        }
-
-                        // Add the confirmations using the fast block number (pessimistic)
-                        let confirmations = (blockNumber - tx.blockNumber) + 1;
-                        if (confirmations <= 0) { confirmations = 1; }
-                        tx.confirmations = confirmations;
-                    }
-                }
-
-                const blockWithTxs: any = this.formatter.blockWithTransactions(block);
-                blockWithTxs.transactions = blockWithTxs.transactions.map((tx: TransactionResponse) => this._wrapTransaction(tx));
-                return blockWithTxs;
-            }
-
-            return this.formatter.block(block);
-
-        }, { oncePoll: this });
+        return super.getBlock(blockHashOrBlockTag);
     }
-
-    getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<Block> {
-        return <Promise<Block>>(this._getBlock(blockHashOrBlockTag, false));
-    }
-
-    getBlockWithTransactions(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<BlockWithTransactions> {
-        return <Promise<BlockWithTransactions>>(this._getBlock(blockHashOrBlockTag, true));
-    }
-
 
     /**
      * Transaction record query implementation using the mirror node REST API.
@@ -1586,12 +1324,12 @@ export class BaseProvider extends Provider implements EnsProvider {
                 receipt.confirmations = 0;
 
             } else if (receipt.confirmations == null) {
-                const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-
+                // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+                //
                 // Add the confirmations using the fast block number (pessimistic)
-                let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                if (confirmations <= 0) { confirmations = 1; }
-                receipt.confirmations = confirmations;
+                // let confirmations = (blockNumber - receipt.blockNumber) + 1;
+                // if (confirmations <= 0) { confirmations = 1; }
+                // receipt.confirmations = confirmations;
             }
 
             return receipt;
@@ -1615,18 +1353,6 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     async _getBlockTag(blockTag: BlockTag | Promise<BlockTag>): Promise<BlockTag> {
         blockTag = await blockTag;
-
-        if (typeof(blockTag) === "number" && blockTag < 0) {
-            if (blockTag % 1) {
-                logger.throwArgumentError("invalid BlockTag", "blockTag", blockTag);
-            }
-
-            let blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-            blockNumber += blockTag;
-            if (blockNumber < 0) { blockNumber = 0; }
-            return this.formatter.blockTag(blockNumber)
-        }
-
         return this.formatter.blockTag(blockTag);
     }
 

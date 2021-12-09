@@ -274,16 +274,14 @@ function getProcessFunc(provider, method, params) {
 function waitForSync(config, blockNumber) {
     return __awaiter(this, void 0, void 0, function* () {
         const provider = (config.provider);
-        if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
-            return provider;
-        }
+        // if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
+        //     return provider;
+        // }
         return poll(() => {
             return new Promise((resolve, reject) => {
                 setTimeout(function () {
                     // We are synced
-                    if (provider.blockNumber >= blockNumber) {
-                        return resolve(provider);
-                    }
+                    // if (provider.blockNumber >= blockNumber) { return resolve(provider); }
                     // We're done; just quit
                     if (config.cancelled) {
                         return resolve(null);
@@ -420,7 +418,7 @@ export class FallbackProvider extends BaseProvider {
             // We need to make sure we are in sync with our backends, so we need
             // to know this before we can make a lot of calls
             if (this._highestBlockNumber === -1 && method !== "getBlockNumber") {
-                yield this.getBlockNumber();
+                // await this.getBlockNumber();
             }
             const processFunc = getProcessFunc(this, method, params);
             // Shuffle the providers and then sort them by their priority; we
