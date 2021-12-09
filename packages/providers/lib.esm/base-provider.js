@@ -24,6 +24,9 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
+import { getAccountFromAddress } from "@ethersproject/address";
+import { AccountBalanceQuery, AccountId, Client, NetworkName } from "@hashgraph/sdk";
+import axios from "axios";
 //////////////////////////////
 // Event Serializeing
 function checkTopic(topic) {
@@ -476,7 +479,6 @@ export class BaseProvider extends Provider {
     constructor(network) {
         logger.checkNew(new.target, Provider);
         super();
-        // Events being listened to
         this._events = [];
         this._emitted = { block: -2 };
         this.formatter = new.target.getFormatter();
@@ -495,6 +497,9 @@ export class BaseProvider extends Provider {
             this._ready().catch((error) => { });
         }
         else {
+            // defineReadOnly(this, "_network", getNetwork(network));
+            this._network = getNetwork(network);
+            this._networkPromise = Promise.resolve(this._network);
             const knownNetwork = getStatic(new.target, "getNetwork")(network);
             if (knownNetwork) {
                 defineReadOnly(this, "_network", knownNetwork);
@@ -508,6 +513,8 @@ export class BaseProvider extends Provider {
         this._lastBlockNumber = -2;
         this._pollingInterval = 4000;
         this._fastQueryDate = 0;
+        this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
+        this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(network));
     }
     _ready() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -531,10 +538,11 @@ export class BaseProvider extends Provider {
                 // Possible this call stacked so do not call defineReadOnly again
                 if (this._network == null) {
                     if (this.anyNetwork) {
-                        this._network = network;
+                        // this._network = network;
+                        defineReadOnly(this, "_network", network);
                     }
                     else {
-                        defineReadOnly(this, "_network", network);
+                        this._network = network;
                     }
                     this.emit("network", network, null);
                 }
@@ -567,7 +575,7 @@ export class BaseProvider extends Provider {
     }
     // @TODO: Remove this and just use getNetwork
     static getNetwork(network) {
-        return getNetwork((network == null) ? "homestead" : network);
+        return getNetwork((network == null) ? "mainnet" : network);
     }
     // Fetches the blockNumber, but will reuse any result that is less
     // than maxAge old or has been requested since the last request
@@ -754,11 +762,12 @@ export class BaseProvider extends Provider {
     }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
+    // With the current hedera implementation, we do not support a changeable networks,
+    // thus we do not need to query at this level
     detectNetwork() {
         return __awaiter(this, void 0, void 0, function* () {
-            return logger.throwError("provider does not support network detection", Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: "provider.detectNetwork"
-            });
+            this._networkPromise = Promise.resolve(this._network);
+            return this._networkPromise;
         });
     }
     getNetwork() {
@@ -1042,21 +1051,31 @@ export class BaseProvider extends Provider {
             }
         });
     }
-    getBalance(addressOrName, blockTag) {
+    /**
+     *  AccountBalance query implementation, using the hashgraph sdk.
+     *  It returns the tinybar balance of the given address.
+     *
+     * @param addressOrName The address to check balance of
+     */
+    getBalance(addressOrName) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            const params = yield resolveProperties({
-                address: this._getAddress(addressOrName),
-                blockTag: this._getBlockTag(blockTag)
-            });
-            const result = yield this.perform("getBalance", params);
+            addressOrName = yield addressOrName;
+            const { shard, realm, num } = getAccountFromAddress(addressOrName);
+            const shardNum = BigNumber.from(shard).toNumber();
+            const realmNum = BigNumber.from(realm).toNumber();
+            const accountNum = BigNumber.from(num).toNumber();
             try {
-                return BigNumber.from(result);
+                const balance = yield new AccountBalanceQuery()
+                    .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                    .execute(this.hederaClient);
+                return BigNumber.from(balance.hbars.toTinybars().toNumber());
             }
             catch (error) {
                 return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getBalance",
-                    params, result, error
+                    method: "AccountBalanceQuery",
+                    params: { address: addressOrName },
+                    error
                 });
             }
         });
@@ -1371,34 +1390,20 @@ export class BaseProvider extends Provider {
     getBlockWithTransactions(blockHashOrBlockTag) {
         return (this._getBlock(blockHashOrBlockTag, true));
     }
-    getTransaction(transactionHash) {
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param txId - id of the transaction to search for
+     */
+    getTransaction(txId) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            transactionHash = yield transactionHash;
-            const params = { transactionHash: this.formatter.hash(transactionHash, true) };
-            return poll(() => __awaiter(this, void 0, void 0, function* () {
-                const result = yield this.perform("getTransaction", params);
-                if (result == null) {
-                    if (this._emitted["t:" + transactionHash] == null) {
-                        return null;
-                    }
-                    return undefined;
-                }
-                const tx = this.formatter.transactionResponse(result);
-                if (tx.blockNumber == null) {
-                    tx.confirmations = 0;
-                }
-                else if (tx.confirmations == null) {
-                    const blockNumber = yield this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                    // Add the confirmations using the fast block number (pessimistic)
-                    let confirmations = (blockNumber - tx.blockNumber) + 1;
-                    if (confirmations <= 0) {
-                        confirmations = 1;
-                    }
-                    tx.confirmations = confirmations;
-                }
-                return this._wrapTransaction(tx);
-            }), { oncePoll: this });
+            txId = yield txId;
+            const ep = '/api/v1/transactions/' + txId;
+            let { data } = yield axios.get(this.mirrorNodeUrl + ep);
+            const filtered = data.transactions
+                .filter((e) => e.result === "SUCCESS");
+            return filtered.length > 0 ? filtered[0] : null;
         });
     }
     getTransactionReceipt(transactionHash) {
@@ -1698,6 +1703,34 @@ export class BaseProvider extends Provider {
         }
         stopped.forEach((event) => { this._stopEvent(event); });
         return this;
+    }
+}
+// resolves network string to a hedera network name
+function mapNetworkToHederaNetworkName(net) {
+    switch (net) {
+        case 'mainnet':
+            return NetworkName.Mainnet;
+        case 'previewnet':
+            return NetworkName.Previewnet;
+        case 'testnet':
+            return NetworkName.Testnet;
+        default:
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
+    }
+}
+// resolves the mirror node url from the given provider network.
+function resolveMirrorNetworkUrl(net) {
+    switch (net.name) {
+        case 'mainnet':
+            return 'https://mainnet.mirrornode.hedera.com';
+        case 'previewnet':
+            return 'https://previewnet.mirrornode.hedera.com';
+        case 'testnet':
+            return 'https://testnet.mirrornode.hedera.com';
+        default:
+            logger.throwArgumentError("Invalid network name", "network", net);
+            return null;
     }
 }
 //# sourceMappingURL=base-provider.js.map
