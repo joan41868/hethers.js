@@ -23,5 +23,8 @@ import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-prov
     const txId = `0.0.15680048-1638189529-145876922`;
     const record = await provider.getTransaction(txId);
     console.log(record);
+
+    let txReceipt = await provider.getTransactionReceipt('0.0.11495@1639068917.934241900');
+    console.log(txReceipt);
 })();
 

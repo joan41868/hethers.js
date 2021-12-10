@@ -136,7 +136,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      * @param txId - id of the transaction to search for
      */
     getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
-    getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt>;
+    getTransactionReceipt(txId: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getEtherPrice(): Promise<number>;
     _getBlockTag(blockTag: BlockTag | Promise<BlockTag>): Promise<BlockTag>;

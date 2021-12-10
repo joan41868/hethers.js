@@ -24,7 +24,7 @@ const logger = new Logger(version);
 
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName } from "@hashgraph/sdk";
+import { AccountBalanceQuery, TransactionReceiptQuery, AccountId, Client, NetworkName } from "@hashgraph/sdk";
 import axios from "axios";
 
 //////////////////////////////
@@ -1106,7 +1106,7 @@ export class BaseProvider extends Provider implements EnsProvider {
                             // First check if the transaction was mined
                             {
                                 const mined = await this.getTransaction(transactionHash);
-                                if (mined && mined.blockNumber != null) { return; }
+                                if (mined) { return; }
                             }
 
                             // First time scanning. We start a little earlier for some
@@ -1560,42 +1560,57 @@ export class BaseProvider extends Provider implements EnsProvider {
         return filtered.length > 0 ? filtered[0] : null;
     }
 
-    async getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt> {
+    async getTransactionReceipt(txId: string | Promise<string>): Promise<TransactionReceipt> {
         await this.getNetwork();
+        txId = await txId;
 
-        transactionHash = await transactionHash;
+        // let receipt = await new TransactionReceiptQuery()
+        //     .setTransactionId(new TransactionId(new AccountId({ shard: 0, realm: 0, num: 11495 }), new Timestamp(1639067154, 24541300)))
+        //     .execute(this.hederaClient);
 
-        const params = { transactionHash: this.formatter.hash(transactionHash, true) };
+        try {
+            let receipt = await new TransactionReceiptQuery()
+            .setTransactionId(txId) //0.0.11495@1639068917.934241900
+            .execute(this.hederaClient);
+            return this.formatter.receipt(receipt);
+        } catch (error) {
+            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                method: "TransactionGetReceiptQuery",
+                error
+            });
+        }
 
-        return poll(async () => {
-            const result = await this.perform("getTransactionReceipt", params);
+        // const params = { transactionHash: this.formatter.hash(transactionHash, true) };
 
-            if (result == null) {
-                if (this._emitted["t:" + transactionHash] == null) {
-                    return null;
-                }
-                return undefined;
-            }
+        // return poll(async () => {
+        //     const result = await this.perform("getTransactionReceipt", params);
 
-            // "geth-etc" returns receipts before they are ready
-            if (result.blockHash == null) { return undefined; }
+        //     if (result == null) {
+        //         if (this._emitted["t:" + transactionHash] == null) {
+        //             return null;
+        //         }
+        //         return undefined;
+        //     }
 
-            const receipt = this.formatter.receipt(result);
+        //     // "geth-etc" returns receipts before they are ready
+        //     if (result.blockHash == null) { return undefined; }
 
-            if (receipt.blockNumber == null) {
-                receipt.confirmations = 0;
+        //     const receipt = this.formatter.receipt(result);
 
-            } else if (receipt.confirmations == null) {
-                const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+        //     if (receipt.blockNumber == null) {
+        //         receipt.confirmations = 0;
 
-                // Add the confirmations using the fast block number (pessimistic)
-                let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                if (confirmations <= 0) { confirmations = 1; }
-                receipt.confirmations = confirmations;
-            }
+        //     } else if (receipt.confirmations == null) {
+        //         const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
 
-            return receipt;
-        }, { oncePoll: this });
+        //         // Add the confirmations using the fast block number (pessimistic)
+        //         let confirmations = (blockNumber - receipt.blockNumber) + 1;
+        //         if (confirmations <= 0) { confirmations = 1; }
+        //         receipt.confirmations = confirmations;
+        //     }
+
+        //     return receipt;
+        // }, { oncePoll: this });
     }
 
     async getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>> {

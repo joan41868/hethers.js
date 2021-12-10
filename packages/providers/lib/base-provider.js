@@ -1162,7 +1162,7 @@ var BaseProvider = /** @class */ (function (_super) {
                                                                 case 1: return [4 /*yield*/, this.getTransaction(transactionHash)];
                                                                 case 2:
                                                                     mined = _a.sent();
-                                                                    if (mined && mined.blockNumber != null) {
+                                                                    if (mined) {
                                                                         return [2 /*return*/];
                                                                     }
                                                                     // First time scanning. We start a little earlier for some
@@ -1830,55 +1830,33 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.getTransactionReceipt = function (transactionHash) {
+    BaseProvider.prototype.getTransactionReceipt = function (txId) {
         return __awaiter(this, void 0, void 0, function () {
-            var params;
-            var _this = this;
+            var receipt, error_10;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
                         _a.sent();
-                        return [4 /*yield*/, transactionHash];
+                        return [4 /*yield*/, txId];
                     case 2:
-                        transactionHash = _a.sent();
-                        params = { transactionHash: this.formatter.hash(transactionHash, true) };
-                        return [2 /*return*/, (0, web_1.poll)(function () { return __awaiter(_this, void 0, void 0, function () {
-                                var result, receipt, blockNumber, confirmations;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0: return [4 /*yield*/, this.perform("getTransactionReceipt", params)];
-                                        case 1:
-                                            result = _a.sent();
-                                            if (result == null) {
-                                                if (this._emitted["t:" + transactionHash] == null) {
-                                                    return [2 /*return*/, null];
-                                                }
-                                                return [2 /*return*/, undefined];
-                                            }
-                                            // "geth-etc" returns receipts before they are ready
-                                            if (result.blockHash == null) {
-                                                return [2 /*return*/, undefined];
-                                            }
-                                            receipt = this.formatter.receipt(result);
-                                            if (!(receipt.blockNumber == null)) return [3 /*break*/, 2];
-                                            receipt.confirmations = 0;
-                                            return [3 /*break*/, 4];
-                                        case 2:
-                                            if (!(receipt.confirmations == null)) return [3 /*break*/, 4];
-                                            return [4 /*yield*/, this._getInternalBlockNumber(100 + 2 * this.pollingInterval)];
-                                        case 3:
-                                            blockNumber = _a.sent();
-                                            confirmations = (blockNumber - receipt.blockNumber) + 1;
-                                            if (confirmations <= 0) {
-                                                confirmations = 1;
-                                            }
-                                            receipt.confirmations = confirmations;
-                                            _a.label = 4;
-                                        case 4: return [2 /*return*/, receipt];
-                                    }
-                                });
-                            }); }, { oncePoll: this })];
+                        txId = _a.sent();
+                        _a.label = 3;
+                    case 3:
+                        _a.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, new sdk_1.TransactionReceiptQuery()
+                                .setTransactionId(txId) //0.0.11495@1639068917.934241900
+                                .execute(this.hederaClient)];
+                    case 4:
+                        receipt = _a.sent();
+                        return [2 /*return*/, this.formatter.receipt(receipt)];
+                    case 5:
+                        error_10 = _a.sent();
+                        return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                method: "TransactionGetReceiptQuery",
+                                error: error_10
+                            })];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
@@ -1946,7 +1924,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_10;
+            var address, error_11;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1959,8 +1937,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_10 = _a.sent();
-                        if (error_10.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_11 = _a.sent();
+                        if (error_11.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];
@@ -1971,7 +1949,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var network, transaction, _a, _b, error_11;
+            var network, transaction, _a, _b, error_12;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1992,11 +1970,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.call(transaction)];
                     case 3: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                     case 4:
-                        error_11 = _c.sent();
-                        if (error_11.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_12 = _c.sent();
+                        if (error_12.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
-                        throw error_11;
+                        throw error_12;
                     case 5: return [2 /*return*/];
                 }
             });
