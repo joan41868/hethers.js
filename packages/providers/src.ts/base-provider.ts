@@ -1272,10 +1272,7 @@ export class BaseProvider extends Provider implements EnsProvider {
         const endpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
         try {
             let { data } = await axios.get(this.mirrorNodeUrl + endpoint);
-            if (data.bytecode != null) {
-                return hexlify(data.bytecode);
-            }
-            return "0x";
+            return data.bytecode ? hexlify(data.bytecode) : `0x`;
         } catch (error) {
             if (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting)) {            
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {

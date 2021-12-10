@@ -1405,10 +1405,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + endpoint)];
                     case 4:
                         data = (_b.sent()).data;
-                        if (data.bytecode != null) {
-                            return [2 /*return*/, (0, bytes_1.hexlify)(data.bytecode)];
-                        }
-                        return [2 /*return*/, "0x"];
+                        return [2 /*return*/, data.bytecode ? (0, bytes_1.hexlify)(data.bytecode) : "0x"];
                     case 5:
                         error_8 = _b.sent();
                         if (error_8.response.status != 404 || (error_8.response.status == 404 && throwOnNonExisting)) {
