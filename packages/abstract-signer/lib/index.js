@@ -74,6 +74,18 @@ var Signer = /** @class */ (function () {
         logger.checkAbstract(_newTarget, Signer);
         (0, properties_1.defineReadOnly)(this, "_isSigner", true);
     }
+    Signer.prototype.getGasPrice = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this._checkProvider("getGasPrice");
+                        return [4 /*yield*/, this.provider.getGasPrice()];
+                    case 1: return [2 /*return*/, _a.sent()];
+                }
+            });
+        });
+    };
     ///////////////////
     // Sub-classes MAY override these
     Signer.prototype.getBalance = function (blockTag) {
@@ -85,14 +97,6 @@ var Signer = /** @class */ (function () {
                         return [4 /*yield*/, this.provider.getBalance(this.getAddress(), blockTag)];
                     case 1: return [2 /*return*/, _a.sent()];
                 }
-            });
-        });
-    };
-    Signer.prototype.getTransactionCount = function (blockTag) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                this._checkProvider("getTransactionCount");
-                return [2 /*return*/, logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION)];
             });
         });
     };
@@ -326,9 +330,7 @@ var Signer = /** @class */ (function () {
                             }
                             */
                         }
-                        if (tx.nonce == null) {
-                            tx.nonce = this.getTransactionCount("pending");
-                        }
+                        // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
                         if (tx.gasLimit == null) {
                             tx.gasLimit = this.estimateGas(tx).catch(function (error) {
                                 if (forwardErrors.indexOf(error.code) >= 0) {

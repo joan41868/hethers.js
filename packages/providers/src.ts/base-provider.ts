@@ -1209,9 +1209,8 @@ export class BaseProvider extends Provider implements EnsProvider {
         return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
     }
 
-    async getEtherPrice(): Promise<number> {
-        await this.getNetwork();
-        return this.perform("getEtherPrice", { });
+    async getHbarPrice(): Promise<number> {
+        return logger.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
     }
 
     async getResolver(name: string): Promise<null | Resolver> {

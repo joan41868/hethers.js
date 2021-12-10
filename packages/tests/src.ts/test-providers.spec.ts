@@ -751,6 +751,7 @@ Object.keys(blockchainData).forEach((network) => {
 })();
 
 testFunctions.push({
+    // TODO: when the logic underneath is ready, this test should be rewritten
     name: "sends a legacy transaction",
     extras: [ "funding" ],         // We need funding to the fundWallet
     timeout: 900,                  // 15 minutes

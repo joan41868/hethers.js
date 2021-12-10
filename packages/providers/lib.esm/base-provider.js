@@ -1060,10 +1060,9 @@ export class BaseProvider extends Provider {
             return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
         });
     }
-    getEtherPrice() {
+    getHbarPrice() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            return this.perform("getEtherPrice", {});
+            return logger.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
     getResolver(name) {

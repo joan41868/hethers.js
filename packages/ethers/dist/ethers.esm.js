@@ -9278,18 +9278,18 @@ class Signer {
         logger$f.checkAbstract(new.target, Signer);
         defineReadOnly(this, "_isSigner", true);
     }
+    getGasPrice() {
+        return __awaiter$2(this, void 0, void 0, function* () {
+            this._checkProvider("getGasPrice");
+            return yield this.provider.getGasPrice();
+        });
+    }
     ///////////////////
     // Sub-classes MAY override these
     getBalance(blockTag) {
         return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("getBalance");
             return yield this.provider.getBalance(this.getAddress(), blockTag);
-        });
-    }
-    getTransactionCount(blockTag) {
-        return __awaiter$2(this, void 0, void 0, function* () {
-            this._checkProvider("getTransactionCount");
-            return logger$f.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         });
     }
     // Populates "from" if unspecified, and estimates the gas for the transaction
@@ -9466,9 +9466,7 @@ class Signer {
                 }
                 */
             }
-            if (tx.nonce == null) {
-                tx.nonce = this.getTransactionCount("pending");
-            }
+            // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
             if (tx.gasLimit == null) {
                 tx.gasLimit = this.estimateGas(tx).catch((error) => {
                     if (forwardErrors.indexOf(error.code) >= 0) {
@@ -17536,8 +17534,8 @@ function addContractWait(contract, tx) {
                 // Useful operations
                 event.removeListener = () => { return contract.provider; };
                 event.getBlock = () => {
+                    // TODO: to be removed
                     return logger$s.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-                    // return contract.provider.getBlock(receipt.blockHash);
                 };
                 event.getTransaction = () => {
                     return contract.provider.getTransaction(receipt.transactionHash);
@@ -18043,6 +18041,7 @@ class BaseContract {
             this._checkRunningEvents(runningEvent);
         };
         event.getBlock = () => {
+            // TODO: to be removed
             return logger$s.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         };
         event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); };
@@ -92088,10 +92087,9 @@ class BaseProvider extends Provider {
             return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
         });
     }
-    getEtherPrice() {
+    getHbarPrice() {
         return __awaiter$8(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            return this.perform("getEtherPrice", {});
+            return logger$v.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
     getResolver(name) {

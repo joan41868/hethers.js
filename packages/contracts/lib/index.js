@@ -336,8 +336,8 @@ function addContractWait(contract, tx) {
                 // Useful operations
                 event.removeListener = function () { return contract.provider; };
                 event.getBlock = function () {
+                    // TODO: to be removed
                     return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
-                    // return contract.provider.getBlock(receipt.blockHash);
                 };
                 event.getTransaction = function () {
                     return contract.provider.getTransaction(receipt.transactionHash);
@@ -898,6 +898,7 @@ var BaseContract = /** @class */ (function () {
             _this._checkRunningEvents(runningEvent);
         };
         event.getBlock = function () {
+            // TODO: to be removed
             return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
         };
         event.getTransaction = function () { return _this.provider.getTransaction(log.transactionHash); };

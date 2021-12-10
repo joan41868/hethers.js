@@ -93,18 +93,16 @@ export abstract class Signer {
         defineReadOnly(this, "_isSigner", true);
     }
 
-
+    async getGasPrice(): Promise<BigNumber> {
+        this._checkProvider("getGasPrice");
+        return await this.provider.getGasPrice();
+    }
     ///////////////////
     // Sub-classes MAY override these
 
     async getBalance(blockTag?: BlockTag): Promise<BigNumber> {
         this._checkProvider("getBalance");
         return await this.provider.getBalance(this.getAddress(), blockTag);
-    }
-
-    async getTransactionCount(blockTag?: BlockTag): Promise<number> {
-        this._checkProvider("getTransactionCount");
-        return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
     }
 
     // Populates "from" if unspecified, and estimates the gas for the transaction
@@ -286,7 +284,7 @@ export abstract class Signer {
             */
         }
 
-        if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
+        // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
 
         if (tx.gasLimit == null) {
             tx.gasLimit = this.estimateGas(tx).catch((error) => {

@@ -31,17 +31,7 @@ export class NonceManager extends ethers.Signer {
         return this.signer.getAddress();
     }
 
-    getTransactionCount(blockTag?: ethers.providers.BlockTag): Promise<number> {
-        if (blockTag === "pending") {
-            if (!this._initialPromise) {
-                this._initialPromise = this.signer.getTransactionCount("pending");
-            }
-            const deltaCount = this._deltaCount;
-            return this._initialPromise.then((initial) => (initial + deltaCount));
-        }
 
-        return this.signer.getTransactionCount(blockTag);
-    }
 
     setTransactionCount(transactionCount: ethers.BigNumberish | Promise<ethers.BigNumberish>): void {
         this._initialPromise = Promise.resolve(transactionCount).then((nonce) => {
@@ -63,16 +53,6 @@ export class NonceManager extends ethers.Signer {
     }
 
     sendTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<ethers.providers.TransactionResponse> {
-        if (transaction.nonce == null) {
-            transaction = ethers.utils.shallowCopy(transaction);
-            transaction.nonce = this.getTransactionCount("pending");
-            this.incrementTransactionCount();
-        } else {
-            this.setTransactionCount(transaction.nonce);
-        }
-
-        return this.signer.sendTransaction(transaction).then((tx) => {
-            return tx;
-        });
+       return null;
     }
 }

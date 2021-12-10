@@ -1373,15 +1373,10 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.getEtherPrice = function () {
+    BaseProvider.prototype.getHbarPrice = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/, this.perform("getEtherPrice", {})];
-                }
+                return [2 /*return*/, logger.throwError("NOT_IMPLEMENTED", logger_1.Logger.errors.NOT_IMPLEMENTED)];
             });
         });
     };

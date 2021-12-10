@@ -351,23 +351,19 @@ async function getRunner(config: RunningConfig, currentBlockNumber: number, meth
     let provider = config.provider;
 
     switch (method) {
-        case "getEtherPrice":
+        case "getGasPrice":
+            return provider[method]();
+        case "getHbarPrice":
             if ((<any>provider).getEtherPrice) {
                 return (<any>provider).getEtherPrice();
             }
             break;
         case "getBalance":
-        case "getTransactionCount":
         case "getCode":
             if (params.blockTag && isHexString(params.blockTag)) {
                 provider = await waitForSync(config, currentBlockNumber)
             }
-            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-        case "getStorageAt":
-            if (params.blockTag && isHexString(params.blockTag)) {
-                provider = await waitForSync(config, currentBlockNumber)
-            }
-            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+            return provider[method](params.address, params.blockTag || "latest");
         case "call":
         case "estimateGas":
             if (params.blockTag && isHexString(params.blockTag)) {
@@ -488,6 +484,7 @@ export class FallbackProvider extends BaseProvider {
 
         // We need to make sure we are in sync with our backends, so we need
         // to know this before we can make a lot of calls
+        // TODO: will be refactored
         if (this._highestBlockNumber === -1 && method !== "getBlockNumber") {
             // await this.getBlockNumber();
         }

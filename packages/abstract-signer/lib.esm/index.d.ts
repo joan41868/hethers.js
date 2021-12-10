@@ -31,8 +31,8 @@ export declare abstract class Signer {
     abstract connect(provider: Provider): Signer;
     readonly _isSigner: boolean;
     constructor();
+    getGasPrice(): Promise<BigNumber>;
     getBalance(blockTag?: BlockTag): Promise<BigNumber>;
-    getTransactionCount(blockTag?: BlockTag): Promise<number>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string>;
     sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse>;

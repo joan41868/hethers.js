@@ -29,18 +29,18 @@ export class Signer {
         logger.checkAbstract(new.target, Signer);
         defineReadOnly(this, "_isSigner", true);
     }
+    getGasPrice() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._checkProvider("getGasPrice");
+            return yield this.provider.getGasPrice();
+        });
+    }
     ///////////////////
     // Sub-classes MAY override these
     getBalance(blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("getBalance");
             return yield this.provider.getBalance(this.getAddress(), blockTag);
-        });
-    }
-    getTransactionCount(blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._checkProvider("getTransactionCount");
-            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         });
     }
     // Populates "from" if unspecified, and estimates the gas for the transaction
@@ -217,9 +217,7 @@ export class Signer {
                 }
                 */
             }
-            if (tx.nonce == null) {
-                tx.nonce = this.getTransactionCount("pending");
-            }
+            // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
             if (tx.gasLimit == null) {
                 tx.gasLimit = this.estimateGas(tx).catch((error) => {
                     if (forwardErrors.indexOf(error.code) >= 0) {
