@@ -8,13 +8,6 @@ import { getJsonWalletAddress, isCrowdsaleWallet, isKeystoreWallet } from "./ins
 import { decrypt as decryptKeystore, decryptSync as decryptKeystoreSync, encrypt as encryptKeystore, EncryptOptions, ProgressCallback } from "./keystore";
 
 function decryptJsonWallet(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<ExternallyOwnedAccount> {
-    if (isCrowdsaleWallet(json)) {
-        if (progressCallback) { progressCallback(0); }
-        const account = decryptCrowdsale(json, password)
-        if (progressCallback) { progressCallback(1); }
-        return Promise.resolve(account);
-    }
-
     if (isKeystoreWallet(json)) {
         return decryptKeystore(json, password, progressCallback);
     }
@@ -23,10 +16,6 @@ function decryptJsonWallet(json: string, password: Bytes | string, progressCallb
 }
 
 function decryptJsonWalletSync(json: string, password: Bytes | string): ExternallyOwnedAccount {
-    if (isCrowdsaleWallet(json)) {
-        return decryptCrowdsale(json, password)
-    }
-
     if (isKeystoreWallet(json)) {
         return decryptKeystoreSync(json, password);
     }

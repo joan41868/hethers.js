@@ -42,6 +42,8 @@ export interface Transaction {
     maxFeePerGas?: BigNumber;
 }
 export declare function computeAddress(key: BytesLike | string): string;
+export declare function computeAlias(key: BytesLike | string): string;
+export declare function computeAliasFromPubKey(pubKey: string): string;
 export declare function recoverAddress(digest: BytesLike, signature: SignatureLike): string;
 export declare function accessListify(value: AccessListish): AccessList;
 export declare function serialize(transaction: UnsignedTransaction, signature?: SignatureLike): string;

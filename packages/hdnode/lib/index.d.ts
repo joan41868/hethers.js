@@ -12,7 +12,7 @@ export declare class HDNode implements ExternallyOwnedAccount {
     readonly publicKey: string;
     readonly fingerprint: string;
     readonly parentFingerprint: string;
-    readonly address: string;
+    readonly alias: string;
     readonly mnemonic?: Mnemonic;
     readonly path: string;
     readonly chainCode: string;

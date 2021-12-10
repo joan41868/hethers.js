@@ -18,7 +18,7 @@ import {version} from "./_version";
 
 const logger = new Logger(version);
 
-function getChecksumAddress(address: string): string {
+export function getChecksumAddress(address: string): string {
     if (!isHexString(address, 20)) {
         logger.throwArgumentError("invalid address", "address", address);
     }
@@ -91,7 +91,7 @@ function ibanChecksum(address: string): string {
     }
 
     return checksum;
-};
+}
 
 export function getAddress(address: string): string {
     let result = null;
@@ -131,7 +131,6 @@ export function getAddress(address: string): string {
     } else {
         logger.throwArgumentError("invalid address", "address", address);
     }
-
     return result;
 }
 
@@ -189,11 +188,7 @@ export function getAddressFromAccount(accountLike: AccountLike): string {
 }
 
 export function getAccountFromAddress(address: string): Account {
-    if (typeof (address) !== "string") {
-        logger.throwArgumentError("invalid address", "address", address);
-    }
-
-    let buffer = arrayify(address)
+    let buffer = arrayify(getAddress(address))
     const view = new DataView(buffer.buffer, 0, 20);
 
     return {
@@ -208,13 +203,15 @@ export function parseAccount(account: string): Account {
     if (typeof (account) !== "string") {
         logger.throwArgumentError("invalid account", "account", account);
     }
-    if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
-        let parsedAccount = account.split(',');
+    if (account.match(/^[0-9]+\.[0-9]+\.[0-9]+$/)) {
+        let parsedAccount = account.split('.');
         result = {
             shard: BigInt(parsedAccount[0]),
             realm: BigInt(parsedAccount[1]),
             num: BigInt(parsedAccount[2])
         };
+    } else if (isAddress(account)) {
+        result = getAccountFromAddress(account);
     } else {
         logger.throwArgumentError("invalid account", "account", account);
     }
@@ -226,4 +223,10 @@ export type Account = {
     realm: bigint
     num: bigint
 }
+/**
+ * Used for evm addresses and hedera accounts (represented in both Account structure and string format)
+ * `0x0000000000000000000000000000000000000001`
+ * `0.0.1`
+ * Account{shard:0, realm:0, num: 1}
+ */
 export type AccountLike = Account | string;

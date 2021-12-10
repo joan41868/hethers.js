@@ -3,13 +3,13 @@ import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Mnemonic } from "@ethersproject/hdnode";
 import { Description } from "@ethersproject/properties";
 export interface _KeystoreAccount {
-    address: string;
+    address?: string;
     privateKey: string;
     mnemonic?: Mnemonic;
     _isKeystoreAccount: boolean;
 }
 export declare class KeystoreAccount extends Description<_KeystoreAccount> implements ExternallyOwnedAccount {
-    readonly address: string;
+    readonly address?: string;
     readonly privateKey: string;
     readonly mnemonic?: Mnemonic;
     readonly _isKeystoreAccount: boolean;
