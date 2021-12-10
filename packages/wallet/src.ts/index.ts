@@ -1,204 +1,266 @@
 "use strict";
 
-import { getAddress } from "@ethersproject/address";
-import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
-import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@ethersproject/abstract-signer";
-import { arrayify, Bytes, BytesLike, concat, hexDataSlice, isHexString, joinSignature, SignatureLike } from "@ethersproject/bytes";
-import { hashMessage, _TypedDataEncoder } from "@ethersproject/hash";
-import { defaultPath, HDNode, entropyToMnemonic, Mnemonic } from "@ethersproject/hdnode";
-import { keccak256 } from "@ethersproject/keccak256";
-import { defineReadOnly, resolveProperties } from "@ethersproject/properties";
-import { randomBytes } from "@ethersproject/random";
-import { SigningKey } from "@ethersproject/signing-key";
-import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore, ProgressCallback } from "@ethersproject/json-wallets";
-import { computeAddress, recoverAddress, serialize, UnsignedTransaction } from "@ethersproject/transactions";
-import { Wordlist } from "@ethersproject/wordlists";
+import {Account, AccountLike, getAccountFromAddress, getAddress, getAddressFromAccount} from "@ethersproject/address";
+import {Provider, TransactionRequest} from "@ethersproject/abstract-provider";
+import {
+	ExternallyOwnedAccount,
+	Signer,
+	TypedDataDomain,
+	TypedDataField,
+	TypedDataSigner
+} from "@ethersproject/abstract-signer";
+import {
+	arrayify,
+	Bytes,
+	BytesLike,
+	concat,
+	hexDataSlice,
+	isHexString,
+	joinSignature,
+	SignatureLike
+} from "@ethersproject/bytes";
+import {_TypedDataEncoder, hashMessage} from "@ethersproject/hash";
+import {defaultPath, entropyToMnemonic, HDNode, Mnemonic} from "@ethersproject/hdnode";
+import {keccak256} from "@ethersproject/keccak256";
+import {defineReadOnly, resolveProperties} from "@ethersproject/properties";
+import {randomBytes} from "@ethersproject/random";
+import {SigningKey} from "@ethersproject/signing-key";
+import {decryptJsonWallet, decryptJsonWalletSync, encryptKeystore, ProgressCallback} from "@ethersproject/json-wallets";
+import {computeAlias, recoverAddress, serialize, UnsignedTransaction} from "@ethersproject/transactions";
+import {Wordlist} from "@ethersproject/wordlists";
 
-import { Logger } from "@ethersproject/logger";
-import { version } from "./_version";
+import {Logger} from "@ethersproject/logger";
+import {version} from "./_version";
+
 const logger = new Logger(version);
 
 function isAccount(value: any): value is ExternallyOwnedAccount {
-    return (value != null && isHexString(value.privateKey, 32) && value.address != null);
+	return value != null && isHexString(value.privateKey, 32);
 }
 
 function hasMnemonic(value: any): value is { mnemonic: Mnemonic } {
-    const mnemonic = value.mnemonic;
-    return (mnemonic && mnemonic.phrase);
+	const mnemonic = value.mnemonic;
+	return (mnemonic && mnemonic.phrase);
+}
+
+function hasAlias(value: any): value is ExternallyOwnedAccount {
+	return isAccount(value) && value.alias != null;
 }
 
 export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
 
-    readonly address: string;
-    readonly provider: Provider;
+	// EVM Address format
+	readonly address?: string;
+	// Hedera Account format
+	readonly account?: Account;
+	// Hedera alias
+	readonly alias?: string;
+	readonly provider: Provider;
 
-    // Wrapping the _signingKey and _mnemonic in a getter function prevents
-    // leaking the private key in console.log; still, be careful! :)
-    readonly _signingKey: () => SigningKey;
-    readonly _mnemonic: () => Mnemonic;
+	// Wrapping the _signingKey and _mnemonic in a getter function prevents
+	// leaking the private key in console.log; still, be careful! :)
+	readonly _signingKey: () => SigningKey;
+	readonly _mnemonic: () => Mnemonic;
 
-    constructor(privateKey: BytesLike | ExternallyOwnedAccount | SigningKey, provider?: Provider) {
-        logger.checkNew(new.target, Wallet);
+	constructor(identity: BytesLike | ExternallyOwnedAccount | SigningKey, provider?: Provider) {
+		logger.checkNew(new.target, Wallet);
+		super();
 
-        super();
+		if (isAccount(identity) && !SigningKey.isSigningKey(identity)) {
+			const signingKey = new SigningKey(identity.privateKey);
+			defineReadOnly(this, "_signingKey", () => signingKey);
 
-        if (isAccount(privateKey)) {
-            const signingKey = new SigningKey(privateKey.privateKey);
-            defineReadOnly(this, "_signingKey", () => signingKey);
-            defineReadOnly(this, "address", computeAddress(this.publicKey));
+			if (identity.address || identity.account) {
+				defineReadOnly(this, "address", identity.address ? getAddress(identity.address) : getAddressFromAccount(identity.account));
+				defineReadOnly(this, "account", identity.account ? identity.account : getAccountFromAddress(identity.address));
+			}
 
-            if (this.address !== getAddress(privateKey.address)) {
-                logger.throwArgumentError("privateKey/address mismatch", "privateKey", "[REDACTED]");
-            }
+			if (hasAlias(identity)) {
+				defineReadOnly(this, "alias", identity.alias);
+				if (this.alias !== computeAlias(signingKey.privateKey)) {
+					logger.throwArgumentError("privateKey/alias mismatch", "privateKey", "[REDACTED]");
+				}
+			}
 
-            if (hasMnemonic(privateKey)) {
-                const srcMnemonic = privateKey.mnemonic;
-                defineReadOnly(this, "_mnemonic", () => (
-                    {
-                        phrase: srcMnemonic.phrase,
-                        path: srcMnemonic.path || defaultPath,
-                        locale: srcMnemonic.locale || "en"
-                    }
-                ));
-                const mnemonic = this.mnemonic;
-                const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
-                if (computeAddress(node.privateKey) !== this.address) {
-                    logger.throwArgumentError("mnemonic/address mismatch", "privateKey", "[REDACTED]");
-                }
-            } else {
-                defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
-            }
+			if (hasMnemonic(identity)) {
+				const srcMnemonic = identity.mnemonic;
+				defineReadOnly(this, "_mnemonic", () => (
+					{
+						phrase: srcMnemonic.phrase,
+						path: srcMnemonic.path || defaultPath,
+						locale: srcMnemonic.locale || "en"
+					}
+				));
+				const mnemonic = this.mnemonic;
+				const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
+				if (node.privateKey !== this._signingKey().privateKey) {
+					logger.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
+				}
+			} else {
+				defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
+			}
+		} else {
+			if (SigningKey.isSigningKey(identity)) {
+				/* istanbul ignore if */
+				if (identity.curve !== "secp256k1") {
+					logger.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
+				}
+				defineReadOnly(this, "_signingKey", () => (<SigningKey>identity));
+			} else {
+				// A lot of common tools do not prefix private keys with a 0x (see: #1166)
+				if (typeof (identity) === "string") {
+					if (identity.match(/^[0-9a-f]*$/i) && identity.length === 64) {
+						identity = "0x" + identity;
+					}
+				}
 
+				const signingKey = new SigningKey(identity);
+				defineReadOnly(this, "_signingKey", () => signingKey);
+			}
 
-        } else {
-            if (SigningKey.isSigningKey(privateKey)) {
-                /* istanbul ignore if */
-                if (privateKey.curve !== "secp256k1") {
-                    logger.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
-                }
-                defineReadOnly(this, "_signingKey", () => (<SigningKey>privateKey));
+			defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
+			defineReadOnly(this, "alias", computeAlias(this._signingKey().privateKey));
+		}
+		/* istanbul ignore if */
+		if (provider && !Provider.isProvider(provider)) {
+			logger.throwArgumentError("invalid provider", "provider", provider);
+		}
 
-            } else {
-                // A lot of common tools do not prefix private keys with a 0x (see: #1166)
-                if (typeof(privateKey) === "string") {
-                    if (privateKey.match(/^[0-9a-f]*$/i) && privateKey.length === 64) {
-                        privateKey = "0x" + privateKey;
-                    }
-                }
+		defineReadOnly(this, "provider", provider || null);
+	}
 
-                const signingKey = new SigningKey(privateKey);
-                defineReadOnly(this, "_signingKey", () => signingKey);
-            }
+	get mnemonic(): Mnemonic {
+		return this._mnemonic();
+	}
 
-            defineReadOnly(this, "_mnemonic", (): Mnemonic => null);
-            defineReadOnly(this, "address", computeAddress(this.publicKey));
-        }
+	get privateKey(): string {
+		return this._signingKey().privateKey;
+	}
 
-        /* istanbul ignore if */
-        if (provider && !Provider.isProvider(provider)) {
-            logger.throwArgumentError("invalid provider", "provider", provider);
-        }
+	get publicKey(): string {
+		return this._signingKey().publicKey;
+	}
 
-        defineReadOnly(this, "provider", provider || null);
-    }
+	getAddress(): Promise<string> {
+		return Promise.resolve(this.address);
+	}
 
-    get mnemonic(): Mnemonic { return this._mnemonic(); }
-    get privateKey(): string { return this._signingKey().privateKey; }
-    get publicKey(): string { return this._signingKey().publicKey; }
+	getAccount(): Promise<Account> {
+		return Promise.resolve(this.account);
+	}
 
-    getAddress(): Promise<string> {
-        return Promise.resolve(this.address);
-    }
+	getAlias(): Promise<string> {
+		return Promise.resolve(this.alias);
+	}
 
-    connect(provider: Provider): Wallet {
-        return new Wallet(this, provider);
-    }
+	connect(provider: Provider): Wallet {
+		return new Wallet(this, provider);
+	}
 
-    signTransaction(transaction: TransactionRequest): Promise<string> {
-        return resolveProperties(transaction).then((tx) => {
-            if (tx.from != null) {
-                if (getAddress(tx.from) !== this.address) {
-                    logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-                }
-                delete tx.from;
-            }
+	connectAccount(accountLike: AccountLike): Wallet {
+		const eoa = {
+			privateKey: this._signingKey().privateKey,
+			address: getAddressFromAccount(accountLike),
+			alias: this.alias,
+			mnemonic: this._mnemonic()
+		};
+		return new Wallet(eoa, this.provider);
+	}
 
-            const signature = this._signingKey().signDigest(keccak256(serialize(<UnsignedTransaction>tx)));
-            return serialize(<UnsignedTransaction>tx, signature);
-        });
-    }
+	// TODO to be revised
+	signTransaction(transaction: TransactionRequest): Promise<string> {
+		return resolveProperties(transaction).then((tx) => {
+			if (tx.from != null) {
+				if (getAddress(tx.from) !== this.address) {
+					logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
+				}
+				delete tx.from;
+			}
 
-    async signMessage(message: Bytes | string): Promise<string> {
-        return joinSignature(this._signingKey().signDigest(hashMessage(message)));
-    }
+			const signature = this._signingKey().signDigest(keccak256(serialize(<UnsignedTransaction>tx)));
+			return serialize(<UnsignedTransaction>tx, signature);
+		});
+	}
 
-    async _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
-        // Populate any ENS names
-        const populated = await _TypedDataEncoder.resolveNames(domain, types, value, (name: string) => {
-            if (this.provider == null) {
-                logger.throwError("cannot resolve ENS names without a provider", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "resolveName",
-                    value: name
-                });
-            }
-            return this.provider.resolveName(name);
-        });
+	async signMessage(message: Bytes | string): Promise<string> {
+		return joinSignature(this._signingKey().signDigest(hashMessage(message)));
+	}
 
-        return joinSignature(this._signingKey().signDigest(_TypedDataEncoder.hash(populated.domain, types, populated.value)));
-    }
+	// TODO to be revised
+	async _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
+		// Populate any ENS names
+		const populated = await _TypedDataEncoder.resolveNames(domain, types, value, (name: string) => {
+			if (this.provider == null) {
+				logger.throwError("cannot resolve ENS names without a provider", Logger.errors.UNSUPPORTED_OPERATION, {
+					operation: "resolveName",
+					value: name
+				});
+			}
+			return this.provider.resolveName(name);
+		});
 
-    encrypt(password: Bytes | string, options?: any, progressCallback?: ProgressCallback): Promise<string> {
-        if (typeof(options) === "function" && !progressCallback) {
-            progressCallback = options;
-            options = {};
-        }
+		return joinSignature(this._signingKey().signDigest(_TypedDataEncoder.hash(populated.domain, types, populated.value)));
+	}
 
-        if (progressCallback && typeof(progressCallback) !== "function") {
-            throw new Error("invalid callback");
-        }
+	encrypt(password: Bytes | string, options?: any, progressCallback?: ProgressCallback): Promise<string> {
+		if (typeof (options) === "function" && !progressCallback) {
+			progressCallback = options;
+			options = {};
+		}
 
-        if (!options) { options = {}; }
+		if (progressCallback && typeof (progressCallback) !== "function") {
+			throw new Error("invalid callback");
+		}
 
-        return encryptKeystore(this, password, options, progressCallback);
-    }
+		if (!options) {
+			options = {};
+		}
 
+		return encryptKeystore(this, password, options, progressCallback);
+	}
 
-    /**
-     *  Static methods to create Wallet instances.
-     */
-    static createRandom(options?: any): Wallet {
-        let entropy: Uint8Array = randomBytes(16);
+	/**
+	 *  Static methods to create Wallet instances.
+	 */
+	static createRandom(options?: any): Wallet {
+		let entropy: Uint8Array = randomBytes(16);
 
-        if (!options) { options = { }; }
+		if (!options) {
+			options = {};
+		}
 
-        if (options.extraEntropy) {
-            entropy = arrayify(hexDataSlice(keccak256(concat([ entropy, options.extraEntropy ])), 0, 16));
-        }
+		if (options.extraEntropy) {
+			entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
+		}
 
-        const mnemonic = entropyToMnemonic(entropy, options.locale);
-        return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
-    }
+		const mnemonic = entropyToMnemonic(entropy, options.locale);
+		return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
+	}
 
-    static fromEncryptedJson(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<Wallet> {
-        return decryptJsonWallet(json, password, progressCallback).then((account) => {
-            return new Wallet(account);
-        });
-    }
+	static fromEncryptedJson(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<Wallet> {
+		return decryptJsonWallet(json, password, progressCallback).then((account) => {
+			return new Wallet(account);
+		});
+	}
 
-    static fromEncryptedJsonSync(json: string, password: Bytes | string): Wallet {
-        return new Wallet(decryptJsonWalletSync(json, password));
-    }
+	static fromEncryptedJsonSync(json: string, password: Bytes | string): Wallet {
+		return new Wallet(decryptJsonWalletSync(json, password));
+	}
 
-    static fromMnemonic(mnemonic: string, path?: string, wordlist?: Wordlist): Wallet {
-        if (!path) { path = defaultPath; }
-        return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
-    }
+	static fromMnemonic(mnemonic: string, path?: string, wordlist?: Wordlist): Wallet {
+		if (!path) {
+			path = defaultPath;
+		}
+		return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+	}
 }
 
+// TODO to be revised
 export function verifyMessage(message: Bytes | string, signature: SignatureLike): string {
-    return recoverAddress(hashMessage(message), signature);
+	return recoverAddress(hashMessage(message), signature);
 }
 
+// TODO to be revised
 export function verifyTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, signature: SignatureLike): string {
-    return recoverAddress(_TypedDataEncoder.hash(domain, types, value), signature);
+	return recoverAddress(_TypedDataEncoder.hash(domain, types, value), signature);
 }

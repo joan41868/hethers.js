@@ -11,6 +11,7 @@ import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import {base64} from "ethers/lib/utils";
 const logger = new Logger(version);
 
 ///////////////////////////////
@@ -109,6 +110,15 @@ const allowedTransactionKeys: { [ key: string ]: boolean } = {
 export function computeAddress(key: BytesLike | string): string {
     const publicKey = computePublicKey(key);
     return getAddress(hexDataSlice(keccak256(hexDataSlice(publicKey, 1)), 12));
+}
+
+export function computeAlias(key: BytesLike | string): string {
+    const publicKey = computePublicKey(key);
+    return computeAliasFromPubKey(publicKey);
+}
+
+export function computeAliasFromPubKey(pubKey: string): string {
+    return `0.0.${base64.encode(pubKey)}`;
 }
 
 export function recoverAddress(digest: BytesLike, signature: SignatureLike): string {

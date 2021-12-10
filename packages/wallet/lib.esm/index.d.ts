@@ -1,3 +1,4 @@
+import { Account, AccountLike } from "@ethersproject/address";
 import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
 import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@ethersproject/abstract-signer";
 import { Bytes, BytesLike, SignatureLike } from "@ethersproject/bytes";
@@ -6,16 +7,21 @@ import { SigningKey } from "@ethersproject/signing-key";
 import { ProgressCallback } from "@ethersproject/json-wallets";
 import { Wordlist } from "@ethersproject/wordlists";
 export declare class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
-    readonly address: string;
+    readonly address?: string;
+    readonly account?: Account;
+    readonly alias?: string;
     readonly provider: Provider;
     readonly _signingKey: () => SigningKey;
     readonly _mnemonic: () => Mnemonic;
-    constructor(privateKey: BytesLike | ExternallyOwnedAccount | SigningKey, provider?: Provider);
+    constructor(identity: BytesLike | ExternallyOwnedAccount | SigningKey, provider?: Provider);
     get mnemonic(): Mnemonic;
     get privateKey(): string;
     get publicKey(): string;
     getAddress(): Promise<string>;
+    getAccount(): Promise<Account>;
+    getAlias(): Promise<string>;
     connect(provider: Provider): Wallet;
+    connectAccount(accountLike: AccountLike): Wallet;
     signTransaction(transaction: TransactionRequest): Promise<string>;
     signMessage(message: Bytes | string): Promise<string>;
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;

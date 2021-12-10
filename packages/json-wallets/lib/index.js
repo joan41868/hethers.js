@@ -12,16 +12,6 @@ Object.defineProperty(exports, "decryptKeystore", { enumerable: true, get: funct
 Object.defineProperty(exports, "decryptKeystoreSync", { enumerable: true, get: function () { return keystore_1.decryptSync; } });
 Object.defineProperty(exports, "encryptKeystore", { enumerable: true, get: function () { return keystore_1.encrypt; } });
 function decryptJsonWallet(json, password, progressCallback) {
-    if ((0, inspect_1.isCrowdsaleWallet)(json)) {
-        if (progressCallback) {
-            progressCallback(0);
-        }
-        var account = (0, crowdsale_1.decrypt)(json, password);
-        if (progressCallback) {
-            progressCallback(1);
-        }
-        return Promise.resolve(account);
-    }
     if ((0, inspect_1.isKeystoreWallet)(json)) {
         return (0, keystore_1.decrypt)(json, password, progressCallback);
     }
@@ -29,9 +19,6 @@ function decryptJsonWallet(json, password, progressCallback) {
 }
 exports.decryptJsonWallet = decryptJsonWallet;
 function decryptJsonWalletSync(json, password) {
-    if ((0, inspect_1.isCrowdsaleWallet)(json)) {
-        return (0, crowdsale_1.decrypt)(json, password);
-    }
     if ((0, inspect_1.isKeystoreWallet)(json)) {
         return (0, keystore_1.decryptSync)(json, password);
     }

@@ -9,6 +9,7 @@ import * as RLP from "@ethersproject/rlp";
 import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import { base64 } from "ethers/lib/utils";
 const logger = new Logger(version);
 export var TransactionTypes;
 (function (TransactionTypes) {
@@ -45,6 +46,13 @@ const allowedTransactionKeys = {
 export function computeAddress(key) {
     const publicKey = computePublicKey(key);
     return getAddress(hexDataSlice(keccak256(hexDataSlice(publicKey, 1)), 12));
+}
+export function computeAlias(key) {
+    const publicKey = computePublicKey(key);
+    return computeAliasFromPubKey(publicKey);
+}
+export function computeAliasFromPubKey(pubKey) {
+    return `0.0.${base64.encode(pubKey)}`;
 }
 export function recoverAddress(digest, signature) {
     return computeAddress(recoverPublicKey(arrayify(digest), signature));

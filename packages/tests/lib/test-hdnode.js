@@ -59,7 +59,7 @@ describe('Test HD Node Derivation from Seed', function () {
         }
         it('Derives the HD nodes - ' + test.name, function () {
             this.timeout(10000);
-            var rootNode = ethers_1.ethers.utils.HDNode.fromSeed(test.seed);
+            var rootNode = ethers_1.ethers.utils.HDNode.fromSeed("0.0.1", test.seed);
             test.hdnodes.forEach(function (nodeTest) {
                 var node = rootNode.derivePath(nodeTest.path);
                 assert_1.default.equal(node.privateKey, nodeTest.privateKey, 'Generates privateKey - ' + nodeTest.privateKey);
@@ -121,19 +121,20 @@ describe('Test HD Mnemonic Phrases', function testMnemonic() {
         });
     });
 });
-describe("HD Extended Keys", function () {
-    var root = ethers_1.ethers.utils.HDNode.fromSeed("0xdeadbeefdeadbeefdeadbeefdeadbeef");
+describe.only("HD Extended Keys", function () {
+    var root = ethers_1.ethers.utils.HDNode.fromSeed("0.0.1", "0xdeadbeefdeadbeefdeadbeefdeadbeef");
+    console.log(root);
     var root42 = root.derivePath("42");
     it("exports and imports xpriv extended keys", function () {
         var xpriv = root.extendedKey;
-        var node = ethers_1.ethers.utils.HDNode.fromExtendedKey(xpriv);
+        var node = ethers_1.ethers.utils.HDNode.fromExtendedKey("0.0.1", xpriv);
         assert_1.default.equal(root.address, node.address, "address matches");
         var node42 = node.derivePath("42");
         assert_1.default.equal(root42.address, node42.address, "address matches");
     });
     it("exports and imports xpub extended keys", function () {
         var xpub = root.neuter().extendedKey;
-        var node = ethers_1.ethers.utils.HDNode.fromExtendedKey(xpub);
+        var node = ethers_1.ethers.utils.HDNode.fromExtendedKey("0.0.1", xpub);
         assert_1.default.equal(root.address, node.address, "address matches");
         var node42 = node.derivePath("42");
         assert_1.default.equal(root42.address, node42.address, "address matches");
@@ -145,7 +146,7 @@ describe("HD error cases", function () {
         "m/45/m",
         "m/44/foobar"
     ];
-    var root = ethers_1.ethers.utils.HDNode.fromSeed("0xdeadbeefdeadbeefdeadbeefdeadbeef");
+    var root = ethers_1.ethers.utils.HDNode.fromSeed("0.0.1", "0xdeadbeefdeadbeefdeadbeefdeadbeef");
     testInvalid.forEach(function (path) {
         it("fails on path \"" + path + "\"", function () {
             assert_1.default.throws(function () {

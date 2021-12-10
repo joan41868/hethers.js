@@ -11,37 +11,33 @@ describe('Test JSON Wallets', function() {
 
     let tests: Array<TestCase.Wallet> = loadTests('wallets');
     tests.forEach(function(test) {
+
         it(('decrypts wallet - ' + test.name), async function() {
             this.timeout(1200000);
 
+            const wallet = await ethers.Wallet.fromEncryptedJson(test.json, test.password);
+            assert.strictEqual(wallet.privateKey, test.privateKey,
+                'generated correct private key - ' + wallet.privateKey);
             if (test.hasAddress) {
                 assert.ok((ethers.utils.getJsonWalletAddress(test.json) !== null),
                     'detect encrypted JSON wallet');
+                assert.strictEqual(wallet.address.toLowerCase(), test.address,
+                    'generate correct address - '  + wallet.address);
+                const walletAddress = await wallet.getAddress();
+                assert.strictEqual(walletAddress.toLowerCase(), test.address,
+                    'generate correct address - '  + wallet.address);
             }
-
-            const wallet = await ethers.Wallet.fromEncryptedJson(test.json, test.password);
-
-            assert.equal(wallet.privateKey, test.privateKey,
-                'generated correct private key - ' + wallet.privateKey);
-
-            assert.equal(wallet.address.toLowerCase(), test.address,
-                'generate correct address - '  + wallet.address);
-
-            assert.equal(wallet.address.toLowerCase(), test.address,
-                'generate correct address - '  + wallet.address);
-
-            const walletAddress = await wallet.getAddress();
-            assert.equal(walletAddress.toLowerCase(), test.address,
-                'generate correct address - '  + wallet.address);
 
             // Test connect
             {
                 const provider = ethers.providers.getDefaultProvider();
                 const walletConnected = wallet.connect(provider);
-                assert.equal(walletConnected.provider, provider, "provider is connected");
+                assert.strictEqual(walletConnected.provider, provider, "provider is connected");
                 assert.ok((wallet.provider == null), "original wallet provider is null");
-                assert.equal(walletConnected.address.toLowerCase(), test.address,
-                    "connected correct address - "  + wallet.address);
+                if (test.hasAddress) {
+                    assert.strictEqual(walletConnected.address.toLowerCase(), test.address,
+                        "connected correct address - "  + wallet.address);
+                }
             }
 
             // Make sure it can accept a SigningKey
@@ -69,21 +65,22 @@ describe('Test JSON Wallets', function() {
     ['one', 'two', 'three'].forEach(function(i) {
         let password = 'foobar' + i;
         let wallet = ethers.Wallet.createRandom({ path: "m/56'/82", extraEntropy: utils.randomHexString('test-' + i, 32) });
+        wallet = wallet.connectAccount("0.0.1001");
 
         it('encrypts and decrypts a random wallet - ' + i, function() {
             this.timeout(1200000);
 
             return wallet.encrypt(password).then((json: string) => {
                 return ethers.Wallet.fromEncryptedJson(json, password).then((decryptedWallet) => {
-                    assert.equal(decryptedWallet.address, wallet.address,
+                    assert.strictEqual(decryptedWallet.address, wallet.address,
                         'decrypted wallet - ' + wallet.privateKey);
-                    assert.equal(decryptedWallet.mnemonic.phrase, wallet.mnemonic.phrase,
+                    assert.strictEqual(decryptedWallet.mnemonic.phrase, wallet.mnemonic.phrase,
                         "decrypted wallet mnemonic - " + wallet.privateKey);
-                    assert.equal(decryptedWallet.mnemonic.path, wallet.mnemonic.path,
+                    assert.strictEqual(decryptedWallet.mnemonic.path, wallet.mnemonic.path,
                         "decrypted wallet path - " + wallet.privateKey);
                     return decryptedWallet.encrypt(password).then((encryptedWallet) => {
                         let parsedWallet = JSON.parse(encryptedWallet);
-                        assert.equal(decryptedWallet.address.toLowerCase().substring(2), parsedWallet.address,
+                        assert.strictEqual(decryptedWallet.address.toLowerCase().substring(2), parsedWallet.address,
                             're-encrypted wallet - ' + wallet.privateKey);
                     });
                 });
@@ -318,11 +315,11 @@ describe("Wallet Errors", function() {
         assert.throws(() => {
             const wallet = new ethers.Wallet({
                 privateKey: "0x6a73cd9b03647e83ef937888a5258a26e4c766dbf41ddd974f15e32d09cfe9c0",
-                address: "0x3f4f037dfc910a3517b9a5b23cf036ffae01a5a7"
+                alias: "0.0.BLZ906RnM9t5+nzS4Cq8wkLA1uWU3tvKa+7wIqznr6zvkrdJYX+bwkUOdj/yfkp5gSrjxw/Jy7Hm7NsXWs0vRsg="
             });
             console.log(wallet);
         }, (error: any) => {
-            return error.reason === "privateKey/address mismatch";
+            return error.reason === "privateKey/alias mismatch";
         });
     });
 
@@ -330,14 +327,13 @@ describe("Wallet Errors", function() {
         assert.throws(() => {
             const wallet = new ethers.Wallet(<any>{
                 privateKey: "0x6a73cd9b03647e83ef937888a5258a26e4c766dbf41ddd974f15e32d09cfe9c0",
-                address: "0x4Dfe3BF68c80f19083FF90E6a852fC876AE7429b",
                 mnemonic: {
                     phrase: "pact grief smile usage kind pledge river excess garbage mixed olive receive"
                 }
             });
             console.log(wallet);
         }, (error: any) => {
-            return error.reason === "mnemonic/address mismatch";
+            return error.reason === "mnemonic/privateKey mismatch";
         });
     });
 

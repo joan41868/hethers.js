@@ -7,6 +7,7 @@ import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@eth
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import {Account} from "@ethersproject/address";
 const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
@@ -38,7 +39,9 @@ export interface TypedDataField {
 // Sub-classes of Signer may optionally extend this interface to indicate
 // they have a private key available synchronously
 export interface ExternallyOwnedAccount {
-    readonly address: string;
+    readonly address?: string;
+    readonly account?: Account;
+    readonly alias?: string;
     readonly privateKey: string;
 }
 
