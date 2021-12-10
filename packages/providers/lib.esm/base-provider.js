@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { ForkEvent, Provider } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, concat, hexConcat, hexDataLength, hexDataSlice, hexlify, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import { arrayify, concat, hexConcat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { HashZero } from "@ethersproject/constants";
 import { namehash } from "@ethersproject/hash";
 import { getNetwork } from "@ethersproject/networks";
@@ -790,161 +790,7 @@ export class BaseProvider extends Provider {
     }
     _waitForTransaction(transactionHash, confirmations, timeout, replaceable) {
         return __awaiter(this, void 0, void 0, function* () {
-            const receipt = yield this.getTransactionReceipt(transactionHash);
-            // Receipt is already good
-            if ((receipt ? receipt.confirmations : 0) >= confirmations) {
-                return receipt;
-            }
-            // Poll until the receipt is good...
-            return new Promise((resolve, reject) => {
-                const cancelFuncs = [];
-                let done = false;
-                const alreadyDone = function () {
-                    if (done) {
-                        return true;
-                    }
-                    done = true;
-                    cancelFuncs.forEach((func) => { func(); });
-                    return false;
-                };
-                const minedHandler = (receipt) => {
-                    if (receipt.confirmations < confirmations) {
-                        return;
-                    }
-                    if (alreadyDone()) {
-                        return;
-                    }
-                    resolve(receipt);
-                };
-                this.on(transactionHash, minedHandler);
-                cancelFuncs.push(() => { this.removeListener(transactionHash, minedHandler); });
-                if (replaceable) {
-                    let lastBlockNumber = replaceable.startBlock;
-                    let scannedBlock = null;
-                    const replaceHandler = (blockNumber) => __awaiter(this, void 0, void 0, function* () {
-                        if (done) {
-                            return;
-                        }
-                        // Wait 1 second; this is only used in the case of a fault, so
-                        // we will trade off a little bit of latency for more consistent
-                        // results and fewer JSON-RPC calls
-                        yield stall(1000);
-                        this.getTransactionCount(replaceable.from).then((nonce) => __awaiter(this, void 0, void 0, function* () {
-                            if (done) {
-                                return;
-                            }
-                            if (nonce <= replaceable.nonce) {
-                                lastBlockNumber = blockNumber;
-                            }
-                            else {
-                                // First check if the transaction was mined
-                                {
-                                    const mined = yield this.getTransaction(transactionHash);
-                                    if (mined && mined.blockNumber != null) {
-                                        return;
-                                    }
-                                }
-                                // First time scanning. We start a little earlier for some
-                                // wiggle room here to handle the eventually consistent nature
-                                // of blockchain (e.g. the getTransactionCount was for a
-                                // different block)
-                                if (scannedBlock == null) {
-                                    scannedBlock = lastBlockNumber - 3;
-                                    if (scannedBlock < replaceable.startBlock) {
-                                        scannedBlock = replaceable.startBlock;
-                                    }
-                                }
-                                while (scannedBlock <= blockNumber) {
-                                    if (done) {
-                                        return;
-                                    }
-                                    const block = yield this.getBlockWithTransactions(scannedBlock);
-                                    for (let ti = 0; ti < block.transactions.length; ti++) {
-                                        const tx = block.transactions[ti];
-                                        // Successfully mined!
-                                        if (tx.hash === transactionHash) {
-                                            return;
-                                        }
-                                        // Matches our transaction from and nonce; its a replacement
-                                        if (tx.from === replaceable.from && tx.nonce === replaceable.nonce) {
-                                            if (done) {
-                                                return;
-                                            }
-                                            // Get the receipt of the replacement
-                                            const receipt = yield this.waitForTransaction(tx.hash, confirmations);
-                                            // Already resolved or rejected (prolly a timeout)
-                                            if (alreadyDone()) {
-                                                return;
-                                            }
-                                            // The reason we were replaced
-                                            let reason = "replaced";
-                                            if (tx.data === replaceable.data && tx.to === replaceable.to && tx.value.eq(replaceable.value)) {
-                                                reason = "repriced";
-                                            }
-                                            else if (tx.data === "0x" && tx.from === tx.to && tx.value.isZero()) {
-                                                reason = "cancelled";
-                                            }
-                                            // Explain why we were replaced
-                                            reject(logger.makeError("transaction was replaced", Logger.errors.TRANSACTION_REPLACED, {
-                                                cancelled: (reason === "replaced" || reason === "cancelled"),
-                                                reason,
-                                                replacement: this._wrapTransaction(tx),
-                                                hash: transactionHash,
-                                                receipt
-                                            }));
-                                            return;
-                                        }
-                                    }
-                                    scannedBlock++;
-                                }
-                            }
-                            if (done) {
-                                return;
-                            }
-                            this.once("block", replaceHandler);
-                        }), (error) => {
-                            if (done) {
-                                return;
-                            }
-                            this.once("block", replaceHandler);
-                        });
-                    });
-                    if (done) {
-                        return;
-                    }
-                    this.once("block", replaceHandler);
-                    cancelFuncs.push(() => {
-                        this.removeListener("block", replaceHandler);
-                    });
-                }
-                if (typeof (timeout) === "number" && timeout > 0) {
-                    const timer = setTimeout(() => {
-                        if (alreadyDone()) {
-                            return;
-                        }
-                        reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
-                    }, timeout);
-                    if (timer.unref) {
-                        timer.unref();
-                    }
-                    cancelFuncs.push(() => { clearTimeout(timer); });
-                }
-            });
-        });
-    }
-    getGasPrice() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const result = yield this.perform("getGasPrice", {});
-            try {
-                return BigNumber.from(result);
-            }
-            catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getGasPrice",
-                    result, error
-                });
-            }
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         });
     }
     /**
@@ -976,31 +822,11 @@ export class BaseProvider extends Provider {
             }
         });
     }
-    getTransactionCount(addressOrName, blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                address: this._getAddress(addressOrName),
-                blockTag: this._getBlockTag(blockTag)
-            });
-            const result = yield this.perform("getTransactionCount", params);
-            try {
-                return BigNumber.from(result).toNumber();
-            }
-            catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getTransactionCount",
-                    params, result, error
-                });
-            }
-        });
-    }
     getCode(addressOrName, blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
             const params = yield resolveProperties({
                 address: this._getAddress(addressOrName),
-                blockTag: this._getBlockTag(blockTag)
             });
             const result = yield this.perform("getCode", params);
             try {
@@ -1009,26 +835,6 @@ export class BaseProvider extends Provider {
             catch (error) {
                 return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "getCode",
-                    params, result, error
-                });
-            }
-        });
-    }
-    getStorageAt(addressOrName, position, blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                address: this._getAddress(addressOrName),
-                blockTag: this._getBlockTag(blockTag),
-                position: Promise.resolve(position).then((p) => hexValue(p))
-            });
-            const result = yield this.perform("getStorageAt", params);
-            try {
-                return hexlify(result);
-            }
-            catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getStorageAt",
                     params, result, error
                 });
             }
@@ -1137,7 +943,6 @@ export class BaseProvider extends Provider {
                 if (filter[key] == null) {
                     return;
                 }
-                result[key] = this._getBlockTag(filter[key]);
             });
             return this.formatter.filter(yield resolveProperties(result));
         });
@@ -1147,7 +952,6 @@ export class BaseProvider extends Provider {
             yield this.getNetwork();
             const params = yield resolveProperties({
                 transaction: this._getTransactionRequest(transaction),
-                blockTag: this._getBlockTag(blockTag)
             });
             const result = yield this.perform("call", params);
             try {
@@ -1193,20 +997,6 @@ export class BaseProvider extends Provider {
             }
             return address;
         });
-    }
-    _getBlock(blockHashOrBlockTag, includeTransactions) {
-        const _super = Object.create(null, {
-            getBlock: { get: () => super.getBlock }
-        });
-        return __awaiter(this, void 0, void 0, function* () {
-            return _super.getBlock.call(this, blockHashOrBlockTag);
-        });
-    }
-    getBlock(blockHashOrBlockTag) {
-        return super.getBlock(blockHashOrBlockTag);
-    }
-    getBlockWithTransactions(blockHashOrBlockTag) {
-        return super.getBlockWithTransactions(blockHashOrBlockTag);
     }
     /**
      * Transaction record query implementation using the mirror node REST API.
@@ -1274,22 +1064,6 @@ export class BaseProvider extends Provider {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
             return this.perform("getEtherPrice", {});
-        });
-    }
-    _getBlockTag(blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            blockTag = yield blockTag;
-            // if (typeof(blockTag) === "number" && blockTag < 0) {
-            //     if (blockTag % 1) {
-            //         logger.throwArgumentError("invalid BlockTag", "blockTag", blockTag);
-            //     }
-            //
-            //     let blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-            //     blockNumber += blockTag;
-            //     if (blockNumber < 0) { blockNumber = 0; }
-            //     return this.formatter.blockTag(blockNumber)
-            // }
-            return this.formatter.blockTag(blockTag);
         });
     }
     getResolver(name) {

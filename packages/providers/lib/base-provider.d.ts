@@ -1,6 +1,6 @@
 /// <reference types="node" />
-import { Block, BlockTag, BlockWithTransactions, EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
+import { BlockTag, EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
@@ -104,7 +104,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
         value: BigNumber;
         startBlock: number;
     }): Promise<TransactionReceipt>;
-    getGasPrice(): Promise<BigNumber>;
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
@@ -112,9 +111,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      * @param addressOrName The address to check balance of
      */
     getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
-    getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number>;
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
-    getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse;
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     _getTransactionRequest(transaction: Deferrable<TransactionRequest>): Promise<Transaction>;
@@ -122,9 +119,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     _getAddress(addressOrName: string | Promise<string>): Promise<string>;
-    _getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>, includeTransactions?: boolean): Promise<Block | BlockWithTransactions>;
-    getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<Block>;
-    getBlockWithTransactions(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<BlockWithTransactions>;
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
@@ -134,7 +128,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getEtherPrice(): Promise<number>;
-    _getBlockTag(blockTag: BlockTag | Promise<BlockTag>): Promise<BlockTag>;
     getResolver(name: string): Promise<null | Resolver>;
     _getResolver(name: string): Promise<string>;
     resolveName(name: string | Promise<string>): Promise<null | string>;

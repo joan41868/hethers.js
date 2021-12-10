@@ -351,7 +351,7 @@ class InfoPlugin extends Plugin {
                 let address = this.addresses[i];
                 let { balance, nonce, code, reverse } = yield ethers.utils.resolveProperties({
                     balance: this.provider.getBalance(address),
-                    nonce: this.provider.getTransactionCount(address),
+                    nonce: 0,
                     code: this.provider.getCode(address),
                     reverse: this.provider.lookupAddress(address)
                 });

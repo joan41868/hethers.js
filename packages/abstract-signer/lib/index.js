@@ -91,12 +91,8 @@ var Signer = /** @class */ (function () {
     Signer.prototype.getTransactionCount = function (blockTag) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this._checkProvider("getTransactionCount");
-                        return [4 /*yield*/, this.provider.getTransactionCount(this.getAddress(), blockTag)];
-                    case 1: return [2 /*return*/, _a.sent()];
-                }
+                this._checkProvider("getTransactionCount");
+                return [2 /*return*/, logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION)];
             });
         });
     };

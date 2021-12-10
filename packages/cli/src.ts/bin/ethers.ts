@@ -365,7 +365,7 @@ class InfoPlugin extends Plugin {
             let address = this.addresses[i];
             let { balance, nonce, code, reverse } = await ethers.utils.resolveProperties({
                 balance: this.provider.getBalance(address),
-                nonce: this.provider.getTransactionCount(address),
+                nonce: 0, // FIXME
                 code: this.provider.getCode(address),
                 reverse: this.provider.lookupAddress(address)
             });

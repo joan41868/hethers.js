@@ -969,204 +969,8 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._waitForTransaction = function (transactionHash, confirmations, timeout, replaceable) {
         return __awaiter(this, void 0, void 0, function () {
-            var receipt;
-            var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getTransactionReceipt(transactionHash)];
-                    case 1:
-                        receipt = _a.sent();
-                        // Receipt is already good
-                        if ((receipt ? receipt.confirmations : 0) >= confirmations) {
-                            return [2 /*return*/, receipt];
-                        }
-                        // Poll until the receipt is good...
-                        return [2 /*return*/, new Promise(function (resolve, reject) {
-                                var cancelFuncs = [];
-                                var done = false;
-                                var alreadyDone = function () {
-                                    if (done) {
-                                        return true;
-                                    }
-                                    done = true;
-                                    cancelFuncs.forEach(function (func) { func(); });
-                                    return false;
-                                };
-                                var minedHandler = function (receipt) {
-                                    if (receipt.confirmations < confirmations) {
-                                        return;
-                                    }
-                                    if (alreadyDone()) {
-                                        return;
-                                    }
-                                    resolve(receipt);
-                                };
-                                _this.on(transactionHash, minedHandler);
-                                cancelFuncs.push(function () { _this.removeListener(transactionHash, minedHandler); });
-                                if (replaceable) {
-                                    var lastBlockNumber_1 = replaceable.startBlock;
-                                    var scannedBlock_1 = null;
-                                    var replaceHandler_1 = function (blockNumber) { return __awaiter(_this, void 0, void 0, function () {
-                                        var _this = this;
-                                        return __generator(this, function (_a) {
-                                            switch (_a.label) {
-                                                case 0:
-                                                    if (done) {
-                                                        return [2 /*return*/];
-                                                    }
-                                                    // Wait 1 second; this is only used in the case of a fault, so
-                                                    // we will trade off a little bit of latency for more consistent
-                                                    // results and fewer JSON-RPC calls
-                                                    return [4 /*yield*/, stall(1000)];
-                                                case 1:
-                                                    // Wait 1 second; this is only used in the case of a fault, so
-                                                    // we will trade off a little bit of latency for more consistent
-                                                    // results and fewer JSON-RPC calls
-                                                    _a.sent();
-                                                    this.getTransactionCount(replaceable.from).then(function (nonce) { return __awaiter(_this, void 0, void 0, function () {
-                                                        var mined, block, ti, tx, receipt_1, reason;
-                                                        return __generator(this, function (_a) {
-                                                            switch (_a.label) {
-                                                                case 0:
-                                                                    if (done) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    if (!(nonce <= replaceable.nonce)) return [3 /*break*/, 1];
-                                                                    lastBlockNumber_1 = blockNumber;
-                                                                    return [3 /*break*/, 9];
-                                                                case 1: return [4 /*yield*/, this.getTransaction(transactionHash)];
-                                                                case 2:
-                                                                    mined = _a.sent();
-                                                                    if (mined && mined.blockNumber != null) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    // First time scanning. We start a little earlier for some
-                                                                    // wiggle room here to handle the eventually consistent nature
-                                                                    // of blockchain (e.g. the getTransactionCount was for a
-                                                                    // different block)
-                                                                    if (scannedBlock_1 == null) {
-                                                                        scannedBlock_1 = lastBlockNumber_1 - 3;
-                                                                        if (scannedBlock_1 < replaceable.startBlock) {
-                                                                            scannedBlock_1 = replaceable.startBlock;
-                                                                        }
-                                                                    }
-                                                                    _a.label = 3;
-                                                                case 3:
-                                                                    if (!(scannedBlock_1 <= blockNumber)) return [3 /*break*/, 9];
-                                                                    if (done) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    return [4 /*yield*/, this.getBlockWithTransactions(scannedBlock_1)];
-                                                                case 4:
-                                                                    block = _a.sent();
-                                                                    ti = 0;
-                                                                    _a.label = 5;
-                                                                case 5:
-                                                                    if (!(ti < block.transactions.length)) return [3 /*break*/, 8];
-                                                                    tx = block.transactions[ti];
-                                                                    // Successfully mined!
-                                                                    if (tx.hash === transactionHash) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    if (!(tx.from === replaceable.from && tx.nonce === replaceable.nonce)) return [3 /*break*/, 7];
-                                                                    if (done) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    return [4 /*yield*/, this.waitForTransaction(tx.hash, confirmations)];
-                                                                case 6:
-                                                                    receipt_1 = _a.sent();
-                                                                    // Already resolved or rejected (prolly a timeout)
-                                                                    if (alreadyDone()) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    reason = "replaced";
-                                                                    if (tx.data === replaceable.data && tx.to === replaceable.to && tx.value.eq(replaceable.value)) {
-                                                                        reason = "repriced";
-                                                                    }
-                                                                    else if (tx.data === "0x" && tx.from === tx.to && tx.value.isZero()) {
-                                                                        reason = "cancelled";
-                                                                    }
-                                                                    // Explain why we were replaced
-                                                                    reject(logger.makeError("transaction was replaced", logger_1.Logger.errors.TRANSACTION_REPLACED, {
-                                                                        cancelled: (reason === "replaced" || reason === "cancelled"),
-                                                                        reason: reason,
-                                                                        replacement: this._wrapTransaction(tx),
-                                                                        hash: transactionHash,
-                                                                        receipt: receipt_1
-                                                                    }));
-                                                                    return [2 /*return*/];
-                                                                case 7:
-                                                                    ti++;
-                                                                    return [3 /*break*/, 5];
-                                                                case 8:
-                                                                    scannedBlock_1++;
-                                                                    return [3 /*break*/, 3];
-                                                                case 9:
-                                                                    if (done) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    this.once("block", replaceHandler_1);
-                                                                    return [2 /*return*/];
-                                                            }
-                                                        });
-                                                    }); }, function (error) {
-                                                        if (done) {
-                                                            return;
-                                                        }
-                                                        _this.once("block", replaceHandler_1);
-                                                    });
-                                                    return [2 /*return*/];
-                                            }
-                                        });
-                                    }); };
-                                    if (done) {
-                                        return;
-                                    }
-                                    _this.once("block", replaceHandler_1);
-                                    cancelFuncs.push(function () {
-                                        _this.removeListener("block", replaceHandler_1);
-                                    });
-                                }
-                                if (typeof (timeout) === "number" && timeout > 0) {
-                                    var timer_1 = setTimeout(function () {
-                                        if (alreadyDone()) {
-                                            return;
-                                        }
-                                        reject(logger.makeError("timeout exceeded", logger_1.Logger.errors.TIMEOUT, { timeout: timeout }));
-                                    }, timeout);
-                                    if (timer_1.unref) {
-                                        timer_1.unref();
-                                    }
-                                    cancelFuncs.push(function () { clearTimeout(timer_1); });
-                                }
-                            })];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype.getGasPrice = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this.perform("getGasPrice", {})];
-                    case 2:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, bignumber_1.BigNumber.from(result)];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getGasPrice",
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
-                }
+                return [2 /*return*/, logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION)];
             });
         });
     };
@@ -1212,39 +1016,6 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.getTransactionCount = function (addressOrName, blockTag) {
-        return __awaiter(this, void 0, void 0, function () {
-            var params, result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                address: this._getAddress(addressOrName),
-                                blockTag: this._getBlockTag(blockTag)
-                            })];
-                    case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("getTransactionCount", params)];
-                    case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, bignumber_1.BigNumber.from(result).toNumber()];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getTransactionCount",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
     BaseProvider.prototype.getCode = function (addressOrName, blockTag) {
         return __awaiter(this, void 0, void 0, function () {
             var params, result;
@@ -1255,7 +1026,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         _a.sent();
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({
                                 address: this._getAddress(addressOrName),
-                                blockTag: this._getBlockTag(blockTag)
                             })];
                     case 2:
                         params = _a.sent();
@@ -1268,40 +1038,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         catch (error) {
                             return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                     method: "getCode",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype.getStorageAt = function (addressOrName, position, blockTag) {
-        return __awaiter(this, void 0, void 0, function () {
-            var params, result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                address: this._getAddress(addressOrName),
-                                blockTag: this._getBlockTag(blockTag),
-                                position: Promise.resolve(position).then(function (p) { return (0, bytes_1.hexValue)(p); })
-                            })];
-                    case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("getStorageAt", params)];
-                    case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, (0, bytes_1.hexlify)(result)];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getStorageAt",
                                     params: params,
                                     result: result,
                                     error: error
@@ -1421,7 +1157,6 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype._getFilter = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
             var result, _a, _b;
-            var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, filter];
@@ -1441,7 +1176,6 @@ var BaseProvider = /** @class */ (function (_super) {
                             if (filter[key] == null) {
                                 return;
                             }
-                            result[key] = _this._getBlockTag(filter[key]);
                         });
                         _b = (_a = this.formatter).filter;
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(result)];
@@ -1460,7 +1194,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         _a.sent();
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({
                                 transaction: this._getTransactionRequest(transaction),
-                                blockTag: this._getBlockTag(blockTag)
                             })];
                     case 2:
                         params = _a.sent();
@@ -1538,19 +1271,6 @@ var BaseProvider = /** @class */ (function (_super) {
                 }
             });
         });
-    };
-    BaseProvider.prototype._getBlock = function (blockHashOrBlockTag, includeTransactions) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, _super.prototype.getBlock.call(this, blockHashOrBlockTag)];
-            });
-        });
-    };
-    BaseProvider.prototype.getBlock = function (blockHashOrBlockTag) {
-        return _super.prototype.getBlock.call(this, blockHashOrBlockTag);
-    };
-    BaseProvider.prototype.getBlockWithTransactions = function (blockHashOrBlockTag) {
-        return _super.prototype.getBlockWithTransactions.call(this, blockHashOrBlockTag);
     };
     /**
      * Transaction record query implementation using the mirror node REST API.
@@ -1661,28 +1381,6 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 1:
                         _a.sent();
                         return [2 /*return*/, this.perform("getEtherPrice", {})];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype._getBlockTag = function (blockTag) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, blockTag];
-                    case 1:
-                        blockTag = _a.sent();
-                        // if (typeof(blockTag) === "number" && blockTag < 0) {
-                        //     if (blockTag % 1) {
-                        //         logger.throwArgumentError("invalid BlockTag", "blockTag", blockTag);
-                        //     }
-                        //
-                        //     let blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                        //     blockNumber += blockTag;
-                        //     if (blockNumber < 0) { blockNumber = 0; }
-                        //     return this.formatter.blockTag(blockNumber)
-                        // }
-                        return [2 /*return*/, this.formatter.blockTag(blockTag)];
                 }
             });
         });

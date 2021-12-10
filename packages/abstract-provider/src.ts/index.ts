@@ -235,34 +235,12 @@ export abstract class Provider {
 
     // Account
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
-    getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number> {
-        return logger.throwArgumentError("getTransactionCount not implemented", Logger.errors.NOT_IMPLEMENTED, {
-            operation: "getTransactionCount"
-        });
-    }
     abstract getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> ;
-    getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>{
-        return logger.throwArgumentError("getStorageAt not implemented", Logger.errors.NOT_IMPLEMENTED, {
-            operation: "getStorageAt"
-        });
-    }
 
     // Execution
     abstract sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     abstract call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     abstract estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
-
-    // Queries
-    getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<Block> {
-        return logger.throwArgumentError("getBlock not implemented", Logger.errors.NOT_IMPLEMENTED, {
-            operation: "getBlock"
-        });
-    }
-    getBlockWithTransactions(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<BlockWithTransactions> {
-        return logger.throwArgumentError("getBlockWithTransactions not implemented", Logger.errors.NOT_IMPLEMENTED, {
-            operation: "getBlockWithTransactions"
-        });
-    }
 
     abstract getTransaction(transactionHash: string): Promise<TransactionResponse>;
     abstract getTransactionReceipt(transactionHash: string): Promise<TransactionReceipt>;

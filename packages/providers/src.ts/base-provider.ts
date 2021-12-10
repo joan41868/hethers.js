@@ -1,7 +1,7 @@
 "use strict";
 
 import {
-    Block, BlockTag, BlockWithTransactions, EventType, Filter, FilterByBlockHash, ForkEvent,
+    BlockTag, EventType, Filter, FilterByBlockHash, ForkEvent,
     Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
@@ -945,137 +945,7 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     async _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: { data: string, from: string, nonce: number, to: string, value: BigNumber, startBlock: number }): Promise<TransactionReceipt> {
-        const receipt = await this.getTransactionReceipt(transactionHash);
-
-        // Receipt is already good
-        if ((receipt ? receipt.confirmations: 0) >= confirmations) { return receipt; }
-
-        // Poll until the receipt is good...
-        return new Promise((resolve, reject) => {
-            const cancelFuncs: Array<() => void> = [];
-
-            let done = false;
-            const alreadyDone = function() {
-                if (done) { return true; }
-                done = true;
-                cancelFuncs.forEach((func) => { func(); });
-                return false;
-            };
-
-            const minedHandler = (receipt: TransactionReceipt) => {
-                if (receipt.confirmations < confirmations) { return; }
-                if (alreadyDone()) { return; }
-                resolve(receipt);
-            }
-            this.on(transactionHash, minedHandler);
-            cancelFuncs.push(() => { this.removeListener(transactionHash, minedHandler); });
-
-            if (replaceable) {
-                let lastBlockNumber = replaceable.startBlock;
-                let scannedBlock: number = null;
-                const replaceHandler = async (blockNumber: number) => {
-                    if (done) { return; }
-
-                    // Wait 1 second; this is only used in the case of a fault, so
-                    // we will trade off a little bit of latency for more consistent
-                    // results and fewer JSON-RPC calls
-                    await stall(1000);
-
-                    this.getTransactionCount(replaceable.from).then(async (nonce) => {
-                        if (done) { return; }
-
-                        if (nonce <= replaceable.nonce) {
-                            lastBlockNumber = blockNumber;
-
-                        } else {
-                            // First check if the transaction was mined
-                            {
-                                const mined = await this.getTransaction(transactionHash);
-                                if (mined && mined.blockNumber != null) { return; }
-                            }
-
-                            // First time scanning. We start a little earlier for some
-                            // wiggle room here to handle the eventually consistent nature
-                            // of blockchain (e.g. the getTransactionCount was for a
-                            // different block)
-                            if (scannedBlock == null) {
-                                scannedBlock = lastBlockNumber - 3;
-                                if (scannedBlock < replaceable.startBlock) {
-                                    scannedBlock = replaceable.startBlock;
-                                }
-                            }
-
-                            while (scannedBlock <= blockNumber) {
-                                if (done) { return; }
-
-                                const block = await this.getBlockWithTransactions(scannedBlock);
-                                for (let ti = 0; ti < block.transactions.length; ti++) {
-                                    const tx = block.transactions[ti];
-
-                                    // Successfully mined!
-                                    if (tx.hash === transactionHash) { return; }
-
-                                    // Matches our transaction from and nonce; its a replacement
-                                    if (tx.from === replaceable.from && tx.nonce === replaceable.nonce) {
-                                        if (done) { return; }
-
-                                        // Get the receipt of the replacement
-                                        const receipt = await this.waitForTransaction(tx.hash, confirmations);
-
-                                        // Already resolved or rejected (prolly a timeout)
-                                        if (alreadyDone()) { return; }
-
-                                        // The reason we were replaced
-                                        let reason = "replaced";
-                                        if (tx.data === replaceable.data && tx.to === replaceable.to && tx.value.eq(replaceable.value)) {
-                                            reason = "repriced";
-                                        } else  if (tx.data === "0x" && tx.from === tx.to && tx.value.isZero()) {
-                                            reason = "cancelled"
-                                        }
-
-                                        // Explain why we were replaced
-                                        reject(logger.makeError("transaction was replaced", Logger.errors.TRANSACTION_REPLACED, {
-                                            cancelled: (reason === "replaced" || reason === "cancelled"),
-                                            reason,
-                                            replacement: this._wrapTransaction(tx),
-                                            hash: transactionHash,
-                                            receipt
-                                        }));
-
-                                        return;
-                                    }
-                                }
-                                scannedBlock++;
-                            }
-                        }
-
-                        if (done) { return; }
-                        this.once("block", replaceHandler);
-
-                    }, (error) => {
-                        if (done) { return; }
-                        this.once("block", replaceHandler);
-                    });
-                };
-
-                if (done) { return; }
-                this.once("block", replaceHandler);
-
-                cancelFuncs.push(() => {
-                    this.removeListener("block", replaceHandler);
-                });
-            }
-
-            if (typeof(timeout) === "number" && timeout > 0) {
-                const timer = setTimeout(() => {
-                    if (alreadyDone()) { return; }
-                    reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
-                }, timeout);
-                if (timer.unref) { timer.unref(); }
-
-                cancelFuncs.push(() => { clearTimeout(timer); });
-            }
-        });
+        return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
     }
 
     /**
@@ -1109,7 +979,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         await this.getNetwork();
         const params = await resolveProperties({
             address: this._getAddress(addressOrName),
-            blockTag: this._getBlockTag(blockTag)
         });
 
         const result = await this.perform("getCode", params);
@@ -1223,7 +1092,6 @@ export class BaseProvider extends Provider implements EnsProvider {
 
         ["fromBlock", "toBlock"].forEach((key) => {
             if ((<any>filter)[key] == null) { return; }
-            result[key] = this._getBlockTag((<any>filter)[key]);
         });
 
         return this.formatter.filter(await resolveProperties(result));
@@ -1233,7 +1101,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         await this.getNetwork();
         const params = await resolveProperties({
             transaction: this._getTransactionRequest(transaction),
-            blockTag: this._getBlockTag(blockTag)
         });
 
         const result = await this.perform("call", params);
@@ -1277,10 +1144,6 @@ export class BaseProvider extends Provider implements EnsProvider {
             });
         }
         return address;
-    }
-
-    async _getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>, includeTransactions?: boolean): Promise<Block | BlockWithTransactions> {
-        return super.getBlock(blockHashOrBlockTag);
     }
 
     /**
@@ -1350,12 +1213,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         await this.getNetwork();
         return this.perform("getEtherPrice", { });
     }
-
-    async _getBlockTag(blockTag: BlockTag | Promise<BlockTag>): Promise<BlockTag> {
-        blockTag = await blockTag;
-        return this.formatter.blockTag(blockTag);
-    }
-
 
     async getResolver(name: string): Promise<null | Resolver> {
         try {

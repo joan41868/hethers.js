@@ -308,12 +308,12 @@ function getRunner(config, currentBlockNumber, method, params) {
                 if (params.blockTag && isHexString(params.blockTag)) {
                     provider = yield waitForSync(config, currentBlockNumber);
                 }
-                return provider[method](params.address, params.blockTag || "latest");
+                return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
             case "getStorageAt":
                 if (params.blockTag && isHexString(params.blockTag)) {
                     provider = yield waitForSync(config, currentBlockNumber);
                 }
-                return provider.getStorageAt(params.address, params.position, params.blockTag || "latest");
+                return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
             case "call":
             case "estimateGas":
                 if (params.blockTag && isHexString(params.blockTag)) {

@@ -487,7 +487,7 @@ var InfoPlugin = /** @class */ (function (_super) {
                         address = this.addresses[i];
                         return [4 /*yield*/, ethers_1.ethers.utils.resolveProperties({
                                 balance: this.provider.getBalance(address),
-                                nonce: this.provider.getTransactionCount(address),
+                                nonce: 0,
                                 code: this.provider.getCode(address),
                                 reverse: this.provider.lookupAddress(address)
                             })];

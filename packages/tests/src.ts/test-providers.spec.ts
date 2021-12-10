@@ -631,33 +631,11 @@ Object.keys(blockchainData).forEach((network) => {
             }, test.code);
         }
 
-        if (test.storage) {
-            Object.keys(test.storage).forEach((position) => {
-                addSimpleTest(`fetches storage: ${ test.address }:${ position }`, (provider: ethers.providers.Provider) => {
-                    return provider.getStorageAt(test.address, bnify(position));
-                }, test.storage[position]);
-            });
-        }
-
         if (test.name) {
             addSimpleTest(`fetches ENS name: ${ test.address }`, (provider: ethers.providers.Provider) => {
                 return provider.resolveName(test.name);
             }, test.address);
         }
-    });
-
-    tests.blocks.forEach((test) => {
-        addObjectTest(`fetches block (by number) #${ test.number }`, (provider: ethers.providers.Provider) => {
-            return provider.getBlock(test.number);
-        }, test);
-    });
-
-    tests.blocks.forEach((test) => {
-        addObjectTest(`fetches block (by hash) ${ test.hash }`, (provider: ethers.providers.Provider) => {
-            return provider.getBlock(test.hash);
-        }, test, (provider: string, network: string, test: TestDescription) => {
-            return (provider === "EtherscanProvider");
-        });
     });
 
     tests.transactions.forEach((test) => {

@@ -40,7 +40,7 @@ export class Signer {
     getTransactionCount(blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("getTransactionCount");
-            return yield this.provider.getTransactionCount(this.getAddress(), blockTag);
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         });
     }
     // Populates "from" if unspecified, and estimates the gas for the transaction

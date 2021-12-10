@@ -101,7 +101,7 @@ export abstract class Signer {
 
     async getTransactionCount(blockTag?: BlockTag): Promise<number> {
         this._checkProvider("getTransactionCount");
-        return await this.provider.getTransactionCount(this.getAddress(), blockTag);
+        return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
     }
 
     // Populates "from" if unspecified, and estimates the gas for the transaction

@@ -372,14 +372,14 @@ function getRunner(config, currentBlockNumber, method, params) {
                 case 3:
                     provider = _b.sent();
                     _b.label = 4;
-                case 4: return [2 /*return*/, provider[method](params.address, params.blockTag || "latest")];
+                case 4: return [2 /*return*/, logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION)];
                 case 5:
                     if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 7];
                     return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
                 case 6:
                     provider = _b.sent();
                     _b.label = 7;
-                case 7: return [2 /*return*/, provider.getStorageAt(params.address, params.position, params.blockTag || "latest")];
+                case 7: return [2 /*return*/, logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION)];
                 case 8:
                     if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 10];
                     return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
