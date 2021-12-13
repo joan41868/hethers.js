@@ -169,6 +169,10 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 
 	// TODO to be revised
 	signTransaction(transaction: TransactionRequest): Promise<string> {
+		// 1. TransactionRequest must be addressed and modified
+		// 2. We must check whether it is Contract Create or Call (if there is no `to` field, we must sign FileCreate;
+		// If there is `to` field we must read the `customData` and see whether we should sign ContractCreate or
+		// ContractCall)
 		return resolveProperties(transaction).then((tx) => {
 			if (tx.from != null) {
 				if (getAddress(tx.from) !== this.address) {
@@ -177,7 +181,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 				delete tx.from;
 			}
 
-			const signature = this._signingKey().signDigest(keccak256(serialize(<UnsignedTransaction>tx)));
+			const signature = this._signingKey().signDigest(keccak256(serialize(<UnsignedTransaction>tx)) /* GRPC object coming from the SDK */ );
 			return serialize(<UnsignedTransaction>tx, signature);
 		});
 	}
