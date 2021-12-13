@@ -1294,6 +1294,7 @@ describe("Test Hedera Provider", function () {
     var provider = new providers_1.DefaultHederaProvider(default_hedera_provider_1.HederaNetworks.TESTNET);
     var accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
     var solAddr = (0, utils_1.getAddressFromAccount)(accountConfig);
+    var nonExistingAddress = "0x0000000000000000000000000000000000000000";
     var timeout = 15000;
     it('Gets the balance', function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -1369,40 +1370,66 @@ describe("Test Hedera Provider", function () {
             });
         });
     }).timeout(timeout * 4);
-    it.only("Get contract code", function () {
+    it("Should get bytecode of contract", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var contractAccountConfig, contractAddress, nonExistingAddress, defaultProvider, result, error_2;
+            var contractAccountConfig, contractAddress, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         contractAccountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(16645669) };
                         contractAddress = (0, utils_1.getAddressFromAccount)(contractAccountConfig);
-                        nonExistingAddress = "0x0000000000000000000000000000000000000000";
-                        defaultProvider = ethers_1.ethers.providers.getDefaultProvider(default_hedera_provider_1.HederaNetworks.TESTNET);
-                        return [4 /*yield*/, defaultProvider.getCode(contractAddress)];
+                        return [4 /*yield*/, provider.getCode(contractAddress)];
                     case 1:
                         result = _a.sent();
-                        assert_1.default.strict((typeof result === "string" && result != "0x"), "returns code as string for existing contract - " + contractAddress);
-                        return [4 /*yield*/, defaultProvider.getCode(solAddr)];
+                        assert_1.default.strict((typeof result === "string" && result != "0x"), "returns bytecode of contract - " + contractAddress);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout * 4);
+    it("Should return 0x of non-existing contract", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, provider.getCode(solAddr)];
+                    case 1:
+                        result = _a.sent();
+                        assert_1.default.strictEqual(result, "0x", "returns 0x of account - " + solAddr);
+                        return [4 /*yield*/, provider.getCode(nonExistingAddress)];
                     case 2:
                         result = _a.sent();
-                        assert_1.default.strictEqual(result, "0x", "returns 0x string for account - " + solAddr);
-                        return [4 /*yield*/, defaultProvider.getCode(nonExistingAddress)];
-                    case 3:
-                        result = _a.sent();
-                        assert_1.default.strictEqual(result, "0x", "returns 0x string for non existing account - " + nonExistingAddress);
-                        _a.label = 4;
-                    case 4:
-                        _a.trys.push([4, 6, , 7]);
-                        return [4 /*yield*/, defaultProvider.getCode('0x0000000000000000000000000000000000000000', true)];
-                    case 5:
-                        result = _a.sent();
-                        return [3 /*break*/, 7];
-                    case 6:
-                        error_2 = _a.sent();
-                        assert_1.default.strictEqual(true, error_2.toString().includes("bad result from backend"), "on demand throws backend error");
-                        return [3 /*break*/, 7];
-                    case 7: return [2 /*return*/];
+                        assert_1.default.strictEqual(result, "0x", "returns 0x of non-existing account/contract - " + nonExistingAddress);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout * 4);
+    it("Should throw with optional parameter", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, assert_1.default.rejects(function () { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, provider.getCode(nonExistingAddress, true)];
+                                    case 1:
+                                        _a.sent();
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); }, function (err) {
+                            assert_1.default.strictEqual(err.name, 'Error');
+                            assert_1.default.strictEqual(err.reason, 'bad result from backend');
+                            assert_1.default.strictEqual(err.method, 'ContractByteCodeQuery');
+                            assert_1.default.strictEqual(err.error.response.status, 404);
+                            assert_1.default.strictEqual(err.error.response.statusText, 'Not Found');
+                            return true;
+                        })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
                 }
             });
         });
