@@ -1099,22 +1099,37 @@ export class BaseProvider extends Provider {
             }
         });
     }
-    getCode(addressOrName, blockTag) {
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param addressOrName The address to obtain the bytecode of
+     */
+    getCode(addressOrName, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            const params = yield resolveProperties({
-                address: this._getAddress(addressOrName),
-                blockTag: this._getBlockTag(blockTag)
-            });
-            const result = yield this.perform("getCode", params);
+            addressOrName = yield addressOrName;
+            const { shard, realm, num } = getAccountFromAddress(addressOrName);
+            const shardNum = BigNumber.from(shard).toNumber();
+            const realmNum = BigNumber.from(realm).toNumber();
+            const accountNum = BigNumber.from(num).toNumber();
+            const endpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
             try {
-                return hexlify(result);
+                let { data } = yield axios.get(this.mirrorNodeUrl + endpoint);
+                if (data.bytecode != null) {
+                    return hexlify(data.bytecode);
+                }
+                return "0x";
             }
             catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getCode",
-                    params, result, error
-                });
+                if (throwOnNonExisting) {
+                    logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "ContractByteCodeQuery",
+                        params: { address: addressOrName },
+                        error
+                    });
+                }
+                return "0x";
             }
         });
     }

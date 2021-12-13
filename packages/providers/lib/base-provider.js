@@ -1377,35 +1377,46 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.getCode = function (addressOrName, blockTag) {
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param addressOrName The address to obtain the bytecode of
+     */
+    BaseProvider.prototype.getCode = function (addressOrName, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var _a, shard, realm, num, shardNum, realmNum, accountNum, endpoint, data, error_8;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                address: this._getAddress(addressOrName),
-                                blockTag: this._getBlockTag(blockTag)
-                            })];
+                        _b.sent();
+                        return [4 /*yield*/, addressOrName];
                     case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("getCode", params)];
+                        addressOrName = _b.sent();
+                        _a = (0, address_1.getAccountFromAddress)(addressOrName), shard = _a.shard, realm = _a.realm, num = _a.num;
+                        shardNum = bignumber_1.BigNumber.from(shard).toNumber();
+                        realmNum = bignumber_1.BigNumber.from(realm).toNumber();
+                        accountNum = bignumber_1.BigNumber.from(num).toNumber();
+                        endpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
+                        _b.label = 3;
                     case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, (0, bytes_1.hexlify)(result)];
+                        _b.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + endpoint)];
+                    case 4:
+                        data = (_b.sent()).data;
+                        return [2 /*return*/, data.bytecode ? (0, bytes_1.hexlify)(data.bytecode) : "0x"];
+                    case 5:
+                        error_8 = _b.sent();
+                        if (error_8.response.status != 404 || (error_8.response.status == 404 && throwOnNonExisting)) {
+                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                method: "ContractByteCodeQuery",
+                                params: { address: addressOrName },
+                                error: error_8
+                            });
                         }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getCode",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
+                        return [2 /*return*/, "0x"];
+                    case 6: return [2 /*return*/];
                 }
             });
         });
@@ -1500,7 +1511,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         return __awaiter(this, void 0, void 0, function () {
-            var hexTx, tx, blockNumber, hash, error_8;
+            var hexTx, tx, blockNumber, hash, error_9;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1524,10 +1535,10 @@ var BaseProvider = /** @class */ (function (_super) {
                         hash = _a.sent();
                         return [2 /*return*/, this._wrapTransaction(tx, hash, blockNumber)];
                     case 6:
-                        error_8 = _a.sent();
-                        error_8.transaction = tx;
-                        error_8.transactionHash = tx.hash;
-                        throw error_8;
+                        error_9 = _a.sent();
+                        error_9.transaction = tx;
+                        error_9.transactionHash = tx.hash;
+                        throw error_9;
                     case 7: return [2 /*return*/];
                 }
             });
@@ -1700,7 +1711,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getBlock = function (blockHashOrBlockTag, includeTransactions) {
         return __awaiter(this, void 0, void 0, function () {
-            var blockNumber, params, _a, error_9;
+            var blockNumber, params, _a, error_10;
             var _this = this;
             return __generator(this, function (_b) {
                 switch (_b.label) {
@@ -1728,7 +1739,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [3 /*break*/, 6];
                     case 5:
-                        error_9 = _b.sent();
+                        error_10 = _b.sent();
                         logger.throwArgumentError("invalid block hash or block tag", "blockHashOrBlockTag", blockHashOrBlockTag);
                         return [3 /*break*/, 6];
                     case 6: return [2 /*return*/, (0, web_1.poll)(function () { return __awaiter(_this, void 0, void 0, function () {
@@ -1946,7 +1957,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_10;
+            var address, error_11;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1959,8 +1970,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_10 = _a.sent();
-                        if (error_10.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_11 = _a.sent();
+                        if (error_11.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];
@@ -1971,7 +1982,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var network, transaction, _a, _b, error_11;
+            var network, transaction, _a, _b, error_12;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1992,11 +2003,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.call(transaction)];
                     case 3: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                     case 4:
-                        error_11 = _c.sent();
-                        if (error_11.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_12 = _c.sent();
+                        if (error_12.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
-                        throw error_11;
+                        throw error_12;
                     case 5: return [2 /*return*/];
                 }
             });
