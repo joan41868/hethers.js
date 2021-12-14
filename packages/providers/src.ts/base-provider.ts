@@ -1341,12 +1341,23 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
         await this.getNetwork();
+        // Should resolve signed transaction if its promise but do not hexlify
         const hexTx = await Promise.resolve(signedTransaction).then(t => hexlify(t));
+
+        // in first step we will not do anything with parsing. After we have the submission, we must:
+        // 1. Parse the signed transaction into `Transaction` object
+        // 2. Before submission verify that the nodeId is the one that the provider is connected to
         const tx = this.formatter.transaction(signedTransaction);
         if (tx.confirmations == null) { tx.confirmations = 0; }
         const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
         try {
+            // Figure out how in the JS sdk we can submit a signed transaction (bytes)
             const hash = await this.perform("sendTransaction", { signedTransaction: hexTx });
+            // Wrapping of the Transaction will be implemented after step 1 and once we have the parsing of the
+            // transaction.
+            // Wrapping of the transaction is done in order for users to be able to do:
+            // const tx = provider.sendTransaction(signedTx);
+            // tx.wait() -> wait for it to be mined
             return this._wrapTransaction(tx, hash, blockNumber);
         } catch (error) {
             (<any>error).transaction = tx;
