@@ -9,6 +9,9 @@ const logger = new ethers.utils.Logger(version);
 // @TODO: Keep a per-NonceManager pool of sent but unmined transactions for
 //        rebroadcasting, in case we overrun the transaction pool
 
+/**
+ * TODO: This class and it's usage in the hedera network must be explored.
+ */
 export class NonceManager extends ethers.Signer {
     readonly signer: ethers.Signer;
 

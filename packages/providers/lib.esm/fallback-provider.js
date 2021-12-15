@@ -306,15 +306,9 @@ function getRunner(config, currentBlockNumber, method, params) {
                 break;
             case "getBalance":
             case "getCode":
-                if (params.blockTag && isHexString(params.blockTag)) {
-                    provider = yield waitForSync(config, currentBlockNumber);
-                }
-                return provider[method](params.address, params.blockTag || "latest");
+                return provider[method](params.address);
             case "call":
             case "estimateGas":
-                if (params.blockTag && isHexString(params.blockTag)) {
-                    provider = yield waitForSync(config, currentBlockNumber);
-                }
                 return provider[method](params.transaction);
             case "getTransaction":
             case "getTransactionReceipt":

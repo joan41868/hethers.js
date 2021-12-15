@@ -1,4 +1,7 @@
 import { ethers } from "ethers";
+/**
+ * TODO: This class and it's usage in the hedera network must be explored.
+ */
 export declare class NonceManager extends ethers.Signer {
     readonly signer: ethers.Signer;
     _initialPromise: Promise<number>;

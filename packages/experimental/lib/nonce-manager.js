@@ -21,6 +21,9 @@ var _version_1 = require("./_version");
 var logger = new ethers_1.ethers.utils.Logger(_version_1.version);
 // @TODO: Keep a per-NonceManager pool of sent but unmined transactions for
 //        rebroadcasting, in case we overrun the transaction pool
+/**
+ * TODO: This class and it's usage in the hedera network must be explored.
+ */
 var NonceManager = /** @class */ (function (_super) {
     __extends(NonceManager, _super);
     function NonceManager(signer) {

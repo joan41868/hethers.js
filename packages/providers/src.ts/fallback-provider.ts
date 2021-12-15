@@ -360,15 +360,9 @@ async function getRunner(config: RunningConfig, currentBlockNumber: number, meth
             break;
         case "getBalance":
         case "getCode":
-            if (params.blockTag && isHexString(params.blockTag)) {
-                provider = await waitForSync(config, currentBlockNumber)
-            }
-            return provider[method](params.address, params.blockTag || "latest");
+            return provider[method](params.address);
         case "call":
         case "estimateGas":
-            if (params.blockTag && isHexString(params.blockTag)) {
-                provider = await waitForSync(config, currentBlockNumber)
-            }
             return provider[method](params.transaction);
         case "getTransaction":
         case "getTransactionReceipt":
