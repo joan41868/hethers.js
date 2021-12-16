@@ -1,6 +1,6 @@
 "use strict";
 
-import { BlockTag, FeeData, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
@@ -93,18 +93,16 @@ export abstract class Signer {
         defineReadOnly(this, "_isSigner", true);
     }
 
-
+    async getGasPrice(): Promise<BigNumber> {
+        this._checkProvider("getGasPrice");
+        return await this.provider.getGasPrice();
+    }
     ///////////////////
     // Sub-classes MAY override these
 
     async getBalance(blockTag?: BlockTag): Promise<BigNumber> {
         this._checkProvider("getBalance");
         return await this.provider.getBalance(this.getAddress(), blockTag);
-    }
-
-    async getTransactionCount(blockTag?: BlockTag): Promise<number> {
-        this._checkProvider("getTransactionCount");
-        return await this.provider.getTransactionCount(this.getAddress(), blockTag);
     }
 
     // Populates "from" if unspecified, and estimates the gas for the transaction
@@ -133,16 +131,6 @@ export abstract class Signer {
         this._checkProvider("getChainId");
         const network = await this.provider.getNetwork();
         return network.chainId;
-    }
-
-    async getGasPrice(): Promise<BigNumber> {
-        this._checkProvider("getGasPrice");
-        return await this.provider.getGasPrice();
-    }
-
-    async getFeeData(): Promise<FeeData> {
-        this._checkProvider("getFeeData");
-        return await this.provider.getFeeData();
     }
 
 
@@ -231,12 +219,14 @@ export abstract class Signer {
             // Explicit Legacy or EIP-2930 transaction
 
             // Populate missing gasPrice
-            if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
+            // TODO: gas price
+            // if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
 
         } else {
-
+            /*
             // We need to get fee data to determine things
-            const feeData = await this.getFeeData();
+            // TODO: get the fee data somehow ( probably fee schedule in the hedera context )
+            // const feeData = await this.getFeeData();
 
             if (tx.type == null) {
                 // We need to auto-detect the intended type of this transaction...
@@ -291,9 +281,10 @@ export abstract class Signer {
                 if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
                 if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
             }
+            */
         }
 
-        if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
+        // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
 
         if (tx.gasLimit == null) {
             tx.gasLimit = this.estimateGas(tx).catch((error) => {

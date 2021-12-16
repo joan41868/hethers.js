@@ -29,18 +29,18 @@ export class Signer {
         logger.checkAbstract(new.target, Signer);
         defineReadOnly(this, "_isSigner", true);
     }
+    getGasPrice() {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._checkProvider("getGasPrice");
+            return yield this.provider.getGasPrice();
+        });
+    }
     ///////////////////
     // Sub-classes MAY override these
     getBalance(blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("getBalance");
             return yield this.provider.getBalance(this.getAddress(), blockTag);
-        });
-    }
-    getTransactionCount(blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._checkProvider("getTransactionCount");
-            return yield this.provider.getTransactionCount(this.getAddress(), blockTag);
         });
     }
     // Populates "from" if unspecified, and estimates the gas for the transaction
@@ -73,18 +73,6 @@ export class Signer {
             this._checkProvider("getChainId");
             const network = yield this.provider.getNetwork();
             return network.chainId;
-        });
-    }
-    getGasPrice() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._checkProvider("getGasPrice");
-            return yield this.provider.getGasPrice();
-        });
-    }
-    getFeeData() {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._checkProvider("getFeeData");
-            return yield this.provider.getFeeData();
         });
     }
     resolveName(name) {
@@ -165,19 +153,24 @@ export class Signer {
             else if (tx.type === 0 || tx.type === 1) {
                 // Explicit Legacy or EIP-2930 transaction
                 // Populate missing gasPrice
-                if (tx.gasPrice == null) {
-                    tx.gasPrice = this.getGasPrice();
-                }
+                // TODO: gas price
+                // if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
             }
             else {
+                /*
                 // We need to get fee data to determine things
-                const feeData = yield this.getFeeData();
+                // TODO: get the fee data somehow ( probably fee schedule in the hedera context )
+                // const feeData = await this.getFeeData();
+    
                 if (tx.type == null) {
                     // We need to auto-detect the intended type of this transaction...
+    
                     if (feeData.maxFeePerGas != null && feeData.maxPriorityFeePerGas != null) {
                         // The network supports EIP-1559!
+    
                         // Upgrade transaction from null to eip-1559
                         tx.type = 2;
+    
                         if (tx.gasPrice != null) {
                             // Using legacy gasPrice property on an eip-1559 network,
                             // so use gasPrice as both fee properties
@@ -185,53 +178,46 @@ export class Signer {
                             delete tx.gasPrice;
                             tx.maxFeePerGas = gasPrice;
                             tx.maxPriorityFeePerGas = gasPrice;
-                        }
-                        else {
+    
+                        } else {
                             // Populate missing fee data
-                            if (tx.maxFeePerGas == null) {
-                                tx.maxFeePerGas = feeData.maxFeePerGas;
-                            }
-                            if (tx.maxPriorityFeePerGas == null) {
-                                tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
-                            }
+                            if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
+                            if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
                         }
-                    }
-                    else if (feeData.gasPrice != null) {
+    
+                    } else if (feeData.gasPrice != null) {
                         // Network doesn't support EIP-1559...
+    
                         // ...but they are trying to use EIP-1559 properties
                         if (hasEip1559) {
                             logger.throwError("network does not support EIP-1559", Logger.errors.UNSUPPORTED_OPERATION, {
                                 operation: "populateTransaction"
                             });
                         }
+    
                         // Populate missing fee data
-                        if (tx.gasPrice == null) {
-                            tx.gasPrice = feeData.gasPrice;
-                        }
+                        if (tx.gasPrice == null) { tx.gasPrice = feeData.gasPrice; }
+    
                         // Explicitly set untyped transaction to legacy
                         tx.type = 0;
-                    }
-                    else {
+    
+                    } else {
                         // getFeeData has failed us.
                         logger.throwError("failed to get consistent fee data", Logger.errors.UNSUPPORTED_OPERATION, {
                             operation: "signer.getFeeData"
                         });
                     }
-                }
-                else if (tx.type === 2) {
+    
+                } else if (tx.type === 2) {
                     // Explicitly using EIP-1559
+    
                     // Populate missing fee data
-                    if (tx.maxFeePerGas == null) {
-                        tx.maxFeePerGas = feeData.maxFeePerGas;
-                    }
-                    if (tx.maxPriorityFeePerGas == null) {
-                        tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
-                    }
+                    if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
+                    if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
                 }
+                */
             }
-            if (tx.nonce == null) {
-                tx.nonce = this.getTransactionCount("pending");
-            }
+            // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
             if (tx.gasLimit == null) {
                 tx.gasLimit = this.estimateGas(tx).catch((error) => {
                     if (forwardErrors.indexOf(error.code) >= 0) {

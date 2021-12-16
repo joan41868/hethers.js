@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { ForkEvent, Provider } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, concat, hexConcat, hexDataLength, hexDataSlice, hexlify, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import { arrayify, concat, hexConcat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { HashZero } from "@ethersproject/constants";
 import { namehash } from "@ethersproject/hash";
 import { getNetwork } from "@ethersproject/networks";
@@ -99,9 +99,6 @@ function getEventTag(eventName) {
 }
 //////////////////////////////
 // Helper Object
-function getTime() {
-    return (new Date()).getTime();
-}
 function stall(duration) {
     return new Promise((resolve) => {
         setTimeout(resolve, duration);
@@ -577,69 +574,6 @@ export class BaseProvider extends Provider {
     static getNetwork(network) {
         return getNetwork((network == null) ? "mainnet" : network);
     }
-    // Fetches the blockNumber, but will reuse any result that is less
-    // than maxAge old or has been requested since the last request
-    _getInternalBlockNumber(maxAge) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this._ready();
-            // Allowing stale data up to maxAge old
-            if (maxAge > 0) {
-                // While there are pending internal block requests...
-                while (this._internalBlockNumber) {
-                    // ..."remember" which fetch we started with
-                    const internalBlockNumber = this._internalBlockNumber;
-                    try {
-                        // Check the result is not too stale
-                        const result = yield internalBlockNumber;
-                        if ((getTime() - result.respTime) <= maxAge) {
-                            return result.blockNumber;
-                        }
-                        // Too old; fetch a new value
-                        break;
-                    }
-                    catch (error) {
-                        // The fetch rejected; if we are the first to get the
-                        // rejection, drop through so we replace it with a new
-                        // fetch; all others blocked will then get that fetch
-                        // which won't match the one they "remembered" and loop
-                        if (this._internalBlockNumber === internalBlockNumber) {
-                            break;
-                        }
-                    }
-                }
-            }
-            const reqTime = getTime();
-            const checkInternalBlockNumber = resolveProperties({
-                blockNumber: this.perform("getBlockNumber", {}),
-                networkError: this.getNetwork().then((network) => (null), (error) => (error))
-            }).then(({ blockNumber, networkError }) => {
-                if (networkError) {
-                    // Unremember this bad internal block number
-                    if (this._internalBlockNumber === checkInternalBlockNumber) {
-                        this._internalBlockNumber = null;
-                    }
-                    throw networkError;
-                }
-                const respTime = getTime();
-                blockNumber = BigNumber.from(blockNumber).toNumber();
-                if (blockNumber < this._maxInternalBlockNumber) {
-                    blockNumber = this._maxInternalBlockNumber;
-                }
-                this._maxInternalBlockNumber = blockNumber;
-                this._setFastBlockNumber(blockNumber); // @TODO: Still need this?
-                return { blockNumber, reqTime, respTime };
-            });
-            this._internalBlockNumber = checkInternalBlockNumber;
-            // Swallow unhandled exceptions; if needed they are handled else where
-            checkInternalBlockNumber.catch((error) => {
-                // Don't null the dead (rejected) fetch, if it has already been updated
-                if (this._internalBlockNumber === checkInternalBlockNumber) {
-                    this._internalBlockNumber = null;
-                }
-            });
-            return (yield checkInternalBlockNumber).blockNumber;
-        });
-    }
     poll() {
         return __awaiter(this, void 0, void 0, function* () {
             const pollId = nextPollId++;
@@ -647,13 +581,13 @@ export class BaseProvider extends Provider {
             const runners = [];
             let blockNumber = null;
             try {
-                blockNumber = yield this._getInternalBlockNumber(100 + this.pollingInterval / 2);
+                // blockNumber = await this._getInternalBlockNumber(100 + this.pollingInterval / 2);
             }
             catch (error) {
                 this.emit("error", error);
                 return;
             }
-            this._setFastBlockNumber(blockNumber);
+            // this._setFastBlockNumber(blockNumber);
             // Emit a poll event after we have the latest (fast) block number
             this.emit("poll", pollId, blockNumber);
             // If the block has not changed, meh.
@@ -808,12 +742,6 @@ export class BaseProvider extends Provider {
             return network;
         });
     }
-    get blockNumber() {
-        this._getInternalBlockNumber(100 + this.pollingInterval / 2).then((blockNumber) => {
-            this._setFastBlockNumber(blockNumber);
-        }, (error) => { });
-        return (this._fastBlockNumber != null) ? this._fastBlockNumber : -1;
-    }
     get polling() {
         return (this._poller != null);
     }
@@ -855,33 +783,6 @@ export class BaseProvider extends Provider {
             this._poller = setInterval(() => { this.poll(); }, this._pollingInterval);
         }
     }
-    _getFastBlockNumber() {
-        const now = getTime();
-        // Stale block number, request a newer value
-        if ((now - this._fastQueryDate) > 2 * this._pollingInterval) {
-            this._fastQueryDate = now;
-            this._fastBlockNumberPromise = this.getBlockNumber().then((blockNumber) => {
-                if (this._fastBlockNumber == null || blockNumber > this._fastBlockNumber) {
-                    this._fastBlockNumber = blockNumber;
-                }
-                return this._fastBlockNumber;
-            });
-        }
-        return this._fastBlockNumberPromise;
-    }
-    _setFastBlockNumber(blockNumber) {
-        // Older block, maybe a stale request
-        if (this._fastBlockNumber != null && blockNumber < this._fastBlockNumber) {
-            return;
-        }
-        // Update the time we updated the blocknumber
-        this._fastQueryDate = getTime();
-        // Newer block number, use  it
-        if (this._fastBlockNumber == null || blockNumber > this._fastBlockNumber) {
-            this._fastBlockNumber = blockNumber;
-            this._fastBlockNumberPromise = Promise.resolve(blockNumber);
-        }
-    }
     waitForTransaction(transactionHash, confirmations, timeout) {
         return __awaiter(this, void 0, void 0, function* () {
             return this._waitForTransaction(transactionHash, (confirmations == null) ? 1 : confirmations, timeout || 0, null);
@@ -889,166 +790,7 @@ export class BaseProvider extends Provider {
     }
     _waitForTransaction(transactionHash, confirmations, timeout, replaceable) {
         return __awaiter(this, void 0, void 0, function* () {
-            const receipt = yield this.getTransactionReceipt(transactionHash);
-            // Receipt is already good
-            if ((receipt ? receipt.confirmations : 0) >= confirmations) {
-                return receipt;
-            }
-            // Poll until the receipt is good...
-            return new Promise((resolve, reject) => {
-                const cancelFuncs = [];
-                let done = false;
-                const alreadyDone = function () {
-                    if (done) {
-                        return true;
-                    }
-                    done = true;
-                    cancelFuncs.forEach((func) => { func(); });
-                    return false;
-                };
-                const minedHandler = (receipt) => {
-                    if (receipt.confirmations < confirmations) {
-                        return;
-                    }
-                    if (alreadyDone()) {
-                        return;
-                    }
-                    resolve(receipt);
-                };
-                this.on(transactionHash, minedHandler);
-                cancelFuncs.push(() => { this.removeListener(transactionHash, minedHandler); });
-                if (replaceable) {
-                    let lastBlockNumber = replaceable.startBlock;
-                    let scannedBlock = null;
-                    const replaceHandler = (blockNumber) => __awaiter(this, void 0, void 0, function* () {
-                        if (done) {
-                            return;
-                        }
-                        // Wait 1 second; this is only used in the case of a fault, so
-                        // we will trade off a little bit of latency for more consistent
-                        // results and fewer JSON-RPC calls
-                        yield stall(1000);
-                        this.getTransactionCount(replaceable.from).then((nonce) => __awaiter(this, void 0, void 0, function* () {
-                            if (done) {
-                                return;
-                            }
-                            if (nonce <= replaceable.nonce) {
-                                lastBlockNumber = blockNumber;
-                            }
-                            else {
-                                // First check if the transaction was mined
-                                {
-                                    const mined = yield this.getTransaction(transactionHash);
-                                    if (mined && mined.blockNumber != null) {
-                                        return;
-                                    }
-                                }
-                                // First time scanning. We start a little earlier for some
-                                // wiggle room here to handle the eventually consistent nature
-                                // of blockchain (e.g. the getTransactionCount was for a
-                                // different block)
-                                if (scannedBlock == null) {
-                                    scannedBlock = lastBlockNumber - 3;
-                                    if (scannedBlock < replaceable.startBlock) {
-                                        scannedBlock = replaceable.startBlock;
-                                    }
-                                }
-                                while (scannedBlock <= blockNumber) {
-                                    if (done) {
-                                        return;
-                                    }
-                                    const block = yield this.getBlockWithTransactions(scannedBlock);
-                                    for (let ti = 0; ti < block.transactions.length; ti++) {
-                                        const tx = block.transactions[ti];
-                                        // Successfully mined!
-                                        if (tx.hash === transactionHash) {
-                                            return;
-                                        }
-                                        // Matches our transaction from and nonce; its a replacement
-                                        if (tx.from === replaceable.from && tx.nonce === replaceable.nonce) {
-                                            if (done) {
-                                                return;
-                                            }
-                                            // Get the receipt of the replacement
-                                            const receipt = yield this.waitForTransaction(tx.hash, confirmations);
-                                            // Already resolved or rejected (prolly a timeout)
-                                            if (alreadyDone()) {
-                                                return;
-                                            }
-                                            // The reason we were replaced
-                                            let reason = "replaced";
-                                            if (tx.data === replaceable.data && tx.to === replaceable.to && tx.value.eq(replaceable.value)) {
-                                                reason = "repriced";
-                                            }
-                                            else if (tx.data === "0x" && tx.from === tx.to && tx.value.isZero()) {
-                                                reason = "cancelled";
-                                            }
-                                            // Explain why we were replaced
-                                            reject(logger.makeError("transaction was replaced", Logger.errors.TRANSACTION_REPLACED, {
-                                                cancelled: (reason === "replaced" || reason === "cancelled"),
-                                                reason,
-                                                replacement: this._wrapTransaction(tx),
-                                                hash: transactionHash,
-                                                receipt
-                                            }));
-                                            return;
-                                        }
-                                    }
-                                    scannedBlock++;
-                                }
-                            }
-                            if (done) {
-                                return;
-                            }
-                            this.once("block", replaceHandler);
-                        }), (error) => {
-                            if (done) {
-                                return;
-                            }
-                            this.once("block", replaceHandler);
-                        });
-                    });
-                    if (done) {
-                        return;
-                    }
-                    this.once("block", replaceHandler);
-                    cancelFuncs.push(() => {
-                        this.removeListener("block", replaceHandler);
-                    });
-                }
-                if (typeof (timeout) === "number" && timeout > 0) {
-                    const timer = setTimeout(() => {
-                        if (alreadyDone()) {
-                            return;
-                        }
-                        reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
-                    }, timeout);
-                    if (timer.unref) {
-                        timer.unref();
-                    }
-                    cancelFuncs.push(() => { clearTimeout(timer); });
-                }
-            });
-        });
-    }
-    getBlockNumber() {
-        return __awaiter(this, void 0, void 0, function* () {
-            return this._getInternalBlockNumber(0);
-        });
-    }
-    getGasPrice() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const result = yield this.perform("getGasPrice", {});
-            try {
-                return BigNumber.from(result);
-            }
-            catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getGasPrice",
-                    result, error
-                });
-            }
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         });
     }
     /**
@@ -1080,31 +822,11 @@ export class BaseProvider extends Provider {
             }
         });
     }
-    getTransactionCount(addressOrName, blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                address: this._getAddress(addressOrName),
-                blockTag: this._getBlockTag(blockTag)
-            });
-            const result = yield this.perform("getTransactionCount", params);
-            try {
-                return BigNumber.from(result).toNumber();
-            }
-            catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getTransactionCount",
-                    params, result, error
-                });
-            }
-        });
-    }
     getCode(addressOrName, blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
             const params = yield resolveProperties({
                 address: this._getAddress(addressOrName),
-                blockTag: this._getBlockTag(blockTag)
             });
             const result = yield this.perform("getCode", params);
             try {
@@ -1113,26 +835,6 @@ export class BaseProvider extends Provider {
             catch (error) {
                 return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "getCode",
-                    params, result, error
-                });
-            }
-        });
-    }
-    getStorageAt(addressOrName, position, blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                address: this._getAddress(addressOrName),
-                blockTag: this._getBlockTag(blockTag),
-                position: Promise.resolve(position).then((p) => hexValue(p))
-            });
-            const result = yield this.perform("getStorageAt", params);
-            try {
-                return hexlify(result);
-            }
-            catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getStorageAt",
                     params, result, error
                 });
             }
@@ -1184,24 +886,10 @@ export class BaseProvider extends Provider {
         });
         return result;
     }
+    // FIXME:
     sendTransaction(signedTransaction) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const hexTx = yield Promise.resolve(signedTransaction).then(t => hexlify(t));
-            const tx = this.formatter.transaction(signedTransaction);
-            if (tx.confirmations == null) {
-                tx.confirmations = 0;
-            }
-            const blockNumber = yield this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-            try {
-                const hash = yield this.perform("sendTransaction", { signedTransaction: hexTx });
-                return this._wrapTransaction(tx, hash, blockNumber);
-            }
-            catch (error) {
-                error.transaction = tx;
-                error.transactionHash = tx.hash;
-                throw error;
-            }
+            return null;
         });
     }
     _getTransactionRequest(transaction) {
@@ -1255,7 +943,6 @@ export class BaseProvider extends Provider {
                 if (filter[key] == null) {
                     return;
                 }
-                result[key] = this._getBlockTag(filter[key]);
             });
             return this.formatter.filter(yield resolveProperties(result));
         });
@@ -1265,7 +952,6 @@ export class BaseProvider extends Provider {
             yield this.getNetwork();
             const params = yield resolveProperties({
                 transaction: this._getTransactionRequest(transaction),
-                blockTag: this._getBlockTag(blockTag)
             });
             const result = yield this.perform("call", params);
             try {
@@ -1312,84 +998,6 @@ export class BaseProvider extends Provider {
             return address;
         });
     }
-    _getBlock(blockHashOrBlockTag, includeTransactions) {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            blockHashOrBlockTag = yield blockHashOrBlockTag;
-            // If blockTag is a number (not "latest", etc), this is the block number
-            let blockNumber = -128;
-            const params = {
-                includeTransactions: !!includeTransactions
-            };
-            if (isHexString(blockHashOrBlockTag, 32)) {
-                params.blockHash = blockHashOrBlockTag;
-            }
-            else {
-                try {
-                    params.blockTag = yield this._getBlockTag(blockHashOrBlockTag);
-                    if (isHexString(params.blockTag)) {
-                        blockNumber = parseInt(params.blockTag.substring(2), 16);
-                    }
-                }
-                catch (error) {
-                    logger.throwArgumentError("invalid block hash or block tag", "blockHashOrBlockTag", blockHashOrBlockTag);
-                }
-            }
-            return poll(() => __awaiter(this, void 0, void 0, function* () {
-                const block = yield this.perform("getBlock", params);
-                // Block was not found
-                if (block == null) {
-                    // For blockhashes, if we didn't say it existed, that blockhash may
-                    // not exist. If we did see it though, perhaps from a log, we know
-                    // it exists, and this node is just not caught up yet.
-                    if (params.blockHash != null) {
-                        if (this._emitted["b:" + params.blockHash] == null) {
-                            return null;
-                        }
-                    }
-                    // For block tags, if we are asking for a future block, we return null
-                    if (params.blockTag != null) {
-                        if (blockNumber > this._emitted.block) {
-                            return null;
-                        }
-                    }
-                    // Retry on the next block
-                    return undefined;
-                }
-                // Add transactions
-                if (includeTransactions) {
-                    let blockNumber = null;
-                    for (let i = 0; i < block.transactions.length; i++) {
-                        const tx = block.transactions[i];
-                        if (tx.blockNumber == null) {
-                            tx.confirmations = 0;
-                        }
-                        else if (tx.confirmations == null) {
-                            if (blockNumber == null) {
-                                blockNumber = yield this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                            }
-                            // Add the confirmations using the fast block number (pessimistic)
-                            let confirmations = (blockNumber - tx.blockNumber) + 1;
-                            if (confirmations <= 0) {
-                                confirmations = 1;
-                            }
-                            tx.confirmations = confirmations;
-                        }
-                    }
-                    const blockWithTxs = this.formatter.blockWithTransactions(block);
-                    blockWithTxs.transactions = blockWithTxs.transactions.map((tx) => this._wrapTransaction(tx));
-                    return blockWithTxs;
-                }
-                return this.formatter.block(block);
-            }), { oncePoll: this });
-        });
-    }
-    getBlock(blockHashOrBlockTag) {
-        return (this._getBlock(blockHashOrBlockTag, false));
-    }
-    getBlockWithTransactions(blockHashOrBlockTag) {
-        return (this._getBlock(blockHashOrBlockTag, true));
-    }
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
@@ -1428,13 +1036,12 @@ export class BaseProvider extends Provider {
                     receipt.confirmations = 0;
                 }
                 else if (receipt.confirmations == null) {
-                    const blockNumber = yield this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+                    // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+                    //
                     // Add the confirmations using the fast block number (pessimistic)
-                    let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                    if (confirmations <= 0) {
-                        confirmations = 1;
-                    }
-                    receipt.confirmations = confirmations;
+                    // let confirmations = (blockNumber - receipt.blockNumber) + 1;
+                    // if (confirmations <= 0) { confirmations = 1; }
+                    // receipt.confirmations = confirmations;
                 }
                 return receipt;
             }), { oncePoll: this });
@@ -1453,27 +1060,9 @@ export class BaseProvider extends Provider {
             return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
         });
     }
-    getEtherPrice() {
+    getHbarPrice() {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            return this.perform("getEtherPrice", {});
-        });
-    }
-    _getBlockTag(blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            blockTag = yield blockTag;
-            if (typeof (blockTag) === "number" && blockTag < 0) {
-                if (blockTag % 1) {
-                    logger.throwArgumentError("invalid BlockTag", "blockTag", blockTag);
-                }
-                let blockNumber = yield this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                blockNumber += blockTag;
-                if (blockNumber < 0) {
-                    blockNumber = 0;
-                }
-                return this.formatter.blockTag(blockNumber);
-            }
-            return this.formatter.blockTag(blockTag);
+            return logger.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
     getResolver(name) {

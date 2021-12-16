@@ -4,6 +4,9 @@ import { version } from "./_version";
 const logger = new ethers.utils.Logger(version);
 // @TODO: Keep a per-NonceManager pool of sent but unmined transactions for
 //        rebroadcasting, in case we overrun the transaction pool
+/**
+ * TODO: This class and it's usage in the hedera network must be explored.
+ */
 export class NonceManager extends ethers.Signer {
     constructor(signer) {
         logger.checkNew(new.target, NonceManager);
@@ -17,16 +20,6 @@ export class NonceManager extends ethers.Signer {
     }
     getAddress() {
         return this.signer.getAddress();
-    }
-    getTransactionCount(blockTag) {
-        if (blockTag === "pending") {
-            if (!this._initialPromise) {
-                this._initialPromise = this.signer.getTransactionCount("pending");
-            }
-            const deltaCount = this._deltaCount;
-            return this._initialPromise.then((initial) => (initial + deltaCount));
-        }
-        return this.signer.getTransactionCount(blockTag);
     }
     setTransactionCount(transactionCount) {
         this._initialPromise = Promise.resolve(transactionCount).then((nonce) => {
@@ -45,17 +38,7 @@ export class NonceManager extends ethers.Signer {
         return this.signer.signTransaction(transaction);
     }
     sendTransaction(transaction) {
-        if (transaction.nonce == null) {
-            transaction = ethers.utils.shallowCopy(transaction);
-            transaction.nonce = this.getTransactionCount("pending");
-            this.incrementTransactionCount();
-        }
-        else {
-            this.setTransactionCount(transaction.nonce);
-        }
-        return this.signer.sendTransaction(transaction).then((tx) => {
-            return tx;
-        });
+        return null;
     }
 }
 //# sourceMappingURL=nonce-manager.js.map
