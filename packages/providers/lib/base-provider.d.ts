@@ -1,7 +1,7 @@
 /// <reference types="node" />
 import { BlockTag, EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
-import { Network, Networkish } from "@ethersproject/networks";
+import { HederaNetworkConfigLike, Network, Networkish } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
 import { Formatter } from "./formatter";
@@ -71,7 +71,8 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     }>;
     readonly anyNetwork: boolean;
     private readonly hederaClient;
-    private readonly mirrorNodeUrl;
+    private readonly _mirrorNodeUrl;
+    protected mirrorNodeUrl: string;
     /**
      *  ready
      *
@@ -81,7 +82,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      *  MUST set this. Standard named networks have a known chainId.
      *
      */
-    constructor(network: Networkish | Promise<Network>);
+    constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike);
     _ready(): Promise<Network>;
     get ready(): Promise<Network>;
     static getFormatter(): Formatter;
@@ -125,6 +126,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      * @param txId - id of the transaction to search for
      */
     getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
+    private getMirrorNodeUrl;
     getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;

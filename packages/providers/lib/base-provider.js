@@ -627,24 +627,32 @@ var BaseProvider = /** @class */ (function (_super) {
             _this._ready().catch(function (error) { });
         }
         else {
-            // defineReadOnly(this, "_network", getNetwork(network));
-            _this._network = (0, networks_1.getNetwork)(network);
-            _this._networkPromise = Promise.resolve(_this._network);
-            var knownNetwork = (0, properties_1.getStatic)(_newTarget, "getNetwork")(network);
-            if (knownNetwork) {
-                (0, properties_1.defineReadOnly)(_this, "_network", knownNetwork);
-                _this.emit("network", knownNetwork, null);
+            if (!isHederaNetworkConfigLike(network)) {
+                var asDefaultNetwork = network;
+                // defineReadOnly(this, "_network", getNetwork(network));
+                _this._network = (0, networks_1.getNetwork)(asDefaultNetwork);
+                _this._networkPromise = Promise.resolve(_this._network);
+                var knownNetwork = (0, properties_1.getStatic)(_newTarget, "getNetwork")(asDefaultNetwork);
+                if (knownNetwork) {
+                    (0, properties_1.defineReadOnly)(_this, "_network", knownNetwork);
+                    _this.emit("network", knownNetwork, null);
+                }
+                else {
+                    logger.throwArgumentError("invalid network", "network", network);
+                }
+                _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
+                _this._mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
             }
             else {
-                logger.throwArgumentError("invalid network", "network", network);
+                var asHederaNetwork = network;
+                _this.hederaClient = sdk_1.Client.forNetwork(asHederaNetwork.network);
+                // FIXME: what about the mirror node? how do we resolve it with custom network?
             }
         }
         _this._maxInternalBlockNumber = -1024;
         _this._lastBlockNumber = -2;
         _this._pollingInterval = 4000;
         _this._fastQueryDate = 0;
-        _this.mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
-        _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(network));
         return _this;
     }
     BaseProvider.prototype._ready = function () {
@@ -985,33 +993,31 @@ var BaseProvider = /** @class */ (function (_super) {
             var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_5;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 0: return [4 /*yield*/, addressOrName];
                     case 1:
-                        _b.sent();
-                        return [4 /*yield*/, addressOrName];
-                    case 2:
+                        // await this.getNetwork();
                         addressOrName = _b.sent();
                         _a = (0, address_1.getAccountFromAddress)(addressOrName), shard = _a.shard, realm = _a.realm, num = _a.num;
                         shardNum = bignumber_1.BigNumber.from(shard).toNumber();
                         realmNum = bignumber_1.BigNumber.from(realm).toNumber();
                         accountNum = bignumber_1.BigNumber.from(num).toNumber();
-                        _b.label = 3;
-                    case 3:
-                        _b.trys.push([3, 5, , 6]);
+                        _b.label = 2;
+                    case 2:
+                        _b.trys.push([2, 4, , 5]);
                         return [4 /*yield*/, new sdk_1.AccountBalanceQuery()
                                 .setAccountId(new sdk_1.AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
                                 .execute(this.hederaClient)];
-                    case 4:
+                    case 3:
                         balance = _b.sent();
                         return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
-                    case 5:
+                    case 4:
                         error_5 = _b.sent();
                         return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "AccountBalanceQuery",
                                 params: { address: addressOrName },
                                 error: error_5
                             })];
-                    case 6: return [2 /*return*/];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -1289,7 +1295,7 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 2:
                         txId = _a.sent();
                         ep = '/api/v1/transactions/' + txId;
-                        return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + ep)];
+                        return [4 /*yield*/, axios_1.default.get(this.getMirrorNodeUrl() + ep)];
                     case 3:
                         data = (_a.sent()).data;
                         filtered = data.transactions
@@ -1298,6 +1304,12 @@ var BaseProvider = /** @class */ (function (_super) {
                 }
             });
         });
+    };
+    BaseProvider.prototype.getMirrorNodeUrl = function () {
+        if (this.mirrorNodeUrl != undefined) {
+            return this.mirrorNodeUrl;
+        }
+        return this._mirrorNodeUrl;
     };
     BaseProvider.prototype.getTransactionReceipt = function (transactionHash) {
         return __awaiter(this, void 0, void 0, function () {
@@ -1692,5 +1704,8 @@ function resolveMirrorNetworkUrl(net) {
             logger.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
+}
+function isHederaNetworkConfigLike(cfg) {
+    return cfg.network !== undefined;
 }
 //# sourceMappingURL=base-provider.js.map
