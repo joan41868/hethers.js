@@ -272,13 +272,13 @@ var WrappedSigner = /** @class */ (function (_super) {
                     case 0:
                         transactionRequest = ethers_1.ethers.utils.shallowCopy(transactionRequest);
                         if (this.plugin.gasPrice != null) {
-                            transactionRequest.gasPrice = this.plugin.gasPrice;
+                            // transactionRequest.gasPrice = this.plugin.gasPrice;
                         }
                         if (this.plugin.gasLimit != null) {
                             transactionRequest.gasLimit = this.plugin.gasLimit;
                         }
                         if (this.plugin.nonce != null) {
-                            transactionRequest.nonce = this.plugin.nonce;
+                            // transactionRequest.nonce = this.plugin.nonce;
                         }
                         return [4 /*yield*/, getSigner(this)];
                     case 1:
@@ -310,13 +310,11 @@ var WrappedSigner = /** @class */ (function (_super) {
                             info["From"] = tx.from;
                         }
                         info["Value"] = (ethers_1.ethers.utils.formatEther(tx.value || 0) + " ether");
-                        if (tx.nonce != null) {
-                            info["Nonce"] = tx.nonce;
-                        }
+                        // if (tx.nonce != null) { info["Nonce"] = tx.nonce; }
                         info["Data"] = tx.data;
                         info["Gas Limit"] = ethers_1.ethers.BigNumber.from(tx.gasLimit || 0).toString();
-                        info["Gas Price"] = (ethers_1.ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
-                            info["Chain ID"] = (tx.chainId || 0);
+                        // info["Gas Price"] = (ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
+                        info["Chain ID"] = (tx.chainId || 0);
                         info["Network"] = network.name;
                         dump("Transaction:", info);
                         return [4 /*yield*/, isAllowed(this, "Sign Transaction?")];

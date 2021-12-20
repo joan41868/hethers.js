@@ -66,6 +66,7 @@ var json_wallets_1 = require("@ethersproject/json-wallets");
 var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
+var sdk_1 = require("@hashgraph/sdk");
 var logger = new logger_1.Logger(_version_1.version);
 function isAccount(value) {
     return value != null && (0, bytes_1.isHexString)(value.privateKey, 32);
@@ -77,6 +78,19 @@ function hasMnemonic(value) {
 function hasAlias(value) {
     return isAccount(value) && value.alias != null;
 }
+var account = {
+    "operator": {
+        "accountId": "0.0.1280",
+        "publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
+        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
+    },
+    "network": {
+        "35.231.208.148:50211": "0.0.3",
+        "35.199.15.177:50211": "0.0.4",
+        "35.225.201.195:50211": "0.0.5",
+        "35.247.109.135:50211": "0.0.6"
+    }
+};
 var Wallet = /** @class */ (function (_super) {
     __extends(Wallet, _super);
     function Wallet(identity, provider) {
@@ -185,18 +199,37 @@ var Wallet = /** @class */ (function (_super) {
         return new Wallet(eoa, this.provider);
     };
     // TODO to be revised
+    // 1. TransactionRequest must be addressed and modified
+    // 2. We must check whether it is Contract Create or Call (if there is no `to` field, we must sign FileCreate;
+    // If there is `to` field we must read the `customData` and see whether we should sign ContractCreate or
+    // ContractCall)
+    // FIXME:
+    //  the wallet has an identity, thus it has privateKey, publicKey and accountId.
+    //  Those properties should be added to the class itself in the future.
+    //  There will probably be an instance of the hedera client with an operator already set.
     Wallet.prototype.signTransaction = function (transaction) {
-        var _this = this;
-        return (0, properties_1.resolveProperties)(transaction).then(function (tx) {
-            if (tx.from != null) {
-                if ((0, address_1.getAddress)(tx.from) !== _this.address) {
-                    logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-                }
-                delete tx.from;
-            }
-            var signature = _this._signingKey().signDigest((0, keccak256_1.keccak256)((0, transactions_1.serialize)(tx)));
-            return (0, transactions_1.serialize)(tx, signature);
-        });
+        var isBytecodeCreation = transaction.to === undefined;
+        var signableTx;
+        if (isBytecodeCreation) {
+            var txData = transaction.data;
+            var t = Uint8Array.from(Buffer.from(txData));
+            signableTx = sdk_1.FileCreateTransaction.fromBytes(t);
+        }
+        else {
+            // `to` field present
+            // TODO: how to extract the ABI on contract call?
+            // TODO: how to extract constructor arguments for contract create?
+            // TODO: How do we diff ContractCall and ContractCreate ?
+            var customData = transaction.customData, data = transaction.data;
+            console.log(customData);
+            var t = Uint8Array.from(Buffer.from(data));
+            signableTx = sdk_1.Transaction.fromBytes(t);
+        }
+        var privKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
+        var pubKey = sdk_1.PublicKey.fromString(account.operator.publicKey);
+        var sig = privKey.sign(signableTx.toBytes());
+        signableTx.addSignature(pubKey, sig);
+        return Promise.resolve(Buffer.from(signableTx.toBytes()).toString('hex'));
     };
     Wallet.prototype.signMessage = function (message) {
         return __awaiter(this, void 0, void 0, function () {

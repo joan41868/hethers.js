@@ -1,6 +1,6 @@
 "use strict";
 
-import { getAddress } from "@ethersproject/address";
+import { AccountLike, getAddress } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, DataOptions, hexConcat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isBytesLike, SignatureLike, splitSignature, stripZeros, } from "@ethersproject/bytes";
 import { Zero } from "@ethersproject/constants";
@@ -31,7 +31,7 @@ export enum TransactionTypes {
 };
 
 export type UnsignedTransaction = {
-    to?: string;
+    to?: AccountLike;
     nonce?: number;
 
     gasLimit?: BigNumberish;
@@ -193,7 +193,7 @@ function _serializeEip1559(transaction: UnsignedTransaction, signature?: Signatu
         formatNumber(transaction.maxPriorityFeePerGas || 0, "maxPriorityFeePerGas"),
         formatNumber(transaction.maxFeePerGas || 0, "maxFeePerGas"),
         formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        ((transaction.to != null) ? getAddress(transaction.to): "0x"),
+        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
         formatNumber(transaction.value || 0, "value"),
         (transaction.data || "0x"),
         (formatAccessList(transaction.accessList || []))
@@ -215,7 +215,7 @@ function _serializeEip2930(transaction: UnsignedTransaction, signature?: Signatu
         formatNumber(transaction.nonce || 0, "nonce"),
         formatNumber(transaction.gasPrice || 0, "gasPrice"),
         formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        ((transaction.to != null) ? getAddress(transaction.to): "0x"),
+        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
         formatNumber(transaction.value || 0, "value"),
         (transaction.data || "0x"),
         (formatAccessList(transaction.accessList || []))

@@ -781,7 +781,7 @@ testFunctions.push({
         return false;
     },
     execute: async (provider: ethers.providers.Provider) => {
-        const gasPrice = (await provider.getGasPrice()).mul(10);
+        // const gasPrice = (await provider.getGasPrice()).mul(10);
 
         const wallet = fundWallet.connect(provider);
 
@@ -796,7 +796,7 @@ testFunctions.push({
             type: 0,
             to: addr,
             value: 123,
-            gasPrice: gasPrice
+            // gasPrice: gasPrice
         });
 
         await tx.wait();
@@ -817,7 +817,7 @@ testFunctions.push({
         return false;
     },
     execute: async (provider: ethers.providers.Provider) => {
-        const gasPrice = (await provider.getGasPrice()).mul(10);
+        // const gasPrice = (await provider.getGasPrice()).mul(10);
 
         const wallet = fundWallet.connect(provider);
 
@@ -838,7 +838,7 @@ testFunctions.push({
             },
             to: addr,
             value: 123,
-            gasPrice: gasPrice
+            // gasPrice: gasPrice
         });
 
         await tx.wait();

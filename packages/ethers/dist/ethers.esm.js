@@ -25,7 +25,7 @@ var lib_esm$k = /*#__PURE__*/Object.freeze({
 	get recoverAddress () { return recoverAddress; },
 	get accessListify () { return accessListify; },
 	get serialize () { return serialize; },
-	get parse () { return parse; }
+	get parse () { return parse$2; }
 });
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -9337,6 +9337,8 @@ class Signer {
         return __awaiter$3(this, void 0, void 0, function* () {
             this._checkProvider("sendTransaction");
             const tx = yield this.populateTransaction(transaction);
+            // If transaction is ContractCreate (that is no `to` field is present). We must do `n`x Sign Transaction and
+            // `n`x send Transactions
             const signedTx = yield this.signTransaction(tx);
             return yield this.provider.sendTransaction(signedTx);
         });
@@ -9391,9 +9393,9 @@ class Signer {
                 Promise.resolve(tx.from),
                 this.getAddress()
             ]).then((result) => {
-                if (result[0].toLowerCase() !== result[1].toLowerCase()) {
-                    logger$f.throwArgumentError("from address mismatch", "transaction", transaction);
-                }
+                // if (result[0].toLowerCase() !== result[1].toLowerCase()) {
+                //     logger.throwArgumentError("from address mismatch", "transaction", transaction);
+                // }
                 return result[0];
             });
         }
@@ -9414,7 +9416,7 @@ class Signer {
                     if (to == null) {
                         return null;
                     }
-                    const address = yield this.resolveName(to);
+                    const address = yield this.resolveName(to.toString());
                     if (address == null) {
                         logger$f.throwArgumentError("provided ENS name resolves to null", "tx.to", to);
                     }
@@ -9425,12 +9427,11 @@ class Signer {
             }
             // Do not allow mixing pre-eip-1559 and eip-1559 properties
             const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
-            if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
-                logger$f.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
-            }
-            else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
-                logger$f.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
-            }
+            // if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
+            //     logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
+            // } else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
+            //     logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
+            // }
             if ((tx.type === 2 || tx.type == null) && (tx.maxFeePerGas != null && tx.maxPriorityFeePerGas != null)) {
                 // Fully-formed EIP-1559 transaction (skip getFeeData)
                 tx.type = 2;
@@ -9438,9 +9439,7 @@ class Signer {
             else if (tx.type === 0 || tx.type === 1) {
                 // Explicit Legacy or EIP-2930 transaction
                 // Populate missing gasPrice
-                if (tx.gasPrice == null) {
-                    tx.gasPrice = this.getGasPrice();
-                }
+                // if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
             }
             else {
                 // We need to get fee data to determine things
@@ -9451,23 +9450,18 @@ class Signer {
                         // The network supports EIP-1559!
                         // Upgrade transaction from null to eip-1559
                         tx.type = 2;
-                        if (tx.gasPrice != null) {
-                            // Using legacy gasPrice property on an eip-1559 network,
-                            // so use gasPrice as both fee properties
-                            const gasPrice = tx.gasPrice;
-                            delete tx.gasPrice;
-                            tx.maxFeePerGas = gasPrice;
-                            tx.maxPriorityFeePerGas = gasPrice;
-                        }
-                        else {
-                            // Populate missing fee data
-                            if (tx.maxFeePerGas == null) {
-                                tx.maxFeePerGas = feeData.maxFeePerGas;
-                            }
-                            if (tx.maxPriorityFeePerGas == null) {
-                                tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas;
-                            }
-                        }
+                        // if (tx.gasPrice != null) {
+                        // Using legacy gasPrice property on an eip-1559 network,
+                        // so use gasPrice as both fee properties
+                        // const gasPrice = tx.gasPrice;
+                        // delete tx.gasPrice;
+                        // tx.maxFeePerGas = gasPrice;
+                        // tx.maxPriorityFeePerGas = gasPrice;
+                        // } else {
+                        //     Populate missing fee data
+                        // if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
+                        // if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
+                        // }
                     }
                     else if (feeData.gasPrice != null) {
                         // Network doesn't support EIP-1559...
@@ -9478,9 +9472,7 @@ class Signer {
                             });
                         }
                         // Populate missing fee data
-                        if (tx.gasPrice == null) {
-                            tx.gasPrice = feeData.gasPrice;
-                        }
+                        // if (tx.gasPrice == null) { tx.gasPrice = feeData.gasPrice; }
                         // Explicitly set untyped transaction to legacy
                         tx.type = 0;
                     }
@@ -9502,9 +9494,7 @@ class Signer {
                     }
                 }
             }
-            if (tx.nonce == null) {
-                tx.nonce = this.getTransactionCount("pending");
-            }
+            // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
             if (tx.gasLimit == null) {
                 tx.gasLimit = this.estimateGas(tx).catch((error) => {
                     if (forwardErrors.indexOf(error.code) >= 0) {
@@ -13837,12 +13827,13 @@ class HDNode {
             const signingKey = new SigningKey(privateKey);
             defineReadOnly(this, "privateKey", signingKey.privateKey);
             defineReadOnly(this, "publicKey", signingKey.compressedPublicKey);
+            defineReadOnly(this, "alias", computeAlias(this.privateKey));
         }
         else {
             defineReadOnly(this, "privateKey", null);
+            defineReadOnly(this, "alias", null);
             defineReadOnly(this, "publicKey", hexlify(publicKey));
         }
-        defineReadOnly(this, "alias", computeAlias(this.privateKey));
         defineReadOnly(this, "parentFingerprint", parentFingerprint);
         defineReadOnly(this, "fingerprint", hexDataSlice(ripemd160$1(sha256$1(this.publicKey)), 0, 4));
         defineReadOnly(this, "chainCode", chainCode);
@@ -16129,3087 +16120,6 @@ var lib_esm$h = /*#__PURE__*/Object.freeze({
 });
 
 const version$k = "wallet/5.5.0";
-
-"use strict";
-var __awaiter$5 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-const logger$p = new Logger(version$k);
-function isAccount(value) {
-    return value != null && isHexString(value.privateKey, 32);
-}
-function hasMnemonic$1(value) {
-    const mnemonic = value.mnemonic;
-    return (mnemonic && mnemonic.phrase);
-}
-function hasAlias(value) {
-    return isAccount(value) && value.alias != null;
-}
-class Wallet extends Signer {
-    constructor(identity, provider) {
-        logger$p.checkNew(new.target, Wallet);
-        super();
-        if (isAccount(identity) && !SigningKey.isSigningKey(identity)) {
-            const signingKey = new SigningKey(identity.privateKey);
-            defineReadOnly(this, "_signingKey", () => signingKey);
-            if (identity.address || identity.account) {
-                defineReadOnly(this, "address", identity.address ? getAddress(identity.address) : getAddressFromAccount(identity.account));
-                defineReadOnly(this, "account", identity.account ? identity.account : getAccountFromAddress(identity.address));
-            }
-            if (hasAlias(identity)) {
-                defineReadOnly(this, "alias", identity.alias);
-                if (this.alias !== computeAlias(signingKey.privateKey)) {
-                    logger$p.throwArgumentError("privateKey/alias mismatch", "privateKey", "[REDACTED]");
-                }
-            }
-            if (hasMnemonic$1(identity)) {
-                const srcMnemonic = identity.mnemonic;
-                defineReadOnly(this, "_mnemonic", () => ({
-                    phrase: srcMnemonic.phrase,
-                    path: srcMnemonic.path || defaultPath,
-                    locale: srcMnemonic.locale || "en"
-                }));
-                const mnemonic = this.mnemonic;
-                const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
-                if (node.privateKey !== this._signingKey().privateKey) {
-                    logger$p.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
-                }
-            }
-            else {
-                defineReadOnly(this, "_mnemonic", () => null);
-            }
-        }
-        else {
-            if (SigningKey.isSigningKey(identity)) {
-                /* istanbul ignore if */
-                if (identity.curve !== "secp256k1") {
-                    logger$p.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
-                }
-                defineReadOnly(this, "_signingKey", () => identity);
-            }
-            else {
-                // A lot of common tools do not prefix private keys with a 0x (see: #1166)
-                if (typeof (identity) === "string") {
-                    if (identity.match(/^[0-9a-f]*$/i) && identity.length === 64) {
-                        identity = "0x" + identity;
-                    }
-                }
-                const signingKey = new SigningKey(identity);
-                defineReadOnly(this, "_signingKey", () => signingKey);
-            }
-            defineReadOnly(this, "_mnemonic", () => null);
-            defineReadOnly(this, "alias", computeAlias(this._signingKey().privateKey));
-        }
-        /* istanbul ignore if */
-        if (provider && !Provider.isProvider(provider)) {
-            logger$p.throwArgumentError("invalid provider", "provider", provider);
-        }
-        defineReadOnly(this, "provider", provider || null);
-    }
-    get mnemonic() {
-        return this._mnemonic();
-    }
-    get privateKey() {
-        return this._signingKey().privateKey;
-    }
-    get publicKey() {
-        return this._signingKey().publicKey;
-    }
-    getAddress() {
-        return Promise.resolve(this.address);
-    }
-    getAccount() {
-        return Promise.resolve(this.account);
-    }
-    getAlias() {
-        return Promise.resolve(this.alias);
-    }
-    connect(provider) {
-        return new Wallet(this, provider);
-    }
-    connectAccount(accountLike) {
-        const eoa = {
-            privateKey: this._signingKey().privateKey,
-            address: getAddressFromAccount(accountLike),
-            alias: this.alias
-        };
-        return new Wallet(eoa, this.provider);
-    }
-    // TODO to be revised
-    signTransaction(transaction) {
-        return resolveProperties(transaction).then((tx) => {
-            if (tx.from != null) {
-                if (getAddress(tx.from) !== this.address) {
-                    logger$p.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-                }
-                delete tx.from;
-            }
-            const signature = this._signingKey().signDigest(keccak256(serialize(tx)));
-            return serialize(tx, signature);
-        });
-    }
-    signMessage(message) {
-        return __awaiter$5(this, void 0, void 0, function* () {
-            return joinSignature(this._signingKey().signDigest(hashMessage(message)));
-        });
-    }
-    // TODO to be revised
-    _signTypedData(domain, types, value) {
-        return __awaiter$5(this, void 0, void 0, function* () {
-            // Populate any ENS names
-            const populated = yield TypedDataEncoder.resolveNames(domain, types, value, (name) => {
-                if (this.provider == null) {
-                    logger$p.throwError("cannot resolve ENS names without a provider", Logger.errors.UNSUPPORTED_OPERATION, {
-                        operation: "resolveName",
-                        value: name
-                    });
-                }
-                return this.provider.resolveName(name);
-            });
-            return joinSignature(this._signingKey().signDigest(TypedDataEncoder.hash(populated.domain, types, populated.value)));
-        });
-    }
-    encrypt(password, options, progressCallback) {
-        if (typeof (options) === "function" && !progressCallback) {
-            progressCallback = options;
-            options = {};
-        }
-        if (progressCallback && typeof (progressCallback) !== "function") {
-            throw new Error("invalid callback");
-        }
-        if (!options) {
-            options = {};
-        }
-        return encrypt(this, password, options, progressCallback);
-    }
-    /**
-     *  Static methods to create Wallet instances.
-     */
-    static createRandom(options) {
-        let entropy = randomBytes(16);
-        if (!options) {
-            options = {};
-        }
-        if (options.extraEntropy) {
-            entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
-        }
-        const mnemonic = entropyToMnemonic(entropy, options.locale);
-        return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
-    }
-    static fromEncryptedJson(json, password, progressCallback) {
-        return decryptJsonWallet(json, password, progressCallback).then((account) => {
-            return new Wallet(account);
-        });
-    }
-    static fromEncryptedJsonSync(json, password) {
-        return new Wallet(decryptJsonWalletSync(json, password));
-    }
-    static fromMnemonic(mnemonic, path, wordlist) {
-        if (!path) {
-            path = defaultPath;
-        }
-        return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
-    }
-}
-// TODO to be revised
-function verifyMessage(message, signature) {
-    return recoverAddress(hashMessage(message), signature);
-}
-// TODO to be revised
-function verifyTypedData(domain, types, value, signature) {
-    return recoverAddress(TypedDataEncoder.hash(domain, types, value), signature);
-}
-
-var lib_esm$i = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	Wallet: Wallet,
-	verifyMessage: verifyMessage,
-	verifyTypedData: verifyTypedData
-});
-
-const version$l = "web/5.5.0";
-
-"use strict";
-var __awaiter$6 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-function getUrl(href, options) {
-    return __awaiter$6(this, void 0, void 0, function* () {
-        if (options == null) {
-            options = {};
-        }
-        const request = {
-            method: (options.method || "GET"),
-            headers: (options.headers || {}),
-            body: (options.body || undefined),
-        };
-        if (options.skipFetchSetup !== true) {
-            request.mode = "cors"; // no-cors, cors, *same-origin
-            request.cache = "no-cache"; // *default, no-cache, reload, force-cache, only-if-cached
-            request.credentials = "same-origin"; // include, *same-origin, omit
-            request.redirect = "follow"; // manual, *follow, error
-            request.referrer = "client"; // no-referrer, *client
-        }
-        ;
-        const response = yield fetch(href, request);
-        const body = yield response.arrayBuffer();
-        const headers = {};
-        if (response.headers.forEach) {
-            response.headers.forEach((value, key) => {
-                headers[key.toLowerCase()] = value;
-            });
-        }
-        else {
-            ((response.headers).keys)().forEach((key) => {
-                headers[key.toLowerCase()] = response.headers.get(key);
-            });
-        }
-        return {
-            headers: headers,
-            statusCode: response.status,
-            statusMessage: response.statusText,
-            body: arrayify(new Uint8Array(body)),
-        };
-    });
-}
-
-"use strict";
-var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-const logger$q = new Logger(version$l);
-function staller(duration) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, duration);
-    });
-}
-function bodyify(value, type) {
-    if (value == null) {
-        return null;
-    }
-    if (typeof (value) === "string") {
-        return value;
-    }
-    if (isBytesLike(value)) {
-        if (type && (type.split("/")[0] === "text" || type.split(";")[0].trim() === "application/json")) {
-            try {
-                return toUtf8String(value);
-            }
-            catch (error) { }
-            ;
-        }
-        return hexlify(value);
-    }
-    return value;
-}
-// This API is still a work in progress; the future changes will likely be:
-// - ConnectionInfo => FetchDataRequest<T = any>
-// - FetchDataRequest.body? = string | Uint8Array | { contentType: string, data: string | Uint8Array }
-//   - If string => text/plain, Uint8Array => application/octet-stream (if content-type unspecified)
-// - FetchDataRequest.processFunc = (body: Uint8Array, response: FetchDataResponse) => T
-// For this reason, it should be considered internal until the API is finalized
-function _fetchData(connection, body, processFunc) {
-    // How many times to retry in the event of a throttle
-    const attemptLimit = (typeof (connection) === "object" && connection.throttleLimit != null) ? connection.throttleLimit : 12;
-    logger$q.assertArgument((attemptLimit > 0 && (attemptLimit % 1) === 0), "invalid connection throttle limit", "connection.throttleLimit", attemptLimit);
-    const throttleCallback = ((typeof (connection) === "object") ? connection.throttleCallback : null);
-    const throttleSlotInterval = ((typeof (connection) === "object" && typeof (connection.throttleSlotInterval) === "number") ? connection.throttleSlotInterval : 100);
-    logger$q.assertArgument((throttleSlotInterval > 0 && (throttleSlotInterval % 1) === 0), "invalid connection throttle slot interval", "connection.throttleSlotInterval", throttleSlotInterval);
-    const headers = {};
-    let url = null;
-    // @TODO: Allow ConnectionInfo to override some of these values
-    const options = {
-        method: "GET",
-    };
-    let allow304 = false;
-    let timeout = 2 * 60 * 1000;
-    if (typeof (connection) === "string") {
-        url = connection;
-    }
-    else if (typeof (connection) === "object") {
-        if (connection == null || connection.url == null) {
-            logger$q.throwArgumentError("missing URL", "connection.url", connection);
-        }
-        url = connection.url;
-        if (typeof (connection.timeout) === "number" && connection.timeout > 0) {
-            timeout = connection.timeout;
-        }
-        if (connection.headers) {
-            for (const key in connection.headers) {
-                headers[key.toLowerCase()] = { key: key, value: String(connection.headers[key]) };
-                if (["if-none-match", "if-modified-since"].indexOf(key.toLowerCase()) >= 0) {
-                    allow304 = true;
-                }
-            }
-        }
-        options.allowGzip = !!connection.allowGzip;
-        if (connection.user != null && connection.password != null) {
-            if (url.substring(0, 6) !== "https:" && connection.allowInsecureAuthentication !== true) {
-                logger$q.throwError("basic authentication requires a secure https url", Logger.errors.INVALID_ARGUMENT, { argument: "url", url: url, user: connection.user, password: "[REDACTED]" });
-            }
-            const authorization = connection.user + ":" + connection.password;
-            headers["authorization"] = {
-                key: "Authorization",
-                value: "Basic " + encode$1(toUtf8Bytes(authorization))
-            };
-        }
-    }
-    if (body) {
-        options.method = "POST";
-        options.body = body;
-        if (headers["content-type"] == null) {
-            headers["content-type"] = { key: "Content-Type", value: "application/octet-stream" };
-        }
-        if (headers["content-length"] == null) {
-            headers["content-length"] = { key: "Content-Length", value: String(body.length) };
-        }
-    }
-    const flatHeaders = {};
-    Object.keys(headers).forEach((key) => {
-        const header = headers[key];
-        flatHeaders[header.key] = header.value;
-    });
-    options.headers = flatHeaders;
-    const runningTimeout = (function () {
-        let timer = null;
-        const promise = new Promise(function (resolve, reject) {
-            if (timeout) {
-                timer = setTimeout(() => {
-                    if (timer == null) {
-                        return;
-                    }
-                    timer = null;
-                    reject(logger$q.makeError("timeout", Logger.errors.TIMEOUT, {
-                        requestBody: bodyify(options.body, flatHeaders["content-type"]),
-                        requestMethod: options.method,
-                        timeout: timeout,
-                        url: url
-                    }));
-                }, timeout);
-            }
-        });
-        const cancel = function () {
-            if (timer == null) {
-                return;
-            }
-            clearTimeout(timer);
-            timer = null;
-        };
-        return { promise, cancel };
-    })();
-    const runningFetch = (function () {
-        return __awaiter$7(this, void 0, void 0, function* () {
-            for (let attempt = 0; attempt < attemptLimit; attempt++) {
-                let response = null;
-                try {
-                    response = yield getUrl(url, options);
-                    // Exponential back-off throttling
-                    if (response.statusCode === 429 && attempt < attemptLimit) {
-                        let tryAgain = true;
-                        if (throttleCallback) {
-                            tryAgain = yield throttleCallback(attempt, url);
-                        }
-                        if (tryAgain) {
-                            let stall = 0;
-                            const retryAfter = response.headers["retry-after"];
-                            if (typeof (retryAfter) === "string" && retryAfter.match(/^[1-9][0-9]*$/)) {
-                                stall = parseInt(retryAfter) * 1000;
-                            }
-                            else {
-                                stall = throttleSlotInterval * parseInt(String(Math.random() * Math.pow(2, attempt)));
-                            }
-                            //console.log("Stalling 429");
-                            yield staller(stall);
-                            continue;
-                        }
-                    }
-                }
-                catch (error) {
-                    response = error.response;
-                    if (response == null) {
-                        runningTimeout.cancel();
-                        logger$q.throwError("missing response", Logger.errors.SERVER_ERROR, {
-                            requestBody: bodyify(options.body, flatHeaders["content-type"]),
-                            requestMethod: options.method,
-                            serverError: error,
-                            url: url
-                        });
-                    }
-                }
-                let body = response.body;
-                if (allow304 && response.statusCode === 304) {
-                    body = null;
-                }
-                else if (response.statusCode < 200 || response.statusCode >= 300) {
-                    runningTimeout.cancel();
-                    logger$q.throwError("bad response", Logger.errors.SERVER_ERROR, {
-                        status: response.statusCode,
-                        headers: response.headers,
-                        body: bodyify(body, ((response.headers) ? response.headers["content-type"] : null)),
-                        requestBody: bodyify(options.body, flatHeaders["content-type"]),
-                        requestMethod: options.method,
-                        url: url
-                    });
-                }
-                if (processFunc) {
-                    try {
-                        const result = yield processFunc(body, response);
-                        runningTimeout.cancel();
-                        return result;
-                    }
-                    catch (error) {
-                        // Allow the processFunc to trigger a throttle
-                        if (error.throttleRetry && attempt < attemptLimit) {
-                            let tryAgain = true;
-                            if (throttleCallback) {
-                                tryAgain = yield throttleCallback(attempt, url);
-                            }
-                            if (tryAgain) {
-                                const timeout = throttleSlotInterval * parseInt(String(Math.random() * Math.pow(2, attempt)));
-                                //console.log("Stalling callback");
-                                yield staller(timeout);
-                                continue;
-                            }
-                        }
-                        runningTimeout.cancel();
-                        logger$q.throwError("processing response error", Logger.errors.SERVER_ERROR, {
-                            body: bodyify(body, ((response.headers) ? response.headers["content-type"] : null)),
-                            error: error,
-                            requestBody: bodyify(options.body, flatHeaders["content-type"]),
-                            requestMethod: options.method,
-                            url: url
-                        });
-                    }
-                }
-                runningTimeout.cancel();
-                // If we had a processFunc, it either returned a T or threw above.
-                // The "body" is now a Uint8Array.
-                return body;
-            }
-            return logger$q.throwError("failed response", Logger.errors.SERVER_ERROR, {
-                requestBody: bodyify(options.body, flatHeaders["content-type"]),
-                requestMethod: options.method,
-                url: url
-            });
-        });
-    })();
-    return Promise.race([runningTimeout.promise, runningFetch]);
-}
-function fetchJson(connection, json, processFunc) {
-    let processJsonFunc = (value, response) => {
-        let result = null;
-        if (value != null) {
-            try {
-                result = JSON.parse(toUtf8String(value));
-            }
-            catch (error) {
-                logger$q.throwError("invalid JSON", Logger.errors.SERVER_ERROR, {
-                    body: value,
-                    error: error
-                });
-            }
-        }
-        if (processFunc) {
-            result = processFunc(result, response);
-        }
-        return result;
-    };
-    // If we have json to send, we must
-    // - add content-type of application/json (unless already overridden)
-    // - convert the json to bytes
-    let body = null;
-    if (json != null) {
-        body = toUtf8Bytes(json);
-        // Create a connection with the content-type set for JSON
-        const updated = (typeof (connection) === "string") ? ({ url: connection }) : shallowCopy(connection);
-        if (updated.headers) {
-            const hasContentType = (Object.keys(updated.headers).filter((k) => (k.toLowerCase() === "content-type")).length) !== 0;
-            if (!hasContentType) {
-                updated.headers = shallowCopy(updated.headers);
-                updated.headers["content-type"] = "application/json";
-            }
-        }
-        else {
-            updated.headers = { "content-type": "application/json" };
-        }
-        connection = updated;
-    }
-    return _fetchData(connection, body, processJsonFunc);
-}
-function poll(func, options) {
-    if (!options) {
-        options = {};
-    }
-    options = shallowCopy(options);
-    if (options.floor == null) {
-        options.floor = 0;
-    }
-    if (options.ceiling == null) {
-        options.ceiling = 10000;
-    }
-    if (options.interval == null) {
-        options.interval = 250;
-    }
-    return new Promise(function (resolve, reject) {
-        let timer = null;
-        let done = false;
-        // Returns true if cancel was successful. Unsuccessful cancel means we're already done.
-        const cancel = () => {
-            if (done) {
-                return false;
-            }
-            done = true;
-            if (timer) {
-                clearTimeout(timer);
-            }
-            return true;
-        };
-        if (options.timeout) {
-            timer = setTimeout(() => {
-                if (cancel()) {
-                    reject(new Error("timeout"));
-                }
-            }, options.timeout);
-        }
-        const retryLimit = options.retryLimit;
-        let attempt = 0;
-        function check() {
-            return func().then(function (result) {
-                // If we have a result, or are allowed null then we're done
-                if (result !== undefined) {
-                    if (cancel()) {
-                        resolve(result);
-                    }
-                }
-                else if (options.oncePoll) {
-                    options.oncePoll.once("poll", check);
-                }
-                else if (options.onceBlock) {
-                    options.onceBlock.once("block", check);
-                    // Otherwise, exponential back-off (up to 10s) our next request
-                }
-                else if (!done) {
-                    attempt++;
-                    if (attempt > retryLimit) {
-                        if (cancel()) {
-                            reject(new Error("retry limit reached"));
-                        }
-                        return;
-                    }
-                    let timeout = options.interval * parseInt(String(Math.random() * Math.pow(2, attempt)));
-                    if (timeout < options.floor) {
-                        timeout = options.floor;
-                    }
-                    if (timeout > options.ceiling) {
-                        timeout = options.ceiling;
-                    }
-                    setTimeout(check, timeout);
-                }
-                return null;
-            }, function (error) {
-                if (cancel()) {
-                    reject(error);
-                }
-            });
-        }
-        check();
-    });
-}
-
-var lib_esm$j = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	_fetchData: _fetchData,
-	fetchJson: fetchJson,
-	poll: poll
-});
-
-var abi_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$8);
-
-var address_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$5);
-
-var require$$0 = /*@__PURE__*/getAugmentedNamespace(lib_esm$a);
-
-var basex_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$b);
-
-var bytes_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$1);
-
-var hash_1$1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$7);
-
-var hdnode_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$d);
-
-var json_wallets_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$f);
-
-var keccak256_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$3);
-
-var logger_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm);
-
-var sha2_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$c);
-
-var solidity_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$g);
-
-var random_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$e);
-
-var properties_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$2);
-
-var require$$1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$4);
-
-var signing_key_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$9);
-
-var strings_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$6);
-
-var transactions_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$k);
-
-var units_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$h);
-
-var wallet_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$i);
-
-var web_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$j);
-
-var utils$1 = createCommonjsModule(function (module, exports) {
-"use strict";
-var __createBinding = (commonjsGlobal && commonjsGlobal.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (commonjsGlobal && commonjsGlobal.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.formatBytes32String = exports.Utf8ErrorFuncs = exports.toUtf8String = exports.toUtf8CodePoints = exports.toUtf8Bytes = exports._toEscapedUtf8String = exports.nameprep = exports.hexDataSlice = exports.hexDataLength = exports.hexZeroPad = exports.hexValue = exports.hexStripZeros = exports.hexConcat = exports.isHexString = exports.hexlify = exports.base64 = exports.base58 = exports.TransactionDescription = exports.LogDescription = exports.Interface = exports.SigningKey = exports.HDNode = exports.defaultPath = exports.isBytesLike = exports.isBytes = exports.zeroPad = exports.stripZeros = exports.concat = exports.arrayify = exports.shallowCopy = exports.resolveProperties = exports.getStatic = exports.defineReadOnly = exports.deepCopy = exports.checkProperties = exports.poll = exports.fetchJson = exports._fetchData = exports.RLP = exports.Logger = exports.checkResultErrors = exports.FormatTypes = exports.ParamType = exports.FunctionFragment = exports.EventFragment = exports.ErrorFragment = exports.ConstructorFragment = exports.Fragment = exports.defaultAbiCoder = exports.AbiCoder = void 0;
-exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAlias = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.serializeTransaction = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseEther = exports.formatEther = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getChecksumAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.isValidName = exports.namehash = exports.hashMessage = exports.parseBytes32String = void 0;
-exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = void 0;
-
-Object.defineProperty(exports, "AbiCoder", { enumerable: true, get: function () { return abi_1.AbiCoder; } });
-Object.defineProperty(exports, "checkResultErrors", { enumerable: true, get: function () { return abi_1.checkResultErrors; } });
-Object.defineProperty(exports, "ConstructorFragment", { enumerable: true, get: function () { return abi_1.ConstructorFragment; } });
-Object.defineProperty(exports, "defaultAbiCoder", { enumerable: true, get: function () { return abi_1.defaultAbiCoder; } });
-Object.defineProperty(exports, "ErrorFragment", { enumerable: true, get: function () { return abi_1.ErrorFragment; } });
-Object.defineProperty(exports, "EventFragment", { enumerable: true, get: function () { return abi_1.EventFragment; } });
-Object.defineProperty(exports, "FormatTypes", { enumerable: true, get: function () { return abi_1.FormatTypes; } });
-Object.defineProperty(exports, "Fragment", { enumerable: true, get: function () { return abi_1.Fragment; } });
-Object.defineProperty(exports, "FunctionFragment", { enumerable: true, get: function () { return abi_1.FunctionFragment; } });
-Object.defineProperty(exports, "Indexed", { enumerable: true, get: function () { return abi_1.Indexed; } });
-Object.defineProperty(exports, "Interface", { enumerable: true, get: function () { return abi_1.Interface; } });
-Object.defineProperty(exports, "LogDescription", { enumerable: true, get: function () { return abi_1.LogDescription; } });
-Object.defineProperty(exports, "ParamType", { enumerable: true, get: function () { return abi_1.ParamType; } });
-Object.defineProperty(exports, "TransactionDescription", { enumerable: true, get: function () { return abi_1.TransactionDescription; } });
-
-Object.defineProperty(exports, "getAddress", { enumerable: true, get: function () { return address_1.getAddress; } });
-Object.defineProperty(exports, "getChecksumAddress", { enumerable: true, get: function () { return address_1.getChecksumAddress; } });
-Object.defineProperty(exports, "getCreate2Address", { enumerable: true, get: function () { return address_1.getCreate2Address; } });
-Object.defineProperty(exports, "getContractAddress", { enumerable: true, get: function () { return address_1.getContractAddress; } });
-Object.defineProperty(exports, "getIcapAddress", { enumerable: true, get: function () { return address_1.getIcapAddress; } });
-Object.defineProperty(exports, "isAddress", { enumerable: true, get: function () { return address_1.isAddress; } });
-Object.defineProperty(exports, "getAccountFromAddress", { enumerable: true, get: function () { return address_1.getAccountFromAddress; } });
-Object.defineProperty(exports, "getAddressFromAccount", { enumerable: true, get: function () { return address_1.getAddressFromAccount; } });
-Object.defineProperty(exports, "parseAccount", { enumerable: true, get: function () { return address_1.parseAccount; } });
-var base64 = __importStar(require$$0);
-exports.base64 = base64;
-
-Object.defineProperty(exports, "base58", { enumerable: true, get: function () { return basex_1.Base58; } });
-
-Object.defineProperty(exports, "arrayify", { enumerable: true, get: function () { return bytes_1.arrayify; } });
-Object.defineProperty(exports, "concat", { enumerable: true, get: function () { return bytes_1.concat; } });
-Object.defineProperty(exports, "hexConcat", { enumerable: true, get: function () { return bytes_1.hexConcat; } });
-Object.defineProperty(exports, "hexDataSlice", { enumerable: true, get: function () { return bytes_1.hexDataSlice; } });
-Object.defineProperty(exports, "hexDataLength", { enumerable: true, get: function () { return bytes_1.hexDataLength; } });
-Object.defineProperty(exports, "hexlify", { enumerable: true, get: function () { return bytes_1.hexlify; } });
-Object.defineProperty(exports, "hexStripZeros", { enumerable: true, get: function () { return bytes_1.hexStripZeros; } });
-Object.defineProperty(exports, "hexValue", { enumerable: true, get: function () { return bytes_1.hexValue; } });
-Object.defineProperty(exports, "hexZeroPad", { enumerable: true, get: function () { return bytes_1.hexZeroPad; } });
-Object.defineProperty(exports, "isBytes", { enumerable: true, get: function () { return bytes_1.isBytes; } });
-Object.defineProperty(exports, "isBytesLike", { enumerable: true, get: function () { return bytes_1.isBytesLike; } });
-Object.defineProperty(exports, "isHexString", { enumerable: true, get: function () { return bytes_1.isHexString; } });
-Object.defineProperty(exports, "joinSignature", { enumerable: true, get: function () { return bytes_1.joinSignature; } });
-Object.defineProperty(exports, "zeroPad", { enumerable: true, get: function () { return bytes_1.zeroPad; } });
-Object.defineProperty(exports, "splitSignature", { enumerable: true, get: function () { return bytes_1.splitSignature; } });
-Object.defineProperty(exports, "stripZeros", { enumerable: true, get: function () { return bytes_1.stripZeros; } });
-
-Object.defineProperty(exports, "_TypedDataEncoder", { enumerable: true, get: function () { return hash_1$1._TypedDataEncoder; } });
-Object.defineProperty(exports, "hashMessage", { enumerable: true, get: function () { return hash_1$1.hashMessage; } });
-Object.defineProperty(exports, "id", { enumerable: true, get: function () { return hash_1$1.id; } });
-Object.defineProperty(exports, "isValidName", { enumerable: true, get: function () { return hash_1$1.isValidName; } });
-Object.defineProperty(exports, "namehash", { enumerable: true, get: function () { return hash_1$1.namehash; } });
-
-Object.defineProperty(exports, "defaultPath", { enumerable: true, get: function () { return hdnode_1.defaultPath; } });
-Object.defineProperty(exports, "entropyToMnemonic", { enumerable: true, get: function () { return hdnode_1.entropyToMnemonic; } });
-Object.defineProperty(exports, "getAccountPath", { enumerable: true, get: function () { return hdnode_1.getAccountPath; } });
-Object.defineProperty(exports, "HDNode", { enumerable: true, get: function () { return hdnode_1.HDNode; } });
-Object.defineProperty(exports, "isValidMnemonic", { enumerable: true, get: function () { return hdnode_1.isValidMnemonic; } });
-Object.defineProperty(exports, "mnemonicToEntropy", { enumerable: true, get: function () { return hdnode_1.mnemonicToEntropy; } });
-Object.defineProperty(exports, "mnemonicToSeed", { enumerable: true, get: function () { return hdnode_1.mnemonicToSeed; } });
-
-Object.defineProperty(exports, "getJsonWalletAddress", { enumerable: true, get: function () { return json_wallets_1.getJsonWalletAddress; } });
-
-Object.defineProperty(exports, "keccak256", { enumerable: true, get: function () { return keccak256_1.keccak256; } });
-
-Object.defineProperty(exports, "Logger", { enumerable: true, get: function () { return logger_1.Logger; } });
-
-Object.defineProperty(exports, "computeHmac", { enumerable: true, get: function () { return sha2_1.computeHmac; } });
-Object.defineProperty(exports, "ripemd160", { enumerable: true, get: function () { return sha2_1.ripemd160; } });
-Object.defineProperty(exports, "sha256", { enumerable: true, get: function () { return sha2_1.sha256; } });
-Object.defineProperty(exports, "sha512", { enumerable: true, get: function () { return sha2_1.sha512; } });
-
-Object.defineProperty(exports, "solidityKeccak256", { enumerable: true, get: function () { return solidity_1.keccak256; } });
-Object.defineProperty(exports, "solidityPack", { enumerable: true, get: function () { return solidity_1.pack; } });
-Object.defineProperty(exports, "soliditySha256", { enumerable: true, get: function () { return solidity_1.sha256; } });
-
-Object.defineProperty(exports, "randomBytes", { enumerable: true, get: function () { return random_1.randomBytes; } });
-Object.defineProperty(exports, "shuffled", { enumerable: true, get: function () { return random_1.shuffled; } });
-
-Object.defineProperty(exports, "checkProperties", { enumerable: true, get: function () { return properties_1.checkProperties; } });
-Object.defineProperty(exports, "deepCopy", { enumerable: true, get: function () { return properties_1.deepCopy; } });
-Object.defineProperty(exports, "defineReadOnly", { enumerable: true, get: function () { return properties_1.defineReadOnly; } });
-Object.defineProperty(exports, "getStatic", { enumerable: true, get: function () { return properties_1.getStatic; } });
-Object.defineProperty(exports, "resolveProperties", { enumerable: true, get: function () { return properties_1.resolveProperties; } });
-Object.defineProperty(exports, "shallowCopy", { enumerable: true, get: function () { return properties_1.shallowCopy; } });
-var RLP = __importStar(require$$1);
-exports.RLP = RLP;
-
-Object.defineProperty(exports, "computePublicKey", { enumerable: true, get: function () { return signing_key_1.computePublicKey; } });
-Object.defineProperty(exports, "recoverPublicKey", { enumerable: true, get: function () { return signing_key_1.recoverPublicKey; } });
-Object.defineProperty(exports, "SigningKey", { enumerable: true, get: function () { return signing_key_1.SigningKey; } });
-
-Object.defineProperty(exports, "formatBytes32String", { enumerable: true, get: function () { return strings_1.formatBytes32String; } });
-Object.defineProperty(exports, "nameprep", { enumerable: true, get: function () { return strings_1.nameprep; } });
-Object.defineProperty(exports, "parseBytes32String", { enumerable: true, get: function () { return strings_1.parseBytes32String; } });
-Object.defineProperty(exports, "_toEscapedUtf8String", { enumerable: true, get: function () { return strings_1._toEscapedUtf8String; } });
-Object.defineProperty(exports, "toUtf8Bytes", { enumerable: true, get: function () { return strings_1.toUtf8Bytes; } });
-Object.defineProperty(exports, "toUtf8CodePoints", { enumerable: true, get: function () { return strings_1.toUtf8CodePoints; } });
-Object.defineProperty(exports, "toUtf8String", { enumerable: true, get: function () { return strings_1.toUtf8String; } });
-Object.defineProperty(exports, "Utf8ErrorFuncs", { enumerable: true, get: function () { return strings_1.Utf8ErrorFuncs; } });
-
-Object.defineProperty(exports, "accessListify", { enumerable: true, get: function () { return transactions_1.accessListify; } });
-Object.defineProperty(exports, "computeAddress", { enumerable: true, get: function () { return transactions_1.computeAddress; } });
-Object.defineProperty(exports, "computeAlias", { enumerable: true, get: function () { return transactions_1.computeAlias; } });
-Object.defineProperty(exports, "parseTransaction", { enumerable: true, get: function () { return transactions_1.parse; } });
-Object.defineProperty(exports, "recoverAddress", { enumerable: true, get: function () { return transactions_1.recoverAddress; } });
-Object.defineProperty(exports, "serializeTransaction", { enumerable: true, get: function () { return transactions_1.serialize; } });
-Object.defineProperty(exports, "TransactionTypes", { enumerable: true, get: function () { return transactions_1.TransactionTypes; } });
-
-Object.defineProperty(exports, "commify", { enumerable: true, get: function () { return units_1.commify; } });
-Object.defineProperty(exports, "formatEther", { enumerable: true, get: function () { return units_1.formatEther; } });
-Object.defineProperty(exports, "parseEther", { enumerable: true, get: function () { return units_1.parseEther; } });
-Object.defineProperty(exports, "formatUnits", { enumerable: true, get: function () { return units_1.formatUnits; } });
-Object.defineProperty(exports, "parseUnits", { enumerable: true, get: function () { return units_1.parseUnits; } });
-
-Object.defineProperty(exports, "verifyMessage", { enumerable: true, get: function () { return wallet_1.verifyMessage; } });
-Object.defineProperty(exports, "verifyTypedData", { enumerable: true, get: function () { return wallet_1.verifyTypedData; } });
-
-Object.defineProperty(exports, "_fetchData", { enumerable: true, get: function () { return web_1._fetchData; } });
-Object.defineProperty(exports, "fetchJson", { enumerable: true, get: function () { return web_1.fetchJson; } });
-Object.defineProperty(exports, "poll", { enumerable: true, get: function () { return web_1.poll; } });
-////////////////////////
-// Enums
-var sha2_2 = sha2_1;
-Object.defineProperty(exports, "SupportedAlgorithm", { enumerable: true, get: function () { return sha2_2.SupportedAlgorithm; } });
-var strings_2 = strings_1;
-Object.defineProperty(exports, "UnicodeNormalizationForm", { enumerable: true, get: function () { return strings_2.UnicodeNormalizationForm; } });
-Object.defineProperty(exports, "Utf8ErrorReason", { enumerable: true, get: function () { return strings_2.Utf8ErrorReason; } });
-
-});
-
-var utils$2 = /*@__PURE__*/getDefaultExportFromCjs(utils$1);
-
-"use strict";
-const logger$r = new Logger(version$c);
-var TransactionTypes;
-(function (TransactionTypes) {
-    TransactionTypes[TransactionTypes["legacy"] = 0] = "legacy";
-    TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
-    TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
-})(TransactionTypes || (TransactionTypes = {}));
-;
-///////////////////////////////
-function handleAddress(value) {
-    if (value === "0x") {
-        return null;
-    }
-    return getAddress(value);
-}
-function handleNumber(value) {
-    if (value === "0x") {
-        return Zero$1;
-    }
-    return BigNumber.from(value);
-}
-// Legacy Transaction Fields
-const transactionFields = [
-    { name: "nonce", maxLength: 32, numeric: true },
-    { name: "gasPrice", maxLength: 32, numeric: true },
-    { name: "gasLimit", maxLength: 32, numeric: true },
-    { name: "to", length: 20 },
-    { name: "value", maxLength: 32, numeric: true },
-    { name: "data" },
-];
-const allowedTransactionKeys$1 = {
-    chainId: true, data: true, gasLimit: true, gasPrice: true, nonce: true, to: true, type: true, value: true
-};
-function computeAddress(key) {
-    const publicKey = computePublicKey(key);
-    return getAddress(hexDataSlice(keccak256(hexDataSlice(publicKey, 1)), 12));
-}
-function computeAlias(key) {
-    const publicKey = computePublicKey(key);
-    return computeAliasFromPubKey(publicKey);
-}
-function computeAliasFromPubKey(pubKey) {
-    return `0.0.${utils$1.base64.encode(pubKey)}`;
-}
-function recoverAddress(digest, signature) {
-    return computeAddress(recoverPublicKey(arrayify(digest), signature));
-}
-function formatNumber(value, name) {
-    const result = stripZeros(BigNumber.from(value).toHexString());
-    if (result.length > 32) {
-        logger$r.throwArgumentError("invalid length for " + name, ("transaction:" + name), value);
-    }
-    return result;
-}
-function accessSetify(addr, storageKeys) {
-    return {
-        address: getAddress(addr),
-        storageKeys: (storageKeys || []).map((storageKey, index) => {
-            if (hexDataLength(storageKey) !== 32) {
-                logger$r.throwArgumentError("invalid access list storageKey", `accessList[${addr}:${index}]`, storageKey);
-            }
-            return storageKey.toLowerCase();
-        })
-    };
-}
-function accessListify(value) {
-    if (Array.isArray(value)) {
-        return value.map((set, index) => {
-            if (Array.isArray(set)) {
-                if (set.length > 2) {
-                    logger$r.throwArgumentError("access list expected to be [ address, storageKeys[] ]", `value[${index}]`, set);
-                }
-                return accessSetify(set[0], set[1]);
-            }
-            return accessSetify(set.address, set.storageKeys);
-        });
-    }
-    const result = Object.keys(value).map((addr) => {
-        const storageKeys = value[addr].reduce((accum, storageKey) => {
-            accum[storageKey] = true;
-            return accum;
-        }, {});
-        return accessSetify(addr, Object.keys(storageKeys).sort());
-    });
-    result.sort((a, b) => (a.address.localeCompare(b.address)));
-    return result;
-}
-function formatAccessList(value) {
-    return accessListify(value).map((set) => [set.address, set.storageKeys]);
-}
-function _serializeEip1559(transaction, signature) {
-    // If there is an explicit gasPrice, make sure it matches the
-    // EIP-1559 fees; otherwise they may not understand what they
-    // think they are setting in terms of fee.
-    if (transaction.gasPrice != null) {
-        const gasPrice = BigNumber.from(transaction.gasPrice);
-        const maxFeePerGas = BigNumber.from(transaction.maxFeePerGas || 0);
-        if (!gasPrice.eq(maxFeePerGas)) {
-            logger$r.throwArgumentError("mismatch EIP-1559 gasPrice != maxFeePerGas", "tx", {
-                gasPrice, maxFeePerGas
-            });
-        }
-    }
-    const fields = [
-        formatNumber(transaction.chainId || 0, "chainId"),
-        formatNumber(transaction.nonce || 0, "nonce"),
-        formatNumber(transaction.maxPriorityFeePerGas || 0, "maxPriorityFeePerGas"),
-        formatNumber(transaction.maxFeePerGas || 0, "maxFeePerGas"),
-        formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        ((transaction.to != null) ? getAddress(transaction.to) : "0x"),
-        formatNumber(transaction.value || 0, "value"),
-        (transaction.data || "0x"),
-        (formatAccessList(transaction.accessList || []))
-    ];
-    if (signature) {
-        const sig = splitSignature(signature);
-        fields.push(formatNumber(sig.recoveryParam, "recoveryParam"));
-        fields.push(stripZeros(sig.r));
-        fields.push(stripZeros(sig.s));
-    }
-    return hexConcat(["0x02", encode(fields)]);
-}
-function _serializeEip2930(transaction, signature) {
-    const fields = [
-        formatNumber(transaction.chainId || 0, "chainId"),
-        formatNumber(transaction.nonce || 0, "nonce"),
-        formatNumber(transaction.gasPrice || 0, "gasPrice"),
-        formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        ((transaction.to != null) ? getAddress(transaction.to) : "0x"),
-        formatNumber(transaction.value || 0, "value"),
-        (transaction.data || "0x"),
-        (formatAccessList(transaction.accessList || []))
-    ];
-    if (signature) {
-        const sig = splitSignature(signature);
-        fields.push(formatNumber(sig.recoveryParam, "recoveryParam"));
-        fields.push(stripZeros(sig.r));
-        fields.push(stripZeros(sig.s));
-    }
-    return hexConcat(["0x01", encode(fields)]);
-}
-// Legacy Transactions and EIP-155
-function _serialize(transaction, signature) {
-    checkProperties(transaction, allowedTransactionKeys$1);
-    const raw = [];
-    transactionFields.forEach(function (fieldInfo) {
-        let value = transaction[fieldInfo.name] || ([]);
-        const options = {};
-        if (fieldInfo.numeric) {
-            options.hexPad = "left";
-        }
-        value = arrayify(hexlify(value, options));
-        // Fixed-width field
-        if (fieldInfo.length && value.length !== fieldInfo.length && value.length > 0) {
-            logger$r.throwArgumentError("invalid length for " + fieldInfo.name, ("transaction:" + fieldInfo.name), value);
-        }
-        // Variable-width (with a maximum)
-        if (fieldInfo.maxLength) {
-            value = stripZeros(value);
-            if (value.length > fieldInfo.maxLength) {
-                logger$r.throwArgumentError("invalid length for " + fieldInfo.name, ("transaction:" + fieldInfo.name), value);
-            }
-        }
-        raw.push(hexlify(value));
-    });
-    let chainId = 0;
-    if (transaction.chainId != null) {
-        // A chainId was provided; if non-zero we'll use EIP-155
-        chainId = transaction.chainId;
-        if (typeof (chainId) !== "number") {
-            logger$r.throwArgumentError("invalid transaction.chainId", "transaction", transaction);
-        }
-    }
-    else if (signature && !isBytesLike(signature) && signature.v > 28) {
-        // No chainId provided, but the signature is signing with EIP-155; derive chainId
-        chainId = Math.floor((signature.v - 35) / 2);
-    }
-    // We have an EIP-155 transaction (chainId was specified and non-zero)
-    if (chainId !== 0) {
-        raw.push(hexlify(chainId)); // @TODO: hexValue?
-        raw.push("0x");
-        raw.push("0x");
-    }
-    // Requesting an unsigned transaction
-    if (!signature) {
-        return encode(raw);
-    }
-    // The splitSignature will ensure the transaction has a recoveryParam in the
-    // case that the signTransaction function only adds a v.
-    const sig = splitSignature(signature);
-    // We pushed a chainId and null r, s on for hashing only; remove those
-    let v = 27 + sig.recoveryParam;
-    if (chainId !== 0) {
-        raw.pop();
-        raw.pop();
-        raw.pop();
-        v += chainId * 2 + 8;
-        // If an EIP-155 v (directly or indirectly; maybe _vs) was provided, check it!
-        if (sig.v > 28 && sig.v !== v) {
-            logger$r.throwArgumentError("transaction.chainId/signature.v mismatch", "signature", signature);
-        }
-    }
-    else if (sig.v !== v) {
-        logger$r.throwArgumentError("transaction.chainId/signature.v mismatch", "signature", signature);
-    }
-    raw.push(hexlify(v));
-    raw.push(stripZeros(arrayify(sig.r)));
-    raw.push(stripZeros(arrayify(sig.s)));
-    return encode(raw);
-}
-function serialize(transaction, signature) {
-    // Legacy and EIP-155 Transactions
-    if (transaction.type == null || transaction.type === 0) {
-        if (transaction.accessList != null) {
-            logger$r.throwArgumentError("untyped transactions do not support accessList; include type: 1", "transaction", transaction);
-        }
-        return _serialize(transaction, signature);
-    }
-    // Typed Transactions (EIP-2718)
-    switch (transaction.type) {
-        case 1:
-            return _serializeEip2930(transaction, signature);
-        case 2:
-            return _serializeEip1559(transaction, signature);
-        default:
-            break;
-    }
-    return logger$r.throwError(`unsupported transaction type: ${transaction.type}`, Logger.errors.UNSUPPORTED_OPERATION, {
-        operation: "serializeTransaction",
-        transactionType: transaction.type
-    });
-}
-function _parseEipSignature(tx, fields, serialize) {
-    try {
-        const recid = handleNumber(fields[0]).toNumber();
-        if (recid !== 0 && recid !== 1) {
-            throw new Error("bad recid");
-        }
-        tx.v = recid;
-    }
-    catch (error) {
-        logger$r.throwArgumentError("invalid v for transaction type: 1", "v", fields[0]);
-    }
-    tx.r = hexZeroPad(fields[1], 32);
-    tx.s = hexZeroPad(fields[2], 32);
-    try {
-        const digest = keccak256(serialize(tx));
-        tx.from = recoverAddress(digest, { r: tx.r, s: tx.s, recoveryParam: tx.v });
-    }
-    catch (error) {
-        console.log(error);
-    }
-}
-function _parseEip1559(payload) {
-    const transaction = decode(payload.slice(1));
-    if (transaction.length !== 9 && transaction.length !== 12) {
-        logger$r.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
-    }
-    const maxPriorityFeePerGas = handleNumber(transaction[2]);
-    const maxFeePerGas = handleNumber(transaction[3]);
-    const tx = {
-        type: 2,
-        chainId: handleNumber(transaction[0]).toNumber(),
-        nonce: handleNumber(transaction[1]).toNumber(),
-        maxPriorityFeePerGas: maxPriorityFeePerGas,
-        maxFeePerGas: maxFeePerGas,
-        gasPrice: null,
-        gasLimit: handleNumber(transaction[4]),
-        to: handleAddress(transaction[5]),
-        value: handleNumber(transaction[6]),
-        data: transaction[7],
-        accessList: accessListify(transaction[8]),
-    };
-    // Unsigned EIP-1559 Transaction
-    if (transaction.length === 9) {
-        return tx;
-    }
-    tx.hash = keccak256(payload);
-    _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
-    return tx;
-}
-function _parseEip2930(payload) {
-    const transaction = decode(payload.slice(1));
-    if (transaction.length !== 8 && transaction.length !== 11) {
-        logger$r.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
-    }
-    const tx = {
-        type: 1,
-        chainId: handleNumber(transaction[0]).toNumber(),
-        nonce: handleNumber(transaction[1]).toNumber(),
-        gasPrice: handleNumber(transaction[2]),
-        gasLimit: handleNumber(transaction[3]),
-        to: handleAddress(transaction[4]),
-        value: handleNumber(transaction[5]),
-        data: transaction[6],
-        accessList: accessListify(transaction[7])
-    };
-    // Unsigned EIP-2930 Transaction
-    if (transaction.length === 8) {
-        return tx;
-    }
-    tx.hash = keccak256(payload);
-    _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
-    return tx;
-}
-// Legacy Transactions and EIP-155
-function _parse(rawTransaction) {
-    const transaction = decode(rawTransaction);
-    if (transaction.length !== 9 && transaction.length !== 6) {
-        logger$r.throwArgumentError("invalid raw transaction", "rawTransaction", rawTransaction);
-    }
-    const tx = {
-        nonce: handleNumber(transaction[0]).toNumber(),
-        gasPrice: handleNumber(transaction[1]),
-        gasLimit: handleNumber(transaction[2]),
-        to: handleAddress(transaction[3]),
-        value: handleNumber(transaction[4]),
-        data: transaction[5],
-        chainId: 0
-    };
-    // Legacy unsigned transaction
-    if (transaction.length === 6) {
-        return tx;
-    }
-    try {
-        tx.v = BigNumber.from(transaction[6]).toNumber();
-    }
-    catch (error) {
-        console.log(error);
-        return tx;
-    }
-    tx.r = hexZeroPad(transaction[7], 32);
-    tx.s = hexZeroPad(transaction[8], 32);
-    if (BigNumber.from(tx.r).isZero() && BigNumber.from(tx.s).isZero()) {
-        // EIP-155 unsigned transaction
-        tx.chainId = tx.v;
-        tx.v = 0;
-    }
-    else {
-        // Signed Transaction
-        tx.chainId = Math.floor((tx.v - 35) / 2);
-        if (tx.chainId < 0) {
-            tx.chainId = 0;
-        }
-        let recoveryParam = tx.v - 27;
-        const raw = transaction.slice(0, 6);
-        if (tx.chainId !== 0) {
-            raw.push(hexlify(tx.chainId));
-            raw.push("0x");
-            raw.push("0x");
-            recoveryParam -= tx.chainId * 2 + 8;
-        }
-        const digest = keccak256(encode(raw));
-        try {
-            tx.from = recoverAddress(digest, { r: hexlify(tx.r), s: hexlify(tx.s), recoveryParam: recoveryParam });
-        }
-        catch (error) {
-            console.log(error);
-        }
-        tx.hash = keccak256(rawTransaction);
-    }
-    tx.type = null;
-    return tx;
-}
-function parse(rawTransaction) {
-    const payload = arrayify(rawTransaction);
-    // Legacy and EIP-155 Transactions
-    if (payload[0] > 0x7f) {
-        return _parse(payload);
-    }
-    // Typed Transaction (EIP-2718)
-    switch (payload[0]) {
-        case 1:
-            return _parseEip2930(payload);
-        case 2:
-            return _parseEip1559(payload);
-        default:
-            break;
-    }
-    return logger$r.throwError(`unsupported transaction type: ${payload[0]}`, Logger.errors.UNSUPPORTED_OPERATION, {
-        operation: "parseTransaction",
-        transactionType: payload[0]
-    });
-}
-
-const version$m = "contracts/5.5.0";
-
-"use strict";
-var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-const logger$s = new Logger(version$m);
-;
-;
-///////////////////////////////
-const allowedTransactionKeys$2 = {
-    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, nonce: true, to: true, value: true,
-    type: true, accessList: true,
-    maxFeePerGas: true, maxPriorityFeePerGas: true,
-    customData: true
-};
-function resolveName(resolver, nameOrPromise) {
-    return __awaiter$8(this, void 0, void 0, function* () {
-        const name = yield nameOrPromise;
-        if (typeof (name) !== "string") {
-            logger$s.throwArgumentError("invalid address or ENS name", "name", name);
-        }
-        // If it is already an address, just use it (after adding checksum)
-        try {
-            return getAddress(name);
-        }
-        catch (error) { }
-        if (!resolver) {
-            logger$s.throwError("a provider or signer is needed to resolve ENS names", Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: "resolveName"
-            });
-        }
-        const address = yield resolver.resolveName(name);
-        if (address == null) {
-            logger$s.throwArgumentError("resolver or addr is not configured for ENS name", "name", name);
-        }
-        return address;
-    });
-}
-// Recursively replaces ENS names with promises to resolve the name and resolves all properties
-function resolveAddresses(resolver, value, paramType) {
-    return __awaiter$8(this, void 0, void 0, function* () {
-        if (Array.isArray(paramType)) {
-            return yield Promise.all(paramType.map((paramType, index) => {
-                return resolveAddresses(resolver, ((Array.isArray(value)) ? value[index] : value[paramType.name]), paramType);
-            }));
-        }
-        if (paramType.type === "address") {
-            return yield resolveName(resolver, value);
-        }
-        if (paramType.type === "tuple") {
-            return yield resolveAddresses(resolver, value, paramType.components);
-        }
-        if (paramType.baseType === "array") {
-            if (!Array.isArray(value)) {
-                return Promise.reject(logger$s.makeError("invalid value for array", Logger.errors.INVALID_ARGUMENT, {
-                    argument: "value",
-                    value
-                }));
-            }
-            return yield Promise.all(value.map((v) => resolveAddresses(resolver, v, paramType.arrayChildren)));
-        }
-        return value;
-    });
-}
-function populateTransaction(contract, fragment, args) {
-    return __awaiter$8(this, void 0, void 0, function* () {
-        // If an extra argument is given, it is overrides
-        let overrides = {};
-        if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-            overrides = shallowCopy(args.pop());
-        }
-        // Make sure the parameter count matches
-        logger$s.checkArgumentCount(args.length, fragment.inputs.length, "passed to contract");
-        // Populate "from" override (allow promises)
-        if (contract.signer) {
-            if (overrides.from) {
-                // Contracts with a Signer are from the Signer's frame-of-reference;
-                // but we allow overriding "from" if it matches the signer
-                overrides.from = resolveProperties({
-                    override: resolveName(contract.signer, overrides.from),
-                    signer: contract.signer.getAddress()
-                }).then((check) => __awaiter$8(this, void 0, void 0, function* () {
-                    if (getAddress(check.signer) !== check.override) {
-                        logger$s.throwError("Contract with a Signer cannot override from", Logger.errors.UNSUPPORTED_OPERATION, {
-                            operation: "overrides.from"
-                        });
-                    }
-                    return check.override;
-                }));
-            }
-            else {
-                overrides.from = contract.signer.getAddress();
-            }
-        }
-        else if (overrides.from) {
-            overrides.from = resolveName(contract.provider, overrides.from);
-            //} else {
-            // Contracts without a signer can override "from", and if
-            // unspecified the zero address is used
-            //overrides.from = AddressZero;
-        }
-        // Wait for all dependencies to be resolved (prefer the signer over the provider)
-        const resolved = yield resolveProperties({
-            args: resolveAddresses(contract.signer || contract.provider, args, fragment.inputs),
-            address: contract.resolvedAddress,
-            overrides: (resolveProperties(overrides) || {})
-        });
-        // The ABI coded transaction
-        const data = contract.interface.encodeFunctionData(fragment, resolved.args);
-        const tx = {
-            data: data,
-            to: resolved.address
-        };
-        // Resolved Overrides
-        const ro = resolved.overrides;
-        // Populate simple overrides
-        if (ro.nonce != null) {
-            tx.nonce = BigNumber.from(ro.nonce).toNumber();
-        }
-        if (ro.gasLimit != null) {
-            tx.gasLimit = BigNumber.from(ro.gasLimit);
-        }
-        if (ro.gasPrice != null) {
-            tx.gasPrice = BigNumber.from(ro.gasPrice);
-        }
-        if (ro.maxFeePerGas != null) {
-            tx.maxFeePerGas = BigNumber.from(ro.maxFeePerGas);
-        }
-        if (ro.maxPriorityFeePerGas != null) {
-            tx.maxPriorityFeePerGas = BigNumber.from(ro.maxPriorityFeePerGas);
-        }
-        if (ro.from != null) {
-            tx.from = ro.from;
-        }
-        if (ro.type != null) {
-            tx.type = ro.type;
-        }
-        if (ro.accessList != null) {
-            tx.accessList = accessListify(ro.accessList);
-        }
-        // If there was no "gasLimit" override, but the ABI specifies a default, use it
-        if (tx.gasLimit == null && fragment.gas != null) {
-            // Compute the intrinsic gas cost for this transaction
-            // @TODO: This is based on the yellow paper as of Petersburg; this is something
-            // we may wish to parameterize in v6 as part of the Network object. Since this
-            // is always a non-nil to address, we can ignore G_create, but may wish to add
-            // similar logic to the ContractFactory.
-            let intrinsic = 21000;
-            const bytes = arrayify(data);
-            for (let i = 0; i < bytes.length; i++) {
-                intrinsic += 4;
-                if (bytes[i]) {
-                    intrinsic += 64;
-                }
-            }
-            tx.gasLimit = BigNumber.from(fragment.gas).add(intrinsic);
-        }
-        // Populate "value" override
-        if (ro.value) {
-            const roValue = BigNumber.from(ro.value);
-            if (!roValue.isZero() && !fragment.payable) {
-                logger$s.throwError("non-payable method cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "overrides.value",
-                    value: overrides.value
-                });
-            }
-            tx.value = roValue;
-        }
-        if (ro.customData) {
-            tx.customData = shallowCopy(ro.customData);
-        }
-        // Remove the overrides
-        delete overrides.nonce;
-        delete overrides.gasLimit;
-        delete overrides.gasPrice;
-        delete overrides.from;
-        delete overrides.value;
-        delete overrides.type;
-        delete overrides.accessList;
-        delete overrides.maxFeePerGas;
-        delete overrides.maxPriorityFeePerGas;
-        delete overrides.customData;
-        // Make sure there are no stray overrides, which may indicate a
-        // typo or using an unsupported key.
-        const leftovers = Object.keys(overrides).filter((key) => (overrides[key] != null));
-        if (leftovers.length) {
-            logger$s.throwError(`cannot override ${leftovers.map((l) => JSON.stringify(l)).join(",")}`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: "overrides",
-                overrides: leftovers
-            });
-        }
-        return tx;
-    });
-}
-function buildPopulate(contract, fragment) {
-    return function (...args) {
-        return populateTransaction(contract, fragment, args);
-    };
-}
-function buildEstimate(contract, fragment) {
-    const signerOrProvider = (contract.signer || contract.provider);
-    return function (...args) {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            if (!signerOrProvider) {
-                logger$s.throwError("estimate require a provider or signer", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "estimateGas"
-                });
-            }
-            const tx = yield populateTransaction(contract, fragment, args);
-            return yield signerOrProvider.estimateGas(tx);
-        });
-    };
-}
-function addContractWait(contract, tx) {
-    const wait = tx.wait.bind(tx);
-    tx.wait = (confirmations) => {
-        return wait(confirmations).then((receipt) => {
-            receipt.events = receipt.logs.map((log) => {
-                let event = deepCopy(log);
-                let parsed = null;
-                try {
-                    parsed = contract.interface.parseLog(log);
-                }
-                catch (e) { }
-                // Successfully parsed the event log; include it
-                if (parsed) {
-                    event.args = parsed.args;
-                    event.decode = (data, topics) => {
-                        return contract.interface.decodeEventLog(parsed.eventFragment, data, topics);
-                    };
-                    event.event = parsed.name;
-                    event.eventSignature = parsed.signature;
-                }
-                // Useful operations
-                event.removeListener = () => { return contract.provider; };
-                event.getBlock = () => {
-                    return contract.provider.getBlock(receipt.blockHash);
-                };
-                event.getTransaction = () => {
-                    return contract.provider.getTransaction(receipt.transactionHash);
-                };
-                event.getTransactionReceipt = () => {
-                    return Promise.resolve(receipt);
-                };
-                return event;
-            });
-            return receipt;
-        });
-    };
-}
-function buildCall(contract, fragment, collapseSimple) {
-    const signerOrProvider = (contract.signer || contract.provider);
-    return function (...args) {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            // Extract the "blockTag" override if present
-            let blockTag = undefined;
-            if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-                const overrides = shallowCopy(args.pop());
-                if (overrides.blockTag != null) {
-                    blockTag = yield overrides.blockTag;
-                }
-                delete overrides.blockTag;
-                args.push(overrides);
-            }
-            // If the contract was just deployed, wait until it is mined
-            if (contract.deployTransaction != null) {
-                yield contract._deployed(blockTag);
-            }
-            // Call a node and get the result
-            const tx = yield populateTransaction(contract, fragment, args);
-            const result = yield signerOrProvider.call(tx, blockTag);
-            try {
-                let value = contract.interface.decodeFunctionResult(fragment, result);
-                if (collapseSimple && fragment.outputs.length === 1) {
-                    value = value[0];
-                }
-                return value;
-            }
-            catch (error) {
-                if (error.code === Logger.errors.CALL_EXCEPTION) {
-                    error.address = contract.address;
-                    error.args = args;
-                    error.transaction = tx;
-                }
-                throw error;
-            }
-        });
-    };
-}
-function buildSend(contract, fragment) {
-    return function (...args) {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            if (!contract.signer) {
-                logger$s.throwError("sending a transaction requires a signer", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "sendTransaction"
-                });
-            }
-            // If the contract was just deployed, wait until it is mined
-            if (contract.deployTransaction != null) {
-                yield contract._deployed();
-            }
-            const txRequest = yield populateTransaction(contract, fragment, args);
-            const tx = yield contract.signer.sendTransaction(txRequest);
-            // Tweak the tx.wait so the receipt has extra properties
-            addContractWait(contract, tx);
-            return tx;
-        });
-    };
-}
-function buildDefault(contract, fragment, collapseSimple) {
-    if (fragment.constant) {
-        return buildCall(contract, fragment, collapseSimple);
-    }
-    return buildSend(contract, fragment);
-}
-function getEventTag(filter) {
-    if (filter.address && (filter.topics == null || filter.topics.length === 0)) {
-        return "*";
-    }
-    return (filter.address || "*") + "@" + (filter.topics ? filter.topics.map((topic) => {
-        if (Array.isArray(topic)) {
-            return topic.join("|");
-        }
-        return topic;
-    }).join(":") : "");
-}
-class RunningEvent {
-    constructor(tag, filter) {
-        defineReadOnly(this, "tag", tag);
-        defineReadOnly(this, "filter", filter);
-        this._listeners = [];
-    }
-    addListener(listener, once) {
-        this._listeners.push({ listener: listener, once: once });
-    }
-    removeListener(listener) {
-        let done = false;
-        this._listeners = this._listeners.filter((item) => {
-            if (done || item.listener !== listener) {
-                return true;
-            }
-            done = true;
-            return false;
-        });
-    }
-    removeAllListeners() {
-        this._listeners = [];
-    }
-    listeners() {
-        return this._listeners.map((i) => i.listener);
-    }
-    listenerCount() {
-        return this._listeners.length;
-    }
-    run(args) {
-        const listenerCount = this.listenerCount();
-        this._listeners = this._listeners.filter((item) => {
-            const argsCopy = args.slice();
-            // Call the callback in the next event loop
-            setTimeout(() => {
-                item.listener.apply(this, argsCopy);
-            }, 0);
-            // Reschedule it if it not "once"
-            return !(item.once);
-        });
-        return listenerCount;
-    }
-    prepareEvent(event) {
-    }
-    // Returns the array that will be applied to an emit
-    getEmit(event) {
-        return [event];
-    }
-}
-class ErrorRunningEvent extends RunningEvent {
-    constructor() {
-        super("error", null);
-    }
-}
-// @TODO Fragment should inherit Wildcard? and just override getEmit?
-//       or have a common abstract super class, with enough constructor
-//       options to configure both.
-// A Fragment Event will populate all the properties that Wildcard
-// will, and additionally dereference the arguments when emitting
-class FragmentRunningEvent extends RunningEvent {
-    constructor(address, contractInterface, fragment, topics) {
-        const filter = {
-            address: address
-        };
-        let topic = contractInterface.getEventTopic(fragment);
-        if (topics) {
-            if (topic !== topics[0]) {
-                logger$s.throwArgumentError("topic mismatch", "topics", topics);
-            }
-            filter.topics = topics.slice();
-        }
-        else {
-            filter.topics = [topic];
-        }
-        super(getEventTag(filter), filter);
-        defineReadOnly(this, "address", address);
-        defineReadOnly(this, "interface", contractInterface);
-        defineReadOnly(this, "fragment", fragment);
-    }
-    prepareEvent(event) {
-        super.prepareEvent(event);
-        event.event = this.fragment.name;
-        event.eventSignature = this.fragment.format();
-        event.decode = (data, topics) => {
-            return this.interface.decodeEventLog(this.fragment, data, topics);
-        };
-        try {
-            event.args = this.interface.decodeEventLog(this.fragment, event.data, event.topics);
-        }
-        catch (error) {
-            event.args = null;
-            event.decodeError = error;
-        }
-    }
-    getEmit(event) {
-        const errors = checkResultErrors(event.args);
-        if (errors.length) {
-            throw errors[0].error;
-        }
-        const args = (event.args || []).slice();
-        args.push(event);
-        return args;
-    }
-}
-// A Wildcard Event will attempt to populate:
-//  - event            The name of the event name
-//  - eventSignature   The full signature of the event
-//  - decode           A function to decode data and topics
-//  - args             The decoded data and topics
-class WildcardRunningEvent extends RunningEvent {
-    constructor(address, contractInterface) {
-        super("*", { address: address });
-        defineReadOnly(this, "address", address);
-        defineReadOnly(this, "interface", contractInterface);
-    }
-    prepareEvent(event) {
-        super.prepareEvent(event);
-        try {
-            const parsed = this.interface.parseLog(event);
-            event.event = parsed.name;
-            event.eventSignature = parsed.signature;
-            event.decode = (data, topics) => {
-                return this.interface.decodeEventLog(parsed.eventFragment, data, topics);
-            };
-            event.args = parsed.args;
-        }
-        catch (error) {
-            // No matching event
-        }
-    }
-}
-class BaseContract {
-    constructor(addressOrName, contractInterface, signerOrProvider) {
-        logger$s.checkNew(new.target, Contract);
-        // @TODO: Maybe still check the addressOrName looks like a valid address or name?
-        //address = getAddress(address);
-        defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
-        if (signerOrProvider == null) {
-            defineReadOnly(this, "provider", null);
-            defineReadOnly(this, "signer", null);
-        }
-        else if (Signer.isSigner(signerOrProvider)) {
-            defineReadOnly(this, "provider", signerOrProvider.provider || null);
-            defineReadOnly(this, "signer", signerOrProvider);
-        }
-        else if (Provider.isProvider(signerOrProvider)) {
-            defineReadOnly(this, "provider", signerOrProvider);
-            defineReadOnly(this, "signer", null);
-        }
-        else {
-            logger$s.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
-        }
-        defineReadOnly(this, "callStatic", {});
-        defineReadOnly(this, "estimateGas", {});
-        defineReadOnly(this, "functions", {});
-        defineReadOnly(this, "populateTransaction", {});
-        defineReadOnly(this, "filters", {});
-        {
-            const uniqueFilters = {};
-            Object.keys(this.interface.events).forEach((eventSignature) => {
-                const event = this.interface.events[eventSignature];
-                defineReadOnly(this.filters, eventSignature, (...args) => {
-                    return {
-                        address: this.address,
-                        topics: this.interface.encodeFilterTopics(event, args)
-                    };
-                });
-                if (!uniqueFilters[event.name]) {
-                    uniqueFilters[event.name] = [];
-                }
-                uniqueFilters[event.name].push(eventSignature);
-            });
-            Object.keys(uniqueFilters).forEach((name) => {
-                const filters = uniqueFilters[name];
-                if (filters.length === 1) {
-                    defineReadOnly(this.filters, name, this.filters[filters[0]]);
-                }
-                else {
-                    logger$s.warn(`Duplicate definition of ${name} (${filters.join(", ")})`);
-                }
-            });
-        }
-        defineReadOnly(this, "_runningEvents", {});
-        defineReadOnly(this, "_wrappedEmits", {});
-        if (addressOrName == null) {
-            logger$s.throwArgumentError("invalid contract address or ENS name", "addressOrName", addressOrName);
-        }
-        defineReadOnly(this, "address", addressOrName);
-        if (this.provider) {
-            defineReadOnly(this, "resolvedAddress", resolveName(this.provider, addressOrName));
-        }
-        else {
-            try {
-                defineReadOnly(this, "resolvedAddress", Promise.resolve(getAddress(addressOrName)));
-            }
-            catch (error) {
-                // Without a provider, we cannot use ENS names
-                logger$s.throwError("provider is required to use ENS name as contract address", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "new Contract"
-                });
-            }
-        }
-        const uniqueNames = {};
-        const uniqueSignatures = {};
-        Object.keys(this.interface.functions).forEach((signature) => {
-            const fragment = this.interface.functions[signature];
-            // Check that the signature is unique; if not the ABI generation has
-            // not been cleaned or may be incorrectly generated
-            if (uniqueSignatures[signature]) {
-                logger$s.warn(`Duplicate ABI entry for ${JSON.stringify(signature)}`);
-                return;
-            }
-            uniqueSignatures[signature] = true;
-            // Track unique names; we only expose bare named functions if they
-            // are ambiguous
-            {
-                const name = fragment.name;
-                if (!uniqueNames[`%${name}`]) {
-                    uniqueNames[`%${name}`] = [];
-                }
-                uniqueNames[`%${name}`].push(signature);
-            }
-            if (this[signature] == null) {
-                defineReadOnly(this, signature, buildDefault(this, fragment, true));
-            }
-            // We do not collapse simple calls on this bucket, which allows
-            // frameworks to safely use this without introspection as well as
-            // allows decoding error recovery.
-            if (this.functions[signature] == null) {
-                defineReadOnly(this.functions, signature, buildDefault(this, fragment, false));
-            }
-            if (this.callStatic[signature] == null) {
-                defineReadOnly(this.callStatic, signature, buildCall(this, fragment, true));
-            }
-            if (this.populateTransaction[signature] == null) {
-                defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
-            }
-            if (this.estimateGas[signature] == null) {
-                defineReadOnly(this.estimateGas, signature, buildEstimate(this, fragment));
-            }
-        });
-        Object.keys(uniqueNames).forEach((name) => {
-            // Ambiguous names to not get attached as bare names
-            const signatures = uniqueNames[name];
-            if (signatures.length > 1) {
-                return;
-            }
-            // Strip off the leading "%" used for prototype protection
-            name = name.substring(1);
-            const signature = signatures[0];
-            // If overwriting a member property that is null, swallow the error
-            try {
-                if (this[name] == null) {
-                    defineReadOnly(this, name, this[signature]);
-                }
-            }
-            catch (e) { }
-            if (this.functions[name] == null) {
-                defineReadOnly(this.functions, name, this.functions[signature]);
-            }
-            if (this.callStatic[name] == null) {
-                defineReadOnly(this.callStatic, name, this.callStatic[signature]);
-            }
-            if (this.populateTransaction[name] == null) {
-                defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
-            }
-            if (this.estimateGas[name] == null) {
-                defineReadOnly(this.estimateGas, name, this.estimateGas[signature]);
-            }
-        });
-    }
-    static getContractAddress(transaction) {
-        return getContractAddress(transaction);
-    }
-    static getInterface(contractInterface) {
-        if (Interface.isInterface(contractInterface)) {
-            return contractInterface;
-        }
-        return new Interface(contractInterface);
-    }
-    // @TODO: Allow timeout?
-    deployed() {
-        return this._deployed();
-    }
-    _deployed(blockTag) {
-        if (!this._deployedPromise) {
-            // If we were just deployed, we know the transaction we should occur in
-            if (this.deployTransaction) {
-                this._deployedPromise = this.deployTransaction.wait().then(() => {
-                    return this;
-                });
-            }
-            else {
-                // @TODO: Once we allow a timeout to be passed in, we will wait
-                // up to that many blocks for getCode
-                // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this.address, blockTag).then((code) => {
-                    if (code === "0x") {
-                        logger$s.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
-                            contractAddress: this.address,
-                            operation: "getDeployed"
-                        });
-                    }
-                    return this;
-                });
-            }
-        }
-        return this._deployedPromise;
-    }
-    // @TODO:
-    // estimateFallback(overrides?: TransactionRequest): Promise<BigNumber>
-    // @TODO:
-    // estimateDeploy(bytecode: string, ...args): Promise<BigNumber>
-    fallback(overrides) {
-        if (!this.signer) {
-            logger$s.throwError("sending a transactions require a signer", Logger.errors.UNSUPPORTED_OPERATION, { operation: "sendTransaction(fallback)" });
-        }
-        const tx = shallowCopy(overrides || {});
-        ["from", "to"].forEach(function (key) {
-            if (tx[key] == null) {
-                return;
-            }
-            logger$s.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
-        });
-        tx.to = this.resolvedAddress;
-        return this.deployed().then(() => {
-            return this.signer.sendTransaction(tx);
-        });
-    }
-    // Reconnect to a different signer or provider
-    connect(signerOrProvider) {
-        if (typeof (signerOrProvider) === "string") {
-            signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
-        }
-        const contract = new (this.constructor)(this.address, this.interface, signerOrProvider);
-        if (this.deployTransaction) {
-            defineReadOnly(contract, "deployTransaction", this.deployTransaction);
-        }
-        return contract;
-    }
-    // Re-attach to a different on-chain instance of this contract
-    attach(addressOrName) {
-        return new (this.constructor)(addressOrName, this.interface, this.signer || this.provider);
-    }
-    static isIndexed(value) {
-        return Indexed.isIndexed(value);
-    }
-    _normalizeRunningEvent(runningEvent) {
-        // Already have an instance of this event running; we can re-use it
-        if (this._runningEvents[runningEvent.tag]) {
-            return this._runningEvents[runningEvent.tag];
-        }
-        return runningEvent;
-    }
-    _getRunningEvent(eventName) {
-        if (typeof (eventName) === "string") {
-            // Listen for "error" events (if your contract has an error event, include
-            // the full signature to bypass this special event keyword)
-            if (eventName === "error") {
-                return this._normalizeRunningEvent(new ErrorRunningEvent());
-            }
-            // Listen for any event that is registered
-            if (eventName === "event") {
-                return this._normalizeRunningEvent(new RunningEvent("event", null));
-            }
-            // Listen for any event
-            if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
-            }
-            // Get the event Fragment (throws if ambiguous/unknown event)
-            const fragment = this.interface.getEvent(eventName);
-            return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment));
-        }
-        // We have topics to filter by...
-        if (eventName.topics && eventName.topics.length > 0) {
-            // Is it a known topichash? (throws if no matching topichash)
-            try {
-                const topic = eventName.topics[0];
-                if (typeof (topic) !== "string") {
-                    throw new Error("invalid topic"); // @TODO: May happen for anonymous events
-                }
-                const fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment, eventName.topics));
-            }
-            catch (error) { }
-            // Filter by the unknown topichash
-            const filter = {
-                address: this.address,
-                topics: eventName.topics
-            };
-            return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
-        }
-        return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
-    }
-    _checkRunningEvents(runningEvent) {
-        if (runningEvent.listenerCount() === 0) {
-            delete this._runningEvents[runningEvent.tag];
-            // If we have a poller for this, remove it
-            const emit = this._wrappedEmits[runningEvent.tag];
-            if (emit && runningEvent.filter) {
-                this.provider.off(runningEvent.filter, emit);
-                delete this._wrappedEmits[runningEvent.tag];
-            }
-        }
-    }
-    // Subclasses can override this to gracefully recover
-    // from parse errors if they wish
-    _wrapEvent(runningEvent, log, listener) {
-        const event = deepCopy(log);
-        event.removeListener = () => {
-            if (!listener) {
-                return;
-            }
-            runningEvent.removeListener(listener);
-            this._checkRunningEvents(runningEvent);
-        };
-        event.getBlock = () => { return this.provider.getBlock(log.blockHash); };
-        event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); };
-        event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); };
-        // This may throw if the topics and data mismatch the signature
-        runningEvent.prepareEvent(event);
-        return event;
-    }
-    _addEventListener(runningEvent, listener, once) {
-        if (!this.provider) {
-            logger$s.throwError("events require a provider or a signer with a provider", Logger.errors.UNSUPPORTED_OPERATION, { operation: "once" });
-        }
-        runningEvent.addListener(listener, once);
-        // Track this running event and its listeners (may already be there; but no hard in updating)
-        this._runningEvents[runningEvent.tag] = runningEvent;
-        // If we are not polling the provider, start polling
-        if (!this._wrappedEmits[runningEvent.tag]) {
-            const wrappedEmit = (log) => {
-                let event = this._wrapEvent(runningEvent, log, listener);
-                // Try to emit the result for the parameterized event...
-                if (event.decodeError == null) {
-                    try {
-                        const args = runningEvent.getEmit(event);
-                        this.emit(runningEvent.filter, ...args);
-                    }
-                    catch (error) {
-                        event.decodeError = error.error;
-                    }
-                }
-                // Always emit "event" for fragment-base events
-                if (runningEvent.filter != null) {
-                    this.emit("event", event);
-                }
-                // Emit "error" if there was an error
-                if (event.decodeError != null) {
-                    this.emit("error", event.decodeError, event);
-                }
-            };
-            this._wrappedEmits[runningEvent.tag] = wrappedEmit;
-            // Special events, like "error" do not have a filter
-            if (runningEvent.filter != null) {
-                this.provider.on(runningEvent.filter, wrappedEmit);
-            }
-        }
-    }
-    queryFilter(event, fromBlockOrBlockhash, toBlock) {
-        const runningEvent = this._getRunningEvent(event);
-        const filter = shallowCopy(runningEvent.filter);
-        if (typeof (fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-            if (toBlock != null) {
-                logger$s.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-            }
-            filter.blockHash = fromBlockOrBlockhash;
-        }
-        else {
-            filter.fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash : 0);
-            filter.toBlock = ((toBlock != null) ? toBlock : "latest");
-        }
-        return this.provider.getLogs(filter).then((logs) => {
-            return logs.map((log) => this._wrapEvent(runningEvent, log, null));
-        });
-    }
-    on(event, listener) {
-        this._addEventListener(this._getRunningEvent(event), listener, false);
-        return this;
-    }
-    once(event, listener) {
-        this._addEventListener(this._getRunningEvent(event), listener, true);
-        return this;
-    }
-    emit(eventName, ...args) {
-        if (!this.provider) {
-            return false;
-        }
-        const runningEvent = this._getRunningEvent(eventName);
-        const result = (runningEvent.run(args) > 0);
-        // May have drained all the "once" events; check for living events
-        this._checkRunningEvents(runningEvent);
-        return result;
-    }
-    listenerCount(eventName) {
-        if (!this.provider) {
-            return 0;
-        }
-        if (eventName == null) {
-            return Object.keys(this._runningEvents).reduce((accum, key) => {
-                return accum + this._runningEvents[key].listenerCount();
-            }, 0);
-        }
-        return this._getRunningEvent(eventName).listenerCount();
-    }
-    listeners(eventName) {
-        if (!this.provider) {
-            return [];
-        }
-        if (eventName == null) {
-            const result = [];
-            for (let tag in this._runningEvents) {
-                this._runningEvents[tag].listeners().forEach((listener) => {
-                    result.push(listener);
-                });
-            }
-            return result;
-        }
-        return this._getRunningEvent(eventName).listeners();
-    }
-    removeAllListeners(eventName) {
-        if (!this.provider) {
-            return this;
-        }
-        if (eventName == null) {
-            for (const tag in this._runningEvents) {
-                const runningEvent = this._runningEvents[tag];
-                runningEvent.removeAllListeners();
-                this._checkRunningEvents(runningEvent);
-            }
-            return this;
-        }
-        // Delete any listeners
-        const runningEvent = this._getRunningEvent(eventName);
-        runningEvent.removeAllListeners();
-        this._checkRunningEvents(runningEvent);
-        return this;
-    }
-    off(eventName, listener) {
-        if (!this.provider) {
-            return this;
-        }
-        const runningEvent = this._getRunningEvent(eventName);
-        runningEvent.removeListener(listener);
-        this._checkRunningEvents(runningEvent);
-        return this;
-    }
-    removeListener(eventName, listener) {
-        return this.off(eventName, listener);
-    }
-}
-class Contract extends BaseContract {
-}
-class ContractFactory {
-    constructor(contractInterface, bytecode, signer) {
-        let bytecodeHex = null;
-        if (typeof (bytecode) === "string") {
-            bytecodeHex = bytecode;
-        }
-        else if (isBytes(bytecode)) {
-            bytecodeHex = hexlify(bytecode);
-        }
-        else if (bytecode && typeof (bytecode.object) === "string") {
-            // Allow the bytecode object from the Solidity compiler
-            bytecodeHex = bytecode.object;
-        }
-        else {
-            // Crash in the next verification step
-            bytecodeHex = "!";
-        }
-        // Make sure it is 0x prefixed
-        if (bytecodeHex.substring(0, 2) !== "0x") {
-            bytecodeHex = "0x" + bytecodeHex;
-        }
-        // Make sure the final result is valid bytecode
-        if (!isHexString(bytecodeHex) || (bytecodeHex.length % 2)) {
-            logger$s.throwArgumentError("invalid bytecode", "bytecode", bytecode);
-        }
-        // If we have a signer, make sure it is valid
-        if (signer && !Signer.isSigner(signer)) {
-            logger$s.throwArgumentError("invalid signer", "signer", signer);
-        }
-        defineReadOnly(this, "bytecode", bytecodeHex);
-        defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
-        defineReadOnly(this, "signer", signer || null);
-    }
-    // @TODO: Future; rename to populateTransaction?
-    getDeployTransaction(...args) {
-        let tx = {};
-        // If we have 1 additional argument, we allow transaction overrides
-        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-            tx = shallowCopy(args.pop());
-            for (const key in tx) {
-                if (!allowedTransactionKeys$2[key]) {
-                    throw new Error("unknown transaction override " + key);
-                }
-            }
-        }
-        // Do not allow these to be overridden in a deployment transaction
-        ["data", "from", "to"].forEach((key) => {
-            if (tx[key] == null) {
-                return;
-            }
-            logger$s.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
-        });
-        if (tx.value) {
-            const value = BigNumber.from(tx.value);
-            if (!value.isZero() && !this.interface.deploy.payable) {
-                logger$s.throwError("non-payable constructor cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "overrides.value",
-                    value: tx.value
-                });
-            }
-        }
-        // Make sure the call matches the constructor signature
-        logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-        // Set the data to the bytecode + the encoded constructor arguments
-        tx.data = hexlify(concat([
-            this.bytecode,
-            this.interface.encodeDeploy(args)
-        ]));
-        return tx;
-    }
-    deploy(...args) {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            let overrides = {};
-            // If 1 extra parameter was passed in, it contains overrides
-            if (args.length === this.interface.deploy.inputs.length + 1) {
-                overrides = args.pop();
-            }
-            // Make sure the call matches the constructor signature
-            logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-            // Resolve ENS names and promises in the arguments
-            const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
-            params.push(overrides);
-            // Get the deployment transaction (with optional overrides)
-            const unsignedTx = this.getDeployTransaction(...params);
-            // Send the deployment transaction
-            const tx = yield this.signer.sendTransaction(unsignedTx);
-            const address = getStatic(this.constructor, "getContractAddress")(tx);
-            const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
-            // Add the modified wait that wraps events
-            addContractWait(contract, tx);
-            defineReadOnly(contract, "deployTransaction", tx);
-            return contract;
-        });
-    }
-    attach(address) {
-        return (this.constructor).getContract(address, this.interface, this.signer);
-    }
-    connect(signer) {
-        return new (this.constructor)(this.interface, this.bytecode, signer);
-    }
-    static fromSolidity(compilerOutput, signer) {
-        if (compilerOutput == null) {
-            logger$s.throwError("missing compiler output", Logger.errors.MISSING_ARGUMENT, { argument: "compilerOutput" });
-        }
-        if (typeof (compilerOutput) === "string") {
-            compilerOutput = JSON.parse(compilerOutput);
-        }
-        const abi = compilerOutput.abi;
-        let bytecode = null;
-        if (compilerOutput.bytecode) {
-            bytecode = compilerOutput.bytecode;
-        }
-        else if (compilerOutput.evm && compilerOutput.evm.bytecode) {
-            bytecode = compilerOutput.evm.bytecode;
-        }
-        return new this(abi, bytecode, signer);
-    }
-    static getInterface(contractInterface) {
-        return Contract.getInterface(contractInterface);
-    }
-    static getContractAddress(tx) {
-        return getContractAddress(tx);
-    }
-    static getContract(address, contractInterface, signer) {
-        return new Contract(address, contractInterface, signer);
-    }
-}
-
-const version$n = "networks/5.5.0";
-
-"use strict";
-const logger$t = new Logger(version$n);
-function isRenetworkable(value) {
-    return (value && typeof (value.renetwork) === "function");
-}
-function ethDefaultProvider(network) {
-    const func = function (providers, options) {
-        if (options == null) {
-            options = {};
-        }
-        const providerList = [];
-        if (providers.InfuraProvider) {
-            try {
-                providerList.push(new providers.InfuraProvider(network, options.infura));
-            }
-            catch (error) { }
-        }
-        if (providers.EtherscanProvider) {
-            try {
-                providerList.push(new providers.EtherscanProvider(network, options.etherscan));
-            }
-            catch (error) { }
-        }
-        if (providers.AlchemyProvider) {
-            try {
-                providerList.push(new providers.AlchemyProvider(network, options.alchemy));
-            }
-            catch (error) { }
-        }
-        if (providers.PocketProvider) {
-            // These networks are currently faulty on Pocket as their
-            // network does not handle the Berlin hardfork, which is
-            // live on these ones.
-            // @TODO: This goes away once Pocket has upgraded their nodes
-            const skip = ["goerli", "ropsten", "rinkeby"];
-            try {
-                const provider = new providers.PocketProvider(network);
-                if (provider.network && skip.indexOf(provider.network.name) === -1) {
-                    providerList.push(provider);
-                }
-            }
-            catch (error) { }
-        }
-        if (providers.CloudflareProvider) {
-            try {
-                providerList.push(new providers.CloudflareProvider(network));
-            }
-            catch (error) { }
-        }
-        if (providerList.length === 0) {
-            return null;
-        }
-        if (providers.FallbackProvider) {
-            let quorum = 1;
-            if (options.quorum != null) {
-                quorum = options.quorum;
-            }
-            else if (network === "homestead") {
-                quorum = 2;
-            }
-            return new providers.FallbackProvider(providerList, quorum);
-        }
-        return providerList[0];
-    };
-    func.renetwork = function (network) {
-        return ethDefaultProvider(network);
-    };
-    return func;
-}
-function etcDefaultProvider(url, network) {
-    const func = function (providers, options) {
-        if (providers.JsonRpcProvider) {
-            return new providers.JsonRpcProvider(url, network);
-        }
-        return null;
-    };
-    func.renetwork = function (network) {
-        return etcDefaultProvider(url, network);
-    };
-    return func;
-}
-function hederaDefaultProvider(network) {
-    const func = function (providers, options) {
-        if (options == null) {
-            options = {};
-        }
-        const providerList = [];
-        // TODO: JSON RPC provider, FallbackProvider for hedera
-        if (providers.DefaultHederaProvider) {
-            providerList.push(new providers.DefaultHederaProvider(network));
-        }
-        if (providerList.length === 0) {
-            return null;
-        }
-        return providerList[0];
-    };
-    func.renetwork = function (network) {
-        return hederaDefaultProvider(network);
-    };
-    return func;
-}
-const homestead = {
-    chainId: 1,
-    ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    name: "homestead",
-    _defaultProvider: ethDefaultProvider("homestead")
-};
-const ropsten = {
-    chainId: 3,
-    ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    name: "ropsten",
-    _defaultProvider: ethDefaultProvider("ropsten")
-};
-const classicMordor = {
-    chainId: 63,
-    name: "classicMordor",
-    _defaultProvider: etcDefaultProvider("https://www.ethercluster.com/mordor", "classicMordor")
-};
-const networks = {
-    unspecified: { chainId: 0, name: "unspecified" },
-    homestead: homestead,
-    morden: { chainId: 2, name: "morden" },
-    ropsten: ropsten,
-    rinkeby: {
-        chainId: 4,
-        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-        name: "rinkeby",
-        _defaultProvider: ethDefaultProvider("rinkeby")
-    },
-    kovan: {
-        chainId: 42,
-        name: "kovan",
-        _defaultProvider: ethDefaultProvider("kovan")
-    },
-    goerli: {
-        chainId: 5,
-        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-        name: "goerli",
-        _defaultProvider: ethDefaultProvider("goerli")
-    },
-    // ETC (See: #351)
-    classic: {
-        chainId: 61,
-        name: "classic",
-        _defaultProvider: etcDefaultProvider("https:/\/www.ethercluster.com/etc", "classic")
-    },
-    classicMorden: { chainId: 62, name: "classicMorden" },
-    classicMordor: classicMordor,
-    classicTestnet: classicMordor,
-    classicKotti: {
-        chainId: 6,
-        name: "classicKotti",
-        _defaultProvider: etcDefaultProvider("https:/\/www.ethercluster.com/kotti", "classicKotti")
-    },
-    xdai: { chainId: 100, name: "xdai" },
-    matic: { chainId: 137, name: "matic" },
-    maticmum: { chainId: 80001, name: "maticmum" },
-    bnb: { chainId: 56, name: "bnb" },
-    bnbt: { chainId: 97, name: "bnbt" },
-    // hedera networks
-    mainnet: {
-        chainId: 290,
-        name: 'mainnet',
-        _defaultProvider: hederaDefaultProvider("mainnet")
-    },
-    testnet: {
-        chainId: 291,
-        name: 'testnet',
-        _defaultProvider: hederaDefaultProvider("testnet")
-    },
-    previewnet: {
-        chainId: 292,
-        name: 'previewnet',
-        _defaultProvider: hederaDefaultProvider("previewnet")
-    }
-};
-/**
- *  getNetwork
- *
- *  Converts a named common networks or chain ID (network ID) to a Network
- *  and verifies a network is a valid Network..
- */
-function getNetwork(network) {
-    // No network (null)
-    if (network == null) {
-        return null;
-    }
-    if (typeof (network) === "number") {
-        for (const name in networks) {
-            const standard = networks[name];
-            if (standard.chainId === network) {
-                return {
-                    name: standard.name,
-                    chainId: standard.chainId,
-                    ensAddress: (standard.ensAddress || null),
-                    _defaultProvider: (standard._defaultProvider || null)
-                };
-            }
-        }
-        return {
-            chainId: network,
-            name: "unknown"
-        };
-    }
-    if (typeof (network) === "string") {
-        const standard = networks[network];
-        if (standard == null) {
-            return null;
-        }
-        return {
-            name: standard.name,
-            chainId: standard.chainId,
-            ensAddress: standard.ensAddress,
-            _defaultProvider: (standard._defaultProvider || null)
-        };
-    }
-    const standard = networks[network.name];
-    // Not a standard network; check that it is a valid network in general
-    if (!standard) {
-        if (typeof (network.chainId) !== "number") {
-            logger$t.throwArgumentError("invalid network chainId", "network", network);
-        }
-        return network;
-    }
-    // Make sure the chainId matches the expected network chainId (or is 0; disable EIP-155)
-    if (network.chainId !== 0 && network.chainId !== standard.chainId) {
-        logger$t.throwArgumentError("network chainId mismatch", "network", network);
-    }
-    // @TODO: In the next major version add an attach function to a defaultProvider
-    // class and move the _defaultProvider internal to this file (extend Network)
-    let defaultProvider = network._defaultProvider || null;
-    if (defaultProvider == null && standard._defaultProvider) {
-        if (isRenetworkable(standard._defaultProvider)) {
-            defaultProvider = standard._defaultProvider.renetwork(network);
-        }
-        else {
-            defaultProvider = standard._defaultProvider;
-        }
-    }
-    // Standard Network (allow overriding the ENS address)
-    return {
-        name: network.name,
-        chainId: standard.chainId,
-        ensAddress: (network.ensAddress || standard.ensAddress || null),
-        _defaultProvider: defaultProvider
-    };
-}
-
-'use strict';
-var ALPHABET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
-
-// pre-compute lookup table
-var ALPHABET_MAP = {};
-for (var z = 0; z < ALPHABET.length; z++) {
-  var x = ALPHABET.charAt(z);
-
-  if (ALPHABET_MAP[x] !== undefined) throw new TypeError(x + ' is ambiguous')
-  ALPHABET_MAP[x] = z;
-}
-
-function polymodStep (pre) {
-  var b = pre >> 25;
-  return ((pre & 0x1FFFFFF) << 5) ^
-    (-((b >> 0) & 1) & 0x3b6a57b2) ^
-    (-((b >> 1) & 1) & 0x26508e6d) ^
-    (-((b >> 2) & 1) & 0x1ea119fa) ^
-    (-((b >> 3) & 1) & 0x3d4233dd) ^
-    (-((b >> 4) & 1) & 0x2a1462b3)
-}
-
-function prefixChk (prefix) {
-  var chk = 1;
-  for (var i = 0; i < prefix.length; ++i) {
-    var c = prefix.charCodeAt(i);
-    if (c < 33 || c > 126) return 'Invalid prefix (' + prefix + ')'
-
-    chk = polymodStep(chk) ^ (c >> 5);
-  }
-  chk = polymodStep(chk);
-
-  for (i = 0; i < prefix.length; ++i) {
-    var v = prefix.charCodeAt(i);
-    chk = polymodStep(chk) ^ (v & 0x1f);
-  }
-  return chk
-}
-
-function encode$2 (prefix, words, LIMIT) {
-  LIMIT = LIMIT || 90;
-  if ((prefix.length + 7 + words.length) > LIMIT) throw new TypeError('Exceeds length limit')
-
-  prefix = prefix.toLowerCase();
-
-  // determine chk mod
-  var chk = prefixChk(prefix);
-  if (typeof chk === 'string') throw new Error(chk)
-
-  var result = prefix + '1';
-  for (var i = 0; i < words.length; ++i) {
-    var x = words[i];
-    if ((x >> 5) !== 0) throw new Error('Non 5-bit word')
-
-    chk = polymodStep(chk) ^ x;
-    result += ALPHABET.charAt(x);
-  }
-
-  for (i = 0; i < 6; ++i) {
-    chk = polymodStep(chk);
-  }
-  chk ^= 1;
-
-  for (i = 0; i < 6; ++i) {
-    var v = (chk >> ((5 - i) * 5)) & 0x1f;
-    result += ALPHABET.charAt(v);
-  }
-
-  return result
-}
-
-function __decode (str, LIMIT) {
-  LIMIT = LIMIT || 90;
-  if (str.length < 8) return str + ' too short'
-  if (str.length > LIMIT) return 'Exceeds length limit'
-
-  // don't allow mixed case
-  var lowered = str.toLowerCase();
-  var uppered = str.toUpperCase();
-  if (str !== lowered && str !== uppered) return 'Mixed-case string ' + str
-  str = lowered;
-
-  var split = str.lastIndexOf('1');
-  if (split === -1) return 'No separator character for ' + str
-  if (split === 0) return 'Missing prefix for ' + str
-
-  var prefix = str.slice(0, split);
-  var wordChars = str.slice(split + 1);
-  if (wordChars.length < 6) return 'Data too short'
-
-  var chk = prefixChk(prefix);
-  if (typeof chk === 'string') return chk
-
-  var words = [];
-  for (var i = 0; i < wordChars.length; ++i) {
-    var c = wordChars.charAt(i);
-    var v = ALPHABET_MAP[c];
-    if (v === undefined) return 'Unknown character ' + c
-    chk = polymodStep(chk) ^ v;
-
-    // not in the checksum?
-    if (i + 6 >= wordChars.length) continue
-    words.push(v);
-  }
-
-  if (chk !== 1) return 'Invalid checksum for ' + str
-  return { prefix: prefix, words: words }
-}
-
-function decodeUnsafe () {
-  var res = __decode.apply(null, arguments);
-  if (typeof res === 'object') return res
-}
-
-function decode$2 (str) {
-  var res = __decode.apply(null, arguments);
-  if (typeof res === 'object') return res
-
-  throw new Error(res)
-}
-
-function convert (data, inBits, outBits, pad) {
-  var value = 0;
-  var bits = 0;
-  var maxV = (1 << outBits) - 1;
-
-  var result = [];
-  for (var i = 0; i < data.length; ++i) {
-    value = (value << inBits) | data[i];
-    bits += inBits;
-
-    while (bits >= outBits) {
-      bits -= outBits;
-      result.push((value >> bits) & maxV);
-    }
-  }
-
-  if (pad) {
-    if (bits > 0) {
-      result.push((value << (outBits - bits)) & maxV);
-    }
-  } else {
-    if (bits >= inBits) return 'Excess padding'
-    if ((value << (outBits - bits)) & maxV) return 'Non-zero padding'
-  }
-
-  return result
-}
-
-function toWordsUnsafe (bytes) {
-  var res = convert(bytes, 8, 5, true);
-  if (Array.isArray(res)) return res
-}
-
-function toWords (bytes) {
-  var res = convert(bytes, 8, 5, true);
-  if (Array.isArray(res)) return res
-
-  throw new Error(res)
-}
-
-function fromWordsUnsafe (words) {
-  var res = convert(words, 5, 8, false);
-  if (Array.isArray(res)) return res
-}
-
-function fromWords (words) {
-  var res = convert(words, 5, 8, false);
-  if (Array.isArray(res)) return res
-
-  throw new Error(res)
-}
-
-var bech32 = {
-  decodeUnsafe: decodeUnsafe,
-  decode: decode$2,
-  encode: encode$2,
-  toWordsUnsafe: toWordsUnsafe,
-  toWords: toWords,
-  fromWordsUnsafe: fromWordsUnsafe,
-  fromWords: fromWords
-};
-
-const version$o = "providers/5.5.0";
-
-"use strict";
-const logger$u = new Logger(version$o);
-class Formatter {
-    constructor() {
-        logger$u.checkNew(new.target, Formatter);
-        this.formats = this.getDefaultFormats();
-    }
-    getDefaultFormats() {
-        const formats = ({});
-        const address = this.address.bind(this);
-        const bigNumber = this.bigNumber.bind(this);
-        const blockTag = this.blockTag.bind(this);
-        const data = this.data.bind(this);
-        const hash = this.hash.bind(this);
-        const hex = this.hex.bind(this);
-        const number = this.number.bind(this);
-        const type = this.type.bind(this);
-        const strictData = (v) => { return this.data(v, true); };
-        formats.transaction = {
-            hash: hash,
-            type: type,
-            accessList: Formatter.allowNull(this.accessList.bind(this), null),
-            blockHash: Formatter.allowNull(hash, null),
-            blockNumber: Formatter.allowNull(number, null),
-            transactionIndex: Formatter.allowNull(number, null),
-            confirmations: Formatter.allowNull(number, null),
-            from: address,
-            // either (gasPrice) or (maxPriorityFeePerGas + maxFeePerGas)
-            // must be set
-            gasPrice: Formatter.allowNull(bigNumber),
-            maxPriorityFeePerGas: Formatter.allowNull(bigNumber),
-            maxFeePerGas: Formatter.allowNull(bigNumber),
-            gasLimit: bigNumber,
-            to: Formatter.allowNull(address, null),
-            value: bigNumber,
-            nonce: number,
-            data: data,
-            r: Formatter.allowNull(this.uint256),
-            s: Formatter.allowNull(this.uint256),
-            v: Formatter.allowNull(number),
-            creates: Formatter.allowNull(address, null),
-            raw: Formatter.allowNull(data),
-        };
-        formats.transactionRequest = {
-            from: Formatter.allowNull(address),
-            nonce: Formatter.allowNull(number),
-            gasLimit: Formatter.allowNull(bigNumber),
-            gasPrice: Formatter.allowNull(bigNumber),
-            maxPriorityFeePerGas: Formatter.allowNull(bigNumber),
-            maxFeePerGas: Formatter.allowNull(bigNumber),
-            to: Formatter.allowNull(address),
-            value: Formatter.allowNull(bigNumber),
-            data: Formatter.allowNull(strictData),
-            type: Formatter.allowNull(number),
-            accessList: Formatter.allowNull(this.accessList.bind(this), null),
-        };
-        formats.receiptLog = {
-            transactionIndex: number,
-            blockNumber: number,
-            transactionHash: hash,
-            address: address,
-            topics: Formatter.arrayOf(hash),
-            data: data,
-            logIndex: number,
-            blockHash: hash,
-        };
-        formats.receipt = {
-            to: Formatter.allowNull(this.address, null),
-            from: Formatter.allowNull(this.address, null),
-            contractAddress: Formatter.allowNull(address, null),
-            transactionIndex: number,
-            // should be allowNull(hash), but broken-EIP-658 support is handled in receipt
-            root: Formatter.allowNull(hex),
-            gasUsed: bigNumber,
-            logsBloom: Formatter.allowNull(data),
-            blockHash: hash,
-            transactionHash: hash,
-            logs: Formatter.arrayOf(this.receiptLog.bind(this)),
-            blockNumber: number,
-            confirmations: Formatter.allowNull(number, null),
-            cumulativeGasUsed: bigNumber,
-            effectiveGasPrice: Formatter.allowNull(bigNumber),
-            status: Formatter.allowNull(number),
-            type: type
-        };
-        formats.block = {
-            hash: hash,
-            parentHash: hash,
-            number: number,
-            timestamp: number,
-            nonce: Formatter.allowNull(hex),
-            difficulty: this.difficulty.bind(this),
-            gasLimit: bigNumber,
-            gasUsed: bigNumber,
-            miner: address,
-            extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash)),
-            baseFeePerGas: Formatter.allowNull(bigNumber)
-        };
-        formats.blockWithTransactions = shallowCopy(formats.block);
-        formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
-        formats.filter = {
-            fromBlock: Formatter.allowNull(blockTag, undefined),
-            toBlock: Formatter.allowNull(blockTag, undefined),
-            blockHash: Formatter.allowNull(hash, undefined),
-            address: Formatter.allowNull(address, undefined),
-            topics: Formatter.allowNull(this.topics.bind(this), undefined),
-        };
-        formats.filterLog = {
-            blockNumber: Formatter.allowNull(number),
-            blockHash: Formatter.allowNull(hash),
-            transactionIndex: number,
-            removed: Formatter.allowNull(this.boolean.bind(this)),
-            address: address,
-            data: Formatter.allowFalsish(data, "0x"),
-            topics: Formatter.arrayOf(hash),
-            transactionHash: hash,
-            logIndex: number,
-        };
-        return formats;
-    }
-    accessList(accessList) {
-        return accessListify(accessList || []);
-    }
-    // Requires a BigNumberish that is within the IEEE754 safe integer range; returns a number
-    // Strict! Used on input.
-    number(number) {
-        if (number === "0x") {
-            return 0;
-        }
-        return BigNumber.from(number).toNumber();
-    }
-    type(number) {
-        if (number === "0x" || number == null) {
-            return 0;
-        }
-        return BigNumber.from(number).toNumber();
-    }
-    // Strict! Used on input.
-    bigNumber(value) {
-        return BigNumber.from(value);
-    }
-    // Requires a boolean, "true" or  "false"; returns a boolean
-    boolean(value) {
-        if (typeof (value) === "boolean") {
-            return value;
-        }
-        if (typeof (value) === "string") {
-            value = value.toLowerCase();
-            if (value === "true") {
-                return true;
-            }
-            if (value === "false") {
-                return false;
-            }
-        }
-        throw new Error("invalid boolean - " + value);
-    }
-    hex(value, strict) {
-        if (typeof (value) === "string") {
-            if (!strict && value.substring(0, 2) !== "0x") {
-                value = "0x" + value;
-            }
-            if (isHexString(value)) {
-                return value.toLowerCase();
-            }
-        }
-        return logger$u.throwArgumentError("invalid hash", "value", value);
-    }
-    data(value, strict) {
-        const result = this.hex(value, strict);
-        if ((result.length % 2) !== 0) {
-            throw new Error("invalid data; odd-length - " + value);
-        }
-        return result;
-    }
-    // Requires an address
-    // Strict! Used on input.
-    address(value) {
-        return getAddress(value);
-    }
-    callAddress(value) {
-        if (!isHexString(value, 32)) {
-            return null;
-        }
-        const address = getAddress(hexDataSlice(value, 12));
-        return (address === AddressZero) ? null : address;
-    }
-    contractAddress(value) {
-        return getContractAddress(value);
-    }
-    // Strict! Used on input.
-    blockTag(blockTag) {
-        if (blockTag == null) {
-            return "latest";
-        }
-        if (blockTag === "earliest") {
-            return "0x0";
-        }
-        if (blockTag === "latest" || blockTag === "pending") {
-            return blockTag;
-        }
-        if (typeof (blockTag) === "number" || isHexString(blockTag)) {
-            return hexValue(blockTag);
-        }
-        throw new Error("invalid blockTag");
-    }
-    // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
-    hash(value, strict) {
-        const result = this.hex(value, strict);
-        if (hexDataLength(result) !== 32) {
-            return logger$u.throwArgumentError("invalid hash", "value", value);
-        }
-        return result;
-    }
-    // Returns the difficulty as a number, or if too large (i.e. PoA network) null
-    difficulty(value) {
-        if (value == null) {
-            return null;
-        }
-        const v = BigNumber.from(value);
-        try {
-            return v.toNumber();
-        }
-        catch (error) { }
-        return null;
-    }
-    uint256(value) {
-        if (!isHexString(value)) {
-            throw new Error("invalid uint256");
-        }
-        return hexZeroPad(value, 32);
-    }
-    _block(value, format) {
-        if (value.author != null && value.miner == null) {
-            value.miner = value.author;
-        }
-        // The difficulty may need to come from _difficulty in recursed blocks
-        const difficulty = (value._difficulty != null) ? value._difficulty : value.difficulty;
-        const result = Formatter.check(format, value);
-        result._difficulty = ((difficulty == null) ? null : BigNumber.from(difficulty));
-        return result;
-    }
-    block(value) {
-        return this._block(value, this.formats.block);
-    }
-    blockWithTransactions(value) {
-        return this._block(value, this.formats.blockWithTransactions);
-    }
-    // Strict! Used on input.
-    transactionRequest(value) {
-        return Formatter.check(this.formats.transactionRequest, value);
-    }
-    transactionResponse(transaction) {
-        // Rename gas to gasLimit
-        if (transaction.gas != null && transaction.gasLimit == null) {
-            transaction.gasLimit = transaction.gas;
-        }
-        // Some clients (TestRPC) do strange things like return 0x0 for the
-        // 0 address; correct this to be a real address
-        if (transaction.to && BigNumber.from(transaction.to).isZero()) {
-            transaction.to = "0x0000000000000000000000000000000000000000";
-        }
-        // Rename input to data
-        if (transaction.input != null && transaction.data == null) {
-            transaction.data = transaction.input;
-        }
-        // If to and creates are empty, populate the creates from the transaction
-        if (transaction.to == null && transaction.creates == null) {
-            transaction.creates = this.contractAddress(transaction);
-        }
-        if ((transaction.type === 1 || transaction.type === 2) && transaction.accessList == null) {
-            transaction.accessList = [];
-        }
-        const result = Formatter.check(this.formats.transaction, transaction);
-        if (transaction.chainId != null) {
-            let chainId = transaction.chainId;
-            if (isHexString(chainId)) {
-                chainId = BigNumber.from(chainId).toNumber();
-            }
-            result.chainId = chainId;
-        }
-        else {
-            let chainId = transaction.networkId;
-            // geth-etc returns chainId
-            if (chainId == null && result.v == null) {
-                chainId = transaction.chainId;
-            }
-            if (isHexString(chainId)) {
-                chainId = BigNumber.from(chainId).toNumber();
-            }
-            if (typeof (chainId) !== "number" && result.v != null) {
-                chainId = (result.v - 35) / 2;
-                if (chainId < 0) {
-                    chainId = 0;
-                }
-                chainId = parseInt(chainId);
-            }
-            if (typeof (chainId) !== "number") {
-                chainId = 0;
-            }
-            result.chainId = chainId;
-        }
-        // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
-        return result;
-    }
-    transaction(value) {
-        return parse(value);
-    }
-    receiptLog(value) {
-        return Formatter.check(this.formats.receiptLog, value);
-    }
-    receipt(value) {
-        const result = Formatter.check(this.formats.receipt, value);
-        // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                const value = BigNumber.from(result.root).toNumber();
-                if (value === 0 || value === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value)) {
-                        logger$u.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value;
-                    delete result.root;
-                }
-                else {
-                    logger$u.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            }
-            else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger$u.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
-        if (result.status != null) {
-            result.byzantium = true;
-        }
-        return result;
-    }
-    topics(value) {
-        if (Array.isArray(value)) {
-            return value.map((v) => this.topics(v));
-        }
-        else if (value != null) {
-            return this.hash(value, true);
-        }
-        return null;
-    }
-    filter(value) {
-        return Formatter.check(this.formats.filter, value);
-    }
-    filterLog(value) {
-        return Formatter.check(this.formats.filterLog, value);
-    }
-    static check(format, object) {
-        const result = {};
-        for (const key in format) {
-            try {
-                const value = format[key](object[key]);
-                if (value !== undefined) {
-                    result[key] = value;
-                }
-            }
-            catch (error) {
-                error.checkKey = key;
-                error.checkValue = object[key];
-                throw error;
-            }
-        }
-        return result;
-    }
-    // if value is null-ish, nullValue is returned
-    static allowNull(format, nullValue) {
-        return (function (value) {
-            if (value == null) {
-                return nullValue;
-            }
-            return format(value);
-        });
-    }
-    // If value is false-ish, replaceValue is returned
-    static allowFalsish(format, replaceValue) {
-        return (function (value) {
-            if (!value) {
-                return replaceValue;
-            }
-            return format(value);
-        });
-    }
-    // Requires an Array satisfying check
-    static arrayOf(format) {
-        return (function (array) {
-            if (!Array.isArray(array)) {
-                throw new Error("not an array");
-            }
-            const result = [];
-            array.forEach(function (value) {
-                result.push(format(value));
-            });
-            return result;
-        });
-    }
-}
-function isCommunityResourcable(value) {
-    return (value && typeof (value.isCommunityResource) === "function");
-}
-function isCommunityResource(value) {
-    return (isCommunityResourcable(value) && value.isCommunityResource());
-}
-// Show the throttle message only once
-let throttleMessage = false;
-function showThrottleMessage() {
-    if (throttleMessage) {
-        return;
-    }
-    throttleMessage = true;
-    console.log("========= NOTICE =========");
-    console.log("Request-Rate Exceeded  (this message will not be repeated)");
-    console.log("");
-    console.log("The default API keys for each service are provided as a highly-throttled,");
-    console.log("community resource for low-traffic projects and early prototyping.");
-    console.log("");
-    console.log("While your application will continue to function, we highly recommended");
-    console.log("signing up for your own API keys to improve performance, increase your");
-    console.log("request rate/limit and enable other perks, such as metrics and advanced APIs.");
-    console.log("");
-    console.log("For more details: https:/\/docs.ethers.io/api-keys/");
-    console.log("==========================");
-}
 
 class Key {}
 
@@ -21810,7 +18720,7 @@ for (let n = 0; n <= 0xff; n += 1) {
  * @param {Uint8Array} data
  * @returns {string}
  */
-function encode$3(data) {
+function encode$2(data) {
     return Buffer.from(data).toString("hex");
 }
 
@@ -21818,7 +18728,7 @@ function encode$3(data) {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function decode$3(text) {
+function decode$2(text) {
     const str = text.startsWith("0x") ? text.substring(2) : text;
     return Buffer.from(str, "hex");
 }
@@ -21828,7 +18738,7 @@ function decode$3(text) {
  */
 
 const derPrefix = "302a300506032b6570032100";
-const derPrefixBytes = decode$3(derPrefix);
+const derPrefixBytes = decode$2(derPrefix);
 
 /**
  * An public key on the Hedera™ network.
@@ -21884,7 +18794,7 @@ class PublicKey extends Key {
      * @returns {PublicKey}
      */
     static fromString(text) {
-        return PublicKey.fromBytes(decode$3(text));
+        return PublicKey.fromBytes(decode$2(text));
     }
 
     /**
@@ -21959,7 +18869,7 @@ class PublicKey extends Key {
      * @returns {string}
      */
     toString() {
-        return derPrefix + encode$3(this._keyData);
+        return derPrefix + encode$2(this._keyData);
     }
 
     /**
@@ -28221,7 +25131,7 @@ async function digest(data) {
  * @param {Uint8Array} data
  * @returns {string}
  */
-function decode$4(data) {
+function decode$3(data) {
     return Buffer.from(data).toString("utf8");
 }
 
@@ -28229,7 +25139,7 @@ function decode$4(data) {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function encode$4(text) {
+function encode$3(text) {
     return Buffer.from(text, "utf8");
 }
 
@@ -28250,8 +25160,8 @@ const HashAlgorithm = {
  */
 function hash(algorithm, secretKey, data) {
     const key =
-        typeof secretKey === "string" ? encode$4(secretKey) : secretKey;
-    const value = typeof data === "string" ? encode$4(data) : data;
+        typeof secretKey === "string" ? encode$3(secretKey) : secretKey;
+    const value = typeof data === "string" ? encode$3(data) : data;
 
     switch (algorithm) {
         case HashAlgorithm.Sha256:
@@ -28286,10 +25196,10 @@ async function deriveKey(algorithm, password, salt, iterations, length) {
         typeof password === "string"
             ? // Valid ASCII is also valid UTF-8 so encoding the password as UTF-8
               // should be fine if only valid ASCII characters are used in the password
-              encode$4(password)
+              encode$3(password)
             : password;
 
-    const nacl = typeof salt === "string" ? encode$4(salt) : salt;
+    const nacl = typeof salt === "string" ? encode$3(salt) : salt;
 
     const pbkdf2 = util$2.promisify(crypto$2.pbkdf2);
 
@@ -31796,21 +28706,21 @@ async function createKeystore(privateKey, passphrase) {
     const keystore = {
         version: 1,
         crypto: {
-            ciphertext: encode$3(cipherText),
-            cipherparams: { iv: encode$3(iv) },
+            ciphertext: encode$2(cipherText),
+            cipherparams: { iv: encode$2(iv) },
             cipher: CipherAlgorithm.Aes128Ctr,
             kdf: "pbkdf2",
             kdfparams: {
                 dkLen,
-                salt: encode$3(salt),
+                salt: encode$2(salt),
                 c,
                 prf: HMAC_SHA256,
             },
-            mac: encode$3(mac),
+            mac: encode$2(mac),
         },
     };
 
-    return encode$4(JSON.stringify(keystore));
+    return encode$3(JSON.stringify(keystore));
 }
 
 /**
@@ -31823,7 +28733,7 @@ async function loadKeystore(keystoreBytes, passphrase) {
      * @type {Keystore}
      */
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const keystore = JSON.parse(decode$4(keystoreBytes));
+    const keystore = JSON.parse(decode$3(keystoreBytes));
 
     if (keystore.version !== 1) {
         throw new BadKeyError(
@@ -31850,9 +28760,9 @@ async function loadKeystore(keystoreBytes, passphrase) {
         );
     }
 
-    const saltBytes = decode$3(salt);
-    const ivBytes = decode$3(iv);
-    const cipherBytes = decode$3(ciphertext);
+    const saltBytes = decode$2(salt);
+    const ivBytes = decode$2(iv);
+    const cipherBytes = decode$2(ciphertext);
 
     const key = await deriveKey(
         HashAlgorithm.Sha256,
@@ -31862,7 +28772,7 @@ async function loadKeystore(keystoreBytes, passphrase) {
         dkLen
     );
 
-    const macHex = decode$3(mac);
+    const macHex = decode$2(mac);
     const verifyHmac = await hash(
         HashAlgorithm.Sha384,
         key.slice(16),
@@ -31916,7 +28826,7 @@ async function loadKeystore(keystoreBytes, passphrase) {
  *@param {Uint8Array} data
  *@returns {AsnType}
  */
-function decode$5(data) {
+function decode$4(data) {
     return decodeIncremental(data)[0];
 }
 
@@ -32197,7 +29107,7 @@ class PrivateKeyInfo {
      * @returns {PrivateKeyInfo}
      */
     static parse(encoded) {
-        return new PrivateKeyInfo(decode$5(encoded));
+        return new PrivateKeyInfo(decode$4(encoded));
     }
 }
 
@@ -32229,7 +29139,7 @@ class EncryptedPrivateKeyInfo {
      * @returns {EncryptedPrivateKeyInfo}
      */
     static parse(encoded) {
-        return new EncryptedPrivateKeyInfo(decode$5(encoded));
+        return new EncryptedPrivateKeyInfo(decode$4(encoded));
     }
 
     /**
@@ -32311,7 +29221,7 @@ class EncryptedPrivateKeyInfo {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function decode$6(text) {
+function decode$5(text) {
     return Buffer.from(text, "base64");
 }
 
@@ -32319,7 +29229,7 @@ function decode$6(text) {
  * @param {Uint8Array} data
  * @returns {string};
  */
-function encode$5(data) {
+function encode$4(data) {
     return Buffer.from(data).toString("base64");
 }
 
@@ -32348,7 +29258,7 @@ async function read(pem, passphrase) {
 
     const keyEncoded = pem.slice(beginIndex + beginTag.length, endIndex);
 
-    const key = decode$6(keyEncoded);
+    const key = decode$5(keyEncoded);
 
     if (passphrase) {
         let encrypted;
@@ -32370,7 +29280,7 @@ async function read(pem, passphrase) {
             );
         }
 
-        const keyData = decode$5(decrypted.privateKey);
+        const keyData = decode$4(decrypted.privateKey);
 
         if ("bytes" in keyData) {
             return naclFast.sign.keyPair.fromSeed(keyData.bytes);
@@ -32418,7 +29328,7 @@ function legacy(seed, index) {
 }
 
 const derPrefix$1 = "302e020100300506032b657004220420";
-const derPrefixBytes$1 = decode$3(derPrefix$1);
+const derPrefixBytes$1 = decode$2(derPrefix$1);
 
 /**
  * @typedef {object} ProtoSignaturePair
@@ -32551,7 +29461,7 @@ class PrivateKey extends Key {
      * @returns {PrivateKey}
      */
     static fromString(text) {
-        return PrivateKey.fromBytes(decode$3(text));
+        return PrivateKey.fromBytes(decode$2(text));
     }
 
     /**
@@ -32685,7 +29595,7 @@ class PrivateKey extends Key {
             transaction._signedTransactions[0]
         );
 
-        const publicKeyHex = encode$3(this.publicKey.toBytes());
+        const publicKeyHex = encode$2(this.publicKey.toBytes());
 
         if (tx.sigMap == null) {
             tx.sigMap = {};
@@ -32698,7 +29608,7 @@ class PrivateKey extends Key {
         for (const sigPair of tx.sigMap.sigPair) {
             if (
                 sigPair.pubKeyPrefix != null &&
-                encode$3(sigPair.pubKeyPrefix) === publicKeyHex
+                encode$2(sigPair.pubKeyPrefix) === publicKeyHex
             ) {
                 return /** @type {Uint8Array} */ (sigPair.ed25519);
             }
@@ -32741,7 +29651,7 @@ class PrivateKey extends Key {
      * @returns {string}
      */
     toString() {
-        return derPrefix$1 + encode$3(this.toBytes());
+        return derPrefix$1 + encode$2(this.toBytes());
     }
 
     /**
@@ -36322,7 +33232,7 @@ for (let n = 0; n <= 0xff; n += 1) {
  * @param {Uint8Array} data
  * @returns {string}
  */
-function encode$6(data) {
+function encode$5(data) {
     return Buffer.from(data).toString("hex");
 }
 
@@ -36330,7 +33240,7 @@ function encode$6(data) {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function decode$7(text) {
+function decode$6(text) {
     const str = text.startsWith("0x") ? text.substring(2) : text;
     return Buffer.from(str, "hex");
 }
@@ -36783,8 +33693,8 @@ function fromString$1(text) {
  */
 function fromSolidityAddress(address) {
     const addr = address.startsWith("0x")
-        ? decode$7(address.slice(2))
-        : decode$7(address);
+        ? decode$6(address.slice(2))
+        : decode$6(address);
 
     if (addr.length !== 20) {
         throw new Error(`Invalid hex encoded solidity address length:
@@ -36811,7 +33721,7 @@ function toSolidityAddress(address) {
     view.setUint32(8, convertToNumber(realm));
     view.setUint32(16, convertToNumber(num));
 
-    return encode$6(buffer);
+    return encode$5(buffer);
 }
 
 /**
@@ -43403,7 +40313,7 @@ class ContractLogInfo {
  * @param {Uint8Array} data
  * @returns {string}
  */
-function decode$8(data) {
+function decode$7(data) {
     return Buffer.from(data).toString("utf8");
 }
 
@@ -43411,7 +40321,7 @@ function decode$8(data) {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function encode$7(text) {
+function encode$6(text) {
     return Buffer.from(text, "utf8");
 }
 
@@ -43505,7 +40415,7 @@ class ContractFunctionResult {
      * @returns {string}
      */
     getString(index) {
-        return decode$8(this.getBytes(index));
+        return decode$7(this.getBytes(index));
     }
 
     /**
@@ -43577,7 +40487,7 @@ class ContractFunctionResult {
      */
     getInt64(index) {
         return new BigNumber$1(
-            encode$6(
+            encode$5(
                 this._getBytes32(index != null ? index : 0).subarray(24, 32)
             ),
             16
@@ -43590,7 +40500,7 @@ class ContractFunctionResult {
      */
     getInt256(index) {
         return new BigNumber$1(
-            encode$6(this._getBytes32(index != null ? index : 0)),
+            encode$5(this._getBytes32(index != null ? index : 0)),
             16
         );
     }
@@ -43624,7 +40534,7 @@ class ContractFunctionResult {
      */
     getUint64(index) {
         return new BigNumber$1(
-            encode$6(this._getBytes32(index).subarray(24, 32)),
+            encode$5(this._getBytes32(index).subarray(24, 32)),
             16
         );
     }
@@ -43634,7 +40544,7 @@ class ContractFunctionResult {
      * @returns {BigNumber}
      */
     getUint256(index) {
-        return new BigNumber$1(encode$6(this._getBytes32(index)), 16);
+        return new BigNumber$1(encode$5(this._getBytes32(index)), 16);
     }
 
     /**
@@ -43642,7 +40552,7 @@ class ContractFunctionResult {
      * @returns {string}
      */
     getAddress(index) {
-        return encode$6(
+        return encode$5(
             this.bytes.subarray(
                 (index != null ? index : 0) * 32 + 12,
                 (index != null ? index : 0) * 32 + 32
@@ -45256,7 +42166,7 @@ class Transaction extends Executable {
             ) {
                 for (const sigPair of signedTransaction.sigMap.sigPair) {
                     transaction._signerPublicKeys.add(
-                        encode$6(
+                        encode$5(
                             /** @type {Uint8Array} */ (sigPair.pubKeyPrefix)
                         )
                     );
@@ -45409,7 +42319,7 @@ class Transaction extends Executable {
         // support that in the protobuf. this means that we would fail
         // to re-inflate [this._signerPublicKeys] during [fromBytes] if we used DER
         // prefixes here
-        const publicKeyHex = encode$6(publicKeyData);
+        const publicKeyHex = encode$5(publicKeyData);
 
         if (this._signerPublicKeys.has(publicKeyHex)) {
             // this public key has already signed this transaction
@@ -45489,7 +42399,7 @@ class Transaction extends Executable {
             this.freeze();
         }
         const publicKeyData = publicKey.toBytes();
-        const publicKeyHex = encode$6(publicKeyData);
+        const publicKeyHex = encode$5(publicKeyData);
 
         if (this._signerPublicKeys.has(publicKeyHex)) {
             // this public key has already signed this transaction
@@ -49547,8 +46457,8 @@ class ContractFunctionParameters {
 
         const par =
             value.length === 40
-                ? decode$7(value)
-                : decode$7(value.substring(2));
+                ? decode$6(value)
+                : decode$6(value.substring(2));
 
         this._selector.addAddress();
 
@@ -49575,8 +46485,8 @@ class ContractFunctionParameters {
 
             const buf =
                 entry.length === 40
-                    ? decode$7(entry)
-                    : decode$7(entry.substring(2));
+                    ? decode$6(entry)
+                    : decode$6(entry.substring(2));
 
             par.push(buf);
         }
@@ -49592,7 +46502,7 @@ class ContractFunctionParameters {
      * @returns {ContractFunctionParameters}
      */
     addFunction(address, selector) {
-        const addressParam = decode$7(address);
+        const addressParam = decode$6(address);
         const functionSelector = selector._build();
 
         if (addressParam.length !== 20) {
@@ -49838,7 +46748,7 @@ function argumentToBytes(param, ty) {
                 }
 
                 // eslint-disable-next-line no-case-declarations
-                const buf = decode$7(par);
+                const buf = decode$6(par);
                 value.set(buf, 32 - buf.length);
             }
             return value;
@@ -49850,7 +46760,7 @@ function argumentToBytes(param, ty) {
                     par = `0${par}`;
                 }
 
-                const buf = decode$7(par);
+                const buf = decode$6(par);
                 value.set(buf, 32 - buf.length);
             }
             return value;
@@ -49877,7 +46787,7 @@ function argumentToBytes(param, ty) {
             par =
                 param instanceof Uint8Array
                     ? param
-                    : encode$7(/** @type {string} */ (param));
+                    : encode$6(/** @type {string} */ (param));
 
             // Resize value to a 32 byte boundary if needed
             if (
@@ -52127,7 +49037,7 @@ class FileAppendTransaction extends Transaction {
     setContents(contents) {
         this._requireNotFrozen();
         this._contents =
-            contents instanceof Uint8Array ? contents : encode$7(contents);
+            contents instanceof Uint8Array ? contents : encode$6(contents);
 
         return this;
     }
@@ -52687,7 +49597,7 @@ class FileCreateTransaction extends Transaction {
     setContents(contents) {
         this._requireNotFrozen();
         this._contents =
-            contents instanceof Uint8Array ? contents : encode$7(contents);
+            contents instanceof Uint8Array ? contents : encode$6(contents);
 
         return this;
     }
@@ -53445,7 +50355,7 @@ class FileUpdateTransaction extends Transaction {
     setContents(contents) {
         this._requireNotFrozen();
         this._contents =
-            contents instanceof Uint8Array ? contents : encode$7(contents);
+            contents instanceof Uint8Array ? contents : encode$6(contents);
 
         return this;
     }
@@ -53947,7 +50857,7 @@ class FreezeTransaction extends Transaction {
     setFileHash(fileHash) {
         this._requireNotFrozen();
         this._fileHash =
-            typeof fileHash === "string" ? decode$7(fileHash) : fileHash;
+            typeof fileHash === "string" ? decode$6(fileHash) : fileHash;
 
         return this;
     }
@@ -60141,7 +57051,7 @@ class TokenMintTransaction extends Transaction {
         }
 
         this._metadata.push(
-            typeof metadata === "string" ? decode$7(metadata) : metadata
+            typeof metadata === "string" ? decode$6(metadata) : metadata
         );
 
         return this;
@@ -60164,7 +57074,7 @@ class TokenMintTransaction extends Transaction {
         }
 
         this._metadata = metadata.map((data) =>
-            typeof data === "string" ? decode$7(data) : data
+            typeof data === "string" ? decode$6(data) : data
         );
 
         return this;
@@ -60307,7 +57217,7 @@ class TokenNftInfo {
             nftId: this.nftId.toString(),
             accountId: this.accountId.toString(),
             creationTime: this.creationTime.toString(),
-            metadata: this.metadata != null ? encode$6(this.metadata) : null,
+            metadata: this.metadata != null ? encode$5(this.metadata) : null,
         };
     }
 
@@ -63697,7 +60607,7 @@ class TopicMessageSubmitTransaction extends Transaction {
         this._requireNotFrozen();
         message = requireStringOrUint8Array(message);
         this._message =
-            typeof message === "string" ? encode$7(message) : message;
+            typeof message === "string" ? encode$6(message) : message;
         return this;
     }
 
@@ -66506,7 +63416,7 @@ class NodeAddress {
             accountId:
                 this._accountId != null ? this._accountId.toString() : null,
             certHash:
-                this._certHash != null ? decode$8(this._certHash) : null,
+                this._certHash != null ? decode$7(this._certHash) : null,
             addresses: this._addresses.map((address) => address.toJSON()),
             description: this._description,
             stake: this._stake != null ? this._stake.toString() : null,
@@ -66608,21 +63518,21 @@ class NodeAddressBook {
 
 const PREVIEWNET_ADDRESS_BOOK = NodeAddressBook._fromProtobuf(
     lib.NodeAddressBook.decode(
-        decode$7(
+        decode$6(
             "0ad0070a0e33352e3233312e3230382e31343810a388031a05302e302e3322cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039663166386131323163326664366337366664353038643365343239663063363462636234346338326137303537333535326161646361643037313536396537323139353866356135643039663935383766666166636662653533343161326630313134616361653334366566336339303231336433343336656262323766343335306339393063356338633366386531653336373037626330386434323536303832336533663234653039613033616430393535613530393830313936323964643034623237623235316463653035356633646463623061343164363666303934316230623837636466653334393864343630333861623564663036663632613561646530383539383537336138386338663538363064633134393261366531383634383561396231333235306536643137623830636433396335633831393130396537336361373332646232336566386261613737366563383563653030393162656362326564656662616135656433653564626662643166383835613466613838316166336631343461386135363538353335333364383933393335393230383662326431643336326534356266653166623435363833616261366336343039373961643662343638373731383437323663366562643538623265616538356337636665336662616265663566366363656438353030333462333834373230366332643637386333363138373630323662386433353165303032616635653066666536663562316632393566646332663436396361613264323338316561306234386361393837636332633865363335653862313963653565313732613933373631613864343930613961343531386437323535383830613134643737623762613737343839326239326134306262383133363265333466633664353137386439623330313132393334323035636237376662396132383234323733393435363461383535346561343732383661343766383632333965373563393437383963653938633939383434373832343632393434663631333136376437623530323033303130303031320218033a606666643661646137346133613334613930346265613437363033303836663862656633623662653138616265643434633464343065313266623133306239376264366238353561656335643062393062306238633733353464356633623065340acf070a0d332e3231312e3234382e31373210a388031a05302e302e3322cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039663166386131323163326664366337366664353038643365343239663063363462636234346338326137303537333535326161646361643037313536396537323139353866356135643039663935383766666166636662653533343161326630313134616361653334366566336339303231336433343336656262323766343335306339393063356338633366386531653336373037626330386434323536303832336533663234653039613033616430393535613530393830313936323964643034623237623235316463653035356633646463623061343164363666303934316230623837636466653334393864343630333861623564663036663632613561646530383539383537336138386338663538363064633134393261366531383634383561396231333235306536643137623830636433396335633831393130396537336361373332646232336566386261613737366563383563653030393162656362326564656662616135656433653564626662643166383835613466613838316166336631343461386135363538353335333364383933393335393230383662326431643336326534356266653166623435363833616261366336343039373961643662343638373731383437323663366562643538623265616538356337636665336662616265663566366363656438353030333462333834373230366332643637386333363138373630323662386433353165303032616635653066666536663562316632393566646332663436396361613264323338316561306234386361393837636332633865363335653862313963653565313732613933373631613864343930613961343531386437323535383830613134643737623762613737343839326239326134306262383133363265333466633664353137386439623330313132393334323035636237376662396132383234323733393435363461383535346561343732383661343766383632333965373563393437383963653938633939383434373832343632393434663631333136376437623530323033303130303031320218033a606666643661646137346133613334613930346265613437363033303836663862656633623662653138616265643434633464343065313266623133306239376264366238353561656335643062393062306238633733353464356633623065340ace070a0c34302e3132312e36342e343810a388031a05302e302e3322cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039663166386131323163326664366337366664353038643365343239663063363462636234346338326137303537333535326161646361643037313536396537323139353866356135643039663935383766666166636662653533343161326630313134616361653334366566336339303231336433343336656262323766343335306339393063356338633366386531653336373037626330386434323536303832336533663234653039613033616430393535613530393830313936323964643034623237623235316463653035356633646463623061343164363666303934316230623837636466653334393864343630333861623564663036663632613561646530383539383537336138386338663538363064633134393261366531383634383561396231333235306536643137623830636433396335633831393130396537336361373332646232336566386261613737366563383563653030393162656362326564656662616135656433653564626662643166383835613466613838316166336631343461386135363538353335333364383933393335393230383662326431643336326534356266653166623435363833616261366336343039373961643662343638373731383437323663366562643538623265616538356337636665336662616265663566366363656438353030333462333834373230366332643637386333363138373630323662386433353165303032616635653066666536663562316632393566646332663436396361613264323338316561306234386361393837636332633865363335653862313963653565313732613933373631613864343930613961343531386437323535383830613134643737623762613737343839326239326134306262383133363265333466633664353137386439623330313132393334323035636237376662396132383234323733393435363461383535346561343732383661343766383632333965373563393437383963653938633939383434373832343632393434663631333136376437623530323033303130303031320218033a606666643661646137346133613334613930346265613437363033303836663862656633623662653138616265643434633464343065313266623133306239376264366238353561656335643062393062306238633733353464356633623065340ad1070a0d33352e3139392e31352e31373710a388031a05302e302e3422cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633535376166353739666138333530316265383939623238393037373635626664666364353261623433326230313935613166316563643836666330306162366335353039623066646439376564643363623563656135366132393566333132616262353530383331646266393633663435303131386234666363366532326366343637363230306365396363386564666262663535386463363966303234323634616437643364616232336265643231333363323734653639333434383931353564623130383766393033373039303563363431383561363231316463373432666239613639303964383231383639343762323737343633646662336666306163643437656666313265616431663639373265663263313230333739336334356537373537356265346661313130633765343066613864623963363138376431313366343730343031343137393037316162663539626537643262306465383264653432313564633235353036623163396332366534393137343031633939373530366533373765366266303362363838373237653739343066616436396335653064613363643563626432626537373733353061656132643064343765393761343438633834626536636531333464363462656530393835633239313632663463316535363763636139336430366133633162653861626365333562353537666237376634666536373161363664656337393037353664306538383138313635663262616361613839316161653761633734333766633731373562366562366465623734373233373837353162623662663962306531343833663936363865396664626435363034633339623134643965326265646565633834366139383064373034643137316537626134623766636431613330643934356361313266343761333235643933393861613138663937303636303534643464313566633839393465326465626537336539323731643534383638336636316561343466623235303731653335313861373865643365623337653731613036393166323637303230333031303030312801320218043a606630643934616363663664666633373238373463396462643864373939326562333137616635303031636134313936616261323635383039636233643230306261393631613534333863336135656430356338336264663963643131356432320ad1070a0d332e3133332e3231332e31343610a388031a05302e302e3422cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633535376166353739666138333530316265383939623238393037373635626664666364353261623433326230313935613166316563643836666330306162366335353039623066646439376564643363623563656135366132393566333132616262353530383331646266393633663435303131386234666363366532326366343637363230306365396363386564666262663535386463363966303234323634616437643364616232336265643231333363323734653639333434383931353564623130383766393033373039303563363431383561363231316463373432666239613639303964383231383639343762323737343633646662336666306163643437656666313265616431663639373265663263313230333739336334356537373537356265346661313130633765343066613864623963363138376431313366343730343031343137393037316162663539626537643262306465383264653432313564633235353036623163396332366534393137343031633939373530366533373765366266303362363838373237653739343066616436396335653064613363643563626432626537373733353061656132643064343765393761343438633834626536636531333464363462656530393835633239313632663463316535363763636139336430366133633162653861626365333562353537666237376634666536373161363664656337393037353664306538383138313635663262616361613839316161653761633734333766633731373562366562366465623734373233373837353162623662663962306531343833663936363865396664626435363034633339623134643965326265646565633834366139383064373034643137316537626134623766636431613330643934356361313266343761333235643933393861613138663937303636303534643464313566633839393465326465626537336539323731643534383638336636316561343466623235303731653335313861373865643365623337653731613036393166323637303230333031303030312801320218043a606630643934616363663664666633373238373463396462643864373939326562333137616635303031636134313936616261323635383039636233643230306261393631613534333863336135656430356338336264663963643131356432320ad0070a0c34302e37302e31312e32303210a388031a05302e302e3422cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633535376166353739666138333530316265383939623238393037373635626664666364353261623433326230313935613166316563643836666330306162366335353039623066646439376564643363623563656135366132393566333132616262353530383331646266393633663435303131386234666363366532326366343637363230306365396363386564666262663535386463363966303234323634616437643364616232336265643231333363323734653639333434383931353564623130383766393033373039303563363431383561363231316463373432666239613639303964383231383639343762323737343633646662336666306163643437656666313265616431663639373265663263313230333739336334356537373537356265346661313130633765343066613864623963363138376431313366343730343031343137393037316162663539626537643262306465383264653432313564633235353036623163396332366534393137343031633939373530366533373765366266303362363838373237653739343066616436396335653064613363643563626432626537373733353061656132643064343765393761343438633834626536636531333464363462656530393835633239313632663463316535363763636139336430366133633162653861626365333562353537666237376634666536373161363664656337393037353664306538383138313635663262616361613839316161653761633734333766633731373562366562366465623734373233373837353162623662663962306531343833663936363865396664626435363034633339623134643965326265646565633834366139383064373034643137316537626134623766636431613330643934356361313266343761333235643933393861613138663937303636303534643464313566633839393465326465626537336539323731643534383638336636316561343466623235303731653335313861373865643365623337653731613036393166323637303230333031303030312801320218043a606630643934616363663664666633373238373463396462643864373939326562333137616635303031636134313936616261323635383039636233643230306261393631613534333863336135656430356338336264663963643131356432320ad2070a0e33352e3232352e3230312e31393510a388031a05302e302e3522cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030396261343537623733333035663034613931636334366231623936356334653834313735316162633862313431356130626164666431663332633234383233383661323237323565623765633734646561323165353036313764363438656135616333393337343161623031623865666233323132333962386434666462316466626562396533663339616134363538306464303435643138636134346430303263333764646235323763636534646463333262666337333431393637316634636134343634613366326138346663383563373161636630653561383936323664663639613831343734656431363532396638303161386166613937653433356334653034613936346133353735323732383838343365353866306130356366353135336565343530376232633638623364376662353461653661393561393539633837613132663633306539356337623162336333363935653835383636323431373932366437366331363938336661663631323235303338373435393037653963663133643637633261636435303363613435316338353933336163343131386163633237393830316362393638333439393033313435636564323736323964643038393136333137303933353837613737633232303563666135323534336235336333623665613135623834653364326333306331656437353261343633336333366232356239383933656130326164353632656239623738363862336234663437663461323565333536303634393632616337623235653538323934346630306433303739386132363266393231346438633565373464306138333736636332643662613634653138663565346134306166616336323530363264326361323363643238303037303833323164333833343331346630653538343438353932333236373361333265373061653064373131653331303538316263646231346538373133343639346336653039333066343662333762393664343961363435373339343733333165376535303764396535366465356536313436663266303230333031303030312802320218053a606361363738656263626433646338363438663765643033666235396630653231616636373531336561656535313331386536623534396265356163653930366564633166666132366439336135376163656339626537376634306561656564370ad1070a0d35322e31352e3130352e31333010a388031a05302e302e3522cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030396261343537623733333035663034613931636334366231623936356334653834313735316162633862313431356130626164666431663332633234383233383661323237323565623765633734646561323165353036313764363438656135616333393337343161623031623865666233323132333962386434666462316466626562396533663339616134363538306464303435643138636134346430303263333764646235323763636534646463333262666337333431393637316634636134343634613366326138346663383563373161636630653561383936323664663639613831343734656431363532396638303161386166613937653433356334653034613936346133353735323732383838343365353866306130356366353135336565343530376232633638623364376662353461653661393561393539633837613132663633306539356337623162336333363935653835383636323431373932366437366331363938336661663631323235303338373435393037653963663133643637633261636435303363613435316338353933336163343131386163633237393830316362393638333439393033313435636564323736323964643038393136333137303933353837613737633232303563666135323534336235336333623665613135623834653364326333306331656437353261343633336333366232356239383933656130326164353632656239623738363862336234663437663461323565333536303634393632616337623235653538323934346630306433303739386132363266393231346438633565373464306138333736636332643662613634653138663565346134306166616336323530363264326361323363643238303037303833323164333833343331346630653538343438353932333236373361333265373061653064373131653331303538316263646231346538373133343639346336653039333066343662333762393664343961363435373339343733333165376535303764396535366465356536313436663266303230333031303030312802320218053a606361363738656263626433646338363438663765643033666235396630653231616636373531336561656535313331386536623534396265356163653930366564633166666132366439336135376163656339626537376634306561656564370ad1070a0d3130342e34332e3234382e363310a388031a05302e302e3522cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030396261343537623733333035663034613931636334366231623936356334653834313735316162633862313431356130626164666431663332633234383233383661323237323565623765633734646561323165353036313764363438656135616333393337343161623031623865666233323132333962386434666462316466626562396533663339616134363538306464303435643138636134346430303263333764646235323763636534646463333262666337333431393637316634636134343634613366326138346663383563373161636630653561383936323664663639613831343734656431363532396638303161386166613937653433356334653034613936346133353735323732383838343365353866306130356366353135336565343530376232633638623364376662353461653661393561393539633837613132663633306539356337623162336333363935653835383636323431373932366437366331363938336661663631323235303338373435393037653963663133643637633261636435303363613435316338353933336163343131386163633237393830316362393638333439393033313435636564323736323964643038393136333137303933353837613737633232303563666135323534336235336333623665613135623834653364326333306331656437353261343633336333366232356239383933656130326164353632656239623738363862336234663437663461323565333536303634393632616337623235653538323934346630306433303739386132363266393231346438633565373464306138333736636332643662613634653138663565346134306166616336323530363264326361323363643238303037303833323164333833343331346630653538343438353932333236373361333265373061653064373131653331303538316263646231346538373133343639346336653039333066343662333762393664343961363435373339343733333165376535303764396535366465356536313436663266303230333031303030312802320218053a606361363738656263626433646338363438663765643033666235396630653231616636373531336561656535313331386536623534396265356163653930366564633166666132366439336135376163656339626537376634306561656564370ad2070a0e33352e3234372e3130392e31333510a388031a05302e302e3622cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633432636361633566626336393166626265626461383766666431653735626463643839323234393463663434666462636365653439373838353231633337386266373764623039333465633064323138336437633531646236366638363463313161623764653161633363346366646331663039336132643666333765326233346362653463383133316639363833616434323837386338336433353534633634356161313637626366623036346138336463343563356231313538343939663964393235383766666637616263643566323231636438313530353438343133303030666136653536353930383962316466643635373636656137386561656466636136623435343535666438616235393834646265333565353739356432633633356561373937346434336538656165346665626666653439326537303762343862316230666336343831616539653039643339313333303039623764323634303265366535326535653931623262333830643838663062653766623462333033653730323139373835303537616139346365393234633439323665393136353639323836653836623362613635316361326130613633646634663639303766656665333438336439336234636531643464303363373134323131313337356232633263353164346562383339653337616635333062326362643666353064346362333665323739333731373064396364646163306163653263633234623830346230613237333531636638333062373635323565323664666239646266343961303536363234613736383632343934653732363364306437306365626165393532393433653535383432663563616431336663663630613265366463663761316435333366336135626235346563323139313863373665353235626132393134363637353833316531376533366336316665383534393838323864303962373632303135343132623265353237383439626165633163666663373764653463323934633535303831316535393866663234646131356133343536396464303230333031303030312803320218063a603234373166336665383134303638316665393139313364326363303633663036356534343930616536326666356435343861356162653133316432616639366362653361633235626265323433363663613466386630653736636639343566330acf070a0b35342e3234312e33382e3110a388031a05302e302e3622cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633432636361633566626336393166626265626461383766666431653735626463643839323234393463663434666462636365653439373838353231633337386266373764623039333465633064323138336437633531646236366638363463313161623764653161633363346366646331663039336132643666333765326233346362653463383133316639363833616434323837386338336433353534633634356161313637626366623036346138336463343563356231313538343939663964393235383766666637616263643566323231636438313530353438343133303030666136653536353930383962316466643635373636656137386561656466636136623435343535666438616235393834646265333565353739356432633633356561373937346434336538656165346665626666653439326537303762343862316230666336343831616539653039643339313333303039623764323634303265366535326535653931623262333830643838663062653766623462333033653730323139373835303537616139346365393234633439323665393136353639323836653836623362613635316361326130613633646634663639303766656665333438336439336234636531643464303363373134323131313337356232633263353164346562383339653337616635333062326362643666353064346362333665323739333731373064396364646163306163653263633234623830346230613237333531636638333062373635323565323664666239646266343961303536363234613736383632343934653732363364306437306365626165393532393433653535383432663563616431336663663630613265366463663761316435333366336135626235346563323139313863373665353235626132393134363637353833316531376533366336316665383534393838323864303962373632303135343132623265353237383439626165633163666663373764653463323934633535303831316535393866663234646131356133343536396464303230333031303030312803320218063a603234373166336665383134303638316665393139313364326363303633663036356534343930616536326666356435343861356162653133316432616639366362653361633235626265323433363663613466386630653736636639343566330acf070a0b31332e38382e32322e343710a388031a05302e302e3622cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633432636361633566626336393166626265626461383766666431653735626463643839323234393463663434666462636365653439373838353231633337386266373764623039333465633064323138336437633531646236366638363463313161623764653161633363346366646331663039336132643666333765326233346362653463383133316639363833616434323837386338336433353534633634356161313637626366623036346138336463343563356231313538343939663964393235383766666637616263643566323231636438313530353438343133303030666136653536353930383962316466643635373636656137386561656466636136623435343535666438616235393834646265333565353739356432633633356561373937346434336538656165346665626666653439326537303762343862316230666336343831616539653039643339313333303039623764323634303265366535326535653931623262333830643838663062653766623462333033653730323139373835303537616139346365393234633439323665393136353639323836653836623362613635316361326130613633646634663639303766656665333438336439336234636531643464303363373134323131313337356232633263353164346562383339653337616635333062326362643666353064346362333665323739333731373064396364646163306163653263633234623830346230613237333531636638333062373635323565323664666239646266343961303536363234613736383632343934653732363364306437306365626165393532393433653535383432663563616431336663663630613265366463663761316435333366336135626235346563323139313863373665353235626132393134363637353833316531376533366336316665383534393838323864303962373632303135343132623265353237383439626165633163666663373764653463323934633535303831316535393866663234646131356133343536396464303230333031303030312803320218063a603234373166336665383134303638316665393139313364326363303633663036356534343930616536326666356435343861356162653133316432616639366362653361633235626265323433363663613466386630653736636639343566330ad0070a0c33352e3233352e36352e353110a388031a05302e302e3722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393032663034393061396237663564326364316330643936633661363939306635373362356630656235626462626133393636316566303233303932343139333434363639393639613638613463373037316433323939393066623137393265393030316362353539386561373163326436363736383234333230656534636162663164643335376165376632616462656463316231623061396439353632333737396234633463376234376334373837613136656537313838633732313731373736323461393236346162333963343166376666306234356138396264613430633461643037633464353936643566303964373035366263623561333566343466393561353963323636653039383932646362653436616435316632643262336539393161386636363538653166326362393463373733656234346334346538393264316535356331303736663136303833313965653635376534306631393239363735343361623432616232323233383664313735383665323533373438646162643032356535306235306165363035303732306532333964363465653666623435303763303631346464346265376166646231333330383930666633613665313736353237633331313661663132396139616335653333366439663630316537313237613664376438323061643266393032646163396232343836363861316261623038643130333432656136396137303937313332666637313230636336346663646537383430633635366261313733326261393565396333363735313137356534656333643834613765306432383834326234316262626264366632386534366333613636333365313832373936356335353832306435306461653262303436356363306434326531393562396431353332653632323565623939386436613439303739613861316364346430313735646533633837663937363134383437623363626231376161333462653832306237623361643938616333666165663939336136373738393734373832633063346165336661626263633433303230333031303030312804320218073a606633353738373364343131346131616566303361646336626136396566616632363930653232376162633136613666633665353034396136336662643936383830303462313465343633633230653338343336613361323464333138326464380ad1070a0d35342e3137372e35312e31323710a388031a05302e302e3722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393032663034393061396237663564326364316330643936633661363939306635373362356630656235626462626133393636316566303233303932343139333434363639393639613638613463373037316433323939393066623137393265393030316362353539386561373163326436363736383234333230656534636162663164643335376165376632616462656463316231623061396439353632333737396234633463376234376334373837613136656537313838633732313731373736323461393236346162333963343166376666306234356138396264613430633461643037633464353936643566303964373035366263623561333566343466393561353963323636653039383932646362653436616435316632643262336539393161386636363538653166326362393463373733656234346334346538393264316535356331303736663136303833313965653635376534306631393239363735343361623432616232323233383664313735383665323533373438646162643032356535306235306165363035303732306532333964363465653666623435303763303631346464346265376166646231333330383930666633613665313736353237633331313661663132396139616335653333366439663630316537313237613664376438323061643266393032646163396232343836363861316261623038643130333432656136396137303937313332666637313230636336346663646537383430633635366261313733326261393565396333363735313137356534656333643834613765306432383834326234316262626264366632386534366333613636333365313832373936356335353832306435306461653262303436356363306434326531393562396431353332653632323565623939386436613439303739613861316364346430313735646533633837663937363134383437623363626231376161333462653832306237623361643938616333666165663939336136373738393734373832633063346165336661626263633433303230333031303030312804320218073a606633353738373364343131346131616566303361646336626136396566616632363930653232376162633136613666633665353034396136336662643936383830303462313465343633633230653338343336613361323464333138326464380ad0070a0c31332e36342e3137302e343010a388031a05302e302e3722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393032663034393061396237663564326364316330643936633661363939306635373362356630656235626462626133393636316566303233303932343139333434363639393639613638613463373037316433323939393066623137393265393030316362353539386561373163326436363736383234333230656534636162663164643335376165376632616462656463316231623061396439353632333737396234633463376234376334373837613136656537313838633732313731373736323461393236346162333963343166376666306234356138396264613430633461643037633464353936643566303964373035366263623561333566343466393561353963323636653039383932646362653436616435316632643262336539393161386636363538653166326362393463373733656234346334346538393264316535356331303736663136303833313965653635376534306631393239363735343361623432616232323233383664313735383665323533373438646162643032356535306235306165363035303732306532333964363465653666623435303763303631346464346265376166646231333330383930666633613665313736353237633331313661663132396139616335653333366439663630316537313237613664376438323061643266393032646163396232343836363861316261623038643130333432656136396137303937313332666637313230636336346663646537383430633635366261313733326261393565396333363735313137356534656333643834613765306432383834326234316262626264366632386534366333613636333365313832373936356335353832306435306461653262303436356363306434326531393562396431353332653632323565623939386436613439303739613861316364346430313735646533633837663937363134383437623363626231376161333462653832306237623361643938616333666165663939336136373738393734373832633063346165336661626263633433303230333031303030312804320218073a606633353738373364343131346131616566303361646336626136396566616632363930653232376162633136613666633665353034396136336662643936383830303462313465343633633230653338343336613361323464333138326464380ad1070a0d33342e3130362e3234372e363510a388031a05302e302e3822cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393164376466666637386634656662653538393034353063356263396533353334626666616461643933666237616662313562633762636636376433643362343133626439393934306464383235363461646130346162326534656466306131633062386662376531613830393265393133386539363062653263633638623562393766353764323831633538373265393761343739666338343833363331363065333836336235376233336534383639623138356163653565333662643433616535666136373863396562363666316634303134373836383236623266386661376530303630663434303563306138663964613732303566663436383361323433666130663331356631616662623461346431343064303232333465343437336662393266636233386633656232386336306366376362666236346530363963313830383665346464363139333839323061653066643763313933653665313034653635623831376564393339386532333232333766646630383332326339636563303964343039393237326137633031356432326234646363393639663665613166353138393032313035646636303039326235356134316234663332623935376235376438346535623232333930356538363938393531373333656139663265323436316563306436353232656538313664353835306661636665623431326366663962393939343361383764633064303436343437636539336239376531366437336239366234323633393632663831666366393435386535373537376337383061366631363135616137613132333236373338653236396262373331663839653839313632326535373765613534343230626630636134366265366663346637316366323638316163303235326161383835653133626536373263643238343539303432376463643133376366333131363235653862656533623038666463616166343635623338376365376362333338313666326331346136623939616337643733343331386366633539623765643933396261666566383739303230333031303030312805320218083a603439333161373832303264353566313062333135373537383563336634333964623638313962643131303033646637626332636539326532396135313762376332313838306465623463303137393537343462353736636434336238343938640ad0070a0c33352e38332e38392e31373110a388031a05302e302e3822cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393164376466666637386634656662653538393034353063356263396533353334626666616461643933666237616662313562633762636636376433643362343133626439393934306464383235363461646130346162326534656466306131633062386662376531613830393265393133386539363062653263633638623562393766353764323831633538373265393761343739666338343833363331363065333836336235376233336534383639623138356163653565333662643433616535666136373863396562363666316634303134373836383236623266386661376530303630663434303563306138663964613732303566663436383361323433666130663331356631616662623461346431343064303232333465343437336662393266636233386633656232386336306366376362666236346530363963313830383665346464363139333839323061653066643763313933653665313034653635623831376564393339386532333232333766646630383332326339636563303964343039393237326137633031356432326234646363393639663665613166353138393032313035646636303039326235356134316234663332623935376235376438346535623232333930356538363938393531373333656139663265323436316563306436353232656538313664353835306661636665623431326366663962393939343361383764633064303436343437636539336239376531366437336239366234323633393632663831666366393435386535373537376337383061366631363135616137613132333236373338653236396262373331663839653839313632326535373765613534343230626630636134366265366663346637316366323638316163303235326161383835653133626536373263643238343539303432376463643133376366333131363235653862656533623038666463616166343635623338376365376362333338313666326331346136623939616337643733343331386366633539623765643933396261666566383739303230333031303030312805320218083a603439333161373832303264353566313062333135373537383563336634333964623638313962643131303033646637626332636539326532396135313762376332313838306465623463303137393537343462353736636434336238343938640ad1070a0d31332e37382e3233322e31393210a388031a05302e302e3822cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393164376466666637386634656662653538393034353063356263396533353334626666616461643933666237616662313562633762636636376433643362343133626439393934306464383235363461646130346162326534656466306131633062386662376531613830393265393133386539363062653263633638623562393766353764323831633538373265393761343739666338343833363331363065333836336235376233336534383639623138356163653565333662643433616535666136373863396562363666316634303134373836383236623266386661376530303630663434303563306138663964613732303566663436383361323433666130663331356631616662623461346431343064303232333465343437336662393266636233386633656232386336306366376362666236346530363963313830383665346464363139333839323061653066643763313933653665313034653635623831376564393339386532333232333766646630383332326339636563303964343039393237326137633031356432326234646363393639663665613166353138393032313035646636303039326235356134316234663332623935376235376438346535623232333930356538363938393531373333656139663265323436316563306436353232656538313664353835306661636665623431326366663962393939343361383764633064303436343437636539336239376531366437336239366234323633393632663831666366393435386535373537376337383061366631363135616137613132333236373338653236396262373331663839653839313632326535373765613534343230626630636134366265366663346637316366323638316163303235326161383835653133626536373263643238343539303432376463643133376366333131363235653862656533623038666463616166343635623338376365376362333338313666326331346136623939616337643733343331386366633539623765643933396261666566383739303230333031303030312805320218083a603439333161373832303264353566313062333135373537383563336634333964623638313962643131303033646637626332636539326532396135313762376332313838306465623463303137393537343462353736636434336238343938640ad0070a0c33342e3132352e32332e343910a388031a05302e302e3922cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633665313863386662663463643465623130343534326362323061616161323532643935663035326631303836643538316334346164373337626636363736633063336637383961663532363562386166623739623530393132646138346530616663663735343763623166666630386430353237303137656236646335636466383362353139363964343433333661363338376364373062393462663463396261663230323938343065356634663836336437303831663066613831653038363361646564623862383961356461633262623535326436653762396662613232326163323863353730373535333866633935373939323934326433343166613238373665366235303765396365376564353732653863666461356465666133363466646638643865323338323961346363626234373866313165656533623332616238356530373239353163356439343230313135666261333237303733343934663433623566366265626638343135326533353665376231366261373634623761336235326362323733343634303136336265313436356536643166613463366536663636363834613633356339613535366161373130306462653634356466386634633432336165343561303863623335623462633138373838366532323939623563303231306135666261336239343439663438336566393465643932326531653938633131336265313636623839633733353832323433313335643434323330366162653561373162373730313866663333356436646437393534323639376231363832333862393637323766643133333962356638326133623661353937643937363033376165323530363435366338623334653966626633626333323431303434316334626663386562613538353937323534656665626661613738383039613563383835343732396135626137386563653139666338343037646438383934613662633738343430333764383738636163653663313532633265383965386136346230363861366332333765303939393362653830363839303230333031303030312806320218093a603634653039383631356266343035663765643561343031333434366238396334383863666364366262323561346136373664633737656561313164333364373032363832663061363961383033306538633537373764306534323230333739390acf070a0b35302e31382e31372e393310a388031a05302e302e3922cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633665313863386662663463643465623130343534326362323061616161323532643935663035326631303836643538316334346164373337626636363736633063336637383961663532363562386166623739623530393132646138346530616663663735343763623166666630386430353237303137656236646335636466383362353139363964343433333661363338376364373062393462663463396261663230323938343065356634663836336437303831663066613831653038363361646564623862383961356461633262623535326436653762396662613232326163323863353730373535333866633935373939323934326433343166613238373665366235303765396365376564353732653863666461356465666133363466646638643865323338323961346363626234373866313165656533623332616238356530373239353163356439343230313135666261333237303733343934663433623566366265626638343135326533353665376231366261373634623761336235326362323733343634303136336265313436356536643166613463366536663636363834613633356339613535366161373130306462653634356466386634633432336165343561303863623335623462633138373838366532323939623563303231306135666261336239343439663438336566393465643932326531653938633131336265313636623839633733353832323433313335643434323330366162653561373162373730313866663333356436646437393534323639376231363832333862393637323766643133333962356638326133623661353937643937363033376165323530363435366338623334653966626633626333323431303434316334626663386562613538353937323534656665626661613738383039613563383835343732396135626137386563653139666338343037646438383934613662633738343430333764383738636163653663313532633265383965386136346230363861366332333765303939393362653830363839303230333031303030312806320218093a603634653039383631356266343035663765643561343031333434366238396334383863666364366262323561346136373664633737656561313164333364373032363832663061363961383033306538633537373764306534323230333739390ad1070a0d32302e3135302e3133362e383910a388031a05302e302e3922cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633665313863386662663463643465623130343534326362323061616161323532643935663035326631303836643538316334346164373337626636363736633063336637383961663532363562386166623739623530393132646138346530616663663735343763623166666630386430353237303137656236646335636466383362353139363964343433333661363338376364373062393462663463396261663230323938343065356634663836336437303831663066613831653038363361646564623862383961356461633262623535326436653762396662613232326163323863353730373535333866633935373939323934326433343166613238373665366235303765396365376564353732653863666461356465666133363466646638643865323338323961346363626234373866313165656533623332616238356530373239353163356439343230313135666261333237303733343934663433623566366265626638343135326533353665376231366261373634623761336235326362323733343634303136336265313436356536643166613463366536663636363834613633356339613535366161373130306462653634356466386634633432336165343561303863623335623462633138373838366532323939623563303231306135666261336239343439663438336566393465643932326531653938633131336265313636623839633733353832323433313335643434323330366162653561373162373730313866663333356436646437393534323639376231363832333862393637323766643133333962356638326133623661353937643937363033376165323530363435366338623334653966626633626333323431303434316334626663386562613538353937323534656665626661613738383039613563383835343732396135626137386563653139666338343037646438383934613662633738343430333764383738636163653663313532633265383965386136346230363861366332333765303939393362653830363839303230333031303030312806320218093a60363465303938363135626634303566376564356134303133343436623839633438386366636436626232356134613637366463373765656131316433336437303236383266306136396138303330653863353737376430653432323033373939"
         )
     )
 );
 const TESTNET_ADDRESS_BOOK = NodeAddressBook._fromProtobuf(
     lib.NodeAddressBook.decode(
-        decode$7(
+        decode$6(
             "0a7f0a0c33342e39342e3130362e363110a388031a05302e302e33320218033a606131373165336261383334373637343761656232653261633464306531313563616161623931383230336230646665316364656162343433343338666332383961626338626138613661666638336462356631623333343034366461383863380a80010a0d35302e31382e3133322e32313110a388031a05302e302e33320218033a606131373165336261383334373637343761656232653261633464306531313563616161623931383230336230646665316364656162343433343338666332383961626338626138613661666638336462356631623333343034366461383863380a81010a0e3133382e39312e3134322e32313910a388031a05302e302e33320218033a606131373165336261383334373637343761656232653261633464306531313563616161623931383230336230646665316364656162343433343338666332383961626338626138613661666638336462356631623333343034366461383863380a82010a0d33352e3233372e3131392e353510a388031a05302e302e342801320218043a603734303964656332653439346236323765653439633639623239346265316365616562636133666463616633363738396538386663376435623065656635353631663532623832643335313931613339633266626564363032373236373136360a7f0a0a332e3231322e362e313310a388031a05302e302e342801320218043a603734303964656332653439346236323765653439633639623239346265316365616562636133666463616633363738396538386663376435623065656635353631663532623832643335313931613339633266626564363032373236373136360a82010a0d35322e3136382e37362e32343110a388031a05302e302e342801320218043a603734303964656332653439346236323765653439633639623239346265316365616562636133666463616633363738396538386663376435623065656635353631663532623832643335313931613339633266626564363032373236373136360a82010a0d33352e3234352e32372e31393310a388031a05302e302e352802320218053a603962313431363538346134613338306262383661366337643732303764386165646462633362363365613330353939383235356263653833353162613462356463613532633932383261353461366265643630646536336365303361616132340a80010a0b35322e32302e31382e383610a388031a05302e302e352802320218053a603962313431363538346134613338306262383661366337643732303764386165646462633362363365613330353939383235356263653833353162613462356463613532633932383261353461366265643630646536336365303361616132340a81010a0c34302e37392e38332e31323410a388031a05302e302e352802320218053a603962313431363538346134613338306262383661366337643732303764386165646462633362363365613330353939383235356263653833353162613462356463613532633932383261353461366265643630646536336365303361616132340a82010a0d33342e38332e3131322e31313610a388031a05302e302e362803320218063a603634383636383562346536653063623936333437326330316665393939333166643965346334343838376261383334323361653766656564323264363438343834636638613362633563636361366133373338376266393664333836373238300a81010a0c35342e37302e3139322e333310a388031a05302e302e362803320218063a603634383636383562346536653063623936333437326330316665393939333166643965346334343838376261383334323361653766656564323264363438343834636638613362633563636361366133373338376266393664333836373238300a81010a0c35322e3138332e34352e363510a388031a05302e302e362803320218063a603634383636383562346536653063623936333437326330316665393939333166643965346334343838376261383334323361653766656564323264363438343834636638613362633563636361366133373338376266393664333836373238300a80010a0b33342e39342e3136302e3410a388031a05302e302e372804320218073a603339653930393931356138353238303330313534613663373730393530633762343737376261343031333537633065363138373635343231356363323061616363646438653566663239653963346439356366343130316661363862653435630a83010a0e35342e3137362e3139392e31303910a388031a05302e302e372804320218073a603339653930393931356138353238303330313534613663373730393530633762343737376261343031333537633065363138373635343231356363323061616363646438653566663239653963346439356366343130316661363862653435630a82010a0d31332e36342e3138312e31333610a388031a05302e302e372804320218073a603339653930393931356138353238303330313534613663373730393530633762343737376261343031333537633065363138373635343231356363323061616363646438653566663239653963346439356366343130316661363862653435630a83010a0e33342e3130362e3130322e32313810a388031a05302e302e382805320218083a606134343837346137616131623337373431613037316164616165373866623135326236393664316335386438646566626531643832333034353332613063303139656539366363313964373536383635373864333961316536633331613165650a82010a0d33352e3135352e34392e31343710a388031a05302e302e382805320218083a606134343837346137616131623337373431613037316164616165373866623135326236393664316335386438646566626531643832333034353332613063303139656539366363313964373536383635373864333961316536633331613165650a81010a0c31332e37382e3233382e333210a388031a05302e302e382805320218083a606134343837346137616131623337373431613037316164616165373866623135326236393664316335386438646566626531643832333034353332613063303139656539366363313964373536383635373864333961316536633331613165650a83010a0e33342e3133332e3139372e32333010a388031a05302e302e392806320218093a603639383332613733613336303265386431666265356164353864316332363337613162363732643731656538376166313064623634386562393161666232323832353362316634376535376433643461343466663534376233333934616132320a82010a0d35322e31342e3235322e32303710a388031a05302e302e392806320218093a603639383332613733613336303265386431666265356164353864316332363337613162363732643731656538376166313064623634386562393161666232323832353362316634376535376433643461343466663534376233333934616132320a82010a0d35322e3136352e31372e32333110a388031a05302e302e392806320218093a60363938333261373361333630326538643166626535616435386431633236333761316236373264373165653837616631306462363438656239316166623232383235336231663437653537643364346134346666353437623333393461613232"
         )
     )
 );
 const MAINNET_ADDRESS_BOOK = NodeAddressBook._fromProtobuf(
     lib.NodeAddressBook.decode(
-        decode$7(
+        decode$6(
             "0ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633435363165336332373863643635306538306334313363613434343233633163336331336366313437356636663639373664353937616534333262343961623432303836623739623834313332363035346238623364636635376438666364373962666330353831383363613234636434633163626335373465643131313765326635623762336336336365376230366439623465666366373337353633376234316665366635336338313162396465363134336633613532393537636466393536373735313230623333373033666635373632313430376162393537356263326433356330643434663039383366633165663633613466663532303966303730633932616631303632393536303163393662636564303634656331393031393730313963363831316334633864643830636234663461633731663961643736653761633839343536666266346630313166393061626432643930353336653832333436353166366265663932376533643564386237626634353930353039383362656361336162656632613964393761663334353737326137373430653936393932373562303138656130646632383661646436636539323365663930386662653736326137356632313131363836326462343464336463613164343462346432653864633130363663353030366262356137643935346164323535643462363033323733343735653531316165623438356430363961303637633061623563323435333863393333633036623561366165666139343030356332393135323133653463636461653663393432663632373266396464353238326436623839306631663230656664323339396364363734393234666135373034366163366461333265373339353161373331313365393166633262376666323965343835316238336666333966383362613965633666303863656664626236636262626666616266646661613931643933306637323030646134383133376333393463626431336537303165636463323631366664323162616436383161613466303031303230333031303030312804320218073a603665396138616263646364653665313134396133656265313766643538643839303538333961383664623732623036613365613230616131373666383638623235343838353261653432336437613963366237636666396537313436323961320ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030613163343037373135343330336363373263346662373639326333663934323531626465633132333961316637613839373261626539316133353332336662656361363235613766666165363430366338353564633261663231313039303062306466306536653664623736333634646661316666653835656461353637393336653239383562383536333461333261613532613635393964643663333062653166376136633562386635656563616632363231643861343539363832666364326462616164313536316431316633336663636237663535303061633536386431363564626561616365333238366432383934663634313239643738316436633732666437643539396339653164336166346161343333633233623931306661653463343834313634316636313532366164373837656265613533393837343136376539643361373363633066623135363432396431356563373633613664306630363131356137396239616637383364373762393864383330393661613437343366393734303864396531346263663464646666653435393137363838343762343063623864613763613337353235366432623933356430393566653235326661653831666636653337663834643761393064376535373061346638656633633764373636656564613437326630393230313939303135613839303832353961383733633534353466636262646361643265353238646538353435356234303833633764633461646335613938386530636464666463313539643564373132616264353434616137336563303239303839383134633938613434663236666330363434363539633138336533313834616132373266386431646330626661336530613536303438346362303535626134646262356363333339656338306264313164363432646333613730326538633730336162323139333038346439626436336630646665313261343333633235373665616637383163666164383637656637306264613631373638623262656631346635306336633362386230393666303230333031303030312805320218083a606464336233653763643361323537643832373665343635333533363162303138623730303931663438363635653832303031306538316563303539326236396264346265316662643765636435303964303730313364643034313238343266640ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030623263636163363561643066633736343561383137626661626334383761643765343133313165376133313938623337666238343264383463333935623366363764366264383438663130633666303363323930653866376461613864303031613834343164633335326131393136306133313933653638623832656466313961653637363933613961333364346362383765373839613130373037313535313565613737326361613862383661353639623931633534353038333564396333353466306461636563393766653737303931623435623134373639386237663836303134323264636432323631653932386465346461633963343264636261666466393663303732333362613330323730373666333763393639653865643330623662356438663530333462653764393263353936663862653836316535316663633361323432626639643862653965326139653865306631353565626366663233656666613763643537633130353432383131643830373736633935383535323666646230656161333465653139353564353131313933393066653837336534633034646564643239313635383834623938623436333038373838616537666334643461613461386663396263323637346261333231343933623632343435356164343130633164653731626339356431643931666130663230313431386137393565333039656166323937623639396266323763396661323736336364353963656230323165313662383230306331303630663238313766643833636663373637313833343839343631653335393932393162333830643665393339626161346231393233326136613237326464653635316638303436666463333464623237366137373764366662326265633332353562326363323434623461663536366231303566333063363530366464616530656233646564646366393437626362396336306530303039383466336234613863366334656434626639306263313933326237663934646333616536623336303030386562393032303430663962303230333031303030312802320218053a603561383634313561303861306138323566336232656237353031303135353230326533313234336665343161303333333834653738633138633131653565386632303964343933623062326664343565303662333734663262363964663564370ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030613365333762373663366364356636363232643639323434343464313263363737633339356632623539303266336262393862386138623530353561373037373036636130323863643735303630613264383730326432643862303439343762646366653061386331343161613238343462316530366536363139303031326538623633323661623066613331373937336263376362346432393439663231303861613034633462306339316261613537323866356235363232656337356162663537386131663762343165646532613637656264363963313865353831666466396336303230616330646539636132633331663063363436393030333331316662623563653764623439633738376531613764323761613432356565376238346461376536363933396639633830643065383266636535356530326466633862356337383431386132366161343336353036393837313962616663656366306264343930303061646463666134303537303862646265666262313937343964323264616230303765343464343565613233623130366638383334633135326532353036326434636632346666323533353663376562333732393130353339336662343962616239303461303266306630626234313763643931396433353238393031323865366262666634666163396639306465313138613937346632613664643031653033326137396231373866363066613166636262643032623537303466623436323935633135313930383136333733656464363633356338353639373866316239353033663166373362346230626538616261326564316665656164353939353362663832656664653933613334373161626435356364613362613861363733666262333739393734396662303036643030336630653633663636356333343631643261376232396463386232303462613539613635363638613436616532383738663030643166393439306466396532383066656266343331356561303465616135363861336139666434386336326336336236656364613639303230333031303030312803320218063a606434363430333938303337393230373965636364356134343331316361306463323262353065633839356235366535336431326232396637326463366462613363616665326535623831303466626461303338616635623434376430666231320ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393361323135636334613761373232636165396331336162643633366466393963636565633661663964623436623639666135313637313665663530636532343930613938316530396162303139636132636234363831316235623631396431626431643565653666343661343263373737636264656536343261313438346563646635646464333732393634326333386336643433613838353838373434373566353832343434333636346330346466656439623839303435666230383565323563336566636234383431373333656666376335323963313339653639333530633263643739623263386431393637396137313265346538636166643332363735343162383332623365313061303132353564656636396466316539643362386438656166303331316465363764356531326232366464303164626264396433653432643335643964653237313330326530663166363964383763626337616361396538383637653964343238643363616230363636656234393064356662616233306266663366373835643033663230373261343362623962356535343635366135393263623631656166643561356566323834633763616563363666376634373332356363306434633164323766363631643861373438636135303731633036656631333464666639366634303836363838333636643436386132343738303031376530623536616261376661623433623362376330623737393036666165353438326633323831316332393265366231343435346531346238393438303161383661303363633437373934646430643734353237613732653432346564336166613034383939656362396136336632613961653732626537666139383961646630643635613332633835316439383031666334313034386466333335363466633762333137303765633866623830313430666537623761316661313230626131636236363033323463656666623462636332643962623764653063663534633831396632646433626365616465633963323566356531396463396231303230333031303030312806320218093a603365303261363732306334343636353965383633303564353562666565383230623335653635306665636163633535333039373435356532633465303332636339646564313662316262343464336235393262626163623663326266663165360ab70722cc063330383230316132333030643036303932613836343838366637306430313031303130353030303338323031386630303330383230313861303238323031383130303930323539663465336439663066333934323536353438653963373330386231306237333430336363393039346439376164313531623737303631373062393737326365623634643636326563656639303161386437643135643331396135396338623731303731616363643839356237633933363130646336393736663637633465313732396261383337336162376535326133663363386632363534393164646536396436653039393934373065373434353938313133316264393663333665363836353230336662326562643564353065616461666237323633393664656331643931373438393862346539626530346337346433303466656164643963626433323334633362376633333036633939636230633333396663323539363962343164353861326237636663313833326532323664383163313936333939336532323535613038376431363938633033643432313062643634353830363434643039356361373661613137393465646434306331633837623566383261386533396636303365393731313662613034353738653765383033343634393564373835643465663763663737313462396562366635663965306239613934663462373338383436313962393237346434613935656631353735346138396439376566356331613838623664363933653061383065626435333766633963663063613931643163363264393135646537656438313862393532653634633230303239336565386532383461343136613732613365313266633764343233623135386639623439363630636263323436366662656430666564326532346531303266646539343265623463666439346265633436643364393066633038633339666563626130336530636132343634616536363462393739353135626132396531663730326333666537303262653739333739366438656462313761613438633039323930623032343534396630363131663561653233656437653136343432646637643164616432323836633262623039643535323264643365643639386332663032303330313030303128093202180c3a606339373462623938326338313931336237333236643561336639646363343836313261313566376161643032663230376230663130636432303137613666626666353830336537636139626662343730396162323862366230396435623133660ab70722cc063330383230316132333030643036303932613836343838366637306430313031303130353030303338323031386630303330383230313861303238323031383130303962646438653834666164616133353332666334636530316138613137643463336232333266353061393739306532363236383465646334383233653831356131626435623230656365613762663536653239663662623762383331666233626636656663643134373566306238656435666662306231333835623936643136366236323966303339366138666566356630366534626361323565653461313334306565323633613464396262303230643866343732333036663364383836313338646537613031396530353962643061666339303263636261316132313361653264616136306338613031333735356665306134386530333466356234303233613264616465616138386335343836383335336163376137613364663132623266623634313837373465396231346265366561623863633237623838303132616436313632646137346530656562313631333539303566343337333734646162383538366437353061323662626433616332346165643837386334643533653635313037326338373165393464376163633537356339363733383137333461353366656166346437626136626364643234316363363435386336303837643836333032616132353163303466366435366239633332643764393636323437353065643035353738356430373733663433646330393962323863393232383131343865366338316632393766663964313636653030306163303462333132343138363737356663656637356635656261306331303332626631333064663663643761343632313164306466336530353834643932656136373334396438343930353038656234656638386635346338633364343836646538373139663130666139366665623835636337393630373663613738313331386565326439656439303363613133333630343063353961643931613464326636393865393130386165306564623962316362393561643333623139376666623138626431626138623536636265653261616539353835656365323038613165313462343835363436333032303330313030303128083202180b3a603937303834333033333130373866353638326337663332343464383263336233653238316139313837393537386465656163646363326132656265353431616631383831313561643265383338363565356635643234376234613138633165650ab50722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039303938383635646566326632616233373663376630663733386331643837613237616330316166643030383632306333356362366562666362623063333330303331393361333838633334366433303233313732373031323139336262373666643330303462383634333132633638396566353231336362623930313130313530396465616239346632366137333265363337393239646134633463623332353137653361646262333831316435306163346337376331666365386236353136303632313566333437303766336537323635353435653538633839343630396532383337366264623737373566653330343339653065313539326664636230633365653163333035373733643037326136623839353765616663653161313162653936356564616666333834333336366362366134346563323561383930313036653632343735363766373662353530666461343832626165633633303764363938656338383834316664363666323366323130653437623861396463626136626134653166613731366462333363383065333038313934393664636235653536303966623665376336313533373962646465643432376539323331623932353463326261663934333630386138366436393861653961336338363339646638383764366636623561373133383564323433333864393131613231326266373166316532616363386231383662393665633865363963383662366430353832313737373661303963396336383935336564623539313635373862356132363362326634363965336230633037656164613731613434376565613766386663316262383037343235353536376237663062643165366166623033353837313863393862343239653234623232393835393666633736636636616633393663613934333464373932366563376433376434623932616635366434356665666638313936303935323234613931366331666665366236363765323535666333616338636363656639323064633034346232353030333133326238373830363734326630323033303130303031320218033a603333373339306438666561313434616663313265383132353461323864616336656138323839333833366163303732656666643835653061373734383538306566323830393636343863356137663864626234636538313437363831353133370ab70722cc063330383230316132333030643036303932613836343838366637306430313031303130353030303338323031386630303330383230313861303238323031383130306335376564623966663237366530323362323830323163623164383763646631393636623639386366343865346561616137633639323037376365656538636362323339613463393231353937653865383966376363303564336633313331353738393736633465333134343035643461346530336137323431306335633039636135323761643561383562393938363337653732613332653166626330643535343662323436356539653830366332646435303965623035306162356662323730363366643932383135623164643236383965323131316361656236663534396539346139663030663038323164346361366336613631313766356135333363393236336266303734613330643563626566353064316338633233383762636139373265646564613039383362356430613662353764636230303230303036383238623430653430373662343837306232346261643834303536656535326235663432326538383430303238633235303036333832643865396336363132323566346637366561373265333430363037653966633666336332303433333037366131636138636231356564303361633839363664303530376263646536383165346530323331656539663837643131316537623438616338663934643264383432623532646637336635373363633534313439363437393763363236393638666661653734313866336236313039623561306630396533323233663461346435653335303964643235303133386636626331376266366365636531373539343433306466313830613338653930616466326166666266616430633662386331623837663137386130363164636662666638623932633931363664383734633166663561663466626364626665386539643039393337306464663630626537343736333364333665653465623563643531663665336333333965313531653431626462356135636532633863393761306134336233636434636330383138383463383739663964326633373438343238633835373366313763393066336362643032303330313030303128073202180a3a603734306166366266373339653838336338386633333434633961306638623330316533396463393831633531363365306465326133666634326239396534323665643765353662363766343231383530333834356466363266343963396662300ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393133316161333638663933343532323966393762363235396363636166666561323365303063643565616430326533663639366331653731346565333933396461643836306533386266393561323937346639656234386539333433663861616334303565613935356430353332336531313762336231633934383133613361663432666538303832633364343362616631626434643833363765393364623030616436393665363237613130333661653533346630313165616435653536663337613666666534346236623965303939343031313932616435363061303334366234316138313030393566356632643766643332643665656236353562613735386336623532366331323933383661663731393763376135336165363033643632323833323235343936316631366430656661383037396137363835363138383862653733333439323231373935366262636166616562623631333563356662623234383464356234613566646630333336616330326532366331363532633162643865616633306461653164366433656230306637623466616238643634373866653864393565623931316466393636613064656134653532326462373662383936363537306563633561663039353136343234663061663566386565363665333836643536353037313339393731363961633337353733626635326664303538646539356162326666363865363831313161623233343035656139363462326262383864303263306631636165643731656364643465346534303835393438373666646238353030626335356337626130323036366530356162393864396637653034363664393730326562353765653337323266386663633835613735353035666633323632313730323838623738383732336164623937653464653536323063633930656164313338326663643735373138383966656662313165363737316263336636663366656231396337616335343238373864303361393032373035323663336565643234393465666635346531353363613966363839303230333031303030312801320218043a603765616236393661623935343336363538626331346666366234626534643932356364353162323230646632613164356336656531363061646166323961353165363934646533656531383463653232656164386437646239333231383266330ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303038326465373330363566333466666332393334306435393439643232323062316534333636656435636637633665626436313663663934313661353365613030313766366262313136626664336633646566636331356237613464646630653434643032666536393536383830353365373961373730653230316263663731393333393030333965653866303836643466613734366337653035363931383330316639623565383465333932363238323830383561373962333232626361306235643835666539373232316132366262646532353863363230663064636561303261623165646431366363343961336632616239323838653364643166333764633462366136663731333366663932653534316337316237306432613266363664353537323561623138626638366430303965633364323466356431326530623565363830326431313531333732643462373634656265636234616638326636343934383565633537623561303164633637393538663561303363636161623763626139333534613137333732633133313662613437633935336161663934393031623366386332346536613361666436373538653766336231343363653264643363623037316232613734633932316365653934396134623561366265383739663163373930613662386436336231393264376565323961393439316664643638396139386330613763336436303332306631623461633264363232396466643934653432663361363034386137366265316562393538633861313837336265386433333861656339666335396162376633373632363738393430326331666435393566313930383735373565306265383237666334633061346662336433393361643734613934396363393836626662363463616264646165353339333566366463353630373464623933643737656133623831366264643662653533343439373237323238393835396666333463653531383630616666623632316431303438376463333834336631663836643534303334613633653438613161306430323033303130303031280a3202180d3a606132656363316232616539386264323862633161303864386633373161306434663734356337363864306337373339363235363265333433623235643833343235656565613765663865613134323935333432623865623738643332656333660ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039383735356134303862353332316532363330353230303064366437643461326333613535346435653133383461396362356562663437346165383832633633623438366264303864313434646466316139346365396137643632353139363330303661666461616334353838343666313736343031393566653235333961363536393330656661383534663231343865363865633161303863316334396432303063336633303435666537313437663036643533346334626432363231303063623164643339373339643736306438316130626432306638336632353564323530376434636362313130366235333631386336613934343039633838376361653236326434636565396338363233323134376365633134303465306335376262613733313731333065653339363433383838616633643539386564643832623863363165363561653831613465316135366263303664333937313433613938643431636138376433656634333365663061656162363830313139316233653338343830393638663636623665383836363261663435613965323132393934663638623238386562393637626562393834373863323433653231333663316131353931663036316635626330346232316666326261343862323966313834333130383838373362646665393966386135326539343038393731383536653830346465613630326133313137383663393835363532393633633361333737303332396234303966373466646663373436623232613566383431383931323037316334636538343663396234623332306665646636653962363465326362653338346639613832623661616164346232303930373433316466316133336636393230376135363536303062653831303730643038333239303039393538353961343439386435623539333135626365626566656538303765623061336139343266316364663333363764643434343466646232393838366566636464306265346162653961313838383033393533383735656461333364623732393839663736336230323033303130303031280b3202180e3a603139366237623132303739376364623361396430303362393833643537646131303331303662313733306531376636376532633762616161646234333738396166313639366461313031316232353362636263383630333333383566303332380ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303061396462376638626161313236383938666162373839313135613362356438393734346631393765323830343161653039386633653838366336393837313732316531316262306164313166336365393132346161393631643661306463383435663439373635633366616231393935383430323637366635363434363262663238316462613535383837383066303365393035373938653138343236396161613630663761313437323333316532666231646561646438373763383463626362363431636139653563386164366534356263313539636230373966636230643434396364636438643932333963316130343765376234343864613063646361323636313061323566323936643936653734363962363736643461343434353136653761353965383532393361383038366638343063303532383534653032613863623230303264616433353832356265346438336235326661393165386337336666303439373436313438383632373837633131313866393234643331636261633162343466656666323264343336623339373965616466396234336134626661373265313562343735356663616232363065303661323739633362623733626337663136613036306434643532326664343930353830333838616135393564383034343733366535323266363432343931356637383033623735383365303935636466373863333235313936393764653831623839666235303035343735336231613137663961616662303634643834633939326639616231316363626338636231303831346463616635323634616134356632316264656661633832636361636161663335386533313337336565316261346537343032666438613730656130633238636135636337346463343235313063393639636432633435396231656333363838613031656133396139393237313063643232393763393861383462363334386135373738303466646332333464336665313930336532633231653137326461323862353961653665346337653865646438623731633439643730323033303130303031280c3202180f3a603538343661353366343437353239666439636462373830346364333136383865643665656265336236336461326635663231316666626337333731393763663366316366626664613631626537643135313066306539323339383131376637340ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303061386365616333363765623166316465356630643965663365616630646639623938343438666532303830383437363536326130363063353163323839373730623463616366653932636236353536393832336539363263326132633966656435336264333663613361313232646531633532356135383266323561346437643632386331613364356264623839333661656365373531306537353534656537303333303235633039326338323865656235373338626530326564393633646138316135393230353633346365393435343537376162383266343066313366316565353565306165373237653233633330323834623166343462393961636534646463356639616337616438386439666132323535393335623234646362613834303036343265313663663235333263306230643638393239303436303837313563343037366634366438346130653066656433366537366363646339363335356537613236313630393435633262353461653236636330306664303832333236333436656565656137646437356639313931316539396462636239396561346163366261303536633333323238643838316438353833316439636338373935393364613137343664643065653935646332623936666539336261666366663263643764393239353864373864663333663230356437313135656439666163346462366634636336306535366135343431646135623562353566613539393939303265393538613662366334346438313064646335363138313234316238376632326630353961363838306538303231373336643031383937646236353434396365383137613233373564303335353163623064653530376336303961306338303330656366346266646562323133633033646161373634613138323162373234333334663731663736386437616563623237373035326137303333373635663037323138303536633738663261383761663138333836643866363161356366636233663262613464643539393135663133643338363334643136393537353730323033303130303031280d320218103a603030306162636435396133306135333838633530306265363832663663613239343034363239356339323735383831633230643334626230643639306564613762333862366262643037613364643166646662366137303434626230396366660ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303061663062393134323537626637613436353563346135306430636164356530613165343538316564363632336630653837333066373936623866323963353831373862636363363933326331666333316633396566343462383264336334336233393837333733373366656362313239353232386130346664353061313466333634366438346665316634363763616562393864343633653239373565393935623864326531653339663362663661646463323561653335643635643032363038653033343535333739363665326162636534396238313462656164336331623735373137346165333063303062306334336539396238303439366237326433633133316631633665346663646130356632383131376566396532386334333033626534643863376530343264353862383363633132313934356132633635653739363263616139313835393338663337353764663763636139356366303262356533313934346133613631396130616333663165333462396230313364346332323463346631653730666439666433363938336566383661646535313833363263633833323263306637623631613961633735666238326537623836643638626330663039396130396131346361633561316438643338663961386137306363333766663563633362626432373432666664313436323535633137316536613137383038333237316463653066646536383165643439326362353962303739366432373031373538333864633539303831303765336136656133663961343036623364313133306363656333623437393165343962626332333136303362343661623264306639336434336265373561623961346437313065613934306532383561376231353362306361376364646565366439646365306164383335306334316439306332313562393538383531356166613061633333363561653037653831663362626233366264626561633462333162636231616134653832353635623937376639646164383564363236656566396161613965663864376533666230323033303130303031280e320218113a603933653238313031303462326231376230303935326235613431303264333365646230343363623136646533616433643364363832363066353562623065353837333765613539343463333338663763386362383863373833336663383630630ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303038633037626533303561643630623930626132646162333962306565373736306531613232663835373532323534306437306230336233663965343837356133613239616230383038386631343466353765623235326534366261353933383564306536643432373031313764613061626331623362383036393463396135303538623836643631646661303665373136373039633838653866656163376333613065316432356663306165626636613866373666636239396638343566653138313436316361623638353862393763336134303237666233373132623134653663303738396465313764343137363435373765353131343137656231363236393265623037616531653733353532333565396262343339303437623663303136313337383265376464366636303464616134363734363631643533393631663436633366616136623765373637363264333733623562353432623739656139363365666266333361633638313938626232623636316366663637363931366566333732616434633236633231366334626334373837633834656333326431383464373763373531383663303963663364396639313433336361393835333131396261623331666136616432366634353365353936643962646563613638613537363962633866656537613533356438306338633666336566623164666232383861623661393739383534623763653833313234656330643130326166663934633362373466396333373839353863323565623933336464353363316538303561313836353464366439313836393930663635373034323966393630663334653862346637666439393732646362666539323430653037346461326433353561356637656639633161663632656635393832613831373435373862396331356334396563353636626461636233306363666365663039636466653730386164343837343234653963316265363533663965653736363065376439343263316566613564613238366531616464616230366139613333663964653934363739356230323033303130303031280f320218123a603934383235313739643163333934303137306233356432363665346366613830643737386335653966356261653764653833666638636334373431663362653336616336336431653761653439373261656466366263316533636632303638390ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030626531376339393634376365633635613434343037623533353835366233633362616566356235346635363561663538623834353662613863376365353335643561633732633631633434633736623363353763386538363438343136333762653130613833636665333963303932343736643064626534643663646364636437323061333062356266656235316130316131386635383263343566366338363939336663663764663138323933356465316438363930363034346463663335313836393335643962643765656137393532333532626562623465663961653066373636316537306134323337616661393839393636383763613438666366633562303064333830376630353462653066613863336266613432353033386265366566323935313634663232663733623765383863393465613962653861613466336132343563383962396431666435313932663761353062393538623265663831303462333666316266386664326366623238633134323138303063316334376534656639386166313530303730636336643639643137653865623932663138613661613161363532363661343935323338643130336638663639356235376563663337333635306130353230303837343537323162656138313536323739363763383037363336356466386334633761376434646438663263333835306331386662613731656236306536653864666264313936653035333766643730623334346563626363353330646663383364613666656466343964353161393034313935303262613964373063643335663163663363303639346532333534663930363466646266353335656232336332376330613433643062373863316638363763363164393836393564386465663762633261313062623636373463323266363661616230613931383133646466323763646238353263353965663739653162396531613037356661366565323761376533373734646266346232363436353432376536643561623931666537663066336137313738346563613138326235303230333031303030312810320218133a603038393039376465663031623037633764393734613537353532353161366161613061666236623332613534353334336432393138653732626164303433323163313131633234643432373538306633626131653236616139643735653632360ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030613561643262373634336130346330353564326638636432353131623135313339666334353537353632313338386534396331313962326633393861636131313066363133393662306338363664653530363335323262623835343032373365313366366439346365316536303433386636616662303061616136343631326637313435653962636538626331613533623934313931336161373663396633613238333366616437636632383563376163326433376639396633633263646234396465346431353165363136373835363466323831663534313432346234316661376335316232613936303232383363376433326565303065623833386461313563333861666339366530363164393763656465323231363566663161613935396631633432373562326430393863343035383661353537396662623363623930303732373034313230613861363661353237306634666366643130383663393233363930613335653766643434356533336163303366313339633638363835353635373063646334616166323231303761366331613434323435366137633663373965653034303930653765356434663636626361363063613166343762366466623534336461633363626631396137373139613866353562366638336234613362386136366436303235366430613436353531666137303234626430353633316238613535383038373732353463326632663236386364633333643264626263666237333365396662653233336262396362353961623331613031343862323365386334323638306666313061663463373961346430383334366662373961393364393632393534386561663162623132343639386661656661346364643732343432633033613034623733333433326637343839303361333235633238336434353661623961653932316165376564333339316535643137383765666463323335343061376238356336393161653837306130376639306231316331336233326365343365616564313562333639363835636534393137376363393835303230333031303030312811320218143a603939666162633461646534653636326336653238323366346139366562323134343034383465356136643064333132623730633036386432326236323936333830376332333361343964626239383361376562623330653737303637373261340ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030386434356332316330633935656636356130323964353263393537666430663835663230313233646130333465363136373164646565353437356630373338326136366336366362346463353035303464646664333735383130383364663864313735373733306564386436663336346466346333366132363531353931393535646132303161323430376661386162396232333133383131323235613064613233306662653338306530393061613536656661346632303265633962343832336636353031643936616336393865626632366161636633656532643166333261373231633934376531303736636633356233373364613164383761333661313532653030653731303131373932323832653832356666313731633538333362383835373062666336646138343439653666393566386231323635616235353531393430333135353364316435373666393363343263306361363061616261633463386464313632643831313466326232313531313538336337323533396665353663343939613932396465336134306130643435633137633538396332643739383863653236656166633932613364333762376561303034326434336530336166613632373162323632353561366363636661653533373138323164383165306230356332353062353966306139303734316130653065383861303965643536633562393738306430393566303930366630623831643531323633393832616165303131333663303732643834346131316436646134623261363163363434653161623137663136666634386565323366656465383435326631653432653264333061303739306332356434323036306531643434613637316132656232336431313466363863373165333366313736646235386136386234333030353462633164323938336132336133326561366666393566613763346438653338306562323936653938623739363865636638343534643831376337333765656135646439323165623836633136633762323933303461346137656362653561336131303230333031303030312812320218153a606537396165396337313933643164326263393433383436346338616135663632323461653835323936366134336239383235383833663766373432633533393562643330393935383761393638363662393233396431656666336165353037610ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030623035616265326162303066646430366339353565383637313062306530366631613932363234613438616431636263386466633666323231323936326230633330666462643238346133376335613337363538623633633336656138313632353631613865346639343663626535373232633032383830316630663238316337306638643838633763303061326632653239663539376237393938363965643833353664663537633437626539393434613261616666363530663962346262613064626335336463383830666462623639656134353139303564323830323230326638653239633034613736643237616632656237633534383438356266336634363934633930633431383130383838383433373932383438383335663738313637303764336538643736663465363766353738306263663038383133633535656336333961396264363234313738663565623134376435303061663335316539656631623165333432343834636132363064623763636261653438366631336366323635623562316162363838303636303038303533623230633364656463653737316339613038613033323061613963653435316562396439383361376234396361613130393666386164633039383331386463333865306537636566306438653564353537613036373536383561316339653235366132626339646261333232623362623331373263663731343037376263333830663861306134333361386266613766626663353966366230393365633862663665393339376330396231386531383034306331623536363836343733376338666137653239373935663361343538386464613763326261623439353636356363346139623833366532656239306336326133666361663539316662356638313830346337363138306536323666613236343461376465333435313164366334363637643938393337653237373333663464316539313338383333353465353466643733353137323165373666376235366333343833333838663461366238376232386165626562303230333031303030312813320218163a603962343038383566313362366163316337353336393262613366313739303061333838333165363934613061663937343934623834333838323039636235656662646339386136646162623265316337313833393166633133356264616163330ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030396463643863306135336539306333353539353734663636323034313137643362353033653530613336643330393766616338343239653663656364333762623534303731383038663265653938323033356638353161306339626532313736333833613232653338633161626131363866333266393035373063623332333363666536323539383736363661663637623531346361656632316662386466366430666364333363663236303662393264646561353533366236303638643836373832653339626435633338343435393931643431396237643165633038353939343132633039343964316332343062333563313464633535323734646261373166666165393336313235613566383139663534313332653234333964346163353539373939366563653835653133646666333336316639313331663536636561633562396635353262343963663666396139616336653564636532646233363934363266393361663830653562353662366538626566613136326130363162346137363839326264633834363437333036633630303835386664643237303332373663326337303434303139386566643766653335343563663261623538306337346366643634343561616637626437663734356363323532656162643236356561626565383632343137313034653639343861353537353666646332323264663061313031353234646531633363303863636630343330313165633766653936346564643834353161313330313437633037333633613335663131666465656638663261326237363137353762343335386666383962373561343864363762646336303930363933653062623836373965636262393366666462336633656439366265633933656634363536653337313661623837636534366361386531323539633866656464653866326631656130663365623263343865393635353164653132333330333435373235663435656436396338353735623531363833616661343732363231383236646232326262326431633466316533363436346139303230333031303030312814320218173a60346630613033333466393737363738313632663830643936376637323139313431333630633062376637663033316233376336396536323137333933336564616434366263626139373636376565373262666435613933346261313532326330"
         )
     )
@@ -72730,6 +69640,1871 @@ function words$1(string, pattern, guard) {
 var lodash_camelcase = camelCase;
 
 "use strict";
+var longbits$1 = LongBits$3;
+
+
+
+/**
+ * Constructs new long bits.
+ * @classdesc Helper class for working with the low and high bits of a 64 bit value.
+ * @memberof util
+ * @constructor
+ * @param {number} lo Low 32 bits, unsigned
+ * @param {number} hi High 32 bits, unsigned
+ */
+function LongBits$3(lo, hi) {
+
+    // note that the casts below are theoretically unnecessary as of today, but older statically
+    // generated converter code might still call the ctor with signed 32bits. kept for compat.
+
+    /**
+     * Low bits.
+     * @type {number}
+     */
+    this.lo = lo >>> 0;
+
+    /**
+     * High bits.
+     * @type {number}
+     */
+    this.hi = hi >>> 0;
+}
+
+/**
+ * Zero bits.
+ * @memberof util.LongBits
+ * @type {util.LongBits}
+ */
+var zero$1 = LongBits$3.zero = new LongBits$3(0, 0);
+
+zero$1.toNumber = function() { return 0; };
+zero$1.zzEncode = zero$1.zzDecode = function() { return this; };
+zero$1.length = function() { return 1; };
+
+/**
+ * Zero hash.
+ * @memberof util.LongBits
+ * @type {string}
+ */
+var zeroHash$1 = LongBits$3.zeroHash = "\0\0\0\0\0\0\0\0";
+
+/**
+ * Constructs new long bits from the specified number.
+ * @param {number} value Value
+ * @returns {util.LongBits} Instance
+ */
+LongBits$3.fromNumber = function fromNumber(value) {
+    if (value === 0)
+        return zero$1;
+    var sign = value < 0;
+    if (sign)
+        value = -value;
+    var lo = value >>> 0,
+        hi = (value - lo) / 4294967296 >>> 0;
+    if (sign) {
+        hi = ~hi >>> 0;
+        lo = ~lo >>> 0;
+        if (++lo > 4294967295) {
+            lo = 0;
+            if (++hi > 4294967295)
+                hi = 0;
+        }
+    }
+    return new LongBits$3(lo, hi);
+};
+
+/**
+ * Constructs new long bits from a number, long or string.
+ * @param {Long|number|string} value Value
+ * @returns {util.LongBits} Instance
+ */
+LongBits$3.from = function from(value) {
+    if (typeof value === "number")
+        return LongBits$3.fromNumber(value);
+    if (minimal$2.isString(value)) {
+        /* istanbul ignore else */
+        if (minimal$2.Long)
+            value = minimal$2.Long.fromString(value);
+        else
+            return LongBits$3.fromNumber(parseInt(value, 10));
+    }
+    return value.low || value.high ? new LongBits$3(value.low >>> 0, value.high >>> 0) : zero$1;
+};
+
+/**
+ * Converts this long bits to a possibly unsafe JavaScript number.
+ * @param {boolean} [unsigned=false] Whether unsigned or not
+ * @returns {number} Possibly unsafe number
+ */
+LongBits$3.prototype.toNumber = function toNumber(unsigned) {
+    if (!unsigned && this.hi >>> 31) {
+        var lo = ~this.lo + 1 >>> 0,
+            hi = ~this.hi     >>> 0;
+        if (!lo)
+            hi = hi + 1 >>> 0;
+        return -(lo + hi * 4294967296);
+    }
+    return this.lo + this.hi * 4294967296;
+};
+
+/**
+ * Converts this long bits to a long.
+ * @param {boolean} [unsigned=false] Whether unsigned or not
+ * @returns {Long} Long
+ */
+LongBits$3.prototype.toLong = function toLong(unsigned) {
+    return minimal$2.Long
+        ? new minimal$2.Long(this.lo | 0, this.hi | 0, Boolean(unsigned))
+        /* istanbul ignore next */
+        : { low: this.lo | 0, high: this.hi | 0, unsigned: Boolean(unsigned) };
+};
+
+var charCodeAt$1 = String.prototype.charCodeAt;
+
+/**
+ * Constructs new long bits from the specified 8 characters long hash.
+ * @param {string} hash Hash
+ * @returns {util.LongBits} Bits
+ */
+LongBits$3.fromHash = function fromHash(hash) {
+    if (hash === zeroHash$1)
+        return zero$1;
+    return new LongBits$3(
+        ( charCodeAt$1.call(hash, 0)
+        | charCodeAt$1.call(hash, 1) << 8
+        | charCodeAt$1.call(hash, 2) << 16
+        | charCodeAt$1.call(hash, 3) << 24) >>> 0
+    ,
+        ( charCodeAt$1.call(hash, 4)
+        | charCodeAt$1.call(hash, 5) << 8
+        | charCodeAt$1.call(hash, 6) << 16
+        | charCodeAt$1.call(hash, 7) << 24) >>> 0
+    );
+};
+
+/**
+ * Converts this long bits to a 8 characters long hash.
+ * @returns {string} Hash
+ */
+LongBits$3.prototype.toHash = function toHash() {
+    return String.fromCharCode(
+        this.lo        & 255,
+        this.lo >>> 8  & 255,
+        this.lo >>> 16 & 255,
+        this.lo >>> 24      ,
+        this.hi        & 255,
+        this.hi >>> 8  & 255,
+        this.hi >>> 16 & 255,
+        this.hi >>> 24
+    );
+};
+
+/**
+ * Zig-zag encodes this long bits.
+ * @returns {util.LongBits} `this`
+ */
+LongBits$3.prototype.zzEncode = function zzEncode() {
+    var mask =   this.hi >> 31;
+    this.hi  = ((this.hi << 1 | this.lo >>> 31) ^ mask) >>> 0;
+    this.lo  = ( this.lo << 1                   ^ mask) >>> 0;
+    return this;
+};
+
+/**
+ * Zig-zag decodes this long bits.
+ * @returns {util.LongBits} `this`
+ */
+LongBits$3.prototype.zzDecode = function zzDecode() {
+    var mask = -(this.lo & 1);
+    this.lo  = ((this.lo >>> 1 | this.hi << 31) ^ mask) >>> 0;
+    this.hi  = ( this.hi >>> 1                  ^ mask) >>> 0;
+    return this;
+};
+
+/**
+ * Calculates the length of this longbits when encoded as a varint.
+ * @returns {number} Length
+ */
+LongBits$3.prototype.length = function length() {
+    var part0 =  this.lo,
+        part1 = (this.lo >>> 28 | this.hi << 4) >>> 0,
+        part2 =  this.hi >>> 24;
+    return part2 === 0
+         ? part1 === 0
+           ? part0 < 16384
+             ? part0 < 128 ? 1 : 2
+             : part0 < 2097152 ? 3 : 4
+           : part1 < 16384
+             ? part1 < 128 ? 5 : 6
+             : part1 < 2097152 ? 7 : 8
+         : part2 < 128 ? 9 : 10;
+};
+
+var minimal$2 = createCommonjsModule(function (module, exports) {
+"use strict";
+var util = exports;
+
+// used to return a Promise where callback is omitted
+util.asPromise = aspromise;
+
+// converts to / from base64 encoded strings
+util.base64 = base64_1;
+
+// base class of rpc.Service
+util.EventEmitter = eventemitter;
+
+// float handling accross browsers
+util.float = float_1;
+
+// requires modules optionally and hides the call from bundlers
+util.inquire = inquire_1;
+
+// converts to / from utf8 encoded strings
+util.utf8 = utf8_1;
+
+// provides a node-like buffer pool in the browser
+util.pool = pool_1;
+
+// utility to work with the low and high bits of a 64 bit value
+util.LongBits = longbits$1;
+
+/**
+ * Whether running within node or not.
+ * @memberof util
+ * @type {boolean}
+ */
+util.isNode = Boolean(typeof commonjsGlobal !== "undefined"
+                   && commonjsGlobal
+                   && commonjsGlobal.process
+                   && commonjsGlobal.process.versions
+                   && commonjsGlobal.process.versions.node);
+
+/**
+ * Global object reference.
+ * @memberof util
+ * @type {Object}
+ */
+util.global = util.isNode && commonjsGlobal
+           || typeof window !== "undefined" && window
+           || typeof self   !== "undefined" && self
+           || commonjsGlobal; // eslint-disable-line no-invalid-this
+
+/**
+ * An immuable empty array.
+ * @memberof util
+ * @type {Array.<*>}
+ * @const
+ */
+util.emptyArray = Object.freeze ? Object.freeze([]) : /* istanbul ignore next */ []; // used on prototypes
+
+/**
+ * An immutable empty object.
+ * @type {Object}
+ * @const
+ */
+util.emptyObject = Object.freeze ? Object.freeze({}) : /* istanbul ignore next */ {}; // used on prototypes
+
+/**
+ * Tests if the specified value is an integer.
+ * @function
+ * @param {*} value Value to test
+ * @returns {boolean} `true` if the value is an integer
+ */
+util.isInteger = Number.isInteger || /* istanbul ignore next */ function isInteger(value) {
+    return typeof value === "number" && isFinite(value) && Math.floor(value) === value;
+};
+
+/**
+ * Tests if the specified value is a string.
+ * @param {*} value Value to test
+ * @returns {boolean} `true` if the value is a string
+ */
+util.isString = function isString(value) {
+    return typeof value === "string" || value instanceof String;
+};
+
+/**
+ * Tests if the specified value is a non-null object.
+ * @param {*} value Value to test
+ * @returns {boolean} `true` if the value is a non-null object
+ */
+util.isObject = function isObject(value) {
+    return value && typeof value === "object";
+};
+
+/**
+ * Checks if a property on a message is considered to be present.
+ * This is an alias of {@link util.isSet}.
+ * @function
+ * @param {Object} obj Plain object or message instance
+ * @param {string} prop Property name
+ * @returns {boolean} `true` if considered to be present, otherwise `false`
+ */
+util.isset =
+
+/**
+ * Checks if a property on a message is considered to be present.
+ * @param {Object} obj Plain object or message instance
+ * @param {string} prop Property name
+ * @returns {boolean} `true` if considered to be present, otherwise `false`
+ */
+util.isSet = function isSet(obj, prop) {
+    var value = obj[prop];
+    if (value != null && obj.hasOwnProperty(prop)) // eslint-disable-line eqeqeq, no-prototype-builtins
+        return typeof value !== "object" || (Array.isArray(value) ? value.length : Object.keys(value).length) > 0;
+    return false;
+};
+
+/**
+ * Any compatible Buffer instance.
+ * This is a minimal stand-alone definition of a Buffer instance. The actual type is that exported by node's typings.
+ * @interface Buffer
+ * @extends Uint8Array
+ */
+
+/**
+ * Node's Buffer class if available.
+ * @type {Constructor<Buffer>}
+ */
+util.Buffer = (function() {
+    try {
+        var Buffer = util.inquire("buffer").Buffer;
+        // refuse to use non-node buffers if not explicitly assigned (perf reasons):
+        return Buffer.prototype.utf8Write ? Buffer : /* istanbul ignore next */ null;
+    } catch (e) {
+        /* istanbul ignore next */
+        return null;
+    }
+})();
+
+// Internal alias of or polyfull for Buffer.from.
+util._Buffer_from = null;
+
+// Internal alias of or polyfill for Buffer.allocUnsafe.
+util._Buffer_allocUnsafe = null;
+
+/**
+ * Creates a new buffer of whatever type supported by the environment.
+ * @param {number|number[]} [sizeOrArray=0] Buffer size or number array
+ * @returns {Uint8Array|Buffer} Buffer
+ */
+util.newBuffer = function newBuffer(sizeOrArray) {
+    /* istanbul ignore next */
+    return typeof sizeOrArray === "number"
+        ? util.Buffer
+            ? util._Buffer_allocUnsafe(sizeOrArray)
+            : new util.Array(sizeOrArray)
+        : util.Buffer
+            ? util._Buffer_from(sizeOrArray)
+            : typeof Uint8Array === "undefined"
+                ? sizeOrArray
+                : new Uint8Array(sizeOrArray);
+};
+
+/**
+ * Array implementation used in the browser. `Uint8Array` if supported, otherwise `Array`.
+ * @type {Constructor<Uint8Array>}
+ */
+util.Array = typeof Uint8Array !== "undefined" ? Uint8Array /* istanbul ignore next */ : Array;
+
+/**
+ * Any compatible Long instance.
+ * This is a minimal stand-alone definition of a Long instance. The actual type is that exported by long.js.
+ * @interface Long
+ * @property {number} low Low bits
+ * @property {number} high High bits
+ * @property {boolean} unsigned Whether unsigned or not
+ */
+
+/**
+ * Long.js's Long class if available.
+ * @type {Constructor<Long>}
+ */
+util.Long = /* istanbul ignore next */ util.global.dcodeIO && /* istanbul ignore next */ util.global.dcodeIO.Long
+         || /* istanbul ignore next */ util.global.Long
+         || util.inquire("long");
+
+/**
+ * Regular expression used to verify 2 bit (`bool`) map keys.
+ * @type {RegExp}
+ * @const
+ */
+util.key2Re = /^true|false|0|1$/;
+
+/**
+ * Regular expression used to verify 32 bit (`int32` etc.) map keys.
+ * @type {RegExp}
+ * @const
+ */
+util.key32Re = /^-?(?:0|[1-9][0-9]*)$/;
+
+/**
+ * Regular expression used to verify 64 bit (`int64` etc.) map keys.
+ * @type {RegExp}
+ * @const
+ */
+util.key64Re = /^(?:[\\x00-\\xff]{8}|-?(?:0|[1-9][0-9]*))$/;
+
+/**
+ * Converts a number or long to an 8 characters long hash string.
+ * @param {Long|number} value Value to convert
+ * @returns {string} Hash
+ */
+util.longToHash = function longToHash(value) {
+    return value
+        ? util.LongBits.from(value).toHash()
+        : util.LongBits.zeroHash;
+};
+
+/**
+ * Converts an 8 characters long hash string to a long or number.
+ * @param {string} hash Hash
+ * @param {boolean} [unsigned=false] Whether unsigned or not
+ * @returns {Long|number} Original value
+ */
+util.longFromHash = function longFromHash(hash, unsigned) {
+    var bits = util.LongBits.fromHash(hash);
+    if (util.Long)
+        return util.Long.fromBits(bits.lo, bits.hi, unsigned);
+    return bits.toNumber(Boolean(unsigned));
+};
+
+/**
+ * Merges the properties of the source object into the destination object.
+ * @memberof util
+ * @param {Object.<string,*>} dst Destination object
+ * @param {Object.<string,*>} src Source object
+ * @param {boolean} [ifNotSet=false] Merges only if the key is not already set
+ * @returns {Object.<string,*>} Destination object
+ */
+function merge(dst, src, ifNotSet) { // used by converters
+    for (var keys = Object.keys(src), i = 0; i < keys.length; ++i)
+        if (dst[keys[i]] === undefined || !ifNotSet)
+            dst[keys[i]] = src[keys[i]];
+    return dst;
+}
+
+util.merge = merge;
+
+/**
+ * Converts the first character of a string to lower case.
+ * @param {string} str String to convert
+ * @returns {string} Converted string
+ */
+util.lcFirst = function lcFirst(str) {
+    return str.charAt(0).toLowerCase() + str.substring(1);
+};
+
+/**
+ * Creates a custom error constructor.
+ * @memberof util
+ * @param {string} name Error name
+ * @returns {Constructor<Error>} Custom error constructor
+ */
+function newError(name) {
+
+    function CustomError(message, properties) {
+
+        if (!(this instanceof CustomError))
+            return new CustomError(message, properties);
+
+        // Error.call(this, message);
+        // ^ just returns a new error instance because the ctor can be called as a function
+
+        Object.defineProperty(this, "message", { get: function() { return message; } });
+
+        /* istanbul ignore next */
+        if (Error.captureStackTrace) // node
+            Error.captureStackTrace(this, CustomError);
+        else
+            Object.defineProperty(this, "stack", { value: new Error().stack || "" });
+
+        if (properties)
+            merge(this, properties);
+    }
+
+    (CustomError.prototype = Object.create(Error.prototype)).constructor = CustomError;
+
+    Object.defineProperty(CustomError.prototype, "name", { get: function() { return name; } });
+
+    CustomError.prototype.toString = function toString() {
+        return this.name + ": " + this.message;
+    };
+
+    return CustomError;
+}
+
+util.newError = newError;
+
+/**
+ * Constructs a new protocol error.
+ * @classdesc Error subclass indicating a protocol specifc error.
+ * @memberof util
+ * @extends Error
+ * @template T extends Message<T>
+ * @constructor
+ * @param {string} message Error message
+ * @param {Object.<string,*>} [properties] Additional properties
+ * @example
+ * try {
+ *     MyMessage.decode(someBuffer); // throws if required fields are missing
+ * } catch (e) {
+ *     if (e instanceof ProtocolError && e.instance)
+ *         console.log("decoded so far: " + JSON.stringify(e.instance));
+ * }
+ */
+util.ProtocolError = newError("ProtocolError");
+
+/**
+ * So far decoded message instance.
+ * @name util.ProtocolError#instance
+ * @type {Message<T>}
+ */
+
+/**
+ * A OneOf getter as returned by {@link util.oneOfGetter}.
+ * @typedef OneOfGetter
+ * @type {function}
+ * @returns {string|undefined} Set field name, if any
+ */
+
+/**
+ * Builds a getter for a oneof's present field name.
+ * @param {string[]} fieldNames Field names
+ * @returns {OneOfGetter} Unbound getter
+ */
+util.oneOfGetter = function getOneOf(fieldNames) {
+    var fieldMap = {};
+    for (var i = 0; i < fieldNames.length; ++i)
+        fieldMap[fieldNames[i]] = 1;
+
+    /**
+     * @returns {string|undefined} Set field name, if any
+     * @this Object
+     * @ignore
+     */
+    return function() { // eslint-disable-line consistent-return
+        for (var keys = Object.keys(this), i = keys.length - 1; i > -1; --i)
+            if (fieldMap[keys[i]] === 1 && this[keys[i]] !== undefined && this[keys[i]] !== null)
+                return keys[i];
+    };
+};
+
+/**
+ * A OneOf setter as returned by {@link util.oneOfSetter}.
+ * @typedef OneOfSetter
+ * @type {function}
+ * @param {string|undefined} value Field name
+ * @returns {undefined}
+ */
+
+/**
+ * Builds a setter for a oneof's present field name.
+ * @param {string[]} fieldNames Field names
+ * @returns {OneOfSetter} Unbound setter
+ */
+util.oneOfSetter = function setOneOf(fieldNames) {
+
+    /**
+     * @param {string} name Field name
+     * @returns {undefined}
+     * @this Object
+     * @ignore
+     */
+    return function(name) {
+        for (var i = 0; i < fieldNames.length; ++i)
+            if (fieldNames[i] !== name)
+                delete this[fieldNames[i]];
+    };
+};
+
+/**
+ * Default conversion options used for {@link Message#toJSON} implementations.
+ *
+ * These options are close to proto3's JSON mapping with the exception that internal types like Any are handled just like messages. More precisely:
+ *
+ * - Longs become strings
+ * - Enums become string keys
+ * - Bytes become base64 encoded strings
+ * - (Sub-)Messages become plain objects
+ * - Maps become plain objects with all string keys
+ * - Repeated fields become arrays
+ * - NaN and Infinity for float and double fields become strings
+ *
+ * @type {IConversionOptions}
+ * @see https://developers.google.com/protocol-buffers/docs/proto3?hl=en#json
+ */
+util.toJSONOptions = {
+    longs: String,
+    enums: String,
+    bytes: String,
+    json: true
+};
+
+// Sets up buffer utility according to the environment (called in index-minimal)
+util._configure = function() {
+    var Buffer = util.Buffer;
+    /* istanbul ignore if */
+    if (!Buffer) {
+        util._Buffer_from = util._Buffer_allocUnsafe = null;
+        return;
+    }
+    // because node 4.x buffers are incompatible & immutable
+    // see: https://github.com/dcodeIO/protobuf.js/pull/665
+    util._Buffer_from = Buffer.from !== Uint8Array.from && Buffer.from ||
+        /* istanbul ignore next */
+        function Buffer_from(value, encoding) {
+            return new Buffer(value, encoding);
+        };
+    util._Buffer_allocUnsafe = Buffer.allocUnsafe ||
+        /* istanbul ignore next */
+        function Buffer_allocUnsafe(size) {
+            return new Buffer(size);
+        };
+};
+});
+
+"use strict";
+var writer$1 = Writer$2;
+
+
+
+var BufferWriter$2; // cyclic
+
+var LongBits$4  = minimal$2.LongBits,
+    base64$1    = minimal$2.base64,
+    utf8$2      = minimal$2.utf8;
+
+/**
+ * Constructs a new writer operation instance.
+ * @classdesc Scheduled writer operation.
+ * @constructor
+ * @param {function(*, Uint8Array, number)} fn Function to call
+ * @param {number} len Value byte length
+ * @param {*} val Value to write
+ * @ignore
+ */
+function Op$1(fn, len, val) {
+
+    /**
+     * Function to call.
+     * @type {function(Uint8Array, number, *)}
+     */
+    this.fn = fn;
+
+    /**
+     * Value byte length.
+     * @type {number}
+     */
+    this.len = len;
+
+    /**
+     * Next operation.
+     * @type {Writer.Op|undefined}
+     */
+    this.next = undefined;
+
+    /**
+     * Value to write.
+     * @type {*}
+     */
+    this.val = val; // type varies
+}
+
+/* istanbul ignore next */
+function noop$1() {} // eslint-disable-line no-empty-function
+
+/**
+ * Constructs a new writer state instance.
+ * @classdesc Copied writer state.
+ * @memberof Writer
+ * @constructor
+ * @param {Writer} writer Writer to copy state from
+ * @ignore
+ */
+function State$1(writer) {
+
+    /**
+     * Current head.
+     * @type {Writer.Op}
+     */
+    this.head = writer.head;
+
+    /**
+     * Current tail.
+     * @type {Writer.Op}
+     */
+    this.tail = writer.tail;
+
+    /**
+     * Current buffer length.
+     * @type {number}
+     */
+    this.len = writer.len;
+
+    /**
+     * Next state.
+     * @type {State|null}
+     */
+    this.next = writer.states;
+}
+
+/**
+ * Constructs a new writer instance.
+ * @classdesc Wire format writer using `Uint8Array` if available, otherwise `Array`.
+ * @constructor
+ */
+function Writer$2() {
+
+    /**
+     * Current length.
+     * @type {number}
+     */
+    this.len = 0;
+
+    /**
+     * Operations head.
+     * @type {Object}
+     */
+    this.head = new Op$1(noop$1, 0, 0);
+
+    /**
+     * Operations tail
+     * @type {Object}
+     */
+    this.tail = this.head;
+
+    /**
+     * Linked forked states.
+     * @type {Object|null}
+     */
+    this.states = null;
+
+    // When a value is written, the writer calculates its byte length and puts it into a linked
+    // list of operations to perform when finish() is called. This both allows us to allocate
+    // buffers of the exact required size and reduces the amount of work we have to do compared
+    // to first calculating over objects and then encoding over objects. In our case, the encoding
+    // part is just a linked list walk calling operations with already prepared values.
+}
+
+var create$2 = function create() {
+    return minimal$2.Buffer
+        ? function create_buffer_setup() {
+            return (Writer$2.create = function create_buffer() {
+                return new BufferWriter$2();
+            })();
+        }
+        /* istanbul ignore next */
+        : function create_array() {
+            return new Writer$2();
+        };
+};
+
+/**
+ * Creates a new writer.
+ * @function
+ * @returns {BufferWriter|Writer} A {@link BufferWriter} when Buffers are supported, otherwise a {@link Writer}
+ */
+Writer$2.create = create$2();
+
+/**
+ * Allocates a buffer of the specified size.
+ * @param {number} size Buffer size
+ * @returns {Uint8Array} Buffer
+ */
+Writer$2.alloc = function alloc(size) {
+    return new minimal$2.Array(size);
+};
+
+// Use Uint8Array buffer pool in the browser, just like node does with buffers
+/* istanbul ignore else */
+if (minimal$2.Array !== Array)
+    Writer$2.alloc = minimal$2.pool(Writer$2.alloc, minimal$2.Array.prototype.subarray);
+
+/**
+ * Pushes a new operation to the queue.
+ * @param {function(Uint8Array, number, *)} fn Function to call
+ * @param {number} len Value byte length
+ * @param {number} val Value to write
+ * @returns {Writer} `this`
+ * @private
+ */
+Writer$2.prototype._push = function push(fn, len, val) {
+    this.tail = this.tail.next = new Op$1(fn, len, val);
+    this.len += len;
+    return this;
+};
+
+function writeByte$1(val, buf, pos) {
+    buf[pos] = val & 255;
+}
+
+function writeVarint32$1(val, buf, pos) {
+    while (val > 127) {
+        buf[pos++] = val & 127 | 128;
+        val >>>= 7;
+    }
+    buf[pos] = val;
+}
+
+/**
+ * Constructs a new varint writer operation instance.
+ * @classdesc Scheduled varint writer operation.
+ * @extends Op
+ * @constructor
+ * @param {number} len Value byte length
+ * @param {number} val Value to write
+ * @ignore
+ */
+function VarintOp$1(len, val) {
+    this.len = len;
+    this.next = undefined;
+    this.val = val;
+}
+
+VarintOp$1.prototype = Object.create(Op$1.prototype);
+VarintOp$1.prototype.fn = writeVarint32$1;
+
+/**
+ * Writes an unsigned 32 bit value as a varint.
+ * @param {number} value Value to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.uint32 = function write_uint32(value) {
+    // here, the call to this.push has been inlined and a varint specific Op subclass is used.
+    // uint32 is by far the most frequently used operation and benefits significantly from this.
+    this.len += (this.tail = this.tail.next = new VarintOp$1(
+        (value = value >>> 0)
+                < 128       ? 1
+        : value < 16384     ? 2
+        : value < 2097152   ? 3
+        : value < 268435456 ? 4
+        :                     5,
+    value)).len;
+    return this;
+};
+
+/**
+ * Writes a signed 32 bit value as a varint.
+ * @function
+ * @param {number} value Value to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.int32 = function write_int32(value) {
+    return value < 0
+        ? this._push(writeVarint64$1, 10, LongBits$4.fromNumber(value)) // 10 bytes per spec
+        : this.uint32(value);
+};
+
+/**
+ * Writes a 32 bit value as a varint, zig-zag encoded.
+ * @param {number} value Value to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.sint32 = function write_sint32(value) {
+    return this.uint32((value << 1 ^ value >> 31) >>> 0);
+};
+
+function writeVarint64$1(val, buf, pos) {
+    while (val.hi) {
+        buf[pos++] = val.lo & 127 | 128;
+        val.lo = (val.lo >>> 7 | val.hi << 25) >>> 0;
+        val.hi >>>= 7;
+    }
+    while (val.lo > 127) {
+        buf[pos++] = val.lo & 127 | 128;
+        val.lo = val.lo >>> 7;
+    }
+    buf[pos++] = val.lo;
+}
+
+/**
+ * Writes an unsigned 64 bit value as a varint.
+ * @param {Long|number|string} value Value to write
+ * @returns {Writer} `this`
+ * @throws {TypeError} If `value` is a string and no long library is present.
+ */
+Writer$2.prototype.uint64 = function write_uint64(value) {
+    var bits = LongBits$4.from(value);
+    return this._push(writeVarint64$1, bits.length(), bits);
+};
+
+/**
+ * Writes a signed 64 bit value as a varint.
+ * @function
+ * @param {Long|number|string} value Value to write
+ * @returns {Writer} `this`
+ * @throws {TypeError} If `value` is a string and no long library is present.
+ */
+Writer$2.prototype.int64 = Writer$2.prototype.uint64;
+
+/**
+ * Writes a signed 64 bit value as a varint, zig-zag encoded.
+ * @param {Long|number|string} value Value to write
+ * @returns {Writer} `this`
+ * @throws {TypeError} If `value` is a string and no long library is present.
+ */
+Writer$2.prototype.sint64 = function write_sint64(value) {
+    var bits = LongBits$4.from(value).zzEncode();
+    return this._push(writeVarint64$1, bits.length(), bits);
+};
+
+/**
+ * Writes a boolish value as a varint.
+ * @param {boolean} value Value to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.bool = function write_bool(value) {
+    return this._push(writeByte$1, 1, value ? 1 : 0);
+};
+
+function writeFixed32$1(val, buf, pos) {
+    buf[pos    ] =  val         & 255;
+    buf[pos + 1] =  val >>> 8   & 255;
+    buf[pos + 2] =  val >>> 16  & 255;
+    buf[pos + 3] =  val >>> 24;
+}
+
+/**
+ * Writes an unsigned 32 bit value as fixed 32 bits.
+ * @param {number} value Value to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.fixed32 = function write_fixed32(value) {
+    return this._push(writeFixed32$1, 4, value >>> 0);
+};
+
+/**
+ * Writes a signed 32 bit value as fixed 32 bits.
+ * @function
+ * @param {number} value Value to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.sfixed32 = Writer$2.prototype.fixed32;
+
+/**
+ * Writes an unsigned 64 bit value as fixed 64 bits.
+ * @param {Long|number|string} value Value to write
+ * @returns {Writer} `this`
+ * @throws {TypeError} If `value` is a string and no long library is present.
+ */
+Writer$2.prototype.fixed64 = function write_fixed64(value) {
+    var bits = LongBits$4.from(value);
+    return this._push(writeFixed32$1, 4, bits.lo)._push(writeFixed32$1, 4, bits.hi);
+};
+
+/**
+ * Writes a signed 64 bit value as fixed 64 bits.
+ * @function
+ * @param {Long|number|string} value Value to write
+ * @returns {Writer} `this`
+ * @throws {TypeError} If `value` is a string and no long library is present.
+ */
+Writer$2.prototype.sfixed64 = Writer$2.prototype.fixed64;
+
+/**
+ * Writes a float (32 bit).
+ * @function
+ * @param {number} value Value to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.float = function write_float(value) {
+    return this._push(minimal$2.float.writeFloatLE, 4, value);
+};
+
+/**
+ * Writes a double (64 bit float).
+ * @function
+ * @param {number} value Value to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.double = function write_double(value) {
+    return this._push(minimal$2.float.writeDoubleLE, 8, value);
+};
+
+var writeBytes$1 = minimal$2.Array.prototype.set
+    ? function writeBytes_set(val, buf, pos) {
+        buf.set(val, pos); // also works for plain array values
+    }
+    /* istanbul ignore next */
+    : function writeBytes_for(val, buf, pos) {
+        for (var i = 0; i < val.length; ++i)
+            buf[pos + i] = val[i];
+    };
+
+/**
+ * Writes a sequence of bytes.
+ * @param {Uint8Array|string} value Buffer or base64 encoded string to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.bytes = function write_bytes(value) {
+    var len = value.length >>> 0;
+    if (!len)
+        return this._push(writeByte$1, 1, 0);
+    if (minimal$2.isString(value)) {
+        var buf = Writer$2.alloc(len = base64$1.length(value));
+        base64$1.decode(value, buf, 0);
+        value = buf;
+    }
+    return this.uint32(len)._push(writeBytes$1, len, value);
+};
+
+/**
+ * Writes a string.
+ * @param {string} value Value to write
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.string = function write_string(value) {
+    var len = utf8$2.length(value);
+    return len
+        ? this.uint32(len)._push(utf8$2.write, len, value)
+        : this._push(writeByte$1, 1, 0);
+};
+
+/**
+ * Forks this writer's state by pushing it to a stack.
+ * Calling {@link Writer#reset|reset} or {@link Writer#ldelim|ldelim} resets the writer to the previous state.
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.fork = function fork() {
+    this.states = new State$1(this);
+    this.head = this.tail = new Op$1(noop$1, 0, 0);
+    this.len = 0;
+    return this;
+};
+
+/**
+ * Resets this instance to the last state.
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.reset = function reset() {
+    if (this.states) {
+        this.head   = this.states.head;
+        this.tail   = this.states.tail;
+        this.len    = this.states.len;
+        this.states = this.states.next;
+    } else {
+        this.head = this.tail = new Op$1(noop$1, 0, 0);
+        this.len  = 0;
+    }
+    return this;
+};
+
+/**
+ * Resets to the last state and appends the fork state's current write length as a varint followed by its operations.
+ * @returns {Writer} `this`
+ */
+Writer$2.prototype.ldelim = function ldelim() {
+    var head = this.head,
+        tail = this.tail,
+        len  = this.len;
+    this.reset().uint32(len);
+    if (len) {
+        this.tail.next = head.next; // skip noop
+        this.tail = tail;
+        this.len += len;
+    }
+    return this;
+};
+
+/**
+ * Finishes the write operation.
+ * @returns {Uint8Array} Finished buffer
+ */
+Writer$2.prototype.finish = function finish() {
+    var head = this.head.next, // skip noop
+        buf  = this.constructor.alloc(this.len),
+        pos  = 0;
+    while (head) {
+        head.fn(head.val, buf, pos);
+        pos += head.len;
+        head = head.next;
+    }
+    // this.head = this.tail = null;
+    return buf;
+};
+
+Writer$2._configure = function(BufferWriter_) {
+    BufferWriter$2 = BufferWriter_;
+    Writer$2.create = create$2();
+    BufferWriter$2._configure();
+};
+
+"use strict";
+var writer_buffer$1 = BufferWriter$3;
+
+// extends Writer
+
+(BufferWriter$3.prototype = Object.create(writer$1.prototype)).constructor = BufferWriter$3;
+
+
+
+/**
+ * Constructs a new buffer writer instance.
+ * @classdesc Wire format writer using node buffers.
+ * @extends Writer
+ * @constructor
+ */
+function BufferWriter$3() {
+    writer$1.call(this);
+}
+
+BufferWriter$3._configure = function () {
+    /**
+     * Allocates a buffer of the specified size.
+     * @function
+     * @param {number} size Buffer size
+     * @returns {Buffer} Buffer
+     */
+    BufferWriter$3.alloc = minimal$2._Buffer_allocUnsafe;
+
+    BufferWriter$3.writeBytesBuffer = minimal$2.Buffer && minimal$2.Buffer.prototype instanceof Uint8Array && minimal$2.Buffer.prototype.set.name === "set"
+        ? function writeBytesBuffer_set(val, buf, pos) {
+          buf.set(val, pos); // faster than copy (requires node >= 4 where Buffers extend Uint8Array and set is properly inherited)
+          // also works for plain array values
+        }
+        /* istanbul ignore next */
+        : function writeBytesBuffer_copy(val, buf, pos) {
+          if (val.copy) // Buffer values
+            val.copy(buf, pos, 0, val.length);
+          else for (var i = 0; i < val.length;) // plain array values
+            buf[pos++] = val[i++];
+        };
+};
+
+
+/**
+ * @override
+ */
+BufferWriter$3.prototype.bytes = function write_bytes_buffer(value) {
+    if (minimal$2.isString(value))
+        value = minimal$2._Buffer_from(value, "base64");
+    var len = value.length >>> 0;
+    this.uint32(len);
+    if (len)
+        this._push(BufferWriter$3.writeBytesBuffer, len, value);
+    return this;
+};
+
+function writeStringBuffer$1(val, buf, pos) {
+    if (val.length < 40) // plain js is faster for short strings (probably due to redundant assertions)
+        minimal$2.utf8.write(val, buf, pos);
+    else if (buf.utf8Write)
+        buf.utf8Write(val, pos);
+    else
+        buf.write(val, pos);
+}
+
+/**
+ * @override
+ */
+BufferWriter$3.prototype.string = function write_string_buffer(value) {
+    var len = minimal$2.Buffer.byteLength(value);
+    this.uint32(len);
+    if (len)
+        this._push(writeStringBuffer$1, len, value);
+    return this;
+};
+
+
+/**
+ * Finishes the write operation.
+ * @name BufferWriter#finish
+ * @function
+ * @returns {Buffer} Finished buffer
+ */
+
+BufferWriter$3._configure();
+
+"use strict";
+var reader$1 = Reader$2;
+
+
+
+var BufferReader$2; // cyclic
+
+var LongBits$5  = minimal$2.LongBits,
+    utf8$3      = minimal$2.utf8;
+
+/* istanbul ignore next */
+function indexOutOfRange$1(reader, writeLength) {
+    return RangeError("index out of range: " + reader.pos + " + " + (writeLength || 1) + " > " + reader.len);
+}
+
+/**
+ * Constructs a new reader instance using the specified buffer.
+ * @classdesc Wire format reader using `Uint8Array` if available, otherwise `Array`.
+ * @constructor
+ * @param {Uint8Array} buffer Buffer to read from
+ */
+function Reader$2(buffer) {
+
+    /**
+     * Read buffer.
+     * @type {Uint8Array}
+     */
+    this.buf = buffer;
+
+    /**
+     * Read buffer position.
+     * @type {number}
+     */
+    this.pos = 0;
+
+    /**
+     * Read buffer length.
+     * @type {number}
+     */
+    this.len = buffer.length;
+}
+
+var create_array$1 = typeof Uint8Array !== "undefined"
+    ? function create_typed_array(buffer) {
+        if (buffer instanceof Uint8Array || Array.isArray(buffer))
+            return new Reader$2(buffer);
+        throw Error("illegal buffer");
+    }
+    /* istanbul ignore next */
+    : function create_array(buffer) {
+        if (Array.isArray(buffer))
+            return new Reader$2(buffer);
+        throw Error("illegal buffer");
+    };
+
+var create$3 = function create() {
+    return minimal$2.Buffer
+        ? function create_buffer_setup(buffer) {
+            return (Reader$2.create = function create_buffer(buffer) {
+                return minimal$2.Buffer.isBuffer(buffer)
+                    ? new BufferReader$2(buffer)
+                    /* istanbul ignore next */
+                    : create_array$1(buffer);
+            })(buffer);
+        }
+        /* istanbul ignore next */
+        : create_array$1;
+};
+
+/**
+ * Creates a new reader using the specified buffer.
+ * @function
+ * @param {Uint8Array|Buffer} buffer Buffer to read from
+ * @returns {Reader|BufferReader} A {@link BufferReader} if `buffer` is a Buffer, otherwise a {@link Reader}
+ * @throws {Error} If `buffer` is not a valid buffer
+ */
+Reader$2.create = create$3();
+
+Reader$2.prototype._slice = minimal$2.Array.prototype.subarray || /* istanbul ignore next */ minimal$2.Array.prototype.slice;
+
+/**
+ * Reads a varint as an unsigned 32 bit value.
+ * @function
+ * @returns {number} Value read
+ */
+Reader$2.prototype.uint32 = (function read_uint32_setup() {
+    var value = 4294967295; // optimizer type-hint, tends to deopt otherwise (?!)
+    return function read_uint32() {
+        value = (         this.buf[this.pos] & 127       ) >>> 0; if (this.buf[this.pos++] < 128) return value;
+        value = (value | (this.buf[this.pos] & 127) <<  7) >>> 0; if (this.buf[this.pos++] < 128) return value;
+        value = (value | (this.buf[this.pos] & 127) << 14) >>> 0; if (this.buf[this.pos++] < 128) return value;
+        value = (value | (this.buf[this.pos] & 127) << 21) >>> 0; if (this.buf[this.pos++] < 128) return value;
+        value = (value | (this.buf[this.pos] &  15) << 28) >>> 0; if (this.buf[this.pos++] < 128) return value;
+
+        /* istanbul ignore if */
+        if ((this.pos += 5) > this.len) {
+            this.pos = this.len;
+            throw indexOutOfRange$1(this, 10);
+        }
+        return value;
+    };
+})();
+
+/**
+ * Reads a varint as a signed 32 bit value.
+ * @returns {number} Value read
+ */
+Reader$2.prototype.int32 = function read_int32() {
+    return this.uint32() | 0;
+};
+
+/**
+ * Reads a zig-zag encoded varint as a signed 32 bit value.
+ * @returns {number} Value read
+ */
+Reader$2.prototype.sint32 = function read_sint32() {
+    var value = this.uint32();
+    return value >>> 1 ^ -(value & 1) | 0;
+};
+
+/* eslint-disable no-invalid-this */
+
+function readLongVarint$1() {
+    // tends to deopt with local vars for octet etc.
+    var bits = new LongBits$5(0, 0);
+    var i = 0;
+    if (this.len - this.pos > 4) { // fast route (lo)
+        for (; i < 4; ++i) {
+            // 1st..4th
+            bits.lo = (bits.lo | (this.buf[this.pos] & 127) << i * 7) >>> 0;
+            if (this.buf[this.pos++] < 128)
+                return bits;
+        }
+        // 5th
+        bits.lo = (bits.lo | (this.buf[this.pos] & 127) << 28) >>> 0;
+        bits.hi = (bits.hi | (this.buf[this.pos] & 127) >>  4) >>> 0;
+        if (this.buf[this.pos++] < 128)
+            return bits;
+        i = 0;
+    } else {
+        for (; i < 3; ++i) {
+            /* istanbul ignore if */
+            if (this.pos >= this.len)
+                throw indexOutOfRange$1(this);
+            // 1st..3th
+            bits.lo = (bits.lo | (this.buf[this.pos] & 127) << i * 7) >>> 0;
+            if (this.buf[this.pos++] < 128)
+                return bits;
+        }
+        // 4th
+        bits.lo = (bits.lo | (this.buf[this.pos++] & 127) << i * 7) >>> 0;
+        return bits;
+    }
+    if (this.len - this.pos > 4) { // fast route (hi)
+        for (; i < 5; ++i) {
+            // 6th..10th
+            bits.hi = (bits.hi | (this.buf[this.pos] & 127) << i * 7 + 3) >>> 0;
+            if (this.buf[this.pos++] < 128)
+                return bits;
+        }
+    } else {
+        for (; i < 5; ++i) {
+            /* istanbul ignore if */
+            if (this.pos >= this.len)
+                throw indexOutOfRange$1(this);
+            // 6th..10th
+            bits.hi = (bits.hi | (this.buf[this.pos] & 127) << i * 7 + 3) >>> 0;
+            if (this.buf[this.pos++] < 128)
+                return bits;
+        }
+    }
+    /* istanbul ignore next */
+    throw Error("invalid varint encoding");
+}
+
+/* eslint-enable no-invalid-this */
+
+/**
+ * Reads a varint as a signed 64 bit value.
+ * @name Reader#int64
+ * @function
+ * @returns {Long} Value read
+ */
+
+/**
+ * Reads a varint as an unsigned 64 bit value.
+ * @name Reader#uint64
+ * @function
+ * @returns {Long} Value read
+ */
+
+/**
+ * Reads a zig-zag encoded varint as a signed 64 bit value.
+ * @name Reader#sint64
+ * @function
+ * @returns {Long} Value read
+ */
+
+/**
+ * Reads a varint as a boolean.
+ * @returns {boolean} Value read
+ */
+Reader$2.prototype.bool = function read_bool() {
+    return this.uint32() !== 0;
+};
+
+function readFixed32_end$1(buf, end) { // note that this uses `end`, not `pos`
+    return (buf[end - 4]
+          | buf[end - 3] << 8
+          | buf[end - 2] << 16
+          | buf[end - 1] << 24) >>> 0;
+}
+
+/**
+ * Reads fixed 32 bits as an unsigned 32 bit integer.
+ * @returns {number} Value read
+ */
+Reader$2.prototype.fixed32 = function read_fixed32() {
+
+    /* istanbul ignore if */
+    if (this.pos + 4 > this.len)
+        throw indexOutOfRange$1(this, 4);
+
+    return readFixed32_end$1(this.buf, this.pos += 4);
+};
+
+/**
+ * Reads fixed 32 bits as a signed 32 bit integer.
+ * @returns {number} Value read
+ */
+Reader$2.prototype.sfixed32 = function read_sfixed32() {
+
+    /* istanbul ignore if */
+    if (this.pos + 4 > this.len)
+        throw indexOutOfRange$1(this, 4);
+
+    return readFixed32_end$1(this.buf, this.pos += 4) | 0;
+};
+
+/* eslint-disable no-invalid-this */
+
+function readFixed64$1(/* this: Reader */) {
+
+    /* istanbul ignore if */
+    if (this.pos + 8 > this.len)
+        throw indexOutOfRange$1(this, 8);
+
+    return new LongBits$5(readFixed32_end$1(this.buf, this.pos += 4), readFixed32_end$1(this.buf, this.pos += 4));
+}
+
+/* eslint-enable no-invalid-this */
+
+/**
+ * Reads fixed 64 bits.
+ * @name Reader#fixed64
+ * @function
+ * @returns {Long} Value read
+ */
+
+/**
+ * Reads zig-zag encoded fixed 64 bits.
+ * @name Reader#sfixed64
+ * @function
+ * @returns {Long} Value read
+ */
+
+/**
+ * Reads a float (32 bit) as a number.
+ * @function
+ * @returns {number} Value read
+ */
+Reader$2.prototype.float = function read_float() {
+
+    /* istanbul ignore if */
+    if (this.pos + 4 > this.len)
+        throw indexOutOfRange$1(this, 4);
+
+    var value = minimal$2.float.readFloatLE(this.buf, this.pos);
+    this.pos += 4;
+    return value;
+};
+
+/**
+ * Reads a double (64 bit float) as a number.
+ * @function
+ * @returns {number} Value read
+ */
+Reader$2.prototype.double = function read_double() {
+
+    /* istanbul ignore if */
+    if (this.pos + 8 > this.len)
+        throw indexOutOfRange$1(this, 4);
+
+    var value = minimal$2.float.readDoubleLE(this.buf, this.pos);
+    this.pos += 8;
+    return value;
+};
+
+/**
+ * Reads a sequence of bytes preceeded by its length as a varint.
+ * @returns {Uint8Array} Value read
+ */
+Reader$2.prototype.bytes = function read_bytes() {
+    var length = this.uint32(),
+        start  = this.pos,
+        end    = this.pos + length;
+
+    /* istanbul ignore if */
+    if (end > this.len)
+        throw indexOutOfRange$1(this, length);
+
+    this.pos += length;
+    if (Array.isArray(this.buf)) // plain array
+        return this.buf.slice(start, end);
+    return start === end // fix for IE 10/Win8 and others' subarray returning array of size 1
+        ? new this.buf.constructor(0)
+        : this._slice.call(this.buf, start, end);
+};
+
+/**
+ * Reads a string preceeded by its byte length as a varint.
+ * @returns {string} Value read
+ */
+Reader$2.prototype.string = function read_string() {
+    var bytes = this.bytes();
+    return utf8$3.read(bytes, 0, bytes.length);
+};
+
+/**
+ * Skips the specified number of bytes if specified, otherwise skips a varint.
+ * @param {number} [length] Length if known, otherwise a varint is assumed
+ * @returns {Reader} `this`
+ */
+Reader$2.prototype.skip = function skip(length) {
+    if (typeof length === "number") {
+        /* istanbul ignore if */
+        if (this.pos + length > this.len)
+            throw indexOutOfRange$1(this, length);
+        this.pos += length;
+    } else {
+        do {
+            /* istanbul ignore if */
+            if (this.pos >= this.len)
+                throw indexOutOfRange$1(this);
+        } while (this.buf[this.pos++] & 128);
+    }
+    return this;
+};
+
+/**
+ * Skips the next element of the specified wire type.
+ * @param {number} wireType Wire type received
+ * @returns {Reader} `this`
+ */
+Reader$2.prototype.skipType = function(wireType) {
+    switch (wireType) {
+        case 0:
+            this.skip();
+            break;
+        case 1:
+            this.skip(8);
+            break;
+        case 2:
+            this.skip(this.uint32());
+            break;
+        case 3:
+            while ((wireType = this.uint32() & 7) !== 4) {
+                this.skipType(wireType);
+            }
+            break;
+        case 5:
+            this.skip(4);
+            break;
+
+        /* istanbul ignore next */
+        default:
+            throw Error("invalid wire type " + wireType + " at offset " + this.pos);
+    }
+    return this;
+};
+
+Reader$2._configure = function(BufferReader_) {
+    BufferReader$2 = BufferReader_;
+    Reader$2.create = create$3();
+    BufferReader$2._configure();
+
+    var fn = minimal$2.Long ? "toLong" : /* istanbul ignore next */ "toNumber";
+    minimal$2.merge(Reader$2.prototype, {
+
+        int64: function read_int64() {
+            return readLongVarint$1.call(this)[fn](false);
+        },
+
+        uint64: function read_uint64() {
+            return readLongVarint$1.call(this)[fn](true);
+        },
+
+        sint64: function read_sint64() {
+            return readLongVarint$1.call(this).zzDecode()[fn](false);
+        },
+
+        fixed64: function read_fixed64() {
+            return readFixed64$1.call(this)[fn](true);
+        },
+
+        sfixed64: function read_sfixed64() {
+            return readFixed64$1.call(this)[fn](false);
+        }
+
+    });
+};
+
+"use strict";
+var reader_buffer$1 = BufferReader$3;
+
+// extends Reader
+
+(BufferReader$3.prototype = Object.create(reader$1.prototype)).constructor = BufferReader$3;
+
+
+
+/**
+ * Constructs a new buffer reader instance.
+ * @classdesc Wire format reader using node buffers.
+ * @extends Reader
+ * @constructor
+ * @param {Buffer} buffer Buffer to read from
+ */
+function BufferReader$3(buffer) {
+    reader$1.call(this, buffer);
+
+    /**
+     * Read buffer.
+     * @name BufferReader#buf
+     * @type {Buffer}
+     */
+}
+
+BufferReader$3._configure = function () {
+    /* istanbul ignore else */
+    if (minimal$2.Buffer)
+        BufferReader$3.prototype._slice = minimal$2.Buffer.prototype.slice;
+};
+
+
+/**
+ * @override
+ */
+BufferReader$3.prototype.string = function read_string_buffer() {
+    var len = this.uint32(); // modifies pos
+    return this.buf.utf8Slice
+        ? this.buf.utf8Slice(this.pos, this.pos = Math.min(this.pos + len, this.len))
+        : this.buf.toString("utf-8", this.pos, this.pos = Math.min(this.pos + len, this.len));
+};
+
+/**
+ * Reads a sequence of bytes preceeded by its length as a varint.
+ * @name BufferReader#bytes
+ * @function
+ * @returns {Buffer} Value read
+ */
+
+BufferReader$3._configure();
+
+"use strict";
+var service$1 = Service$1;
+
+
+
+// Extends EventEmitter
+(Service$1.prototype = Object.create(minimal$2.EventEmitter.prototype)).constructor = Service$1;
+
+/**
+ * A service method callback as used by {@link rpc.ServiceMethod|ServiceMethod}.
+ *
+ * Differs from {@link RPCImplCallback} in that it is an actual callback of a service method which may not return `response = null`.
+ * @typedef rpc.ServiceMethodCallback
+ * @template TRes extends Message<TRes>
+ * @type {function}
+ * @param {Error|null} error Error, if any
+ * @param {TRes} [response] Response message
+ * @returns {undefined}
+ */
+
+/**
+ * A service method part of a {@link rpc.Service} as created by {@link Service.create}.
+ * @typedef rpc.ServiceMethod
+ * @template TReq extends Message<TReq>
+ * @template TRes extends Message<TRes>
+ * @type {function}
+ * @param {TReq|Properties<TReq>} request Request message or plain object
+ * @param {rpc.ServiceMethodCallback<TRes>} [callback] Node-style callback called with the error, if any, and the response message
+ * @returns {Promise<Message<TRes>>} Promise if `callback` has been omitted, otherwise `undefined`
+ */
+
+/**
+ * Constructs a new RPC service instance.
+ * @classdesc An RPC service as returned by {@link Service#create}.
+ * @exports rpc.Service
+ * @extends util.EventEmitter
+ * @constructor
+ * @param {RPCImpl} rpcImpl RPC implementation
+ * @param {boolean} [requestDelimited=false] Whether requests are length-delimited
+ * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
+ */
+function Service$1(rpcImpl, requestDelimited, responseDelimited) {
+
+    if (typeof rpcImpl !== "function")
+        throw TypeError("rpcImpl must be a function");
+
+    minimal$2.EventEmitter.call(this);
+
+    /**
+     * RPC implementation. Becomes `null` once the service is ended.
+     * @type {RPCImpl|null}
+     */
+    this.rpcImpl = rpcImpl;
+
+    /**
+     * Whether requests are length-delimited.
+     * @type {boolean}
+     */
+    this.requestDelimited = Boolean(requestDelimited);
+
+    /**
+     * Whether responses are length-delimited.
+     * @type {boolean}
+     */
+    this.responseDelimited = Boolean(responseDelimited);
+}
+
+/**
+ * Calls a service method through {@link rpc.Service#rpcImpl|rpcImpl}.
+ * @param {Method|rpc.ServiceMethod<TReq,TRes>} method Reflected or static method
+ * @param {Constructor<TReq>} requestCtor Request constructor
+ * @param {Constructor<TRes>} responseCtor Response constructor
+ * @param {TReq|Properties<TReq>} request Request message or plain object
+ * @param {rpc.ServiceMethodCallback<TRes>} callback Service callback
+ * @returns {undefined}
+ * @template TReq extends Message<TReq>
+ * @template TRes extends Message<TRes>
+ */
+Service$1.prototype.rpcCall = function rpcCall(method, requestCtor, responseCtor, request, callback) {
+
+    if (!request)
+        throw TypeError("request must be specified");
+
+    var self = this;
+    if (!callback)
+        return minimal$2.asPromise(rpcCall, self, method, requestCtor, responseCtor, request);
+
+    if (!self.rpcImpl) {
+        setTimeout(function() { callback(Error("already ended")); }, 0);
+        return undefined;
+    }
+
+    try {
+        return self.rpcImpl(
+            method,
+            requestCtor[self.requestDelimited ? "encodeDelimited" : "encode"](request).finish(),
+            function rpcCallback(err, response) {
+
+                if (err) {
+                    self.emit("error", err, method);
+                    return callback(err);
+                }
+
+                if (response === null) {
+                    self.end(/* endedByRPC */ true);
+                    return undefined;
+                }
+
+                if (!(response instanceof responseCtor)) {
+                    try {
+                        response = responseCtor[self.responseDelimited ? "decodeDelimited" : "decode"](response);
+                    } catch (err) {
+                        self.emit("error", err, method);
+                        return callback(err);
+                    }
+                }
+
+                self.emit("data", response, method);
+                return callback(null, response);
+            }
+        );
+    } catch (err) {
+        self.emit("error", err, method);
+        setTimeout(function() { callback(err); }, 0);
+        return undefined;
+    }
+};
+
+/**
+ * Ends this service and emits the `end` event.
+ * @param {boolean} [endedByRPC=false] Whether the service has been ended by the RPC implementation.
+ * @returns {rpc.Service} `this`
+ */
+Service$1.prototype.end = function end(endedByRPC) {
+    if (this.rpcImpl) {
+        if (!endedByRPC) // signal end to rpcImpl
+            this.rpcImpl(null, null, null);
+        this.rpcImpl = null;
+        this.emit("end").off();
+    }
+    return this;
+};
+
+var rpc_1$1 = createCommonjsModule(function (module, exports) {
+"use strict";
+
+/**
+ * Streaming RPC helpers.
+ * @namespace
+ */
+var rpc = exports;
+
+/**
+ * RPC implementation passed to {@link Service#create} performing a service request on network level, i.e. by utilizing http requests or websockets.
+ * @typedef RPCImpl
+ * @type {function}
+ * @param {Method|rpc.ServiceMethod<Message<{}>,Message<{}>>} method Reflected or static method being called
+ * @param {Uint8Array} requestData Request data
+ * @param {RPCImplCallback} callback Callback function
+ * @returns {undefined}
+ * @example
+ * function rpcImpl(method, requestData, callback) {
+ *     if (protobuf.util.lcFirst(method.name) !== "myMethod") // compatible with static code
+ *         throw Error("no such method");
+ *     asynchronouslyObtainAResponse(requestData, function(err, responseData) {
+ *         callback(err, responseData);
+ *     });
+ * }
+ */
+
+/**
+ * Node-style callback as used by {@link RPCImpl}.
+ * @typedef RPCImplCallback
+ * @type {function}
+ * @param {Error|null} error Error, if any, otherwise `null`
+ * @param {Uint8Array|null} [response] Response data or `null` to signal end of stream, if there hasn't been an error
+ * @returns {undefined}
+ */
+
+rpc.Service = service$1;
+});
+
+"use strict";
+var roots$1 = {};
+
+var indexMinimal$1 = createCommonjsModule(function (module, exports) {
+"use strict";
+var protobuf = exports;
+
+/**
+ * Build type, one of `"full"`, `"light"` or `"minimal"`.
+ * @name build
+ * @type {string}
+ * @const
+ */
+protobuf.build = "minimal";
+
+// Serialization
+protobuf.Writer       = writer$1;
+protobuf.BufferWriter = writer_buffer$1;
+protobuf.Reader       = reader$1;
+protobuf.BufferReader = reader_buffer$1;
+
+// Utility
+protobuf.util         = minimal$2;
+protobuf.rpc          = rpc_1$1;
+protobuf.roots        = roots$1;
+protobuf.configure    = configure;
+
+/* istanbul ignore next */
+/**
+ * Reconfigures the library according to the environment.
+ * @returns {undefined}
+ */
+function configure() {
+    protobuf.util._configure();
+    protobuf.Writer._configure(protobuf.BufferWriter);
+    protobuf.Reader._configure(protobuf.BufferReader);
+}
+
+// Set up buffer utility according to the environment
+configure();
+});
+
+"use strict";
 var codegen_1 = codegen;
 
 /**
@@ -73797,7 +72572,7 @@ var namespace = Namespace;
 
 
 var Type$1,    // cyclic
-    Service$1,
+    Service$2,
     Enum;
 
 /**
@@ -73963,7 +72738,7 @@ Namespace.prototype.addJSON = function addJSON(nestedJson) {
                 : nested.values !== undefined
                 ? Enum.fromJSON
                 : nested.methods !== undefined
-                ? Service$1.fromJSON
+                ? Service$2.fromJSON
                 : nested.id !== undefined
                 ? field.fromJSON
                 : Namespace.fromJSON )(names[i], nested)
@@ -74005,7 +72780,7 @@ Namespace.prototype.getEnum = function getEnum(name) {
  */
 Namespace.prototype.add = function add(object) {
 
-    if (!(object instanceof field && object.extend !== undefined || object instanceof Type$1 || object instanceof Enum || object instanceof Service$1 || object instanceof Namespace || object instanceof oneof))
+    if (!(object instanceof field && object.extend !== undefined || object instanceof Type$1 || object instanceof Enum || object instanceof Service$2 || object instanceof Namespace || object instanceof oneof))
         throw TypeError("object must be a valid nested object");
 
     if (!this.nested)
@@ -74013,7 +72788,7 @@ Namespace.prototype.add = function add(object) {
     else {
         var prev = this.get(object.name);
         if (prev) {
-            if (prev instanceof Namespace && object instanceof Namespace && !(prev instanceof Type$1 || prev instanceof Service$1)) {
+            if (prev instanceof Namespace && object instanceof Namespace && !(prev instanceof Type$1 || prev instanceof Service$2)) {
                 // replace plain namespace but keep existing nested elements and options
                 var nested = prev.nestedArray;
                 for (var i = 0; i < nested.length; ++i)
@@ -74207,7 +72982,7 @@ Namespace.prototype.lookupTypeOrEnum = function lookupTypeOrEnum(path) {
  * @throws {Error} If `path` does not point to a service
  */
 Namespace.prototype.lookupService = function lookupService(path) {
-    var found = this.lookup(path, [ Service$1 ]);
+    var found = this.lookup(path, [ Service$2 ]);
     if (!found)
         throw Error("no such Service '" + path + "' in " + this);
     return found;
@@ -74216,7 +72991,7 @@ Namespace.prototype.lookupService = function lookupService(path) {
 // Sets up cyclic dependencies (called in index-light)
 Namespace._configure = function(Type_, Service_, Enum_) {
     Type$1    = Type_;
-    Service$1 = Service_;
+    Service$2 = Service_;
     Enum    = Enum_;
 };
 
@@ -74508,11 +73283,11 @@ Method.prototype.resolve = function resolve() {
 };
 
 "use strict";
-var service$1 = Service$2;
+var service$2 = Service$3;
 
 // extends Namespace
 
-((Service$2.prototype = Object.create(namespace.prototype)).constructor = Service$2).className = "Service";
+((Service$3.prototype = Object.create(namespace.prototype)).constructor = Service$3).className = "Service";
 
 
 
@@ -74525,7 +73300,7 @@ var service$1 = Service$2;
  * @param {Object.<string,*>} [options] Service options
  * @throws {TypeError} If arguments are invalid
  */
-function Service$2(name, options) {
+function Service$3(name, options) {
     namespace.call(this, name, options);
 
     /**
@@ -74556,8 +73331,8 @@ function Service$2(name, options) {
  * @returns {Service} Created service
  * @throws {TypeError} If arguments are invalid
  */
-Service$2.fromJSON = function fromJSON(name, json) {
-    var service = new Service$2(name, json.options);
+Service$3.fromJSON = function fromJSON(name, json) {
+    var service = new Service$3(name, json.options);
     /* istanbul ignore else */
     if (json.methods)
         for (var names = Object.keys(json.methods), i = 0; i < names.length; ++i)
@@ -74573,7 +73348,7 @@ Service$2.fromJSON = function fromJSON(name, json) {
  * @param {IToJSONOptions} [toJSONOptions] JSON conversion options
  * @returns {IService} Service descriptor
  */
-Service$2.prototype.toJSON = function toJSON(toJSONOptions) {
+Service$3.prototype.toJSON = function toJSON(toJSONOptions) {
     var inherited = namespace.prototype.toJSON.call(this, toJSONOptions);
     var keepComments = toJSONOptions ? Boolean(toJSONOptions.keepComments) : false;
     return util_1.toObject([
@@ -74590,7 +73365,7 @@ Service$2.prototype.toJSON = function toJSON(toJSONOptions) {
  * @type {Method[]}
  * @readonly
  */
-Object.defineProperty(Service$2.prototype, "methodsArray", {
+Object.defineProperty(Service$3.prototype, "methodsArray", {
     get: function() {
         return this._methodsArray || (this._methodsArray = util_1.toArray(this.methods));
     }
@@ -74604,7 +73379,7 @@ function clearCache$1(service) {
 /**
  * @override
  */
-Service$2.prototype.get = function get(name) {
+Service$3.prototype.get = function get(name) {
     return this.methods[name]
         || namespace.prototype.get.call(this, name);
 };
@@ -74612,7 +73387,7 @@ Service$2.prototype.get = function get(name) {
 /**
  * @override
  */
-Service$2.prototype.resolveAll = function resolveAll() {
+Service$3.prototype.resolveAll = function resolveAll() {
     var methods = this.methodsArray;
     for (var i = 0; i < methods.length; ++i)
         methods[i].resolve();
@@ -74622,7 +73397,7 @@ Service$2.prototype.resolveAll = function resolveAll() {
 /**
  * @override
  */
-Service$2.prototype.add = function add(object) {
+Service$3.prototype.add = function add(object) {
 
     /* istanbul ignore if */
     if (this.get(object.name))
@@ -74639,7 +73414,7 @@ Service$2.prototype.add = function add(object) {
 /**
  * @override
  */
-Service$2.prototype.remove = function remove(object) {
+Service$3.prototype.remove = function remove(object) {
     if (object instanceof method) {
 
         /* istanbul ignore if */
@@ -74660,8 +73435,8 @@ Service$2.prototype.remove = function remove(object) {
  * @param {boolean} [responseDelimited=false] Whether responses are length-delimited
  * @returns {rpc.Service} RPC service. Useful where requests and/or responses are streamed.
  */
-Service$2.prototype.create = function create(rpcImpl, requestDelimited, responseDelimited) {
-    var rpcService = new rpc_1.Service(rpcImpl, requestDelimited, responseDelimited);
+Service$3.prototype.create = function create(rpcImpl, requestDelimited, responseDelimited) {
+    var rpcService = new rpc_1$1.Service(rpcImpl, requestDelimited, responseDelimited);
     for (var i = 0, method; i < /* initializes */ this.methodsArray.length; ++i) {
         var methodName = util_1.lcFirst((method = this._methodsArray[i]).resolve().name).replace(/[^$\w_]/g, "");
         rpcService[methodName] = util_1.codegen(["r","c"], util_1.isReserved(methodName) ? methodName + "_" : methodName)("return this.rpcCall(m,q,s,r,c)")({
@@ -74808,7 +73583,7 @@ Message.toObject = function toObject(message, options) {
  * @returns {Object.<string,*>} JSON object
  */
 Message.prototype.toJSON = function toJSON() {
-    return this.$type.toObject(this, minimal.toJSONOptions);
+    return this.$type.toObject(this, minimal$2.toJSONOptions);
 };
 
 "use strict";
@@ -75764,7 +74539,7 @@ Type$2.fromJSON = function fromJSON(name, json) {
                 : nested.values !== undefined
                 ? _enum.fromJSON
                 : nested.methods !== undefined
-                ? service$1.fromJSON
+                ? service$2.fromJSON
                 : namespace.fromJSON )(names[i], nested)
             );
         }
@@ -75940,12 +74715,12 @@ Type$2.prototype.setup = function setup() {
 
     // Replace setup methods with type-specific generated functions
     this.encode = encoder_1(this)({
-        Writer : writer,
+        Writer : writer$1,
         types  : types,
         util   : util_1
     });
     this.decode = decoder_1(this)({
-        Reader : reader,
+        Reader : reader$1,
         types  : types,
         util   : util_1
     });
@@ -76018,10 +74793,10 @@ Type$2.prototype.decode = function decode_setup(reader, length) {
  * @throws {Error} If the payload is not a reader or valid buffer
  * @throws {util.ProtocolError} If required fields are missing
  */
-Type$2.prototype.decodeDelimited = function decodeDelimited(reader$1) {
-    if (!(reader$1 instanceof reader))
-        reader$1 = reader.create(reader$1);
-    return this.decode(reader$1, reader$1.uint32());
+Type$2.prototype.decodeDelimited = function decodeDelimited(reader) {
+    if (!(reader instanceof reader$1))
+        reader = reader$1.create(reader);
+    return this.decode(reader, reader.uint32());
 };
 
 /**
@@ -76102,7 +74877,7 @@ var root$1 = Root;
 
 
 var Type$3,   // cyclic
-    parse$1,  // might be excluded
+    parse,  // might be excluded
     common$2; // "
 
 /**
@@ -76214,8 +74989,8 @@ Root.prototype.load = function load(filename, options, callback) {
             if (!util_1.isString(source))
                 self.setOptions(source.options).addJSON(source.nested);
             else {
-                parse$1.filename = filename;
-                var parsed = parse$1(source, self, options),
+                parse.filename = filename;
+                var parsed = parse(source, self, options),
                     resolved,
                     i = 0;
                 if (parsed.imports)
@@ -76449,7 +75224,7 @@ Root.prototype._handleRemove = function _handleRemove(object) {
 // Sets up cyclic dependencies (called in index-light)
 Root._configure = function(Type_, parse_, common_) {
     Type$3   = Type_;
-    parse$1  = parse_;
+    parse  = parse_;
     common$2 = common_;
 };
 
@@ -76460,7 +75235,7 @@ var util_1 = createCommonjsModule(function (module) {
  * Various utility functions.
  * @namespace
  */
-var util = module.exports = minimal;
+var util = module.exports = minimal$2;
 
 
 
@@ -76660,7 +75435,7 @@ util.setProperty = function setProperty(dst, path, value) {
  */
 Object.defineProperty(util, "decorateRoot", {
     get: function() {
-        return roots["decorated"] || (roots["decorated"] = new (root$1)());
+        return roots$1["decorated"] || (roots$1["decorated"] = new (root$1)());
     }
 });
 });
@@ -77191,7 +75966,7 @@ function encoder(mtype) {
 
 var indexLight = createCommonjsModule(function (module) {
 "use strict";
-var protobuf = module.exports = indexMinimal;
+var protobuf = module.exports = indexMinimal$1;
 
 protobuf.build = "light";
 
@@ -77278,7 +76053,7 @@ protobuf.Type             = type;
 protobuf.Field            = field;
 protobuf.OneOf            = oneof;
 protobuf.MapField         = mapfield;
-protobuf.Service          = service$1;
+protobuf.Service          = service$2;
 protobuf.Method           = method;
 
 // Runtime
@@ -77701,10 +76476,10 @@ function tokenize(source, alternateCommentMode) {
 }
 
 "use strict";
-var parse_1 = parse$2;
+var parse_1 = parse$1;
 
-parse$2.filename = null;
-parse$2.defaults = { keepCase: false };
+parse$1.filename = null;
+parse$1.defaults = { keepCase: false };
 
 
 
@@ -77752,14 +76527,14 @@ var base10Re    = /^[1-9][0-9]*$/,
  * @property {string} filename=null Currently processing file name for error reporting, if known
  * @property {IParseOptions} defaults Default {@link IParseOptions}
  */
-function parse$2(source, root, options) {
+function parse$1(source, root, options) {
     /* eslint-disable callback-return */
     if (!(root instanceof root$1)) {
         options = root;
         root = new root$1();
     }
     if (!options)
-        options = parse$2.defaults;
+        options = parse$1.defaults;
 
     var preferTrailingComment = options.preferTrailingComment || false;
     var tn = tokenize_1(source, options.alternateCommentMode || false),
@@ -77782,9 +76557,9 @@ function parse$2(source, root, options) {
 
     /* istanbul ignore next */
     function illegal(token, name, insideTryCatch) {
-        var filename = parse$2.filename;
+        var filename = parse$1.filename;
         if (!insideTryCatch)
-            parse$2.filename = null;
+            parse$1.filename = null;
         return Error("illegal " + (name || "token") + " '" + token + "' (" + (filename ? filename + ", " : "") + "line " + tn.line + ")");
     }
 
@@ -77974,7 +76749,7 @@ function parse$2(source, root, options) {
             if(typeof obj.comment !== "string") {
               obj.comment = cmnt(); // try block-type comment
             }
-            obj.filename = parse$2.filename;
+            obj.filename = parse$1.filename;
         }
         if (skip("{", true)) {
             var token;
@@ -78112,7 +76887,7 @@ function parse$2(source, root, options) {
         var type$1 = new type(name);
         type$1.group = true;
         var field$1 = new field(fieldName, id, name, rule);
-        field$1.filename = parse$2.filename;
+        field$1.filename = parse$1.filename;
         ifBlock(type$1, function parseGroup_block(token) {
             switch (token) {
 
@@ -78340,7 +77115,7 @@ function parse$2(source, root, options) {
         if (!nameRe.test(token = next()))
             throw illegal(token, "service name");
 
-        var service = new service$1(token);
+        var service = new service$2(token);
         ifBlock(service, function parseService_block(token) {
             if (parseCommon(service, token))
                 return;
@@ -78489,7 +77264,7 @@ function parse$2(source, root, options) {
         }
     }
 
-    parse$2.filename = null;
+    parse$1.filename = null;
     return {
         "package"     : pkg,
         "imports"     : imports,
@@ -79656,14 +78431,14 @@ var nested = {
 		}
 	}
 };
-var require$$1$1 = {
+var require$$1 = {
 	nested: nested
 };
 
 var descriptor = createCommonjsModule(function (module, exports) {
 "use strict";
 
-module.exports = exports = protobufjs.descriptor = protobufjs.Root.fromJSON(require$$1$1).lookup(".google.protobuf");
+module.exports = exports = protobufjs.descriptor = protobufjs.Root.fromJSON(require$$1).lookup(".google.protobuf");
 
 var Namespace = protobufjs.Namespace,
     Root      = protobufjs.Root,
@@ -80831,7 +79606,7 @@ var nested$1 = {
 		}
 	}
 };
-var require$$0$1 = {
+var require$$0 = {
 	nested: nested$1
 };
 
@@ -81139,8 +79914,8 @@ function addCommonProtos() {
     // Protobuf.js exposes: any, duration, empty, field_mask, struct, timestamp,
     // and wrappers. compiler/plugin is excluded in Protobuf.js and here.
     // Using constant strings for compatibility with tools like Webpack
-    const apiDescriptor = require$$0$1;
-    const descriptorDescriptor = require$$1$1;
+    const apiDescriptor = require$$0;
+    const descriptorDescriptor = require$$1;
     const sourceContextDescriptor = require$$2;
     const typeDescriptor = require$$3;
     protobufjs.common('api', apiDescriptor.nested.google.nested.protobuf.nested);
@@ -81982,46 +80757,22 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var _from = "@grpc/grpc-js@^1.3.4";
-var _id = "@grpc/grpc-js@1.4.4";
-var _inBundle = false;
-var _integrity = "sha512-a6222b7Dl6fIlMgzVl7e+NiRoLiZFbpcwvBH2Oli56Bn7W4/3Ld+86hK4ffPn5rx2DlDidmIcvIJiOQXyhv9gA==";
-var _location = "/@grpc/grpc-js";
-var _phantomChildren = {
+var name = "@grpc/grpc-js";
+var version$l = "1.4.4";
+var description = "gRPC Library for Node - pure JS implementation";
+var homepage = "https://grpc.io/";
+var repository = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
+var main = "build/src/index.js";
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
-var _requested = {
-	type: "range",
-	registry: true,
-	raw: "@grpc/grpc-js@^1.3.4",
-	name: "@grpc/grpc-js",
-	escapedName: "@grpc%2fgrpc-js",
-	scope: "@grpc",
-	rawSpec: "^1.3.4",
-	saveSpec: null,
-	fetchSpec: "^1.3.4"
-};
-var _requiredBy = [
-	"/@hashgraph/sdk"
+var keywords = [
 ];
-var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.4.tgz";
-var _shasum = "59336f13d77bc446bbdf2161564a32639288dc5b";
-var _spec = "@grpc/grpc-js@^1.3.4";
-var _where = "/Users/danielivanov/limechain/hedera/hethers.js/node_modules/@hashgraph/sdk";
 var author = {
 	name: "Google Inc."
 };
-var bundleDependencies = false;
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var dependencies = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
-};
-var deprecated = false;
-var description = "gRPC Library for Node - pure JS implementation";
+var types = "build/src/index.d.ts";
+var license = "Apache-2.0";
 var devDependencies = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -82045,8 +80796,28 @@ var devDependencies = {
 	typescript: "^3.7.2",
 	yargs: "^15.4.1"
 };
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var scripts = {
+	build: "npm run compile",
+	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
+	compile: "tsc -p .",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	lint: "npm run check",
+	prepare: "npm run generate-types && npm run compile",
+	test: "gulp test",
+	check: "gts check src/**/*.ts",
+	fix: "gts fix src/*.ts",
+	pretest: "npm run generate-types && npm run compile",
+	posttest: "npm run check && madge -c ./build/src",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto"
+};
+var dependencies = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
 };
 var files = [
 	"src/**/*.ts",
@@ -82062,63 +80833,29 @@ var files = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var homepage = "https://grpc.io/";
-var keywords = [
-];
-var license = "Apache-2.0";
-var main = "build/src/index.js";
-var name = "@grpc/grpc-js";
-var repository = {
-	type: "git",
-	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
-};
-var scripts = {
-	build: "npm run compile",
-	check: "gts check src/**/*.ts",
-	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
-	compile: "tsc -p .",
-	fix: "gts fix src/*.ts",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto",
-	lint: "npm run check",
-	posttest: "npm run check && madge -c ./build/src",
-	prepare: "npm run generate-types && npm run compile",
-	pretest: "npm run generate-types && npm run compile",
-	test: "gulp test"
-};
-var types = "build/src/index.d.ts";
-var version$p = "1.4.4";
-var require$$0$2 = {
-	_from: _from,
-	_id: _id,
-	_inBundle: _inBundle,
-	_integrity: _integrity,
-	_location: _location,
-	_phantomChildren: _phantomChildren,
-	_requested: _requested,
-	_requiredBy: _requiredBy,
-	_resolved: _resolved,
-	_shasum: _shasum,
-	_spec: _spec,
-	_where: _where,
-	author: author,
-	bundleDependencies: bundleDependencies,
-	contributors: contributors,
-	dependencies: dependencies,
-	deprecated: deprecated,
-	description: description,
-	devDependencies: devDependencies,
-	engines: engines,
-	files: files,
-	homepage: homepage,
-	keywords: keywords,
-	license: license,
-	main: main,
+var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.4.tgz";
+var _integrity = "sha512-a6222b7Dl6fIlMgzVl7e+NiRoLiZFbpcwvBH2Oli56Bn7W4/3Ld+86hK4ffPn5rx2DlDidmIcvIJiOQXyhv9gA==";
+var _from = "@grpc/grpc-js@1.4.4";
+var require$$0$1 = {
 	name: name,
+	version: version$l,
+	description: description,
+	homepage: homepage,
 	repository: repository,
-	scripts: scripts,
+	main: main,
+	engines: engines,
+	keywords: keywords,
+	author: author,
 	types: types,
-	version: version$p
+	license: license,
+	devDependencies: devDependencies,
+	contributors: contributors,
+	scripts: scripts,
+	dependencies: dependencies,
+	files: files,
+	_resolved: _resolved,
+	_integrity: _integrity,
+	_from: _from
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -82153,7 +80890,7 @@ exports.Subchannel = void 0;
 
 
 
-const clientVersion = require$$0$2.version;
+const clientVersion = require$$0$1.version;
 const TRACER_NAME = 'subchannel';
 const MIN_CONNECT_TIMEOUT_MS = 20000;
 const INITIAL_BACKOFF_MS = 1000;
@@ -86710,7 +85447,7 @@ exports.experimental = experimental;
 
 
 const channelz$1 = channelz;
-const clientVersion = require$$0$2.version;
+const clientVersion = require$$0$1.version;
 (() => {
     logging.trace(constants.LogVerbosity.DEBUG, 'index', 'Loading @grpc/grpc-js version ' + clientVersion);
     resolverDns.setup();
@@ -86975,7 +85712,7 @@ function decodeUnaryResponse(data) {
 
             unaryResponse = frameData;
         } else if (frameType === 1) {
-            const trailer = decode$8(frameData);
+            const trailer = decode$7(frameData);
             const [trailerName, trailerValue] = trailer.split(":");
 
             if (trailerName === "grpc-status") {
@@ -87493,6 +86230,3121 @@ class NodeClient extends Client {
     _createMirrorNetworkChannel() {
         return (address) => new NodeMirrorChannel(address);
     }
+}
+
+"use strict";
+var __awaiter$5 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+const logger$p = new Logger(version$k);
+function isAccount(value) {
+    return value != null && isHexString(value.privateKey, 32);
+}
+function hasMnemonic$1(value) {
+    const mnemonic = value.mnemonic;
+    return (mnemonic && mnemonic.phrase);
+}
+function hasAlias(value) {
+    return isAccount(value) && value.alias != null;
+}
+const account = {
+    "operator": {
+        "accountId": "0.0.1280",
+        "publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
+        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
+    },
+    "network": {
+        "35.231.208.148:50211": "0.0.3",
+        "35.199.15.177:50211": "0.0.4",
+        "35.225.201.195:50211": "0.0.5",
+        "35.247.109.135:50211": "0.0.6"
+    }
+};
+class Wallet extends Signer {
+    constructor(identity, provider) {
+        logger$p.checkNew(new.target, Wallet);
+        super();
+        if (isAccount(identity) && !SigningKey.isSigningKey(identity)) {
+            const signingKey = new SigningKey(identity.privateKey);
+            defineReadOnly(this, "_signingKey", () => signingKey);
+            if (identity.address || identity.account) {
+                defineReadOnly(this, "address", identity.address ? getAddress(identity.address) : getAddressFromAccount(identity.account));
+                defineReadOnly(this, "account", identity.account ? identity.account : getAccountFromAddress(identity.address));
+            }
+            if (hasAlias(identity)) {
+                defineReadOnly(this, "alias", identity.alias);
+                if (this.alias !== computeAlias(signingKey.privateKey)) {
+                    logger$p.throwArgumentError("privateKey/alias mismatch", "privateKey", "[REDACTED]");
+                }
+            }
+            if (hasMnemonic$1(identity)) {
+                const srcMnemonic = identity.mnemonic;
+                defineReadOnly(this, "_mnemonic", () => ({
+                    phrase: srcMnemonic.phrase,
+                    path: srcMnemonic.path || defaultPath,
+                    locale: srcMnemonic.locale || "en"
+                }));
+                const mnemonic = this.mnemonic;
+                const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
+                if (node.privateKey !== this._signingKey().privateKey) {
+                    logger$p.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
+                }
+            }
+            else {
+                defineReadOnly(this, "_mnemonic", () => null);
+            }
+        }
+        else {
+            if (SigningKey.isSigningKey(identity)) {
+                /* istanbul ignore if */
+                if (identity.curve !== "secp256k1") {
+                    logger$p.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
+                }
+                defineReadOnly(this, "_signingKey", () => identity);
+            }
+            else {
+                // A lot of common tools do not prefix private keys with a 0x (see: #1166)
+                if (typeof (identity) === "string") {
+                    if (identity.match(/^[0-9a-f]*$/i) && identity.length === 64) {
+                        identity = "0x" + identity;
+                    }
+                }
+                const signingKey = new SigningKey(identity);
+                defineReadOnly(this, "_signingKey", () => signingKey);
+            }
+            defineReadOnly(this, "_mnemonic", () => null);
+            defineReadOnly(this, "alias", computeAlias(this._signingKey().privateKey));
+        }
+        /* istanbul ignore if */
+        if (provider && !Provider.isProvider(provider)) {
+            logger$p.throwArgumentError("invalid provider", "provider", provider);
+        }
+        defineReadOnly(this, "provider", provider || null);
+    }
+    get mnemonic() {
+        return this._mnemonic();
+    }
+    get privateKey() {
+        return this._signingKey().privateKey;
+    }
+    get publicKey() {
+        return this._signingKey().publicKey;
+    }
+    getAddress() {
+        return Promise.resolve(this.address);
+    }
+    getAccount() {
+        return Promise.resolve(this.account);
+    }
+    getAlias() {
+        return Promise.resolve(this.alias);
+    }
+    connect(provider) {
+        return new Wallet(this, provider);
+    }
+    connectAccount(accountLike) {
+        const eoa = {
+            privateKey: this._signingKey().privateKey,
+            address: getAddressFromAccount(accountLike),
+            alias: this.alias,
+            mnemonic: this._mnemonic()
+        };
+        return new Wallet(eoa, this.provider);
+    }
+    // TODO to be revised
+    // 1. TransactionRequest must be addressed and modified
+    // 2. We must check whether it is Contract Create or Call (if there is no `to` field, we must sign FileCreate;
+    // If there is `to` field we must read the `customData` and see whether we should sign ContractCreate or
+    // ContractCall)
+    // FIXME:
+    //  the wallet has an identity, thus it has privateKey, publicKey and accountId.
+    //  Those properties should be added to the class itself in the future.
+    //  There will probably be an instance of the hedera client with an operator already set.
+    signTransaction(transaction) {
+        const isBytecodeCreation = transaction.to === undefined;
+        let signableTx;
+        if (isBytecodeCreation) {
+            let txData = transaction.data;
+            const t = Uint8Array.from(Buffer.from(txData));
+            signableTx = FileCreateTransaction.fromBytes(t);
+        }
+        else {
+            // `to` field present
+            // TODO: how to extract the ABI on contract call?
+            // TODO: how to extract constructor arguments for contract create?
+            // TODO: How do we diff ContractCall and ContractCreate ?
+            const { customData, data } = transaction;
+            console.log(customData);
+            const t = Uint8Array.from(Buffer.from(data));
+            signableTx = Transaction.fromBytes(t);
+        }
+        const privKey = PrivateKey.fromString(account.operator.privateKey);
+        const pubKey = PublicKey.fromString(account.operator.publicKey);
+        const sig = privKey.sign(signableTx.toBytes());
+        signableTx.addSignature(pubKey, sig);
+        return Promise.resolve(Buffer.from(signableTx.toBytes()).toString('hex'));
+    }
+    signMessage(message) {
+        return __awaiter$5(this, void 0, void 0, function* () {
+            return joinSignature(this._signingKey().signDigest(hashMessage(message)));
+        });
+    }
+    // TODO to be revised
+    _signTypedData(domain, types, value) {
+        return __awaiter$5(this, void 0, void 0, function* () {
+            // Populate any ENS names
+            const populated = yield TypedDataEncoder.resolveNames(domain, types, value, (name) => {
+                if (this.provider == null) {
+                    logger$p.throwError("cannot resolve ENS names without a provider", Logger.errors.UNSUPPORTED_OPERATION, {
+                        operation: "resolveName",
+                        value: name
+                    });
+                }
+                return this.provider.resolveName(name);
+            });
+            return joinSignature(this._signingKey().signDigest(TypedDataEncoder.hash(populated.domain, types, populated.value)));
+        });
+    }
+    encrypt(password, options, progressCallback) {
+        if (typeof (options) === "function" && !progressCallback) {
+            progressCallback = options;
+            options = {};
+        }
+        if (progressCallback && typeof (progressCallback) !== "function") {
+            throw new Error("invalid callback");
+        }
+        if (!options) {
+            options = {};
+        }
+        return encrypt(this, password, options, progressCallback);
+    }
+    /**
+     *  Static methods to create Wallet instances.
+     */
+    static createRandom(options) {
+        let entropy = randomBytes(16);
+        if (!options) {
+            options = {};
+        }
+        if (options.extraEntropy) {
+            entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
+        }
+        const mnemonic = entropyToMnemonic(entropy, options.locale);
+        return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
+    }
+    static fromEncryptedJson(json, password, progressCallback) {
+        return decryptJsonWallet(json, password, progressCallback).then((account) => {
+            return new Wallet(account);
+        });
+    }
+    static fromEncryptedJsonSync(json, password) {
+        return new Wallet(decryptJsonWalletSync(json, password));
+    }
+    static fromMnemonic(mnemonic, path, wordlist) {
+        if (!path) {
+            path = defaultPath;
+        }
+        return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+    }
+}
+// TODO to be revised
+function verifyMessage(message, signature) {
+    return recoverAddress(hashMessage(message), signature);
+}
+// TODO to be revised
+function verifyTypedData(domain, types, value, signature) {
+    return recoverAddress(TypedDataEncoder.hash(domain, types, value), signature);
+}
+
+var lib_esm$i = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	Wallet: Wallet,
+	verifyMessage: verifyMessage,
+	verifyTypedData: verifyTypedData
+});
+
+const version$m = "web/5.5.0";
+
+"use strict";
+var __awaiter$6 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+function getUrl(href, options) {
+    return __awaiter$6(this, void 0, void 0, function* () {
+        if (options == null) {
+            options = {};
+        }
+        const request = {
+            method: (options.method || "GET"),
+            headers: (options.headers || {}),
+            body: (options.body || undefined),
+        };
+        if (options.skipFetchSetup !== true) {
+            request.mode = "cors"; // no-cors, cors, *same-origin
+            request.cache = "no-cache"; // *default, no-cache, reload, force-cache, only-if-cached
+            request.credentials = "same-origin"; // include, *same-origin, omit
+            request.redirect = "follow"; // manual, *follow, error
+            request.referrer = "client"; // no-referrer, *client
+        }
+        ;
+        const response = yield fetch(href, request);
+        const body = yield response.arrayBuffer();
+        const headers = {};
+        if (response.headers.forEach) {
+            response.headers.forEach((value, key) => {
+                headers[key.toLowerCase()] = value;
+            });
+        }
+        else {
+            ((response.headers).keys)().forEach((key) => {
+                headers[key.toLowerCase()] = response.headers.get(key);
+            });
+        }
+        return {
+            headers: headers,
+            statusCode: response.status,
+            statusMessage: response.statusText,
+            body: arrayify(new Uint8Array(body)),
+        };
+    });
+}
+
+"use strict";
+var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+const logger$q = new Logger(version$m);
+function staller(duration) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, duration);
+    });
+}
+function bodyify(value, type) {
+    if (value == null) {
+        return null;
+    }
+    if (typeof (value) === "string") {
+        return value;
+    }
+    if (isBytesLike(value)) {
+        if (type && (type.split("/")[0] === "text" || type.split(";")[0].trim() === "application/json")) {
+            try {
+                return toUtf8String(value);
+            }
+            catch (error) { }
+            ;
+        }
+        return hexlify(value);
+    }
+    return value;
+}
+// This API is still a work in progress; the future changes will likely be:
+// - ConnectionInfo => FetchDataRequest<T = any>
+// - FetchDataRequest.body? = string | Uint8Array | { contentType: string, data: string | Uint8Array }
+//   - If string => text/plain, Uint8Array => application/octet-stream (if content-type unspecified)
+// - FetchDataRequest.processFunc = (body: Uint8Array, response: FetchDataResponse) => T
+// For this reason, it should be considered internal until the API is finalized
+function _fetchData(connection, body, processFunc) {
+    // How many times to retry in the event of a throttle
+    const attemptLimit = (typeof (connection) === "object" && connection.throttleLimit != null) ? connection.throttleLimit : 12;
+    logger$q.assertArgument((attemptLimit > 0 && (attemptLimit % 1) === 0), "invalid connection throttle limit", "connection.throttleLimit", attemptLimit);
+    const throttleCallback = ((typeof (connection) === "object") ? connection.throttleCallback : null);
+    const throttleSlotInterval = ((typeof (connection) === "object" && typeof (connection.throttleSlotInterval) === "number") ? connection.throttleSlotInterval : 100);
+    logger$q.assertArgument((throttleSlotInterval > 0 && (throttleSlotInterval % 1) === 0), "invalid connection throttle slot interval", "connection.throttleSlotInterval", throttleSlotInterval);
+    const headers = {};
+    let url = null;
+    // @TODO: Allow ConnectionInfo to override some of these values
+    const options = {
+        method: "GET",
+    };
+    let allow304 = false;
+    let timeout = 2 * 60 * 1000;
+    if (typeof (connection) === "string") {
+        url = connection;
+    }
+    else if (typeof (connection) === "object") {
+        if (connection == null || connection.url == null) {
+            logger$q.throwArgumentError("missing URL", "connection.url", connection);
+        }
+        url = connection.url;
+        if (typeof (connection.timeout) === "number" && connection.timeout > 0) {
+            timeout = connection.timeout;
+        }
+        if (connection.headers) {
+            for (const key in connection.headers) {
+                headers[key.toLowerCase()] = { key: key, value: String(connection.headers[key]) };
+                if (["if-none-match", "if-modified-since"].indexOf(key.toLowerCase()) >= 0) {
+                    allow304 = true;
+                }
+            }
+        }
+        options.allowGzip = !!connection.allowGzip;
+        if (connection.user != null && connection.password != null) {
+            if (url.substring(0, 6) !== "https:" && connection.allowInsecureAuthentication !== true) {
+                logger$q.throwError("basic authentication requires a secure https url", Logger.errors.INVALID_ARGUMENT, { argument: "url", url: url, user: connection.user, password: "[REDACTED]" });
+            }
+            const authorization = connection.user + ":" + connection.password;
+            headers["authorization"] = {
+                key: "Authorization",
+                value: "Basic " + encode$1(toUtf8Bytes(authorization))
+            };
+        }
+    }
+    if (body) {
+        options.method = "POST";
+        options.body = body;
+        if (headers["content-type"] == null) {
+            headers["content-type"] = { key: "Content-Type", value: "application/octet-stream" };
+        }
+        if (headers["content-length"] == null) {
+            headers["content-length"] = { key: "Content-Length", value: String(body.length) };
+        }
+    }
+    const flatHeaders = {};
+    Object.keys(headers).forEach((key) => {
+        const header = headers[key];
+        flatHeaders[header.key] = header.value;
+    });
+    options.headers = flatHeaders;
+    const runningTimeout = (function () {
+        let timer = null;
+        const promise = new Promise(function (resolve, reject) {
+            if (timeout) {
+                timer = setTimeout(() => {
+                    if (timer == null) {
+                        return;
+                    }
+                    timer = null;
+                    reject(logger$q.makeError("timeout", Logger.errors.TIMEOUT, {
+                        requestBody: bodyify(options.body, flatHeaders["content-type"]),
+                        requestMethod: options.method,
+                        timeout: timeout,
+                        url: url
+                    }));
+                }, timeout);
+            }
+        });
+        const cancel = function () {
+            if (timer == null) {
+                return;
+            }
+            clearTimeout(timer);
+            timer = null;
+        };
+        return { promise, cancel };
+    })();
+    const runningFetch = (function () {
+        return __awaiter$7(this, void 0, void 0, function* () {
+            for (let attempt = 0; attempt < attemptLimit; attempt++) {
+                let response = null;
+                try {
+                    response = yield getUrl(url, options);
+                    // Exponential back-off throttling
+                    if (response.statusCode === 429 && attempt < attemptLimit) {
+                        let tryAgain = true;
+                        if (throttleCallback) {
+                            tryAgain = yield throttleCallback(attempt, url);
+                        }
+                        if (tryAgain) {
+                            let stall = 0;
+                            const retryAfter = response.headers["retry-after"];
+                            if (typeof (retryAfter) === "string" && retryAfter.match(/^[1-9][0-9]*$/)) {
+                                stall = parseInt(retryAfter) * 1000;
+                            }
+                            else {
+                                stall = throttleSlotInterval * parseInt(String(Math.random() * Math.pow(2, attempt)));
+                            }
+                            //console.log("Stalling 429");
+                            yield staller(stall);
+                            continue;
+                        }
+                    }
+                }
+                catch (error) {
+                    response = error.response;
+                    if (response == null) {
+                        runningTimeout.cancel();
+                        logger$q.throwError("missing response", Logger.errors.SERVER_ERROR, {
+                            requestBody: bodyify(options.body, flatHeaders["content-type"]),
+                            requestMethod: options.method,
+                            serverError: error,
+                            url: url
+                        });
+                    }
+                }
+                let body = response.body;
+                if (allow304 && response.statusCode === 304) {
+                    body = null;
+                }
+                else if (response.statusCode < 200 || response.statusCode >= 300) {
+                    runningTimeout.cancel();
+                    logger$q.throwError("bad response", Logger.errors.SERVER_ERROR, {
+                        status: response.statusCode,
+                        headers: response.headers,
+                        body: bodyify(body, ((response.headers) ? response.headers["content-type"] : null)),
+                        requestBody: bodyify(options.body, flatHeaders["content-type"]),
+                        requestMethod: options.method,
+                        url: url
+                    });
+                }
+                if (processFunc) {
+                    try {
+                        const result = yield processFunc(body, response);
+                        runningTimeout.cancel();
+                        return result;
+                    }
+                    catch (error) {
+                        // Allow the processFunc to trigger a throttle
+                        if (error.throttleRetry && attempt < attemptLimit) {
+                            let tryAgain = true;
+                            if (throttleCallback) {
+                                tryAgain = yield throttleCallback(attempt, url);
+                            }
+                            if (tryAgain) {
+                                const timeout = throttleSlotInterval * parseInt(String(Math.random() * Math.pow(2, attempt)));
+                                //console.log("Stalling callback");
+                                yield staller(timeout);
+                                continue;
+                            }
+                        }
+                        runningTimeout.cancel();
+                        logger$q.throwError("processing response error", Logger.errors.SERVER_ERROR, {
+                            body: bodyify(body, ((response.headers) ? response.headers["content-type"] : null)),
+                            error: error,
+                            requestBody: bodyify(options.body, flatHeaders["content-type"]),
+                            requestMethod: options.method,
+                            url: url
+                        });
+                    }
+                }
+                runningTimeout.cancel();
+                // If we had a processFunc, it either returned a T or threw above.
+                // The "body" is now a Uint8Array.
+                return body;
+            }
+            return logger$q.throwError("failed response", Logger.errors.SERVER_ERROR, {
+                requestBody: bodyify(options.body, flatHeaders["content-type"]),
+                requestMethod: options.method,
+                url: url
+            });
+        });
+    })();
+    return Promise.race([runningTimeout.promise, runningFetch]);
+}
+function fetchJson(connection, json, processFunc) {
+    let processJsonFunc = (value, response) => {
+        let result = null;
+        if (value != null) {
+            try {
+                result = JSON.parse(toUtf8String(value));
+            }
+            catch (error) {
+                logger$q.throwError("invalid JSON", Logger.errors.SERVER_ERROR, {
+                    body: value,
+                    error: error
+                });
+            }
+        }
+        if (processFunc) {
+            result = processFunc(result, response);
+        }
+        return result;
+    };
+    // If we have json to send, we must
+    // - add content-type of application/json (unless already overridden)
+    // - convert the json to bytes
+    let body = null;
+    if (json != null) {
+        body = toUtf8Bytes(json);
+        // Create a connection with the content-type set for JSON
+        const updated = (typeof (connection) === "string") ? ({ url: connection }) : shallowCopy(connection);
+        if (updated.headers) {
+            const hasContentType = (Object.keys(updated.headers).filter((k) => (k.toLowerCase() === "content-type")).length) !== 0;
+            if (!hasContentType) {
+                updated.headers = shallowCopy(updated.headers);
+                updated.headers["content-type"] = "application/json";
+            }
+        }
+        else {
+            updated.headers = { "content-type": "application/json" };
+        }
+        connection = updated;
+    }
+    return _fetchData(connection, body, processJsonFunc);
+}
+function poll(func, options) {
+    if (!options) {
+        options = {};
+    }
+    options = shallowCopy(options);
+    if (options.floor == null) {
+        options.floor = 0;
+    }
+    if (options.ceiling == null) {
+        options.ceiling = 10000;
+    }
+    if (options.interval == null) {
+        options.interval = 250;
+    }
+    return new Promise(function (resolve, reject) {
+        let timer = null;
+        let done = false;
+        // Returns true if cancel was successful. Unsuccessful cancel means we're already done.
+        const cancel = () => {
+            if (done) {
+                return false;
+            }
+            done = true;
+            if (timer) {
+                clearTimeout(timer);
+            }
+            return true;
+        };
+        if (options.timeout) {
+            timer = setTimeout(() => {
+                if (cancel()) {
+                    reject(new Error("timeout"));
+                }
+            }, options.timeout);
+        }
+        const retryLimit = options.retryLimit;
+        let attempt = 0;
+        function check() {
+            return func().then(function (result) {
+                // If we have a result, or are allowed null then we're done
+                if (result !== undefined) {
+                    if (cancel()) {
+                        resolve(result);
+                    }
+                }
+                else if (options.oncePoll) {
+                    options.oncePoll.once("poll", check);
+                }
+                else if (options.onceBlock) {
+                    options.onceBlock.once("block", check);
+                    // Otherwise, exponential back-off (up to 10s) our next request
+                }
+                else if (!done) {
+                    attempt++;
+                    if (attempt > retryLimit) {
+                        if (cancel()) {
+                            reject(new Error("retry limit reached"));
+                        }
+                        return;
+                    }
+                    let timeout = options.interval * parseInt(String(Math.random() * Math.pow(2, attempt)));
+                    if (timeout < options.floor) {
+                        timeout = options.floor;
+                    }
+                    if (timeout > options.ceiling) {
+                        timeout = options.ceiling;
+                    }
+                    setTimeout(check, timeout);
+                }
+                return null;
+            }, function (error) {
+                if (cancel()) {
+                    reject(error);
+                }
+            });
+        }
+        check();
+    });
+}
+
+var lib_esm$j = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	_fetchData: _fetchData,
+	fetchJson: fetchJson,
+	poll: poll
+});
+
+var abi_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$8);
+
+var address_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$5);
+
+var require$$0$2 = /*@__PURE__*/getAugmentedNamespace(lib_esm$a);
+
+var basex_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$b);
+
+var bytes_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$1);
+
+var hash_1$1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$7);
+
+var hdnode_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$d);
+
+var json_wallets_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$f);
+
+var keccak256_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$3);
+
+var logger_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm);
+
+var sha2_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$c);
+
+var solidity_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$g);
+
+var random_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$e);
+
+var properties_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$2);
+
+var require$$1$1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$4);
+
+var signing_key_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$9);
+
+var strings_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$6);
+
+var transactions_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$k);
+
+var units_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$h);
+
+var wallet_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$i);
+
+var web_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$j);
+
+var utils$1 = createCommonjsModule(function (module, exports) {
+"use strict";
+var __createBinding = (commonjsGlobal && commonjsGlobal.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (commonjsGlobal && commonjsGlobal.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.formatBytes32String = exports.Utf8ErrorFuncs = exports.toUtf8String = exports.toUtf8CodePoints = exports.toUtf8Bytes = exports._toEscapedUtf8String = exports.nameprep = exports.hexDataSlice = exports.hexDataLength = exports.hexZeroPad = exports.hexValue = exports.hexStripZeros = exports.hexConcat = exports.isHexString = exports.hexlify = exports.base64 = exports.base58 = exports.TransactionDescription = exports.LogDescription = exports.Interface = exports.SigningKey = exports.HDNode = exports.defaultPath = exports.isBytesLike = exports.isBytes = exports.zeroPad = exports.stripZeros = exports.concat = exports.arrayify = exports.shallowCopy = exports.resolveProperties = exports.getStatic = exports.defineReadOnly = exports.deepCopy = exports.checkProperties = exports.poll = exports.fetchJson = exports._fetchData = exports.RLP = exports.Logger = exports.checkResultErrors = exports.FormatTypes = exports.ParamType = exports.FunctionFragment = exports.EventFragment = exports.ErrorFragment = exports.ConstructorFragment = exports.Fragment = exports.defaultAbiCoder = exports.AbiCoder = void 0;
+exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAlias = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.serializeTransaction = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseEther = exports.formatEther = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getChecksumAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.isValidName = exports.namehash = exports.hashMessage = exports.parseBytes32String = void 0;
+exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = void 0;
+
+Object.defineProperty(exports, "AbiCoder", { enumerable: true, get: function () { return abi_1.AbiCoder; } });
+Object.defineProperty(exports, "checkResultErrors", { enumerable: true, get: function () { return abi_1.checkResultErrors; } });
+Object.defineProperty(exports, "ConstructorFragment", { enumerable: true, get: function () { return abi_1.ConstructorFragment; } });
+Object.defineProperty(exports, "defaultAbiCoder", { enumerable: true, get: function () { return abi_1.defaultAbiCoder; } });
+Object.defineProperty(exports, "ErrorFragment", { enumerable: true, get: function () { return abi_1.ErrorFragment; } });
+Object.defineProperty(exports, "EventFragment", { enumerable: true, get: function () { return abi_1.EventFragment; } });
+Object.defineProperty(exports, "FormatTypes", { enumerable: true, get: function () { return abi_1.FormatTypes; } });
+Object.defineProperty(exports, "Fragment", { enumerable: true, get: function () { return abi_1.Fragment; } });
+Object.defineProperty(exports, "FunctionFragment", { enumerable: true, get: function () { return abi_1.FunctionFragment; } });
+Object.defineProperty(exports, "Indexed", { enumerable: true, get: function () { return abi_1.Indexed; } });
+Object.defineProperty(exports, "Interface", { enumerable: true, get: function () { return abi_1.Interface; } });
+Object.defineProperty(exports, "LogDescription", { enumerable: true, get: function () { return abi_1.LogDescription; } });
+Object.defineProperty(exports, "ParamType", { enumerable: true, get: function () { return abi_1.ParamType; } });
+Object.defineProperty(exports, "TransactionDescription", { enumerable: true, get: function () { return abi_1.TransactionDescription; } });
+
+Object.defineProperty(exports, "getAddress", { enumerable: true, get: function () { return address_1.getAddress; } });
+Object.defineProperty(exports, "getChecksumAddress", { enumerable: true, get: function () { return address_1.getChecksumAddress; } });
+Object.defineProperty(exports, "getCreate2Address", { enumerable: true, get: function () { return address_1.getCreate2Address; } });
+Object.defineProperty(exports, "getContractAddress", { enumerable: true, get: function () { return address_1.getContractAddress; } });
+Object.defineProperty(exports, "getIcapAddress", { enumerable: true, get: function () { return address_1.getIcapAddress; } });
+Object.defineProperty(exports, "isAddress", { enumerable: true, get: function () { return address_1.isAddress; } });
+Object.defineProperty(exports, "getAccountFromAddress", { enumerable: true, get: function () { return address_1.getAccountFromAddress; } });
+Object.defineProperty(exports, "getAddressFromAccount", { enumerable: true, get: function () { return address_1.getAddressFromAccount; } });
+Object.defineProperty(exports, "parseAccount", { enumerable: true, get: function () { return address_1.parseAccount; } });
+var base64 = __importStar(require$$0$2);
+exports.base64 = base64;
+
+Object.defineProperty(exports, "base58", { enumerable: true, get: function () { return basex_1.Base58; } });
+
+Object.defineProperty(exports, "arrayify", { enumerable: true, get: function () { return bytes_1.arrayify; } });
+Object.defineProperty(exports, "concat", { enumerable: true, get: function () { return bytes_1.concat; } });
+Object.defineProperty(exports, "hexConcat", { enumerable: true, get: function () { return bytes_1.hexConcat; } });
+Object.defineProperty(exports, "hexDataSlice", { enumerable: true, get: function () { return bytes_1.hexDataSlice; } });
+Object.defineProperty(exports, "hexDataLength", { enumerable: true, get: function () { return bytes_1.hexDataLength; } });
+Object.defineProperty(exports, "hexlify", { enumerable: true, get: function () { return bytes_1.hexlify; } });
+Object.defineProperty(exports, "hexStripZeros", { enumerable: true, get: function () { return bytes_1.hexStripZeros; } });
+Object.defineProperty(exports, "hexValue", { enumerable: true, get: function () { return bytes_1.hexValue; } });
+Object.defineProperty(exports, "hexZeroPad", { enumerable: true, get: function () { return bytes_1.hexZeroPad; } });
+Object.defineProperty(exports, "isBytes", { enumerable: true, get: function () { return bytes_1.isBytes; } });
+Object.defineProperty(exports, "isBytesLike", { enumerable: true, get: function () { return bytes_1.isBytesLike; } });
+Object.defineProperty(exports, "isHexString", { enumerable: true, get: function () { return bytes_1.isHexString; } });
+Object.defineProperty(exports, "joinSignature", { enumerable: true, get: function () { return bytes_1.joinSignature; } });
+Object.defineProperty(exports, "zeroPad", { enumerable: true, get: function () { return bytes_1.zeroPad; } });
+Object.defineProperty(exports, "splitSignature", { enumerable: true, get: function () { return bytes_1.splitSignature; } });
+Object.defineProperty(exports, "stripZeros", { enumerable: true, get: function () { return bytes_1.stripZeros; } });
+
+Object.defineProperty(exports, "_TypedDataEncoder", { enumerable: true, get: function () { return hash_1$1._TypedDataEncoder; } });
+Object.defineProperty(exports, "hashMessage", { enumerable: true, get: function () { return hash_1$1.hashMessage; } });
+Object.defineProperty(exports, "id", { enumerable: true, get: function () { return hash_1$1.id; } });
+Object.defineProperty(exports, "isValidName", { enumerable: true, get: function () { return hash_1$1.isValidName; } });
+Object.defineProperty(exports, "namehash", { enumerable: true, get: function () { return hash_1$1.namehash; } });
+
+Object.defineProperty(exports, "defaultPath", { enumerable: true, get: function () { return hdnode_1.defaultPath; } });
+Object.defineProperty(exports, "entropyToMnemonic", { enumerable: true, get: function () { return hdnode_1.entropyToMnemonic; } });
+Object.defineProperty(exports, "getAccountPath", { enumerable: true, get: function () { return hdnode_1.getAccountPath; } });
+Object.defineProperty(exports, "HDNode", { enumerable: true, get: function () { return hdnode_1.HDNode; } });
+Object.defineProperty(exports, "isValidMnemonic", { enumerable: true, get: function () { return hdnode_1.isValidMnemonic; } });
+Object.defineProperty(exports, "mnemonicToEntropy", { enumerable: true, get: function () { return hdnode_1.mnemonicToEntropy; } });
+Object.defineProperty(exports, "mnemonicToSeed", { enumerable: true, get: function () { return hdnode_1.mnemonicToSeed; } });
+
+Object.defineProperty(exports, "getJsonWalletAddress", { enumerable: true, get: function () { return json_wallets_1.getJsonWalletAddress; } });
+
+Object.defineProperty(exports, "keccak256", { enumerable: true, get: function () { return keccak256_1.keccak256; } });
+
+Object.defineProperty(exports, "Logger", { enumerable: true, get: function () { return logger_1.Logger; } });
+
+Object.defineProperty(exports, "computeHmac", { enumerable: true, get: function () { return sha2_1.computeHmac; } });
+Object.defineProperty(exports, "ripemd160", { enumerable: true, get: function () { return sha2_1.ripemd160; } });
+Object.defineProperty(exports, "sha256", { enumerable: true, get: function () { return sha2_1.sha256; } });
+Object.defineProperty(exports, "sha512", { enumerable: true, get: function () { return sha2_1.sha512; } });
+
+Object.defineProperty(exports, "solidityKeccak256", { enumerable: true, get: function () { return solidity_1.keccak256; } });
+Object.defineProperty(exports, "solidityPack", { enumerable: true, get: function () { return solidity_1.pack; } });
+Object.defineProperty(exports, "soliditySha256", { enumerable: true, get: function () { return solidity_1.sha256; } });
+
+Object.defineProperty(exports, "randomBytes", { enumerable: true, get: function () { return random_1.randomBytes; } });
+Object.defineProperty(exports, "shuffled", { enumerable: true, get: function () { return random_1.shuffled; } });
+
+Object.defineProperty(exports, "checkProperties", { enumerable: true, get: function () { return properties_1.checkProperties; } });
+Object.defineProperty(exports, "deepCopy", { enumerable: true, get: function () { return properties_1.deepCopy; } });
+Object.defineProperty(exports, "defineReadOnly", { enumerable: true, get: function () { return properties_1.defineReadOnly; } });
+Object.defineProperty(exports, "getStatic", { enumerable: true, get: function () { return properties_1.getStatic; } });
+Object.defineProperty(exports, "resolveProperties", { enumerable: true, get: function () { return properties_1.resolveProperties; } });
+Object.defineProperty(exports, "shallowCopy", { enumerable: true, get: function () { return properties_1.shallowCopy; } });
+var RLP = __importStar(require$$1$1);
+exports.RLP = RLP;
+
+Object.defineProperty(exports, "computePublicKey", { enumerable: true, get: function () { return signing_key_1.computePublicKey; } });
+Object.defineProperty(exports, "recoverPublicKey", { enumerable: true, get: function () { return signing_key_1.recoverPublicKey; } });
+Object.defineProperty(exports, "SigningKey", { enumerable: true, get: function () { return signing_key_1.SigningKey; } });
+
+Object.defineProperty(exports, "formatBytes32String", { enumerable: true, get: function () { return strings_1.formatBytes32String; } });
+Object.defineProperty(exports, "nameprep", { enumerable: true, get: function () { return strings_1.nameprep; } });
+Object.defineProperty(exports, "parseBytes32String", { enumerable: true, get: function () { return strings_1.parseBytes32String; } });
+Object.defineProperty(exports, "_toEscapedUtf8String", { enumerable: true, get: function () { return strings_1._toEscapedUtf8String; } });
+Object.defineProperty(exports, "toUtf8Bytes", { enumerable: true, get: function () { return strings_1.toUtf8Bytes; } });
+Object.defineProperty(exports, "toUtf8CodePoints", { enumerable: true, get: function () { return strings_1.toUtf8CodePoints; } });
+Object.defineProperty(exports, "toUtf8String", { enumerable: true, get: function () { return strings_1.toUtf8String; } });
+Object.defineProperty(exports, "Utf8ErrorFuncs", { enumerable: true, get: function () { return strings_1.Utf8ErrorFuncs; } });
+
+Object.defineProperty(exports, "accessListify", { enumerable: true, get: function () { return transactions_1.accessListify; } });
+Object.defineProperty(exports, "computeAddress", { enumerable: true, get: function () { return transactions_1.computeAddress; } });
+Object.defineProperty(exports, "computeAlias", { enumerable: true, get: function () { return transactions_1.computeAlias; } });
+Object.defineProperty(exports, "parseTransaction", { enumerable: true, get: function () { return transactions_1.parse; } });
+Object.defineProperty(exports, "recoverAddress", { enumerable: true, get: function () { return transactions_1.recoverAddress; } });
+Object.defineProperty(exports, "serializeTransaction", { enumerable: true, get: function () { return transactions_1.serialize; } });
+Object.defineProperty(exports, "TransactionTypes", { enumerable: true, get: function () { return transactions_1.TransactionTypes; } });
+
+Object.defineProperty(exports, "commify", { enumerable: true, get: function () { return units_1.commify; } });
+Object.defineProperty(exports, "formatEther", { enumerable: true, get: function () { return units_1.formatEther; } });
+Object.defineProperty(exports, "parseEther", { enumerable: true, get: function () { return units_1.parseEther; } });
+Object.defineProperty(exports, "formatUnits", { enumerable: true, get: function () { return units_1.formatUnits; } });
+Object.defineProperty(exports, "parseUnits", { enumerable: true, get: function () { return units_1.parseUnits; } });
+
+Object.defineProperty(exports, "verifyMessage", { enumerable: true, get: function () { return wallet_1.verifyMessage; } });
+Object.defineProperty(exports, "verifyTypedData", { enumerable: true, get: function () { return wallet_1.verifyTypedData; } });
+
+Object.defineProperty(exports, "_fetchData", { enumerable: true, get: function () { return web_1._fetchData; } });
+Object.defineProperty(exports, "fetchJson", { enumerable: true, get: function () { return web_1.fetchJson; } });
+Object.defineProperty(exports, "poll", { enumerable: true, get: function () { return web_1.poll; } });
+////////////////////////
+// Enums
+var sha2_2 = sha2_1;
+Object.defineProperty(exports, "SupportedAlgorithm", { enumerable: true, get: function () { return sha2_2.SupportedAlgorithm; } });
+var strings_2 = strings_1;
+Object.defineProperty(exports, "UnicodeNormalizationForm", { enumerable: true, get: function () { return strings_2.UnicodeNormalizationForm; } });
+Object.defineProperty(exports, "Utf8ErrorReason", { enumerable: true, get: function () { return strings_2.Utf8ErrorReason; } });
+
+});
+
+var utils$2 = /*@__PURE__*/getDefaultExportFromCjs(utils$1);
+
+"use strict";
+const logger$r = new Logger(version$c);
+var TransactionTypes;
+(function (TransactionTypes) {
+    TransactionTypes[TransactionTypes["legacy"] = 0] = "legacy";
+    TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
+    TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
+})(TransactionTypes || (TransactionTypes = {}));
+;
+///////////////////////////////
+function handleAddress(value) {
+    if (value === "0x") {
+        return null;
+    }
+    return getAddress(value);
+}
+function handleNumber(value) {
+    if (value === "0x") {
+        return Zero$1;
+    }
+    return BigNumber.from(value);
+}
+// Legacy Transaction Fields
+const transactionFields = [
+    { name: "nonce", maxLength: 32, numeric: true },
+    { name: "gasPrice", maxLength: 32, numeric: true },
+    { name: "gasLimit", maxLength: 32, numeric: true },
+    { name: "to", length: 20 },
+    { name: "value", maxLength: 32, numeric: true },
+    { name: "data" },
+];
+const allowedTransactionKeys$1 = {
+    chainId: true, data: true, gasLimit: true, gasPrice: true, nonce: true, to: true, type: true, value: true
+};
+function computeAddress(key) {
+    const publicKey = computePublicKey(key);
+    return getAddress(hexDataSlice(keccak256(hexDataSlice(publicKey, 1)), 12));
+}
+function computeAlias(key) {
+    const publicKey = computePublicKey(key);
+    return computeAliasFromPubKey(publicKey);
+}
+function computeAliasFromPubKey(pubKey) {
+    return `0.0.${utils$1.base64.encode(pubKey)}`;
+}
+function recoverAddress(digest, signature) {
+    return computeAddress(recoverPublicKey(arrayify(digest), signature));
+}
+function formatNumber(value, name) {
+    const result = stripZeros(BigNumber.from(value).toHexString());
+    if (result.length > 32) {
+        logger$r.throwArgumentError("invalid length for " + name, ("transaction:" + name), value);
+    }
+    return result;
+}
+function accessSetify(addr, storageKeys) {
+    return {
+        address: getAddress(addr),
+        storageKeys: (storageKeys || []).map((storageKey, index) => {
+            if (hexDataLength(storageKey) !== 32) {
+                logger$r.throwArgumentError("invalid access list storageKey", `accessList[${addr}:${index}]`, storageKey);
+            }
+            return storageKey.toLowerCase();
+        })
+    };
+}
+function accessListify(value) {
+    if (Array.isArray(value)) {
+        return value.map((set, index) => {
+            if (Array.isArray(set)) {
+                if (set.length > 2) {
+                    logger$r.throwArgumentError("access list expected to be [ address, storageKeys[] ]", `value[${index}]`, set);
+                }
+                return accessSetify(set[0], set[1]);
+            }
+            return accessSetify(set.address, set.storageKeys);
+        });
+    }
+    const result = Object.keys(value).map((addr) => {
+        const storageKeys = value[addr].reduce((accum, storageKey) => {
+            accum[storageKey] = true;
+            return accum;
+        }, {});
+        return accessSetify(addr, Object.keys(storageKeys).sort());
+    });
+    result.sort((a, b) => (a.address.localeCompare(b.address)));
+    return result;
+}
+function formatAccessList(value) {
+    return accessListify(value).map((set) => [set.address, set.storageKeys]);
+}
+function _serializeEip1559(transaction, signature) {
+    // If there is an explicit gasPrice, make sure it matches the
+    // EIP-1559 fees; otherwise they may not understand what they
+    // think they are setting in terms of fee.
+    if (transaction.gasPrice != null) {
+        const gasPrice = BigNumber.from(transaction.gasPrice);
+        const maxFeePerGas = BigNumber.from(transaction.maxFeePerGas || 0);
+        if (!gasPrice.eq(maxFeePerGas)) {
+            logger$r.throwArgumentError("mismatch EIP-1559 gasPrice != maxFeePerGas", "tx", {
+                gasPrice, maxFeePerGas
+            });
+        }
+    }
+    const fields = [
+        formatNumber(transaction.chainId || 0, "chainId"),
+        formatNumber(transaction.nonce || 0, "nonce"),
+        formatNumber(transaction.maxPriorityFeePerGas || 0, "maxPriorityFeePerGas"),
+        formatNumber(transaction.maxFeePerGas || 0, "maxFeePerGas"),
+        formatNumber(transaction.gasLimit || 0, "gasLimit"),
+        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
+        formatNumber(transaction.value || 0, "value"),
+        (transaction.data || "0x"),
+        (formatAccessList(transaction.accessList || []))
+    ];
+    if (signature) {
+        const sig = splitSignature(signature);
+        fields.push(formatNumber(sig.recoveryParam, "recoveryParam"));
+        fields.push(stripZeros(sig.r));
+        fields.push(stripZeros(sig.s));
+    }
+    return hexConcat(["0x02", encode(fields)]);
+}
+function _serializeEip2930(transaction, signature) {
+    const fields = [
+        formatNumber(transaction.chainId || 0, "chainId"),
+        formatNumber(transaction.nonce || 0, "nonce"),
+        formatNumber(transaction.gasPrice || 0, "gasPrice"),
+        formatNumber(transaction.gasLimit || 0, "gasLimit"),
+        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
+        formatNumber(transaction.value || 0, "value"),
+        (transaction.data || "0x"),
+        (formatAccessList(transaction.accessList || []))
+    ];
+    if (signature) {
+        const sig = splitSignature(signature);
+        fields.push(formatNumber(sig.recoveryParam, "recoveryParam"));
+        fields.push(stripZeros(sig.r));
+        fields.push(stripZeros(sig.s));
+    }
+    return hexConcat(["0x01", encode(fields)]);
+}
+// Legacy Transactions and EIP-155
+function _serialize(transaction, signature) {
+    checkProperties(transaction, allowedTransactionKeys$1);
+    const raw = [];
+    transactionFields.forEach(function (fieldInfo) {
+        let value = transaction[fieldInfo.name] || ([]);
+        const options = {};
+        if (fieldInfo.numeric) {
+            options.hexPad = "left";
+        }
+        value = arrayify(hexlify(value, options));
+        // Fixed-width field
+        if (fieldInfo.length && value.length !== fieldInfo.length && value.length > 0) {
+            logger$r.throwArgumentError("invalid length for " + fieldInfo.name, ("transaction:" + fieldInfo.name), value);
+        }
+        // Variable-width (with a maximum)
+        if (fieldInfo.maxLength) {
+            value = stripZeros(value);
+            if (value.length > fieldInfo.maxLength) {
+                logger$r.throwArgumentError("invalid length for " + fieldInfo.name, ("transaction:" + fieldInfo.name), value);
+            }
+        }
+        raw.push(hexlify(value));
+    });
+    let chainId = 0;
+    if (transaction.chainId != null) {
+        // A chainId was provided; if non-zero we'll use EIP-155
+        chainId = transaction.chainId;
+        if (typeof (chainId) !== "number") {
+            logger$r.throwArgumentError("invalid transaction.chainId", "transaction", transaction);
+        }
+    }
+    else if (signature && !isBytesLike(signature) && signature.v > 28) {
+        // No chainId provided, but the signature is signing with EIP-155; derive chainId
+        chainId = Math.floor((signature.v - 35) / 2);
+    }
+    // We have an EIP-155 transaction (chainId was specified and non-zero)
+    if (chainId !== 0) {
+        raw.push(hexlify(chainId)); // @TODO: hexValue?
+        raw.push("0x");
+        raw.push("0x");
+    }
+    // Requesting an unsigned transaction
+    if (!signature) {
+        return encode(raw);
+    }
+    // The splitSignature will ensure the transaction has a recoveryParam in the
+    // case that the signTransaction function only adds a v.
+    const sig = splitSignature(signature);
+    // We pushed a chainId and null r, s on for hashing only; remove those
+    let v = 27 + sig.recoveryParam;
+    if (chainId !== 0) {
+        raw.pop();
+        raw.pop();
+        raw.pop();
+        v += chainId * 2 + 8;
+        // If an EIP-155 v (directly or indirectly; maybe _vs) was provided, check it!
+        if (sig.v > 28 && sig.v !== v) {
+            logger$r.throwArgumentError("transaction.chainId/signature.v mismatch", "signature", signature);
+        }
+    }
+    else if (sig.v !== v) {
+        logger$r.throwArgumentError("transaction.chainId/signature.v mismatch", "signature", signature);
+    }
+    raw.push(hexlify(v));
+    raw.push(stripZeros(arrayify(sig.r)));
+    raw.push(stripZeros(arrayify(sig.s)));
+    return encode(raw);
+}
+function serialize(transaction, signature) {
+    // Legacy and EIP-155 Transactions
+    if (transaction.type == null || transaction.type === 0) {
+        if (transaction.accessList != null) {
+            logger$r.throwArgumentError("untyped transactions do not support accessList; include type: 1", "transaction", transaction);
+        }
+        return _serialize(transaction, signature);
+    }
+    // Typed Transactions (EIP-2718)
+    switch (transaction.type) {
+        case 1:
+            return _serializeEip2930(transaction, signature);
+        case 2:
+            return _serializeEip1559(transaction, signature);
+        default:
+            break;
+    }
+    return logger$r.throwError(`unsupported transaction type: ${transaction.type}`, Logger.errors.UNSUPPORTED_OPERATION, {
+        operation: "serializeTransaction",
+        transactionType: transaction.type
+    });
+}
+function _parseEipSignature(tx, fields, serialize) {
+    try {
+        const recid = handleNumber(fields[0]).toNumber();
+        if (recid !== 0 && recid !== 1) {
+            throw new Error("bad recid");
+        }
+        tx.v = recid;
+    }
+    catch (error) {
+        logger$r.throwArgumentError("invalid v for transaction type: 1", "v", fields[0]);
+    }
+    tx.r = hexZeroPad(fields[1], 32);
+    tx.s = hexZeroPad(fields[2], 32);
+    try {
+        const digest = keccak256(serialize(tx));
+        tx.from = recoverAddress(digest, { r: tx.r, s: tx.s, recoveryParam: tx.v });
+    }
+    catch (error) {
+        console.log(error);
+    }
+}
+function _parseEip1559(payload) {
+    const transaction = decode(payload.slice(1));
+    if (transaction.length !== 9 && transaction.length !== 12) {
+        logger$r.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
+    }
+    const maxPriorityFeePerGas = handleNumber(transaction[2]);
+    const maxFeePerGas = handleNumber(transaction[3]);
+    const tx = {
+        type: 2,
+        chainId: handleNumber(transaction[0]).toNumber(),
+        nonce: handleNumber(transaction[1]).toNumber(),
+        maxPriorityFeePerGas: maxPriorityFeePerGas,
+        maxFeePerGas: maxFeePerGas,
+        gasPrice: null,
+        gasLimit: handleNumber(transaction[4]),
+        to: handleAddress(transaction[5]),
+        value: handleNumber(transaction[6]),
+        data: transaction[7],
+        accessList: accessListify(transaction[8]),
+    };
+    // Unsigned EIP-1559 Transaction
+    if (transaction.length === 9) {
+        return tx;
+    }
+    tx.hash = keccak256(payload);
+    _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
+    return tx;
+}
+function _parseEip2930(payload) {
+    const transaction = decode(payload.slice(1));
+    if (transaction.length !== 8 && transaction.length !== 11) {
+        logger$r.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
+    }
+    const tx = {
+        type: 1,
+        chainId: handleNumber(transaction[0]).toNumber(),
+        nonce: handleNumber(transaction[1]).toNumber(),
+        gasPrice: handleNumber(transaction[2]),
+        gasLimit: handleNumber(transaction[3]),
+        to: handleAddress(transaction[4]),
+        value: handleNumber(transaction[5]),
+        data: transaction[6],
+        accessList: accessListify(transaction[7])
+    };
+    // Unsigned EIP-2930 Transaction
+    if (transaction.length === 8) {
+        return tx;
+    }
+    tx.hash = keccak256(payload);
+    _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
+    return tx;
+}
+// Legacy Transactions and EIP-155
+function _parse(rawTransaction) {
+    const transaction = decode(rawTransaction);
+    if (transaction.length !== 9 && transaction.length !== 6) {
+        logger$r.throwArgumentError("invalid raw transaction", "rawTransaction", rawTransaction);
+    }
+    const tx = {
+        nonce: handleNumber(transaction[0]).toNumber(),
+        gasPrice: handleNumber(transaction[1]),
+        gasLimit: handleNumber(transaction[2]),
+        to: handleAddress(transaction[3]),
+        value: handleNumber(transaction[4]),
+        data: transaction[5],
+        chainId: 0
+    };
+    // Legacy unsigned transaction
+    if (transaction.length === 6) {
+        return tx;
+    }
+    try {
+        tx.v = BigNumber.from(transaction[6]).toNumber();
+    }
+    catch (error) {
+        console.log(error);
+        return tx;
+    }
+    tx.r = hexZeroPad(transaction[7], 32);
+    tx.s = hexZeroPad(transaction[8], 32);
+    if (BigNumber.from(tx.r).isZero() && BigNumber.from(tx.s).isZero()) {
+        // EIP-155 unsigned transaction
+        tx.chainId = tx.v;
+        tx.v = 0;
+    }
+    else {
+        // Signed Transaction
+        tx.chainId = Math.floor((tx.v - 35) / 2);
+        if (tx.chainId < 0) {
+            tx.chainId = 0;
+        }
+        let recoveryParam = tx.v - 27;
+        const raw = transaction.slice(0, 6);
+        if (tx.chainId !== 0) {
+            raw.push(hexlify(tx.chainId));
+            raw.push("0x");
+            raw.push("0x");
+            recoveryParam -= tx.chainId * 2 + 8;
+        }
+        const digest = keccak256(encode(raw));
+        try {
+            tx.from = recoverAddress(digest, { r: hexlify(tx.r), s: hexlify(tx.s), recoveryParam: recoveryParam });
+        }
+        catch (error) {
+            console.log(error);
+        }
+        tx.hash = keccak256(rawTransaction);
+    }
+    tx.type = null;
+    return tx;
+}
+function parse$2(rawTransaction) {
+    const payload = arrayify(rawTransaction);
+    // Legacy and EIP-155 Transactions
+    if (payload[0] > 0x7f) {
+        return _parse(payload);
+    }
+    // Typed Transaction (EIP-2718)
+    switch (payload[0]) {
+        case 1:
+            return _parseEip2930(payload);
+        case 2:
+            return _parseEip1559(payload);
+        default:
+            break;
+    }
+    return logger$r.throwError(`unsupported transaction type: ${payload[0]}`, Logger.errors.UNSUPPORTED_OPERATION, {
+        operation: "parseTransaction",
+        transactionType: payload[0]
+    });
+}
+
+const version$n = "contracts/5.5.0";
+
+"use strict";
+var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+const logger$s = new Logger(version$n);
+;
+;
+///////////////////////////////
+const allowedTransactionKeys$2 = {
+    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, nonce: true, to: true, value: true,
+    type: true, accessList: true,
+    maxFeePerGas: true, maxPriorityFeePerGas: true,
+    customData: true
+};
+function resolveName(resolver, nameOrPromise) {
+    return __awaiter$8(this, void 0, void 0, function* () {
+        const name = yield nameOrPromise;
+        if (typeof (name) !== "string") {
+            logger$s.throwArgumentError("invalid address or ENS name", "name", name);
+        }
+        // If it is already an address, just use it (after adding checksum)
+        try {
+            return getAddress(name);
+        }
+        catch (error) { }
+        if (!resolver) {
+            logger$s.throwError("a provider or signer is needed to resolve ENS names", Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: "resolveName"
+            });
+        }
+        const address = yield resolver.resolveName(name);
+        if (address == null) {
+            logger$s.throwArgumentError("resolver or addr is not configured for ENS name", "name", name);
+        }
+        return address;
+    });
+}
+// Recursively replaces ENS names with promises to resolve the name and resolves all properties
+function resolveAddresses(resolver, value, paramType) {
+    return __awaiter$8(this, void 0, void 0, function* () {
+        if (Array.isArray(paramType)) {
+            return yield Promise.all(paramType.map((paramType, index) => {
+                return resolveAddresses(resolver, ((Array.isArray(value)) ? value[index] : value[paramType.name]), paramType);
+            }));
+        }
+        if (paramType.type === "address") {
+            return yield resolveName(resolver, value);
+        }
+        if (paramType.type === "tuple") {
+            return yield resolveAddresses(resolver, value, paramType.components);
+        }
+        if (paramType.baseType === "array") {
+            if (!Array.isArray(value)) {
+                return Promise.reject(logger$s.makeError("invalid value for array", Logger.errors.INVALID_ARGUMENT, {
+                    argument: "value",
+                    value
+                }));
+            }
+            return yield Promise.all(value.map((v) => resolveAddresses(resolver, v, paramType.arrayChildren)));
+        }
+        return value;
+    });
+}
+function populateTransaction(contract, fragment, args) {
+    return __awaiter$8(this, void 0, void 0, function* () {
+        // If an extra argument is given, it is overrides
+        let overrides = {};
+        if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+            overrides = shallowCopy(args.pop());
+        }
+        // Make sure the parameter count matches
+        logger$s.checkArgumentCount(args.length, fragment.inputs.length, "passed to contract");
+        // Populate "from" override (allow promises)
+        if (contract.signer) {
+            if (overrides.from) {
+                // Contracts with a Signer are from the Signer's frame-of-reference;
+                // but we allow overriding "from" if it matches the signer
+                overrides.from = resolveProperties({
+                    override: resolveName(contract.signer, overrides.from),
+                    signer: contract.signer.getAddress()
+                }).then((check) => __awaiter$8(this, void 0, void 0, function* () {
+                    if (getAddress(check.signer) !== check.override) {
+                        logger$s.throwError("Contract with a Signer cannot override from", Logger.errors.UNSUPPORTED_OPERATION, {
+                            operation: "overrides.from"
+                        });
+                    }
+                    return check.override;
+                }));
+            }
+            else {
+                overrides.from = contract.signer.getAddress();
+            }
+        }
+        else if (overrides.from) {
+            overrides.from = resolveName(contract.provider, overrides.from);
+            //} else {
+            // Contracts without a signer can override "from", and if
+            // unspecified the zero address is used
+            //overrides.from = AddressZero;
+        }
+        // Wait for all dependencies to be resolved (prefer the signer over the provider)
+        const resolved = yield resolveProperties({
+            args: resolveAddresses(contract.signer || contract.provider, args, fragment.inputs),
+            address: contract.resolvedAddress,
+            overrides: (resolveProperties(overrides) || {})
+        });
+        // The ABI coded transaction
+        const data = contract.interface.encodeFunctionData(fragment, resolved.args);
+        const tx = {
+            data: data,
+            to: resolved.address
+        };
+        // Resolved Overrides
+        const ro = resolved.overrides;
+        // Populate simple overrides
+        if (ro.nonce != null) {
+            tx.nonce = BigNumber.from(ro.nonce).toNumber();
+        }
+        if (ro.gasLimit != null) {
+            tx.gasLimit = BigNumber.from(ro.gasLimit);
+        }
+        if (ro.gasPrice != null) {
+            tx.gasPrice = BigNumber.from(ro.gasPrice);
+        }
+        if (ro.maxFeePerGas != null) {
+            tx.maxFeePerGas = BigNumber.from(ro.maxFeePerGas);
+        }
+        if (ro.maxPriorityFeePerGas != null) {
+            tx.maxPriorityFeePerGas = BigNumber.from(ro.maxPriorityFeePerGas);
+        }
+        if (ro.from != null) {
+            tx.from = ro.from;
+        }
+        if (ro.type != null) {
+            tx.type = ro.type;
+        }
+        if (ro.accessList != null) {
+            tx.accessList = accessListify(ro.accessList);
+        }
+        // If there was no "gasLimit" override, but the ABI specifies a default, use it
+        if (tx.gasLimit == null && fragment.gas != null) {
+            // Compute the intrinsic gas cost for this transaction
+            // @TODO: This is based on the yellow paper as of Petersburg; this is something
+            // we may wish to parameterize in v6 as part of the Network object. Since this
+            // is always a non-nil to address, we can ignore G_create, but may wish to add
+            // similar logic to the ContractFactory.
+            let intrinsic = 21000;
+            const bytes = arrayify(data);
+            for (let i = 0; i < bytes.length; i++) {
+                intrinsic += 4;
+                if (bytes[i]) {
+                    intrinsic += 64;
+                }
+            }
+            tx.gasLimit = BigNumber.from(fragment.gas).add(intrinsic);
+        }
+        // Populate "value" override
+        if (ro.value) {
+            const roValue = BigNumber.from(ro.value);
+            if (!roValue.isZero() && !fragment.payable) {
+                logger$s.throwError("non-payable method cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "overrides.value",
+                    value: overrides.value
+                });
+            }
+            tx.value = roValue;
+        }
+        if (ro.customData) {
+            tx.customData = shallowCopy(ro.customData);
+        }
+        // Remove the overrides
+        delete overrides.nonce;
+        delete overrides.gasLimit;
+        delete overrides.gasPrice;
+        delete overrides.from;
+        delete overrides.value;
+        delete overrides.type;
+        delete overrides.accessList;
+        delete overrides.maxFeePerGas;
+        delete overrides.maxPriorityFeePerGas;
+        delete overrides.customData;
+        // Make sure there are no stray overrides, which may indicate a
+        // typo or using an unsupported key.
+        const leftovers = Object.keys(overrides).filter((key) => (overrides[key] != null));
+        if (leftovers.length) {
+            logger$s.throwError(`cannot override ${leftovers.map((l) => JSON.stringify(l)).join(",")}`, Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: "overrides",
+                overrides: leftovers
+            });
+        }
+        return tx;
+    });
+}
+function buildPopulate(contract, fragment) {
+    return function (...args) {
+        return populateTransaction(contract, fragment, args);
+    };
+}
+function buildEstimate(contract, fragment) {
+    const signerOrProvider = (contract.signer || contract.provider);
+    return function (...args) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            if (!signerOrProvider) {
+                logger$s.throwError("estimate require a provider or signer", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "estimateGas"
+                });
+            }
+            const tx = yield populateTransaction(contract, fragment, args);
+            return yield signerOrProvider.estimateGas(tx);
+        });
+    };
+}
+function addContractWait(contract, tx) {
+    const wait = tx.wait.bind(tx);
+    tx.wait = (confirmations) => {
+        return wait(confirmations).then((receipt) => {
+            receipt.events = receipt.logs.map((log) => {
+                let event = deepCopy(log);
+                let parsed = null;
+                try {
+                    parsed = contract.interface.parseLog(log);
+                }
+                catch (e) { }
+                // Successfully parsed the event log; include it
+                if (parsed) {
+                    event.args = parsed.args;
+                    event.decode = (data, topics) => {
+                        return contract.interface.decodeEventLog(parsed.eventFragment, data, topics);
+                    };
+                    event.event = parsed.name;
+                    event.eventSignature = parsed.signature;
+                }
+                // Useful operations
+                event.removeListener = () => { return contract.provider; };
+                event.getBlock = () => {
+                    return contract.provider.getBlock(receipt.blockHash);
+                };
+                event.getTransaction = () => {
+                    return contract.provider.getTransaction(receipt.transactionHash);
+                };
+                event.getTransactionReceipt = () => {
+                    return Promise.resolve(receipt);
+                };
+                return event;
+            });
+            return receipt;
+        });
+    };
+}
+function buildCall(contract, fragment, collapseSimple) {
+    const signerOrProvider = (contract.signer || contract.provider);
+    return function (...args) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            // Extract the "blockTag" override if present
+            let blockTag = undefined;
+            if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+                const overrides = shallowCopy(args.pop());
+                if (overrides.blockTag != null) {
+                    blockTag = yield overrides.blockTag;
+                }
+                delete overrides.blockTag;
+                args.push(overrides);
+            }
+            // If the contract was just deployed, wait until it is mined
+            if (contract.deployTransaction != null) {
+                yield contract._deployed(blockTag);
+            }
+            // Call a node and get the result
+            const tx = yield populateTransaction(contract, fragment, args);
+            const result = yield signerOrProvider.call(tx, blockTag);
+            try {
+                let value = contract.interface.decodeFunctionResult(fragment, result);
+                if (collapseSimple && fragment.outputs.length === 1) {
+                    value = value[0];
+                }
+                return value;
+            }
+            catch (error) {
+                if (error.code === Logger.errors.CALL_EXCEPTION) {
+                    error.address = contract.address;
+                    error.args = args;
+                    error.transaction = tx;
+                }
+                throw error;
+            }
+        });
+    };
+}
+function buildSend(contract, fragment) {
+    return function (...args) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            if (!contract.signer) {
+                logger$s.throwError("sending a transaction requires a signer", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "sendTransaction"
+                });
+            }
+            // If the contract was just deployed, wait until it is mined
+            if (contract.deployTransaction != null) {
+                yield contract._deployed();
+            }
+            const txRequest = yield populateTransaction(contract, fragment, args);
+            const tx = yield contract.signer.sendTransaction(txRequest);
+            // Tweak the tx.wait so the receipt has extra properties
+            addContractWait(contract, tx);
+            return tx;
+        });
+    };
+}
+function buildDefault(contract, fragment, collapseSimple) {
+    if (fragment.constant) {
+        return buildCall(contract, fragment, collapseSimple);
+    }
+    return buildSend(contract, fragment);
+}
+function getEventTag(filter) {
+    if (filter.address && (filter.topics == null || filter.topics.length === 0)) {
+        return "*";
+    }
+    return (filter.address || "*") + "@" + (filter.topics ? filter.topics.map((topic) => {
+        if (Array.isArray(topic)) {
+            return topic.join("|");
+        }
+        return topic;
+    }).join(":") : "");
+}
+class RunningEvent {
+    constructor(tag, filter) {
+        defineReadOnly(this, "tag", tag);
+        defineReadOnly(this, "filter", filter);
+        this._listeners = [];
+    }
+    addListener(listener, once) {
+        this._listeners.push({ listener: listener, once: once });
+    }
+    removeListener(listener) {
+        let done = false;
+        this._listeners = this._listeners.filter((item) => {
+            if (done || item.listener !== listener) {
+                return true;
+            }
+            done = true;
+            return false;
+        });
+    }
+    removeAllListeners() {
+        this._listeners = [];
+    }
+    listeners() {
+        return this._listeners.map((i) => i.listener);
+    }
+    listenerCount() {
+        return this._listeners.length;
+    }
+    run(args) {
+        const listenerCount = this.listenerCount();
+        this._listeners = this._listeners.filter((item) => {
+            const argsCopy = args.slice();
+            // Call the callback in the next event loop
+            setTimeout(() => {
+                item.listener.apply(this, argsCopy);
+            }, 0);
+            // Reschedule it if it not "once"
+            return !(item.once);
+        });
+        return listenerCount;
+    }
+    prepareEvent(event) {
+    }
+    // Returns the array that will be applied to an emit
+    getEmit(event) {
+        return [event];
+    }
+}
+class ErrorRunningEvent extends RunningEvent {
+    constructor() {
+        super("error", null);
+    }
+}
+// @TODO Fragment should inherit Wildcard? and just override getEmit?
+//       or have a common abstract super class, with enough constructor
+//       options to configure both.
+// A Fragment Event will populate all the properties that Wildcard
+// will, and additionally dereference the arguments when emitting
+class FragmentRunningEvent extends RunningEvent {
+    constructor(address, contractInterface, fragment, topics) {
+        const filter = {
+            address: address
+        };
+        let topic = contractInterface.getEventTopic(fragment);
+        if (topics) {
+            if (topic !== topics[0]) {
+                logger$s.throwArgumentError("topic mismatch", "topics", topics);
+            }
+            filter.topics = topics.slice();
+        }
+        else {
+            filter.topics = [topic];
+        }
+        super(getEventTag(filter), filter);
+        defineReadOnly(this, "address", address);
+        defineReadOnly(this, "interface", contractInterface);
+        defineReadOnly(this, "fragment", fragment);
+    }
+    prepareEvent(event) {
+        super.prepareEvent(event);
+        event.event = this.fragment.name;
+        event.eventSignature = this.fragment.format();
+        event.decode = (data, topics) => {
+            return this.interface.decodeEventLog(this.fragment, data, topics);
+        };
+        try {
+            event.args = this.interface.decodeEventLog(this.fragment, event.data, event.topics);
+        }
+        catch (error) {
+            event.args = null;
+            event.decodeError = error;
+        }
+    }
+    getEmit(event) {
+        const errors = checkResultErrors(event.args);
+        if (errors.length) {
+            throw errors[0].error;
+        }
+        const args = (event.args || []).slice();
+        args.push(event);
+        return args;
+    }
+}
+// A Wildcard Event will attempt to populate:
+//  - event            The name of the event name
+//  - eventSignature   The full signature of the event
+//  - decode           A function to decode data and topics
+//  - args             The decoded data and topics
+class WildcardRunningEvent extends RunningEvent {
+    constructor(address, contractInterface) {
+        super("*", { address: address });
+        defineReadOnly(this, "address", address);
+        defineReadOnly(this, "interface", contractInterface);
+    }
+    prepareEvent(event) {
+        super.prepareEvent(event);
+        try {
+            const parsed = this.interface.parseLog(event);
+            event.event = parsed.name;
+            event.eventSignature = parsed.signature;
+            event.decode = (data, topics) => {
+                return this.interface.decodeEventLog(parsed.eventFragment, data, topics);
+            };
+            event.args = parsed.args;
+        }
+        catch (error) {
+            // No matching event
+        }
+    }
+}
+class BaseContract {
+    constructor(addressOrName, contractInterface, signerOrProvider) {
+        logger$s.checkNew(new.target, Contract);
+        // @TODO: Maybe still check the addressOrName looks like a valid address or name?
+        //address = getAddress(address);
+        defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
+        if (signerOrProvider == null) {
+            defineReadOnly(this, "provider", null);
+            defineReadOnly(this, "signer", null);
+        }
+        else if (Signer.isSigner(signerOrProvider)) {
+            defineReadOnly(this, "provider", signerOrProvider.provider || null);
+            defineReadOnly(this, "signer", signerOrProvider);
+        }
+        else if (Provider.isProvider(signerOrProvider)) {
+            defineReadOnly(this, "provider", signerOrProvider);
+            defineReadOnly(this, "signer", null);
+        }
+        else {
+            logger$s.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
+        }
+        defineReadOnly(this, "callStatic", {});
+        defineReadOnly(this, "estimateGas", {});
+        defineReadOnly(this, "functions", {});
+        defineReadOnly(this, "populateTransaction", {});
+        defineReadOnly(this, "filters", {});
+        {
+            const uniqueFilters = {};
+            Object.keys(this.interface.events).forEach((eventSignature) => {
+                const event = this.interface.events[eventSignature];
+                defineReadOnly(this.filters, eventSignature, (...args) => {
+                    return {
+                        address: this.address,
+                        topics: this.interface.encodeFilterTopics(event, args)
+                    };
+                });
+                if (!uniqueFilters[event.name]) {
+                    uniqueFilters[event.name] = [];
+                }
+                uniqueFilters[event.name].push(eventSignature);
+            });
+            Object.keys(uniqueFilters).forEach((name) => {
+                const filters = uniqueFilters[name];
+                if (filters.length === 1) {
+                    defineReadOnly(this.filters, name, this.filters[filters[0]]);
+                }
+                else {
+                    logger$s.warn(`Duplicate definition of ${name} (${filters.join(", ")})`);
+                }
+            });
+        }
+        defineReadOnly(this, "_runningEvents", {});
+        defineReadOnly(this, "_wrappedEmits", {});
+        if (addressOrName == null) {
+            logger$s.throwArgumentError("invalid contract address or ENS name", "addressOrName", addressOrName);
+        }
+        defineReadOnly(this, "address", addressOrName);
+        if (this.provider) {
+            defineReadOnly(this, "resolvedAddress", resolveName(this.provider, addressOrName));
+        }
+        else {
+            try {
+                defineReadOnly(this, "resolvedAddress", Promise.resolve(getAddress(addressOrName)));
+            }
+            catch (error) {
+                // Without a provider, we cannot use ENS names
+                logger$s.throwError("provider is required to use ENS name as contract address", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "new Contract"
+                });
+            }
+        }
+        const uniqueNames = {};
+        const uniqueSignatures = {};
+        Object.keys(this.interface.functions).forEach((signature) => {
+            const fragment = this.interface.functions[signature];
+            // Check that the signature is unique; if not the ABI generation has
+            // not been cleaned or may be incorrectly generated
+            if (uniqueSignatures[signature]) {
+                logger$s.warn(`Duplicate ABI entry for ${JSON.stringify(signature)}`);
+                return;
+            }
+            uniqueSignatures[signature] = true;
+            // Track unique names; we only expose bare named functions if they
+            // are ambiguous
+            {
+                const name = fragment.name;
+                if (!uniqueNames[`%${name}`]) {
+                    uniqueNames[`%${name}`] = [];
+                }
+                uniqueNames[`%${name}`].push(signature);
+            }
+            if (this[signature] == null) {
+                defineReadOnly(this, signature, buildDefault(this, fragment, true));
+            }
+            // We do not collapse simple calls on this bucket, which allows
+            // frameworks to safely use this without introspection as well as
+            // allows decoding error recovery.
+            if (this.functions[signature] == null) {
+                defineReadOnly(this.functions, signature, buildDefault(this, fragment, false));
+            }
+            if (this.callStatic[signature] == null) {
+                defineReadOnly(this.callStatic, signature, buildCall(this, fragment, true));
+            }
+            if (this.populateTransaction[signature] == null) {
+                defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
+            }
+            if (this.estimateGas[signature] == null) {
+                defineReadOnly(this.estimateGas, signature, buildEstimate(this, fragment));
+            }
+        });
+        Object.keys(uniqueNames).forEach((name) => {
+            // Ambiguous names to not get attached as bare names
+            const signatures = uniqueNames[name];
+            if (signatures.length > 1) {
+                return;
+            }
+            // Strip off the leading "%" used for prototype protection
+            name = name.substring(1);
+            const signature = signatures[0];
+            // If overwriting a member property that is null, swallow the error
+            try {
+                if (this[name] == null) {
+                    defineReadOnly(this, name, this[signature]);
+                }
+            }
+            catch (e) { }
+            if (this.functions[name] == null) {
+                defineReadOnly(this.functions, name, this.functions[signature]);
+            }
+            if (this.callStatic[name] == null) {
+                defineReadOnly(this.callStatic, name, this.callStatic[signature]);
+            }
+            if (this.populateTransaction[name] == null) {
+                defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
+            }
+            if (this.estimateGas[name] == null) {
+                defineReadOnly(this.estimateGas, name, this.estimateGas[signature]);
+            }
+        });
+    }
+    static getContractAddress(transaction) {
+        return getContractAddress(transaction);
+    }
+    static getInterface(contractInterface) {
+        if (Interface.isInterface(contractInterface)) {
+            return contractInterface;
+        }
+        return new Interface(contractInterface);
+    }
+    // @TODO: Allow timeout?
+    deployed() {
+        return this._deployed();
+    }
+    _deployed(blockTag) {
+        if (!this._deployedPromise) {
+            // If we were just deployed, we know the transaction we should occur in
+            if (this.deployTransaction) {
+                this._deployedPromise = this.deployTransaction.wait().then(() => {
+                    return this;
+                });
+            }
+            else {
+                // @TODO: Once we allow a timeout to be passed in, we will wait
+                // up to that many blocks for getCode
+                // Otherwise, poll for our code to be deployed
+                this._deployedPromise = this.provider.getCode(this.address, blockTag).then((code) => {
+                    if (code === "0x") {
+                        logger$s.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
+                            contractAddress: this.address,
+                            operation: "getDeployed"
+                        });
+                    }
+                    return this;
+                });
+            }
+        }
+        return this._deployedPromise;
+    }
+    // @TODO:
+    // estimateFallback(overrides?: TransactionRequest): Promise<BigNumber>
+    // @TODO:
+    // estimateDeploy(bytecode: string, ...args): Promise<BigNumber>
+    fallback(overrides) {
+        if (!this.signer) {
+            logger$s.throwError("sending a transactions require a signer", Logger.errors.UNSUPPORTED_OPERATION, { operation: "sendTransaction(fallback)" });
+        }
+        const tx = shallowCopy(overrides || {});
+        ["from", "to"].forEach(function (key) {
+            if (tx[key] == null) {
+                return;
+            }
+            logger$s.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
+        });
+        tx.to = this.resolvedAddress;
+        return this.deployed().then(() => {
+            return this.signer.sendTransaction(tx);
+        });
+    }
+    // Reconnect to a different signer or provider
+    connect(signerOrProvider) {
+        if (typeof (signerOrProvider) === "string") {
+            signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
+        }
+        const contract = new (this.constructor)(this.address, this.interface, signerOrProvider);
+        if (this.deployTransaction) {
+            defineReadOnly(contract, "deployTransaction", this.deployTransaction);
+        }
+        return contract;
+    }
+    // Re-attach to a different on-chain instance of this contract
+    attach(addressOrName) {
+        return new (this.constructor)(addressOrName, this.interface, this.signer || this.provider);
+    }
+    static isIndexed(value) {
+        return Indexed.isIndexed(value);
+    }
+    _normalizeRunningEvent(runningEvent) {
+        // Already have an instance of this event running; we can re-use it
+        if (this._runningEvents[runningEvent.tag]) {
+            return this._runningEvents[runningEvent.tag];
+        }
+        return runningEvent;
+    }
+    _getRunningEvent(eventName) {
+        if (typeof (eventName) === "string") {
+            // Listen for "error" events (if your contract has an error event, include
+            // the full signature to bypass this special event keyword)
+            if (eventName === "error") {
+                return this._normalizeRunningEvent(new ErrorRunningEvent());
+            }
+            // Listen for any event that is registered
+            if (eventName === "event") {
+                return this._normalizeRunningEvent(new RunningEvent("event", null));
+            }
+            // Listen for any event
+            if (eventName === "*") {
+                return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
+            }
+            // Get the event Fragment (throws if ambiguous/unknown event)
+            const fragment = this.interface.getEvent(eventName);
+            return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment));
+        }
+        // We have topics to filter by...
+        if (eventName.topics && eventName.topics.length > 0) {
+            // Is it a known topichash? (throws if no matching topichash)
+            try {
+                const topic = eventName.topics[0];
+                if (typeof (topic) !== "string") {
+                    throw new Error("invalid topic"); // @TODO: May happen for anonymous events
+                }
+                const fragment = this.interface.getEvent(topic);
+                return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment, eventName.topics));
+            }
+            catch (error) { }
+            // Filter by the unknown topichash
+            const filter = {
+                address: this.address,
+                topics: eventName.topics
+            };
+            return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
+        }
+        return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
+    }
+    _checkRunningEvents(runningEvent) {
+        if (runningEvent.listenerCount() === 0) {
+            delete this._runningEvents[runningEvent.tag];
+            // If we have a poller for this, remove it
+            const emit = this._wrappedEmits[runningEvent.tag];
+            if (emit && runningEvent.filter) {
+                this.provider.off(runningEvent.filter, emit);
+                delete this._wrappedEmits[runningEvent.tag];
+            }
+        }
+    }
+    // Subclasses can override this to gracefully recover
+    // from parse errors if they wish
+    _wrapEvent(runningEvent, log, listener) {
+        const event = deepCopy(log);
+        event.removeListener = () => {
+            if (!listener) {
+                return;
+            }
+            runningEvent.removeListener(listener);
+            this._checkRunningEvents(runningEvent);
+        };
+        event.getBlock = () => { return this.provider.getBlock(log.blockHash); };
+        event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); };
+        event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); };
+        // This may throw if the topics and data mismatch the signature
+        runningEvent.prepareEvent(event);
+        return event;
+    }
+    _addEventListener(runningEvent, listener, once) {
+        if (!this.provider) {
+            logger$s.throwError("events require a provider or a signer with a provider", Logger.errors.UNSUPPORTED_OPERATION, { operation: "once" });
+        }
+        runningEvent.addListener(listener, once);
+        // Track this running event and its listeners (may already be there; but no hard in updating)
+        this._runningEvents[runningEvent.tag] = runningEvent;
+        // If we are not polling the provider, start polling
+        if (!this._wrappedEmits[runningEvent.tag]) {
+            const wrappedEmit = (log) => {
+                let event = this._wrapEvent(runningEvent, log, listener);
+                // Try to emit the result for the parameterized event...
+                if (event.decodeError == null) {
+                    try {
+                        const args = runningEvent.getEmit(event);
+                        this.emit(runningEvent.filter, ...args);
+                    }
+                    catch (error) {
+                        event.decodeError = error.error;
+                    }
+                }
+                // Always emit "event" for fragment-base events
+                if (runningEvent.filter != null) {
+                    this.emit("event", event);
+                }
+                // Emit "error" if there was an error
+                if (event.decodeError != null) {
+                    this.emit("error", event.decodeError, event);
+                }
+            };
+            this._wrappedEmits[runningEvent.tag] = wrappedEmit;
+            // Special events, like "error" do not have a filter
+            if (runningEvent.filter != null) {
+                this.provider.on(runningEvent.filter, wrappedEmit);
+            }
+        }
+    }
+    queryFilter(event, fromBlockOrBlockhash, toBlock) {
+        const runningEvent = this._getRunningEvent(event);
+        const filter = shallowCopy(runningEvent.filter);
+        if (typeof (fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
+            if (toBlock != null) {
+                logger$s.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
+            }
+            filter.blockHash = fromBlockOrBlockhash;
+        }
+        else {
+            filter.fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash : 0);
+            filter.toBlock = ((toBlock != null) ? toBlock : "latest");
+        }
+        return this.provider.getLogs(filter).then((logs) => {
+            return logs.map((log) => this._wrapEvent(runningEvent, log, null));
+        });
+    }
+    on(event, listener) {
+        this._addEventListener(this._getRunningEvent(event), listener, false);
+        return this;
+    }
+    once(event, listener) {
+        this._addEventListener(this._getRunningEvent(event), listener, true);
+        return this;
+    }
+    emit(eventName, ...args) {
+        if (!this.provider) {
+            return false;
+        }
+        const runningEvent = this._getRunningEvent(eventName);
+        const result = (runningEvent.run(args) > 0);
+        // May have drained all the "once" events; check for living events
+        this._checkRunningEvents(runningEvent);
+        return result;
+    }
+    listenerCount(eventName) {
+        if (!this.provider) {
+            return 0;
+        }
+        if (eventName == null) {
+            return Object.keys(this._runningEvents).reduce((accum, key) => {
+                return accum + this._runningEvents[key].listenerCount();
+            }, 0);
+        }
+        return this._getRunningEvent(eventName).listenerCount();
+    }
+    listeners(eventName) {
+        if (!this.provider) {
+            return [];
+        }
+        if (eventName == null) {
+            const result = [];
+            for (let tag in this._runningEvents) {
+                this._runningEvents[tag].listeners().forEach((listener) => {
+                    result.push(listener);
+                });
+            }
+            return result;
+        }
+        return this._getRunningEvent(eventName).listeners();
+    }
+    removeAllListeners(eventName) {
+        if (!this.provider) {
+            return this;
+        }
+        if (eventName == null) {
+            for (const tag in this._runningEvents) {
+                const runningEvent = this._runningEvents[tag];
+                runningEvent.removeAllListeners();
+                this._checkRunningEvents(runningEvent);
+            }
+            return this;
+        }
+        // Delete any listeners
+        const runningEvent = this._getRunningEvent(eventName);
+        runningEvent.removeAllListeners();
+        this._checkRunningEvents(runningEvent);
+        return this;
+    }
+    off(eventName, listener) {
+        if (!this.provider) {
+            return this;
+        }
+        const runningEvent = this._getRunningEvent(eventName);
+        runningEvent.removeListener(listener);
+        this._checkRunningEvents(runningEvent);
+        return this;
+    }
+    removeListener(eventName, listener) {
+        return this.off(eventName, listener);
+    }
+}
+class Contract extends BaseContract {
+}
+class ContractFactory {
+    constructor(contractInterface, bytecode, signer) {
+        let bytecodeHex = null;
+        if (typeof (bytecode) === "string") {
+            bytecodeHex = bytecode;
+        }
+        else if (isBytes(bytecode)) {
+            bytecodeHex = hexlify(bytecode);
+        }
+        else if (bytecode && typeof (bytecode.object) === "string") {
+            // Allow the bytecode object from the Solidity compiler
+            bytecodeHex = bytecode.object;
+        }
+        else {
+            // Crash in the next verification step
+            bytecodeHex = "!";
+        }
+        // Make sure it is 0x prefixed
+        if (bytecodeHex.substring(0, 2) !== "0x") {
+            bytecodeHex = "0x" + bytecodeHex;
+        }
+        // Make sure the final result is valid bytecode
+        if (!isHexString(bytecodeHex) || (bytecodeHex.length % 2)) {
+            logger$s.throwArgumentError("invalid bytecode", "bytecode", bytecode);
+        }
+        // If we have a signer, make sure it is valid
+        if (signer && !Signer.isSigner(signer)) {
+            logger$s.throwArgumentError("invalid signer", "signer", signer);
+        }
+        defineReadOnly(this, "bytecode", bytecodeHex);
+        defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
+        defineReadOnly(this, "signer", signer || null);
+    }
+    // @TODO: Future; rename to populateTransaction?
+    getDeployTransaction(...args) {
+        let tx = {};
+        // If we have 1 additional argument, we allow transaction overrides
+        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+            tx = shallowCopy(args.pop());
+            for (const key in tx) {
+                if (!allowedTransactionKeys$2[key]) {
+                    throw new Error("unknown transaction override " + key);
+                }
+            }
+        }
+        // Do not allow these to be overridden in a deployment transaction
+        ["data", "from", "to"].forEach((key) => {
+            if (tx[key] == null) {
+                return;
+            }
+            logger$s.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
+        });
+        if (tx.value) {
+            const value = BigNumber.from(tx.value);
+            if (!value.isZero() && !this.interface.deploy.payable) {
+                logger$s.throwError("non-payable constructor cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "overrides.value",
+                    value: tx.value
+                });
+            }
+        }
+        // Make sure the call matches the constructor signature
+        logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
+        // Set the data to the bytecode + the encoded constructor arguments
+        tx.data = hexlify(concat([
+            this.bytecode,
+            this.interface.encodeDeploy(args)
+        ]));
+        return tx;
+    }
+    deploy(...args) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            let overrides = {};
+            // If 1 extra parameter was passed in, it contains overrides
+            if (args.length === this.interface.deploy.inputs.length + 1) {
+                overrides = args.pop();
+            }
+            // Make sure the call matches the constructor signature
+            logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
+            // Resolve ENS names and promises in the arguments
+            const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
+            params.push(overrides);
+            // Get the deployment transaction (with optional overrides)
+            const unsignedTx = this.getDeployTransaction(...params);
+            // Send the deployment transaction
+            const tx = yield this.signer.sendTransaction(unsignedTx);
+            const address = getStatic(this.constructor, "getContractAddress")(tx);
+            const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
+            // Add the modified wait that wraps events
+            addContractWait(contract, tx);
+            defineReadOnly(contract, "deployTransaction", tx);
+            return contract;
+        });
+    }
+    attach(address) {
+        return (this.constructor).getContract(address, this.interface, this.signer);
+    }
+    connect(signer) {
+        return new (this.constructor)(this.interface, this.bytecode, signer);
+    }
+    static fromSolidity(compilerOutput, signer) {
+        if (compilerOutput == null) {
+            logger$s.throwError("missing compiler output", Logger.errors.MISSING_ARGUMENT, { argument: "compilerOutput" });
+        }
+        if (typeof (compilerOutput) === "string") {
+            compilerOutput = JSON.parse(compilerOutput);
+        }
+        const abi = compilerOutput.abi;
+        let bytecode = null;
+        if (compilerOutput.bytecode) {
+            bytecode = compilerOutput.bytecode;
+        }
+        else if (compilerOutput.evm && compilerOutput.evm.bytecode) {
+            bytecode = compilerOutput.evm.bytecode;
+        }
+        return new this(abi, bytecode, signer);
+    }
+    static getInterface(contractInterface) {
+        return Contract.getInterface(contractInterface);
+    }
+    static getContractAddress(tx) {
+        return getContractAddress(tx);
+    }
+    static getContract(address, contractInterface, signer) {
+        return new Contract(address, contractInterface, signer);
+    }
+}
+
+const version$o = "networks/5.5.0";
+
+"use strict";
+const logger$t = new Logger(version$o);
+function isRenetworkable(value) {
+    return (value && typeof (value.renetwork) === "function");
+}
+function ethDefaultProvider(network) {
+    const func = function (providers, options) {
+        if (options == null) {
+            options = {};
+        }
+        const providerList = [];
+        if (providers.InfuraProvider) {
+            try {
+                providerList.push(new providers.InfuraProvider(network, options.infura));
+            }
+            catch (error) { }
+        }
+        if (providers.EtherscanProvider) {
+            try {
+                providerList.push(new providers.EtherscanProvider(network, options.etherscan));
+            }
+            catch (error) { }
+        }
+        if (providers.AlchemyProvider) {
+            try {
+                providerList.push(new providers.AlchemyProvider(network, options.alchemy));
+            }
+            catch (error) { }
+        }
+        if (providers.PocketProvider) {
+            // These networks are currently faulty on Pocket as their
+            // network does not handle the Berlin hardfork, which is
+            // live on these ones.
+            // @TODO: This goes away once Pocket has upgraded their nodes
+            const skip = ["goerli", "ropsten", "rinkeby"];
+            try {
+                const provider = new providers.PocketProvider(network);
+                if (provider.network && skip.indexOf(provider.network.name) === -1) {
+                    providerList.push(provider);
+                }
+            }
+            catch (error) { }
+        }
+        if (providers.CloudflareProvider) {
+            try {
+                providerList.push(new providers.CloudflareProvider(network));
+            }
+            catch (error) { }
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+        if (providers.FallbackProvider) {
+            let quorum = 1;
+            if (options.quorum != null) {
+                quorum = options.quorum;
+            }
+            else if (network === "homestead") {
+                quorum = 2;
+            }
+            return new providers.FallbackProvider(providerList, quorum);
+        }
+        return providerList[0];
+    };
+    func.renetwork = function (network) {
+        return ethDefaultProvider(network);
+    };
+    return func;
+}
+function etcDefaultProvider(url, network) {
+    const func = function (providers, options) {
+        if (providers.JsonRpcProvider) {
+            return new providers.JsonRpcProvider(url, network);
+        }
+        return null;
+    };
+    func.renetwork = function (network) {
+        return etcDefaultProvider(url, network);
+    };
+    return func;
+}
+function hederaDefaultProvider(network) {
+    const func = function (providers, options) {
+        if (options == null) {
+            options = {};
+        }
+        const providerList = [];
+        // TODO: JSON RPC provider, FallbackProvider for hedera
+        if (providers.DefaultHederaProvider) {
+            providerList.push(new providers.DefaultHederaProvider(network));
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+        return providerList[0];
+    };
+    func.renetwork = function (network) {
+        return hederaDefaultProvider(network);
+    };
+    return func;
+}
+const homestead = {
+    chainId: 1,
+    ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+    name: "homestead",
+    _defaultProvider: ethDefaultProvider("homestead")
+};
+const ropsten = {
+    chainId: 3,
+    ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+    name: "ropsten",
+    _defaultProvider: ethDefaultProvider("ropsten")
+};
+const classicMordor = {
+    chainId: 63,
+    name: "classicMordor",
+    _defaultProvider: etcDefaultProvider("https://www.ethercluster.com/mordor", "classicMordor")
+};
+const networks = {
+    unspecified: { chainId: 0, name: "unspecified" },
+    homestead: homestead,
+    morden: { chainId: 2, name: "morden" },
+    ropsten: ropsten,
+    rinkeby: {
+        chainId: 4,
+        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+        name: "rinkeby",
+        _defaultProvider: ethDefaultProvider("rinkeby")
+    },
+    kovan: {
+        chainId: 42,
+        name: "kovan",
+        _defaultProvider: ethDefaultProvider("kovan")
+    },
+    goerli: {
+        chainId: 5,
+        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
+        name: "goerli",
+        _defaultProvider: ethDefaultProvider("goerli")
+    },
+    // ETC (See: #351)
+    classic: {
+        chainId: 61,
+        name: "classic",
+        _defaultProvider: etcDefaultProvider("https:/\/www.ethercluster.com/etc", "classic")
+    },
+    classicMorden: { chainId: 62, name: "classicMorden" },
+    classicMordor: classicMordor,
+    classicTestnet: classicMordor,
+    classicKotti: {
+        chainId: 6,
+        name: "classicKotti",
+        _defaultProvider: etcDefaultProvider("https:/\/www.ethercluster.com/kotti", "classicKotti")
+    },
+    xdai: { chainId: 100, name: "xdai" },
+    matic: { chainId: 137, name: "matic" },
+    maticmum: { chainId: 80001, name: "maticmum" },
+    bnb: { chainId: 56, name: "bnb" },
+    bnbt: { chainId: 97, name: "bnbt" },
+    // hedera networks
+    mainnet: {
+        chainId: 290,
+        name: 'mainnet',
+        _defaultProvider: hederaDefaultProvider("mainnet")
+    },
+    testnet: {
+        chainId: 291,
+        name: 'testnet',
+        _defaultProvider: hederaDefaultProvider("testnet")
+    },
+    previewnet: {
+        chainId: 292,
+        name: 'previewnet',
+        _defaultProvider: hederaDefaultProvider("previewnet")
+    }
+};
+/**
+ *  getNetwork
+ *
+ *  Converts a named common networks or chain ID (network ID) to a Network
+ *  and verifies a network is a valid Network..
+ */
+function getNetwork(network) {
+    // No network (null)
+    if (network == null) {
+        return null;
+    }
+    if (typeof (network) === "number") {
+        for (const name in networks) {
+            const standard = networks[name];
+            if (standard.chainId === network) {
+                return {
+                    name: standard.name,
+                    chainId: standard.chainId,
+                    ensAddress: (standard.ensAddress || null),
+                    _defaultProvider: (standard._defaultProvider || null)
+                };
+            }
+        }
+        return {
+            chainId: network,
+            name: "unknown"
+        };
+    }
+    if (typeof (network) === "string") {
+        const standard = networks[network];
+        if (standard == null) {
+            return null;
+        }
+        return {
+            name: standard.name,
+            chainId: standard.chainId,
+            ensAddress: standard.ensAddress,
+            _defaultProvider: (standard._defaultProvider || null)
+        };
+    }
+    const standard = networks[network.name];
+    // Not a standard network; check that it is a valid network in general
+    if (!standard) {
+        if (typeof (network.chainId) !== "number") {
+            logger$t.throwArgumentError("invalid network chainId", "network", network);
+        }
+        return network;
+    }
+    // Make sure the chainId matches the expected network chainId (or is 0; disable EIP-155)
+    if (network.chainId !== 0 && network.chainId !== standard.chainId) {
+        logger$t.throwArgumentError("network chainId mismatch", "network", network);
+    }
+    // @TODO: In the next major version add an attach function to a defaultProvider
+    // class and move the _defaultProvider internal to this file (extend Network)
+    let defaultProvider = network._defaultProvider || null;
+    if (defaultProvider == null && standard._defaultProvider) {
+        if (isRenetworkable(standard._defaultProvider)) {
+            defaultProvider = standard._defaultProvider.renetwork(network);
+        }
+        else {
+            defaultProvider = standard._defaultProvider;
+        }
+    }
+    // Standard Network (allow overriding the ENS address)
+    return {
+        name: network.name,
+        chainId: standard.chainId,
+        ensAddress: (network.ensAddress || standard.ensAddress || null),
+        _defaultProvider: defaultProvider
+    };
+}
+
+'use strict';
+var ALPHABET = 'qpzry9x8gf2tvdw0s3jn54khce6mua7l';
+
+// pre-compute lookup table
+var ALPHABET_MAP = {};
+for (var z = 0; z < ALPHABET.length; z++) {
+  var x = ALPHABET.charAt(z);
+
+  if (ALPHABET_MAP[x] !== undefined) throw new TypeError(x + ' is ambiguous')
+  ALPHABET_MAP[x] = z;
+}
+
+function polymodStep (pre) {
+  var b = pre >> 25;
+  return ((pre & 0x1FFFFFF) << 5) ^
+    (-((b >> 0) & 1) & 0x3b6a57b2) ^
+    (-((b >> 1) & 1) & 0x26508e6d) ^
+    (-((b >> 2) & 1) & 0x1ea119fa) ^
+    (-((b >> 3) & 1) & 0x3d4233dd) ^
+    (-((b >> 4) & 1) & 0x2a1462b3)
+}
+
+function prefixChk (prefix) {
+  var chk = 1;
+  for (var i = 0; i < prefix.length; ++i) {
+    var c = prefix.charCodeAt(i);
+    if (c < 33 || c > 126) return 'Invalid prefix (' + prefix + ')'
+
+    chk = polymodStep(chk) ^ (c >> 5);
+  }
+  chk = polymodStep(chk);
+
+  for (i = 0; i < prefix.length; ++i) {
+    var v = prefix.charCodeAt(i);
+    chk = polymodStep(chk) ^ (v & 0x1f);
+  }
+  return chk
+}
+
+function encode$7 (prefix, words, LIMIT) {
+  LIMIT = LIMIT || 90;
+  if ((prefix.length + 7 + words.length) > LIMIT) throw new TypeError('Exceeds length limit')
+
+  prefix = prefix.toLowerCase();
+
+  // determine chk mod
+  var chk = prefixChk(prefix);
+  if (typeof chk === 'string') throw new Error(chk)
+
+  var result = prefix + '1';
+  for (var i = 0; i < words.length; ++i) {
+    var x = words[i];
+    if ((x >> 5) !== 0) throw new Error('Non 5-bit word')
+
+    chk = polymodStep(chk) ^ x;
+    result += ALPHABET.charAt(x);
+  }
+
+  for (i = 0; i < 6; ++i) {
+    chk = polymodStep(chk);
+  }
+  chk ^= 1;
+
+  for (i = 0; i < 6; ++i) {
+    var v = (chk >> ((5 - i) * 5)) & 0x1f;
+    result += ALPHABET.charAt(v);
+  }
+
+  return result
+}
+
+function __decode (str, LIMIT) {
+  LIMIT = LIMIT || 90;
+  if (str.length < 8) return str + ' too short'
+  if (str.length > LIMIT) return 'Exceeds length limit'
+
+  // don't allow mixed case
+  var lowered = str.toLowerCase();
+  var uppered = str.toUpperCase();
+  if (str !== lowered && str !== uppered) return 'Mixed-case string ' + str
+  str = lowered;
+
+  var split = str.lastIndexOf('1');
+  if (split === -1) return 'No separator character for ' + str
+  if (split === 0) return 'Missing prefix for ' + str
+
+  var prefix = str.slice(0, split);
+  var wordChars = str.slice(split + 1);
+  if (wordChars.length < 6) return 'Data too short'
+
+  var chk = prefixChk(prefix);
+  if (typeof chk === 'string') return chk
+
+  var words = [];
+  for (var i = 0; i < wordChars.length; ++i) {
+    var c = wordChars.charAt(i);
+    var v = ALPHABET_MAP[c];
+    if (v === undefined) return 'Unknown character ' + c
+    chk = polymodStep(chk) ^ v;
+
+    // not in the checksum?
+    if (i + 6 >= wordChars.length) continue
+    words.push(v);
+  }
+
+  if (chk !== 1) return 'Invalid checksum for ' + str
+  return { prefix: prefix, words: words }
+}
+
+function decodeUnsafe () {
+  var res = __decode.apply(null, arguments);
+  if (typeof res === 'object') return res
+}
+
+function decode$8 (str) {
+  var res = __decode.apply(null, arguments);
+  if (typeof res === 'object') return res
+
+  throw new Error(res)
+}
+
+function convert (data, inBits, outBits, pad) {
+  var value = 0;
+  var bits = 0;
+  var maxV = (1 << outBits) - 1;
+
+  var result = [];
+  for (var i = 0; i < data.length; ++i) {
+    value = (value << inBits) | data[i];
+    bits += inBits;
+
+    while (bits >= outBits) {
+      bits -= outBits;
+      result.push((value >> bits) & maxV);
+    }
+  }
+
+  if (pad) {
+    if (bits > 0) {
+      result.push((value << (outBits - bits)) & maxV);
+    }
+  } else {
+    if (bits >= inBits) return 'Excess padding'
+    if ((value << (outBits - bits)) & maxV) return 'Non-zero padding'
+  }
+
+  return result
+}
+
+function toWordsUnsafe (bytes) {
+  var res = convert(bytes, 8, 5, true);
+  if (Array.isArray(res)) return res
+}
+
+function toWords (bytes) {
+  var res = convert(bytes, 8, 5, true);
+  if (Array.isArray(res)) return res
+
+  throw new Error(res)
+}
+
+function fromWordsUnsafe (words) {
+  var res = convert(words, 5, 8, false);
+  if (Array.isArray(res)) return res
+}
+
+function fromWords (words) {
+  var res = convert(words, 5, 8, false);
+  if (Array.isArray(res)) return res
+
+  throw new Error(res)
+}
+
+var bech32 = {
+  decodeUnsafe: decodeUnsafe,
+  decode: decode$8,
+  encode: encode$7,
+  toWordsUnsafe: toWordsUnsafe,
+  toWords: toWords,
+  fromWordsUnsafe: fromWordsUnsafe,
+  fromWords: fromWords
+};
+
+const version$p = "providers/5.5.0";
+
+"use strict";
+const logger$u = new Logger(version$p);
+class Formatter {
+    constructor() {
+        logger$u.checkNew(new.target, Formatter);
+        this.formats = this.getDefaultFormats();
+    }
+    getDefaultFormats() {
+        const formats = ({});
+        const address = this.address.bind(this);
+        const bigNumber = this.bigNumber.bind(this);
+        const blockTag = this.blockTag.bind(this);
+        const data = this.data.bind(this);
+        const hash = this.hash.bind(this);
+        const hex = this.hex.bind(this);
+        const number = this.number.bind(this);
+        const type = this.type.bind(this);
+        const strictData = (v) => { return this.data(v, true); };
+        formats.transaction = {
+            hash: hash,
+            type: type,
+            accessList: Formatter.allowNull(this.accessList.bind(this), null),
+            blockHash: Formatter.allowNull(hash, null),
+            blockNumber: Formatter.allowNull(number, null),
+            transactionIndex: Formatter.allowNull(number, null),
+            confirmations: Formatter.allowNull(number, null),
+            from: address,
+            // either (gasPrice) or (maxPriorityFeePerGas + maxFeePerGas)
+            // must be set
+            gasPrice: Formatter.allowNull(bigNumber),
+            maxPriorityFeePerGas: Formatter.allowNull(bigNumber),
+            maxFeePerGas: Formatter.allowNull(bigNumber),
+            gasLimit: bigNumber,
+            to: Formatter.allowNull(address, null),
+            value: bigNumber,
+            nonce: number,
+            data: data,
+            r: Formatter.allowNull(this.uint256),
+            s: Formatter.allowNull(this.uint256),
+            v: Formatter.allowNull(number),
+            creates: Formatter.allowNull(address, null),
+            raw: Formatter.allowNull(data),
+        };
+        formats.transactionRequest = {
+            from: Formatter.allowNull(address),
+            nonce: Formatter.allowNull(number),
+            gasLimit: Formatter.allowNull(bigNumber),
+            gasPrice: Formatter.allowNull(bigNumber),
+            maxPriorityFeePerGas: Formatter.allowNull(bigNumber),
+            maxFeePerGas: Formatter.allowNull(bigNumber),
+            to: Formatter.allowNull(address),
+            value: Formatter.allowNull(bigNumber),
+            data: Formatter.allowNull(strictData),
+            type: Formatter.allowNull(number),
+            accessList: Formatter.allowNull(this.accessList.bind(this), null),
+        };
+        formats.receiptLog = {
+            transactionIndex: number,
+            blockNumber: number,
+            transactionHash: hash,
+            address: address,
+            topics: Formatter.arrayOf(hash),
+            data: data,
+            logIndex: number,
+            blockHash: hash,
+        };
+        formats.receipt = {
+            to: Formatter.allowNull(this.address, null),
+            from: Formatter.allowNull(this.address, null),
+            contractAddress: Formatter.allowNull(address, null),
+            transactionIndex: number,
+            // should be allowNull(hash), but broken-EIP-658 support is handled in receipt
+            root: Formatter.allowNull(hex),
+            gasUsed: bigNumber,
+            logsBloom: Formatter.allowNull(data),
+            blockHash: hash,
+            transactionHash: hash,
+            logs: Formatter.arrayOf(this.receiptLog.bind(this)),
+            blockNumber: number,
+            confirmations: Formatter.allowNull(number, null),
+            cumulativeGasUsed: bigNumber,
+            effectiveGasPrice: Formatter.allowNull(bigNumber),
+            status: Formatter.allowNull(number),
+            type: type
+        };
+        formats.block = {
+            hash: hash,
+            parentHash: hash,
+            number: number,
+            timestamp: number,
+            nonce: Formatter.allowNull(hex),
+            difficulty: this.difficulty.bind(this),
+            gasLimit: bigNumber,
+            gasUsed: bigNumber,
+            miner: address,
+            extraData: data,
+            transactions: Formatter.allowNull(Formatter.arrayOf(hash)),
+            baseFeePerGas: Formatter.allowNull(bigNumber)
+        };
+        formats.blockWithTransactions = shallowCopy(formats.block);
+        formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
+        formats.filter = {
+            fromBlock: Formatter.allowNull(blockTag, undefined),
+            toBlock: Formatter.allowNull(blockTag, undefined),
+            blockHash: Formatter.allowNull(hash, undefined),
+            address: Formatter.allowNull(address, undefined),
+            topics: Formatter.allowNull(this.topics.bind(this), undefined),
+        };
+        formats.filterLog = {
+            blockNumber: Formatter.allowNull(number),
+            blockHash: Formatter.allowNull(hash),
+            transactionIndex: number,
+            removed: Formatter.allowNull(this.boolean.bind(this)),
+            address: address,
+            data: Formatter.allowFalsish(data, "0x"),
+            topics: Formatter.arrayOf(hash),
+            transactionHash: hash,
+            logIndex: number,
+        };
+        return formats;
+    }
+    accessList(accessList) {
+        return accessListify(accessList || []);
+    }
+    // Requires a BigNumberish that is within the IEEE754 safe integer range; returns a number
+    // Strict! Used on input.
+    number(number) {
+        if (number === "0x") {
+            return 0;
+        }
+        return BigNumber.from(number).toNumber();
+    }
+    type(number) {
+        if (number === "0x" || number == null) {
+            return 0;
+        }
+        return BigNumber.from(number).toNumber();
+    }
+    // Strict! Used on input.
+    bigNumber(value) {
+        return BigNumber.from(value);
+    }
+    // Requires a boolean, "true" or  "false"; returns a boolean
+    boolean(value) {
+        if (typeof (value) === "boolean") {
+            return value;
+        }
+        if (typeof (value) === "string") {
+            value = value.toLowerCase();
+            if (value === "true") {
+                return true;
+            }
+            if (value === "false") {
+                return false;
+            }
+        }
+        throw new Error("invalid boolean - " + value);
+    }
+    hex(value, strict) {
+        if (typeof (value) === "string") {
+            if (!strict && value.substring(0, 2) !== "0x") {
+                value = "0x" + value;
+            }
+            if (isHexString(value)) {
+                return value.toLowerCase();
+            }
+        }
+        return logger$u.throwArgumentError("invalid hash", "value", value);
+    }
+    data(value, strict) {
+        const result = this.hex(value, strict);
+        if ((result.length % 2) !== 0) {
+            throw new Error("invalid data; odd-length - " + value);
+        }
+        return result;
+    }
+    // Requires an address
+    // Strict! Used on input.
+    address(value) {
+        return getAddress(value);
+    }
+    callAddress(value) {
+        if (!isHexString(value, 32)) {
+            return null;
+        }
+        const address = getAddress(hexDataSlice(value, 12));
+        return (address === AddressZero) ? null : address;
+    }
+    contractAddress(value) {
+        return getContractAddress(value);
+    }
+    // Strict! Used on input.
+    blockTag(blockTag) {
+        if (blockTag == null) {
+            return "latest";
+        }
+        if (blockTag === "earliest") {
+            return "0x0";
+        }
+        if (blockTag === "latest" || blockTag === "pending") {
+            return blockTag;
+        }
+        if (typeof (blockTag) === "number" || isHexString(blockTag)) {
+            return hexValue(blockTag);
+        }
+        throw new Error("invalid blockTag");
+    }
+    // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
+    hash(value, strict) {
+        const result = this.hex(value, strict);
+        if (hexDataLength(result) !== 32) {
+            return logger$u.throwArgumentError("invalid hash", "value", value);
+        }
+        return result;
+    }
+    // Returns the difficulty as a number, or if too large (i.e. PoA network) null
+    difficulty(value) {
+        if (value == null) {
+            return null;
+        }
+        const v = BigNumber.from(value);
+        try {
+            return v.toNumber();
+        }
+        catch (error) { }
+        return null;
+    }
+    uint256(value) {
+        if (!isHexString(value)) {
+            throw new Error("invalid uint256");
+        }
+        return hexZeroPad(value, 32);
+    }
+    _block(value, format) {
+        if (value.author != null && value.miner == null) {
+            value.miner = value.author;
+        }
+        // The difficulty may need to come from _difficulty in recursed blocks
+        const difficulty = (value._difficulty != null) ? value._difficulty : value.difficulty;
+        const result = Formatter.check(format, value);
+        result._difficulty = ((difficulty == null) ? null : BigNumber.from(difficulty));
+        return result;
+    }
+    block(value) {
+        return this._block(value, this.formats.block);
+    }
+    blockWithTransactions(value) {
+        return this._block(value, this.formats.blockWithTransactions);
+    }
+    // Strict! Used on input.
+    transactionRequest(value) {
+        return Formatter.check(this.formats.transactionRequest, value);
+    }
+    transactionResponse(transaction) {
+        // Rename gas to gasLimit
+        if (transaction.gas != null && transaction.gasLimit == null) {
+            transaction.gasLimit = transaction.gas;
+        }
+        // Some clients (TestRPC) do strange things like return 0x0 for the
+        // 0 address; correct this to be a real address
+        if (transaction.to && BigNumber.from(transaction.to).isZero()) {
+            transaction.to = "0x0000000000000000000000000000000000000000";
+        }
+        // Rename input to data
+        if (transaction.input != null && transaction.data == null) {
+            transaction.data = transaction.input;
+        }
+        // If to and creates are empty, populate the creates from the transaction
+        if (transaction.to == null && transaction.creates == null) {
+            transaction.creates = this.contractAddress(transaction);
+        }
+        if ((transaction.type === 1 || transaction.type === 2) && transaction.accessList == null) {
+            transaction.accessList = [];
+        }
+        const result = Formatter.check(this.formats.transaction, transaction);
+        if (transaction.chainId != null) {
+            let chainId = transaction.chainId;
+            if (isHexString(chainId)) {
+                chainId = BigNumber.from(chainId).toNumber();
+            }
+            result.chainId = chainId;
+        }
+        else {
+            let chainId = transaction.networkId;
+            // geth-etc returns chainId
+            if (chainId == null && result.v == null) {
+                chainId = transaction.chainId;
+            }
+            if (isHexString(chainId)) {
+                chainId = BigNumber.from(chainId).toNumber();
+            }
+            if (typeof (chainId) !== "number" && result.v != null) {
+                chainId = (result.v - 35) / 2;
+                if (chainId < 0) {
+                    chainId = 0;
+                }
+                chainId = parseInt(chainId);
+            }
+            if (typeof (chainId) !== "number") {
+                chainId = 0;
+            }
+            result.chainId = chainId;
+        }
+        // 0x0000... should actually be null
+        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
+            result.blockHash = null;
+        }
+        return result;
+    }
+    transaction(value) {
+        return parse$2(value);
+    }
+    receiptLog(value) {
+        return Formatter.check(this.formats.receiptLog, value);
+    }
+    receipt(value) {
+        const result = Formatter.check(this.formats.receipt, value);
+        // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
+        if (result.root != null) {
+            if (result.root.length <= 4) {
+                // Could be 0x00, 0x0, 0x01 or 0x1
+                const value = BigNumber.from(result.root).toNumber();
+                if (value === 0 || value === 1) {
+                    // Make sure if both are specified, they match
+                    if (result.status != null && (result.status !== value)) {
+                        logger$u.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
+                    }
+                    result.status = value;
+                    delete result.root;
+                }
+                else {
+                    logger$u.throwArgumentError("invalid alt-root-status", "value.root", result.root);
+                }
+            }
+            else if (result.root.length !== 66) {
+                // Must be a valid bytes32
+                logger$u.throwArgumentError("invalid root hash", "value.root", result.root);
+            }
+        }
+        if (result.status != null) {
+            result.byzantium = true;
+        }
+        return result;
+    }
+    topics(value) {
+        if (Array.isArray(value)) {
+            return value.map((v) => this.topics(v));
+        }
+        else if (value != null) {
+            return this.hash(value, true);
+        }
+        return null;
+    }
+    filter(value) {
+        return Formatter.check(this.formats.filter, value);
+    }
+    filterLog(value) {
+        return Formatter.check(this.formats.filterLog, value);
+    }
+    static check(format, object) {
+        const result = {};
+        for (const key in format) {
+            try {
+                const value = format[key](object[key]);
+                if (value !== undefined) {
+                    result[key] = value;
+                }
+            }
+            catch (error) {
+                error.checkKey = key;
+                error.checkValue = object[key];
+                throw error;
+            }
+        }
+        return result;
+    }
+    // if value is null-ish, nullValue is returned
+    static allowNull(format, nullValue) {
+        return (function (value) {
+            if (value == null) {
+                return nullValue;
+            }
+            return format(value);
+        });
+    }
+    // If value is false-ish, replaceValue is returned
+    static allowFalsish(format, replaceValue) {
+        return (function (value) {
+            if (!value) {
+                return replaceValue;
+            }
+            return format(value);
+        });
+    }
+    // Requires an Array satisfying check
+    static arrayOf(format) {
+        return (function (array) {
+            if (!Array.isArray(array)) {
+                throw new Error("not an array");
+            }
+            const result = [];
+            array.forEach(function (value) {
+                result.push(format(value));
+            });
+            return result;
+        });
+    }
+}
+function isCommunityResourcable(value) {
+    return (value && typeof (value.isCommunityResource) === "function");
+}
+function isCommunityResource(value) {
+    return (isCommunityResourcable(value) && value.isCommunityResource());
+}
+// Show the throttle message only once
+let throttleMessage = false;
+function showThrottleMessage() {
+    if (throttleMessage) {
+        return;
+    }
+    throttleMessage = true;
+    console.log("========= NOTICE =========");
+    console.log("Request-Rate Exceeded  (this message will not be repeated)");
+    console.log("");
+    console.log("The default API keys for each service are provided as a highly-throttled,");
+    console.log("community resource for low-traffic projects and early prototyping.");
+    console.log("");
+    console.log("While your application will continue to function, we highly recommended");
+    console.log("signing up for your own API keys to improve performance, increase your");
+    console.log("request rate/limit and enable other perks, such as metrics and advanced APIs.");
+    console.log("");
+    console.log("For more details: https:/\/docs.ethers.io/api-keys/");
+    console.log("==========================");
 }
 
 'use strict';
@@ -89871,7 +91723,7 @@ function wrap(protocols) {
 }
 
 /* istanbul ignore next */
-function noop$1() { /* empty */ }
+function noop$2() { /* empty */ }
 
 // from https://github.com/nodejs/node/blob/master/lib/internal/url.js
 function urlToOptions(urlObject) {
@@ -89926,7 +91778,7 @@ function abortRequest(request) {
   for (var e = 0; e < events.length; e++) {
     request.removeListener(events[e], eventHandlers[events[e]]);
   }
-  request.on("error", noop$1);
+  request.on("error", noop$2);
   request.abort();
 }
 
@@ -91123,7 +92975,7 @@ var __awaiter$9 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$v = new Logger(version$o);
+const logger$v = new Logger(version$p);
 //////////////////////////////
 // Event Serializeing
 function checkTopic(topic) {
@@ -92851,7 +94703,7 @@ class DefaultHederaProvider extends BaseProvider {
 }
 
 "use strict";
-const logger$w = new Logger(version$o);
+const logger$w = new Logger(version$p);
 ////////////////////////
 // Helper Functions
 function getDefaultProvider(network, options) {
@@ -92981,7 +94833,7 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 	splitSignature: splitSignature,
 	joinSignature: joinSignature,
 	accessListify: accessListify,
-	parseTransaction: parse,
+	parseTransaction: parse$2,
 	serializeTransaction: serialize,
 	get TransactionTypes () { return TransactionTypes; },
 	getJsonWalletAddress: getJsonWalletAddress,

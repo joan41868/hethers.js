@@ -182,9 +182,9 @@ export abstract class Signer {
                 Promise.resolve(tx.from),
                 this.getAddress()
             ]).then((result) => {
-                if (result[0].toLowerCase() !== result[1].toLowerCase()) {
-                    logger.throwArgumentError("from address mismatch", "transaction", transaction);
-                }
+                // if (result[0].toLowerCase() !== result[1].toLowerCase()) {
+                //     logger.throwArgumentError("from address mismatch", "transaction", transaction);
+                // }
                 return result[0];
             });
         }
@@ -206,7 +206,7 @@ export abstract class Signer {
         if (tx.to != null) {
             tx.to = Promise.resolve(tx.to).then(async (to) => {
                 if (to == null) { return null; }
-                const address = await this.resolveName(to);
+                const address = await this.resolveName(to.toString());
                 if (address == null) {
                     logger.throwArgumentError("provided ENS name resolves to null", "tx.to", to);
                 }
@@ -219,11 +219,11 @@ export abstract class Signer {
 
         // Do not allow mixing pre-eip-1559 and eip-1559 properties
         const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
-        if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
-            logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
-        } else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
-            logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
-        }
+        // if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
+        //     logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
+        // } else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
+        //     logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
+        // }
 
         if ((tx.type === 2 || tx.type == null) && (tx.maxFeePerGas != null && tx.maxPriorityFeePerGas != null)) {
             // Fully-formed EIP-1559 transaction (skip getFeeData)
@@ -233,7 +233,7 @@ export abstract class Signer {
             // Explicit Legacy or EIP-2930 transaction
 
             // Populate missing gasPrice
-            if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
+            // if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
 
         } else {
 
@@ -249,19 +249,19 @@ export abstract class Signer {
                     // Upgrade transaction from null to eip-1559
                     tx.type = 2;
 
-                    if (tx.gasPrice != null) {
+                    // if (tx.gasPrice != null) {
                         // Using legacy gasPrice property on an eip-1559 network,
                         // so use gasPrice as both fee properties
-                        const gasPrice = tx.gasPrice;
-                        delete tx.gasPrice;
-                        tx.maxFeePerGas = gasPrice;
-                        tx.maxPriorityFeePerGas = gasPrice;
+                        // const gasPrice = tx.gasPrice;
+                        // delete tx.gasPrice;
+                        // tx.maxFeePerGas = gasPrice;
+                        // tx.maxPriorityFeePerGas = gasPrice;
 
-                    } else {
-                        // Populate missing fee data
-                        if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
-                        if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
-                    }
+                    // } else {
+                    //     Populate missing fee data
+                        // if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
+                        // if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
+                    // }
 
                 } else if (feeData.gasPrice != null) {
                     // Network doesn't support EIP-1559...
@@ -274,7 +274,7 @@ export abstract class Signer {
                     }
 
                     // Populate missing fee data
-                    if (tx.gasPrice == null) { tx.gasPrice = feeData.gasPrice; }
+                    // if (tx.gasPrice == null) { tx.gasPrice = feeData.gasPrice; }
 
                     // Explicitly set untyped transaction to legacy
                     tx.type = 0;
@@ -295,7 +295,7 @@ export abstract class Signer {
             }
         }
 
-        if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
+        // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
 
         if (tx.gasLimit == null) {
             tx.gasLimit = this.estimateGas(tx).catch((error) => {

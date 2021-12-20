@@ -498,7 +498,7 @@ class SweepPlugin extends Plugin {
         await this.accounts[0].sendTransaction({
             to: this.toAddress,
             gasLimit: 21000,
-            gasPrice: gasPrice,
+            // gasPrice: gasPrice,
             value: maxSpendable
         });
     }

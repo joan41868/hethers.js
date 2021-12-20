@@ -15,13 +15,14 @@ import { arrayify, concat, hexDataSlice, isHexString, joinSignature } from "@eth
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import { defineReadOnly, resolveProperties } from "@ethersproject/properties";
+import { defineReadOnly } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethersproject/json-wallets";
-import { computeAlias, recoverAddress, serialize } from "@ethersproject/transactions";
+import { computeAlias, recoverAddress, } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import { FileCreateTransaction, PrivateKey, PublicKey, Transaction } from "@hashgraph/sdk";
 const logger = new Logger(version);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
@@ -33,6 +34,19 @@ function hasMnemonic(value) {
 function hasAlias(value) {
     return isAccount(value) && value.alias != null;
 }
+const account = {
+    "operator": {
+        "accountId": "0.0.1280",
+        "publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
+        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
+    },
+    "network": {
+        "35.231.208.148:50211": "0.0.3",
+        "35.199.15.177:50211": "0.0.4",
+        "35.225.201.195:50211": "0.0.5",
+        "35.247.109.135:50211": "0.0.6"
+    }
+};
 export class Wallet extends Signer {
     constructor(identity, provider) {
         logger.checkNew(new.target, Wallet);
@@ -119,22 +133,43 @@ export class Wallet extends Signer {
         const eoa = {
             privateKey: this._signingKey().privateKey,
             address: getAddressFromAccount(accountLike),
-            alias: this.alias
+            alias: this.alias,
+            mnemonic: this._mnemonic()
         };
         return new Wallet(eoa, this.provider);
     }
     // TODO to be revised
+    // 1. TransactionRequest must be addressed and modified
+    // 2. We must check whether it is Contract Create or Call (if there is no `to` field, we must sign FileCreate;
+    // If there is `to` field we must read the `customData` and see whether we should sign ContractCreate or
+    // ContractCall)
+    // FIXME:
+    //  the wallet has an identity, thus it has privateKey, publicKey and accountId.
+    //  Those properties should be added to the class itself in the future.
+    //  There will probably be an instance of the hedera client with an operator already set.
     signTransaction(transaction) {
-        return resolveProperties(transaction).then((tx) => {
-            if (tx.from != null) {
-                if (getAddress(tx.from) !== this.address) {
-                    logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-                }
-                delete tx.from;
-            }
-            const signature = this._signingKey().signDigest(keccak256(serialize(tx)));
-            return serialize(tx, signature);
-        });
+        const isBytecodeCreation = transaction.to === undefined;
+        let signableTx;
+        if (isBytecodeCreation) {
+            let txData = transaction.data;
+            const t = Uint8Array.from(Buffer.from(txData));
+            signableTx = FileCreateTransaction.fromBytes(t);
+        }
+        else {
+            // `to` field present
+            // TODO: how to extract the ABI on contract call?
+            // TODO: how to extract constructor arguments for contract create?
+            // TODO: How do we diff ContractCall and ContractCreate ?
+            const { customData, data } = transaction;
+            console.log(customData);
+            const t = Uint8Array.from(Buffer.from(data));
+            signableTx = Transaction.fromBytes(t);
+        }
+        const privKey = PrivateKey.fromString(account.operator.privateKey);
+        const pubKey = PublicKey.fromString(account.operator.publicKey);
+        const sig = privKey.sign(signableTx.toBytes());
+        signableTx.addSignature(pubKey, sig);
+        return Promise.resolve(Buffer.from(signableTx.toBytes()).toString('hex'));
     }
     signMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {

@@ -22,15 +22,16 @@ import {
 import {_TypedDataEncoder, hashMessage} from "@ethersproject/hash";
 import {defaultPath, entropyToMnemonic, HDNode, Mnemonic} from "@ethersproject/hdnode";
 import {keccak256} from "@ethersproject/keccak256";
-import {defineReadOnly, resolveProperties} from "@ethersproject/properties";
+import {defineReadOnly} from "@ethersproject/properties";
 import {randomBytes} from "@ethersproject/random";
 import {SigningKey} from "@ethersproject/signing-key";
 import {decryptJsonWallet, decryptJsonWalletSync, encryptKeystore, ProgressCallback} from "@ethersproject/json-wallets";
-import {computeAlias, recoverAddress, serialize, UnsignedTransaction} from "@ethersproject/transactions";
+import {computeAlias, recoverAddress, } from "@ethersproject/transactions";
 import {Wordlist} from "@ethersproject/wordlists";
 
 import {Logger} from "@ethersproject/logger";
 import {version} from "./_version";
+import { FileCreateTransaction, PrivateKey, PublicKey, Transaction } from "@hashgraph/sdk";
 
 const logger = new Logger(version);
 
@@ -46,6 +47,21 @@ function hasMnemonic(value: any): value is { mnemonic: Mnemonic } {
 function hasAlias(value: any): value is ExternallyOwnedAccount {
 	return isAccount(value) && value.alias != null;
 }
+
+const account = {
+    "operator": {
+        "accountId": "0.0.1280",
+        "publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
+        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
+    },
+    "network": {
+        "35.231.208.148:50211": "0.0.3",
+        "35.199.15.177:50211": "0.0.4",
+        "35.225.201.195:50211": "0.0.5",
+        "35.247.109.135:50211": "0.0.6"
+    }
+};
+
 
 export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
 
@@ -168,22 +184,36 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 	}
 
 	// TODO to be revised
+    // 1. TransactionRequest must be addressed and modified
+    // 2. We must check whether it is Contract Create or Call (if there is no `to` field, we must sign FileCreate;
+    // If there is `to` field we must read the `customData` and see whether we should sign ContractCreate or
+    // ContractCall)
+    // FIXME:
+    //  the wallet has an identity, thus it has privateKey, publicKey and accountId.
+    //  Those properties should be added to the class itself in the future.
+    //  There will probably be an instance of the hedera client with an operator already set.
 	signTransaction(transaction: TransactionRequest): Promise<string> {
-		// 1. TransactionRequest must be addressed and modified
-		// 2. We must check whether it is Contract Create or Call (if there is no `to` field, we must sign FileCreate;
-		// If there is `to` field we must read the `customData` and see whether we should sign ContractCreate or
-		// ContractCall)
-		return resolveProperties(transaction).then((tx) => {
-			if (tx.from != null) {
-				if (getAddress(tx.from) !== this.address) {
-					logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-				}
-				delete tx.from;
-			}
-
-			const signature = this._signingKey().signDigest(keccak256(serialize(<UnsignedTransaction>tx)) /* GRPC object coming from the SDK */ );
-			return serialize(<UnsignedTransaction>tx, signature);
-		});
+		const isBytecodeCreation = transaction.to === undefined;
+        let signableTx: Transaction;
+		if (isBytecodeCreation) {
+            let txData = transaction.data;
+			const t = Uint8Array.from(Buffer.from(txData));
+			signableTx = FileCreateTransaction.fromBytes(t);
+		} else {
+            // `to` field present
+            // TODO: how to extract the ABI on contract call?
+            // TODO: how to extract constructor arguments for contract create?
+			// TODO: How do we diff ContractCall and ContractCreate ?
+            const {customData, data} = transaction;
+            console.log(customData);
+			const t = Uint8Array.from(Buffer.from(data));
+			signableTx = Transaction.fromBytes(t);
+        }
+        const privKey = PrivateKey.fromString(account.operator.privateKey);
+        const pubKey = PublicKey.fromString(account.operator.publicKey);
+        const sig = privKey.sign(signableTx.toBytes());
+        signableTx.addSignature(pubKey, sig);
+        return Promise.resolve(Buffer.from(signableTx.toBytes()).toString('hex'));
 	}
 
 	async signMessage(message: Bytes | string): Promise<string> {

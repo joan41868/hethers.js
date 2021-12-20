@@ -9,6 +9,7 @@ import { OnceBlockable } from "@ethersproject/web";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import { AccountLike } from "@ethersproject/address";
 const logger = new Logger(version);
 
 ///////////////////////////////
@@ -17,16 +18,12 @@ const logger = new Logger(version);
 
 export type TransactionRequest = {
     // Should be AccountLike. `to` is not populated for Contract Deployment
-    to?: string,
+    to?: AccountLike,
     // Should be AccountLike -> if `from` is populated, we should verify that the Wallet.account is the same
-    from?: string,
-    // We should remove it altogether
-    nonce?: BigNumberish,
+    from?: AccountLike,
 
     // Should be the same. We must use it for `gas` property in ContractCreate/Call
     gasLimit?: BigNumberish,
-    // We should remove it altogether
-    gasPrice?: BigNumberish,
 
     // Should be the same. We must use it for `contents` property in `FileCreate` and for `functionArguments` in
     // ContractCall

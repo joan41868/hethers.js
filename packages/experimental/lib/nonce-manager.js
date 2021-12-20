@@ -66,14 +66,13 @@ var NonceManager = /** @class */ (function (_super) {
         return this.signer.signTransaction(transaction);
     };
     NonceManager.prototype.sendTransaction = function (transaction) {
-        if (transaction.nonce == null) {
-            transaction = ethers_1.ethers.utils.shallowCopy(transaction);
-            transaction.nonce = this.getTransactionCount("pending");
-            this.incrementTransactionCount();
-        }
-        else {
-            this.setTransactionCount(transaction.nonce);
-        }
+        // if (transaction.nonce == null) {
+        //     transaction = ethers.utils.shallowCopy(transaction);
+        //     transaction.nonce = this.getTransactionCount("pending");
+        //     this.incrementTransactionCount();
+        // } else {
+        //     this.setTransactionCount(transaction.nonce);
+        // }
         return this.signer.sendTransaction(transaction).then(function (tx) {
             return tx;
         });

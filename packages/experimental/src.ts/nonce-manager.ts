@@ -63,13 +63,13 @@ export class NonceManager extends ethers.Signer {
     }
 
     sendTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<ethers.providers.TransactionResponse> {
-        if (transaction.nonce == null) {
-            transaction = ethers.utils.shallowCopy(transaction);
-            transaction.nonce = this.getTransactionCount("pending");
-            this.incrementTransactionCount();
-        } else {
-            this.setTransactionCount(transaction.nonce);
-        }
+        // if (transaction.nonce == null) {
+        //     transaction = ethers.utils.shallowCopy(transaction);
+        //     transaction.nonce = this.getTransactionCount("pending");
+        //     this.incrementTransactionCount();
+        // } else {
+        //     this.setTransactionCount(transaction.nonce);
+        // }
 
         return this.signer.sendTransaction(transaction).then((tx) => {
             return tx;

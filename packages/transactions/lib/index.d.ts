@@ -1,3 +1,4 @@
+import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike, SignatureLike } from "@ethersproject/bytes";
 export declare type AccessList = Array<{
@@ -11,7 +12,7 @@ export declare enum TransactionTypes {
     eip1559 = 2
 }
 export declare type UnsignedTransaction = {
-    to?: string;
+    to?: AccountLike;
     nonce?: number;
     gasLimit?: BigNumberish;
     gasPrice?: BigNumberish;

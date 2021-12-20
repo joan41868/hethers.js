@@ -4,12 +4,11 @@ import { Network } from "@ethersproject/networks";
 import { Deferrable, Description } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@ethersproject/transactions";
 import { OnceBlockable } from "@ethersproject/web";
+import { AccountLike } from "@ethersproject/address";
 export declare type TransactionRequest = {
-    to?: string;
-    from?: string;
-    nonce?: BigNumberish;
+    to?: AccountLike;
+    from?: AccountLike;
     gasLimit?: BigNumberish;
-    gasPrice?: BigNumberish;
     data?: BytesLike;
     value?: BigNumberish;
     chainId?: number;
