@@ -206,7 +206,7 @@ export abstract class Signer {
         }
 
         // Do not allow mixing pre-eip-1559 and eip-1559 properties
-        const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
+        // const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
         // if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
         //     logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
         // } else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {

@@ -204,8 +204,8 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
             // TODO: how to extract the ABI on contract call?
             // TODO: how to extract constructor arguments for contract create?
 			// TODO: How do we diff ContractCall and ContractCreate ?
+			// @ts-ignore
             const {customData, data} = transaction;
-            console.log(customData);
 			const t = Uint8Array.from(Buffer.from(data));
 			signableTx = Transaction.fromBytes(t);
         }

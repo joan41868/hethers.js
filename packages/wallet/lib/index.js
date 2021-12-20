@@ -220,8 +220,8 @@ var Wallet = /** @class */ (function (_super) {
             // TODO: how to extract the ABI on contract call?
             // TODO: how to extract constructor arguments for contract create?
             // TODO: How do we diff ContractCall and ContractCreate ?
+            // @ts-ignore
             var customData = transaction.customData, data = transaction.data;
-            console.log(customData);
             var t = Uint8Array.from(Buffer.from(data));
             signableTx = sdk_1.Transaction.fromBytes(t);
         }

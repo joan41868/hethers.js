@@ -59,7 +59,9 @@ var NonceManager = /** @class */ (function (_super) {
         return this.signer.signTransaction(transaction);
     };
     NonceManager.prototype.sendTransaction = function (transaction) {
-        return null;
+        return this.signer.sendTransaction(transaction).then(function (tx) {
+            return tx;
+        });
     };
     return NonceManager;
 }(ethers_1.ethers.Signer));
