@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { getAccountFromAddress, getAddress, getAddressFromAccount } from "@ethersproject/address";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Signer } from "@ethersproject/abstract-signer";
-import { arrayify, concat, hexDataSlice, isHexString, joinSignature } from "@ethersproject/bytes";
+import { arrayify, concat, hexDataSlice, hexlify, isHexString, joinSignature } from "@ethersproject/bytes";
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
@@ -22,7 +22,8 @@ import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethe
 import { computeAlias, recoverAddress, } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { PrivateKey, PublicKey, Transaction } from "@hashgraph/sdk";
+import { AccountId, ContractExecuteTransaction, ContractId, PrivateKey, TransactionId } from "@hashgraph/sdk";
+import { BigNumber } from "ethers";
 const logger = new Logger(version);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
@@ -148,13 +149,20 @@ export class Wallet extends Signer {
     //  Those properties should be added to the class itself in the future.
     //  There will probably be an instance of the hedera client with an operator already set.
     signTransaction(transaction) {
-        const { data } = transaction;
-        const signableTx = Transaction.fromBytes(arrayify(data));
+        // Assuming it's always going to be a `ContractCall` transaction. FIXME
+        const tx = new ContractExecuteTransaction()
+            .setContractId(ContractId.fromSolidityAddress((transaction.to.toString())))
+            .setFunctionParameters(arrayify(transaction.data))
+            .setPayableAmount(transaction.value.toString())
+            .setGas(BigNumber.from(transaction.gasLimit).toNumber())
+            .setTransactionId(TransactionId.generate(account.operator.accountId))
+            .setNodeAccountIds([new AccountId(0, 0, 3)]) // FIXME - should be taken from the network
+            .freeze();
         const privKey = PrivateKey.fromString(account.operator.privateKey);
-        const pubKey = PublicKey.fromString(account.operator.publicKey);
-        const sig = privKey.sign(signableTx.toBytes());
-        signableTx.addSignature(pubKey, sig);
-        return Promise.resolve(Buffer.from(signableTx.toBytes()).toString('hex'));
+        return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+            const signed = yield tx.sign(privKey);
+            resolve(hexlify(signed.toBytes()));
+        }));
     }
     signMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {

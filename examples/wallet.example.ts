@@ -1,5 +1,5 @@
 import { AccountCreateTransaction, AccountId, TransactionId, TransferTransaction } from "@hashgraph/sdk";
-import { AccessListish, AccountLike, BytesLike, hexlify } from "ethers/lib/utils";
+import { AccessListish, AccountLike, BytesLike, getAddressFromAccount, hexlify } from "ethers/lib/utils";
 import { BigNumberish } from "@ethersproject/bignumber";
 
 const hethers = require("ethers");
@@ -97,11 +97,9 @@ const hethers = require("ethers");
 		.freeze()
 		.toBytesAsync();
 	const tx = {
-		to :"0.0.98",
+		to : getAddressFromAccount("0.0.98"),
 		from: "",
 		gasLimit: 0,
-		// Should be the same. We must use it for `contents` property in `FileCreate` and for `functionArguments` in
-		// ContractCall
 		data: hexlify(txData),
 		value : 0,
 		chainId: 292,

@@ -9313,8 +9313,11 @@ class Signer {
         return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("sendTransaction");
             const tx = yield this.populateTransaction(transaction);
-            // If transaction is ContractCreate (that is no `to` field is present). We must do `n`x Sign Transaction and
-            // `n`x send Transactions
+            // TODO: split tx here and check `to` field
+            // to - sign & send
+            // no `to` - file create and appends and contract create;
+            // create TransactionRequest objects and pass them down to the sign fn
+            // sign & send on each tx
             const signedTx = yield this.signTransaction(tx);
             return yield this.provider.sendTransaction(signedTx);
         });
@@ -86340,13 +86343,20 @@ class Wallet extends Signer {
     //  Those properties should be added to the class itself in the future.
     //  There will probably be an instance of the hedera client with an operator already set.
     signTransaction(transaction) {
-        const { data } = transaction;
-        const signableTx = Transaction.fromBytes(arrayify(data));
+        // Assuming it's always going to be a `ContractCall` transaction. FIXME
+        const tx = new ContractExecuteTransaction()
+            .setContractId(ContractId.fromSolidityAddress((transaction.to.toString())))
+            .setFunctionParameters(arrayify(transaction.data))
+            .setPayableAmount(transaction.value.toString())
+            .setGas(BigNumber.from(transaction.gasLimit).toNumber())
+            .setTransactionId(TransactionId.generate(account.operator.accountId))
+            .setNodeAccountIds([new AccountId(0, 0, 3)]) // FIXME - should be taken from the network
+            .freeze();
         const privKey = PrivateKey.fromString(account.operator.privateKey);
-        const pubKey = PublicKey.fromString(account.operator.publicKey);
-        const sig = privKey.sign(signableTx.toBytes());
-        signableTx.addSignature(pubKey, sig);
-        return Promise.resolve(Buffer.from(signableTx.toBytes()).toString('hex'));
+        return new Promise((resolve) => __awaiter$4(this, void 0, void 0, function* () {
+            const signed = yield tx.sign(privKey);
+            resolve(hexlify(signed.toBytes()));
+        }));
     }
     signMessage(message) {
         return __awaiter$4(this, void 0, void 0, function* () {

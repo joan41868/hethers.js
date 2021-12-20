@@ -123,8 +123,11 @@ export abstract class Signer {
     async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
         this._checkProvider("sendTransaction");
         const tx = await this.populateTransaction(transaction);
-        // If transaction is ContractCreate (that is no `to` field is present). We must do `n`x Sign Transaction and
-        // `n`x send Transactions
+        // TODO: split tx here and check `to` field
+        // to - sign & send
+        // no `to` - file create and appends and contract create;
+        // create TransactionRequest objects and pass them down to the sign fn
+        // sign & send on each tx
         const signedTx = await this.signTransaction(tx);
         return await this.provider.sendTransaction(signedTx);
     }

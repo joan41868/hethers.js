@@ -67,6 +67,7 @@ var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var sdk_1 = require("@hashgraph/sdk");
+var ethers_1 = require("ethers");
 var logger = new logger_1.Logger(_version_1.version);
 function isAccount(value) {
     return value != null && (0, bytes_1.isHexString)(value.privateKey, 32);
@@ -208,13 +209,29 @@ var Wallet = /** @class */ (function (_super) {
     //  Those properties should be added to the class itself in the future.
     //  There will probably be an instance of the hedera client with an operator already set.
     Wallet.prototype.signTransaction = function (transaction) {
-        var data = transaction.data;
-        var signableTx = sdk_1.Transaction.fromBytes((0, bytes_1.arrayify)(data));
+        var _this = this;
+        // Assuming it's always going to be a `ContractCall` transaction. FIXME
+        var tx = new sdk_1.ContractExecuteTransaction()
+            .setContractId(sdk_1.ContractId.fromSolidityAddress((transaction.to.toString())))
+            .setFunctionParameters((0, bytes_1.arrayify)(transaction.data))
+            .setPayableAmount(transaction.value.toString())
+            .setGas(ethers_1.BigNumber.from(transaction.gasLimit).toNumber())
+            .setTransactionId(sdk_1.TransactionId.generate(account.operator.accountId))
+            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)]) // FIXME - should be taken from the network
+            .freeze();
         var privKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
-        var pubKey = sdk_1.PublicKey.fromString(account.operator.publicKey);
-        var sig = privKey.sign(signableTx.toBytes());
-        signableTx.addSignature(pubKey, sig);
-        return Promise.resolve(Buffer.from(signableTx.toBytes()).toString('hex'));
+        return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
+            var signed;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, tx.sign(privKey)];
+                    case 1:
+                        signed = _a.sent();
+                        resolve((0, bytes_1.hexlify)(signed.toBytes()));
+                        return [2 /*return*/];
+                }
+            });
+        }); });
     };
     Wallet.prototype.signMessage = function (message) {
         return __awaiter(this, void 0, void 0, function () {

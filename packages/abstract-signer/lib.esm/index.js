@@ -64,8 +64,11 @@ export class Signer {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("sendTransaction");
             const tx = yield this.populateTransaction(transaction);
-            // If transaction is ContractCreate (that is no `to` field is present). We must do `n`x Sign Transaction and
-            // `n`x send Transactions
+            // TODO: split tx here and check `to` field
+            // to - sign & send
+            // no `to` - file create and appends and contract create;
+            // create TransactionRequest objects and pass them down to the sign fn
+            // sign & send on each tx
             const signedTx = yield this.signTransaction(tx);
             return yield this.provider.sendTransaction(signedTx);
         });

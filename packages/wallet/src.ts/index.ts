@@ -14,7 +14,7 @@ import {
 	Bytes,
 	BytesLike,
 	concat,
-	hexDataSlice,
+	hexDataSlice, hexlify,
 	isHexString,
 	joinSignature,
 	SignatureLike
@@ -31,7 +31,8 @@ import {Wordlist} from "@ethersproject/wordlists";
 
 import {Logger} from "@ethersproject/logger";
 import {version} from "./_version";
-import { PrivateKey, PublicKey, Transaction } from "@hashgraph/sdk";
+import { AccountId, ContractExecuteTransaction, ContractId, PrivateKey, TransactionId } from "@hashgraph/sdk";
+import { BigNumber } from "ethers";
 
 const logger = new Logger(version);
 
@@ -193,13 +194,20 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
     //  Those properties should be added to the class itself in the future.
     //  There will probably be an instance of the hedera client with an operator already set.
 	signTransaction(transaction: TransactionRequest): Promise<string> {
-		const {data} = transaction;
-		const signableTx = Transaction.fromBytes(arrayify(data));
+		// Assuming it's always going to be a `ContractCall` transaction. FIXME
+		const tx = new ContractExecuteTransaction()
+				.setContractId(ContractId.fromSolidityAddress((transaction.to.toString())))
+				.setFunctionParameters(arrayify(transaction.data))
+				.setPayableAmount(transaction.value.toString())
+				.setGas(BigNumber.from(transaction.gasLimit).toNumber())
+				.setTransactionId(TransactionId.generate(account.operator.accountId))
+				.setNodeAccountIds([new AccountId(0, 0, 3)]) // FIXME - should be taken from the network
+				.freeze();
         const privKey = PrivateKey.fromString(account.operator.privateKey);
-        const pubKey = PublicKey.fromString(account.operator.publicKey);
-        const sig = privKey.sign(signableTx.toBytes());
-        signableTx.addSignature(pubKey, sig);
-        return Promise.resolve(Buffer.from(signableTx.toBytes()).toString('hex'));
+		return new Promise<string>(async(resolve)=>{
+			const signed = await tx.sign(privKey);
+			resolve(hexlify(signed.toBytes()));
+		});
 	}
 
 	async signMessage(message: Bytes | string): Promise<string> {
