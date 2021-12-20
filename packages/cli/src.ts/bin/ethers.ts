@@ -365,7 +365,7 @@ class InfoPlugin extends Plugin {
             let address = this.addresses[i];
             let { balance, nonce, code, reverse } = await ethers.utils.resolveProperties({
                 balance: this.provider.getBalance(address),
-                nonce: this.provider.getTransactionCount(address),
+                nonce: 0, // FIXME
                 code: this.provider.getCode(address),
                 reverse: this.provider.lookupAddress(address)
             });
@@ -482,7 +482,7 @@ class SweepPlugin extends Plugin {
 
         let { balance, gasPrice, code } = await ethers.utils.resolveProperties({
             balance: this.provider.getBalance(this.accounts[0].getAddress()),
-            gasPrice: (this.gasPrice || this.provider.getGasPrice()),
+            gasPrice: (this.gasPrice /*|| this.provider.getGasPrice() */), // FIXME
             code: this.provider.getCode(this.toAddress)
         });
 

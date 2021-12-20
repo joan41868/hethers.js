@@ -1,4 +1,7 @@
 import { ethers } from "ethers";
+/**
+ * TODO: This class and it's usage in the hedera network must be explored.
+ */
 export declare class NonceManager extends ethers.Signer {
     readonly signer: ethers.Signer;
     _initialPromise: Promise<number>;
@@ -6,7 +9,6 @@ export declare class NonceManager extends ethers.Signer {
     constructor(signer: ethers.Signer);
     connect(provider: ethers.providers.Provider): NonceManager;
     getAddress(): Promise<string>;
-    getTransactionCount(blockTag?: ethers.providers.BlockTag): Promise<number>;
     setTransactionCount(transactionCount: ethers.BigNumberish | Promise<ethers.BigNumberish>): void;
     incrementTransactionCount(count?: number): void;
     signMessage(message: ethers.Bytes | string): Promise<string>;

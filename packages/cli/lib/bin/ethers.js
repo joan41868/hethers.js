@@ -487,7 +487,7 @@ var InfoPlugin = /** @class */ (function (_super) {
                         address = this.addresses[i];
                         return [4 /*yield*/, ethers_1.ethers.utils.resolveProperties({
                                 balance: this.provider.getBalance(address),
-                                nonce: this.provider.getTransactionCount(address),
+                                nonce: 0,
                                 code: this.provider.getCode(address),
                                 reverse: this.provider.lookupAddress(address)
                             })];
@@ -652,7 +652,7 @@ var SweepPlugin = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, ethers_1.ethers.utils.resolveProperties({
                             balance: this.provider.getBalance(this.accounts[0].getAddress()),
-                            gasPrice: (this.gasPrice || this.provider.getGasPrice()),
+                            gasPrice: (this.gasPrice /*|| this.provider.getGasPrice() */),
                             code: this.provider.getCode(this.toAddress)
                         })];
                     case 1:
