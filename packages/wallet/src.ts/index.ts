@@ -31,7 +31,7 @@ import {Wordlist} from "@ethersproject/wordlists";
 
 import {Logger} from "@ethersproject/logger";
 import {version} from "./_version";
-import { FileCreateTransaction, PrivateKey, PublicKey, Transaction } from "@hashgraph/sdk";
+import { PrivateKey, PublicKey, Transaction } from "@hashgraph/sdk";
 
 const logger = new Logger(version);
 
@@ -193,22 +193,8 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
     //  Those properties should be added to the class itself in the future.
     //  There will probably be an instance of the hedera client with an operator already set.
 	signTransaction(transaction: TransactionRequest): Promise<string> {
-		const isBytecodeCreation = transaction.to === undefined;
-        let signableTx: Transaction;
-		if (isBytecodeCreation) {
-            let txData = transaction.data;
-			const t = Uint8Array.from(Buffer.from(txData));
-			signableTx = FileCreateTransaction.fromBytes(t);
-		} else {
-            // `to` field present
-            // TODO: how to extract the ABI on contract call?
-            // TODO: how to extract constructor arguments for contract create?
-			// TODO: How do we diff ContractCall and ContractCreate ?
-			// @ts-ignore
-            const {customData, data} = transaction;
-			const t = Uint8Array.from(Buffer.from(data));
-			signableTx = Transaction.fromBytes(t);
-        }
+		const {data} = transaction;
+		const signableTx = Transaction.fromBytes(arrayify(data));
         const privKey = PrivateKey.fromString(account.operator.privateKey);
         const pubKey = PublicKey.fromString(account.operator.publicKey);
         const sig = privKey.sign(signableTx.toBytes());

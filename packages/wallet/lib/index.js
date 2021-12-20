@@ -208,23 +208,8 @@ var Wallet = /** @class */ (function (_super) {
     //  Those properties should be added to the class itself in the future.
     //  There will probably be an instance of the hedera client with an operator already set.
     Wallet.prototype.signTransaction = function (transaction) {
-        var isBytecodeCreation = transaction.to === undefined;
-        var signableTx;
-        if (isBytecodeCreation) {
-            var txData = transaction.data;
-            var t = Uint8Array.from(Buffer.from(txData));
-            signableTx = sdk_1.FileCreateTransaction.fromBytes(t);
-        }
-        else {
-            // `to` field present
-            // TODO: how to extract the ABI on contract call?
-            // TODO: how to extract constructor arguments for contract create?
-            // TODO: How do we diff ContractCall and ContractCreate ?
-            // @ts-ignore
-            var customData = transaction.customData, data = transaction.data;
-            var t = Uint8Array.from(Buffer.from(data));
-            signableTx = sdk_1.Transaction.fromBytes(t);
-        }
+        var data = transaction.data;
+        var signableTx = sdk_1.Transaction.fromBytes((0, bytes_1.arrayify)(data));
         var privKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
         var pubKey = sdk_1.PublicKey.fromString(account.operator.publicKey);
         var sig = privKey.sign(signableTx.toBytes());

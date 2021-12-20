@@ -1,3 +1,7 @@
+import { AccountCreateTransaction, AccountId, TransactionId, TransferTransaction } from "@hashgraph/sdk";
+import { AccessListish, AccountLike, BytesLike, hexlify } from "ethers/lib/utils";
+import { BigNumberish } from "@ethersproject/bignumber";
+
 const hethers = require("ethers");
 
 (async () => {
@@ -61,7 +65,7 @@ const hethers = require("ethers");
 	 */
 	const connected1 = fromPk.connectAccount("0.0.1")
 	const connected2 = fromPk.connectAccount("0x0000000000000000000000000000000000000001")
-	const connected3 = fromPk.connectAccount({shard: BigInt(0), realm: BigInt(0), num: BigInt(1)})
+	const connected3 = fromPk.connectAccount({ shard: BigInt(0), realm: BigInt(0), num: BigInt(1) })
 	console.log(connected1);
 	console.log(connected2);
 	console.log(connected3);
@@ -86,4 +90,31 @@ const hethers = require("ethers");
 	console.log(`Decrypted Wallet Sync:`);
 	console.log(decryptedWalletSync);
 
+	const wallet = hethers.Wallet.createRandom();
+	const txData = await new TransferTransaction()
+		.setTransactionId(TransactionId.generate("0.0.98"))
+		.setNodeAccountIds([new AccountId(0, 0, 3)])
+		.freeze()
+		.toBytesAsync();
+	const tx = {
+		to :"0.0.98",
+		from: "",
+		gasLimit: 0,
+		// Should be the same. We must use it for `contents` property in `FileCreate` and for `functionArguments` in
+		// ContractCall
+		data: hexlify(txData),
+		value : 0,
+		chainId: 292,
+		type : 1,
+		customData: {
+			abi:{
+
+			},
+			values:{
+
+			}
+		}
+	};
+	const signed = await wallet.signTransaction(tx);
+	console.log(signed);
 })()

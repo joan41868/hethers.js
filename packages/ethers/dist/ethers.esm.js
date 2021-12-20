@@ -86340,23 +86340,8 @@ class Wallet extends Signer {
     //  Those properties should be added to the class itself in the future.
     //  There will probably be an instance of the hedera client with an operator already set.
     signTransaction(transaction) {
-        const isBytecodeCreation = transaction.to === undefined;
-        let signableTx;
-        if (isBytecodeCreation) {
-            let txData = transaction.data;
-            const t = Uint8Array.from(Buffer.from(txData));
-            signableTx = FileCreateTransaction.fromBytes(t);
-        }
-        else {
-            // `to` field present
-            // TODO: how to extract the ABI on contract call?
-            // TODO: how to extract constructor arguments for contract create?
-            // TODO: How do we diff ContractCall and ContractCreate ?
-            // @ts-ignore
-            const { customData, data } = transaction;
-            const t = Uint8Array.from(Buffer.from(data));
-            signableTx = Transaction.fromBytes(t);
-        }
+        const { data } = transaction;
+        const signableTx = Transaction.fromBytes(arrayify(data));
         const privKey = PrivateKey.fromString(account.operator.privateKey);
         const pubKey = PublicKey.fromString(account.operator.publicKey);
         const sig = privKey.sign(signableTx.toBytes());
