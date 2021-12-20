@@ -146,9 +146,6 @@ function getEventTag(eventName) {
 }
 //////////////////////////////
 // Helper Object
-function getTime() {
-    return (new Date()).getTime();
-}
 function stall(duration) {
     return new Promise(function (resolve) {
         setTimeout(resolve, duration);
@@ -730,199 +727,116 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.getNetwork = function (network) {
         return (0, networks_1.getNetwork)((network == null) ? "mainnet" : network);
     };
-    // Fetches the blockNumber, but will reuse any result that is less
-    // than maxAge old or has been requested since the last request
-    BaseProvider.prototype._getInternalBlockNumber = function (maxAge) {
-        return __awaiter(this, void 0, void 0, function () {
-            var internalBlockNumber, result, error_5, reqTime, checkInternalBlockNumber;
-            var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._ready()];
-                    case 1:
-                        _a.sent();
-                        if (!(maxAge > 0)) return [3 /*break*/, 7];
-                        _a.label = 2;
-                    case 2:
-                        if (!this._internalBlockNumber) return [3 /*break*/, 7];
-                        internalBlockNumber = this._internalBlockNumber;
-                        _a.label = 3;
-                    case 3:
-                        _a.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, internalBlockNumber];
-                    case 4:
-                        result = _a.sent();
-                        if ((getTime() - result.respTime) <= maxAge) {
-                            return [2 /*return*/, result.blockNumber];
-                        }
-                        // Too old; fetch a new value
-                        return [3 /*break*/, 7];
-                    case 5:
-                        error_5 = _a.sent();
-                        // The fetch rejected; if we are the first to get the
-                        // rejection, drop through so we replace it with a new
-                        // fetch; all others blocked will then get that fetch
-                        // which won't match the one they "remembered" and loop
-                        if (this._internalBlockNumber === internalBlockNumber) {
-                            return [3 /*break*/, 7];
-                        }
-                        return [3 /*break*/, 6];
-                    case 6: return [3 /*break*/, 2];
-                    case 7:
-                        reqTime = getTime();
-                        checkInternalBlockNumber = (0, properties_1.resolveProperties)({
-                            blockNumber: this.perform("getBlockNumber", {}),
-                            networkError: this.getNetwork().then(function (network) { return (null); }, function (error) { return (error); })
-                        }).then(function (_a) {
-                            var blockNumber = _a.blockNumber, networkError = _a.networkError;
-                            if (networkError) {
-                                // Unremember this bad internal block number
-                                if (_this._internalBlockNumber === checkInternalBlockNumber) {
-                                    _this._internalBlockNumber = null;
-                                }
-                                throw networkError;
-                            }
-                            var respTime = getTime();
-                            blockNumber = bignumber_1.BigNumber.from(blockNumber).toNumber();
-                            if (blockNumber < _this._maxInternalBlockNumber) {
-                                blockNumber = _this._maxInternalBlockNumber;
-                            }
-                            _this._maxInternalBlockNumber = blockNumber;
-                            _this._setFastBlockNumber(blockNumber); // @TODO: Still need this?
-                            return { blockNumber: blockNumber, reqTime: reqTime, respTime: respTime };
-                        });
-                        this._internalBlockNumber = checkInternalBlockNumber;
-                        // Swallow unhandled exceptions; if needed they are handled else where
-                        checkInternalBlockNumber.catch(function (error) {
-                            // Don't null the dead (rejected) fetch, if it has already been updated
-                            if (_this._internalBlockNumber === checkInternalBlockNumber) {
-                                _this._internalBlockNumber = null;
-                            }
-                        });
-                        return [4 /*yield*/, checkInternalBlockNumber];
-                    case 8: return [2 /*return*/, (_a.sent()).blockNumber];
-                }
-            });
-        });
-    };
     BaseProvider.prototype.poll = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var pollId, runners, blockNumber, error_6, i;
+            var pollId, runners, blockNumber, i;
             var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        pollId = nextPollId++;
-                        runners = [];
-                        blockNumber = null;
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, this._getInternalBlockNumber(100 + this.pollingInterval / 2)];
-                    case 2:
-                        blockNumber = _a.sent();
-                        return [3 /*break*/, 4];
-                    case 3:
-                        error_6 = _a.sent();
-                        this.emit("error", error_6);
-                        return [2 /*return*/];
-                    case 4:
-                        this._setFastBlockNumber(blockNumber);
-                        // Emit a poll event after we have the latest (fast) block number
-                        this.emit("poll", pollId, blockNumber);
-                        // If the block has not changed, meh.
-                        if (blockNumber === this._lastBlockNumber) {
-                            this.emit("didPoll", pollId);
-                            return [2 /*return*/];
-                        }
-                        // First polling cycle, trigger a "block" events
-                        if (this._emitted.block === -2) {
-                            this._emitted.block = blockNumber - 1;
-                        }
-                        if (Math.abs((this._emitted.block) - blockNumber) > 1000) {
-                            logger.warn("network block skew detected; skipping block events (emitted=" + this._emitted.block + " blockNumber" + blockNumber + ")");
-                            this.emit("error", logger.makeError("network block skew detected", logger_1.Logger.errors.NETWORK_ERROR, {
-                                blockNumber: blockNumber,
-                                event: "blockSkew",
-                                previousBlockNumber: this._emitted.block
-                            }));
-                            this.emit("block", blockNumber);
-                        }
-                        else {
-                            // Notify all listener for each block that has passed
-                            for (i = this._emitted.block + 1; i <= blockNumber; i++) {
-                                this.emit("block", i);
-                            }
-                        }
-                        // The emitted block was updated, check for obsolete events
-                        if (this._emitted.block !== blockNumber) {
-                            this._emitted.block = blockNumber;
-                            Object.keys(this._emitted).forEach(function (key) {
-                                // The block event does not expire
-                                if (key === "block") {
-                                    return;
-                                }
-                                // The block we were at when we emitted this event
-                                var eventBlockNumber = _this._emitted[key];
-                                // We cannot garbage collect pending transactions or blocks here
-                                // They should be garbage collected by the Provider when setting
-                                // "pending" events
-                                if (eventBlockNumber === "pending") {
-                                    return;
-                                }
-                                // Evict any transaction hashes or block hashes over 12 blocks
-                                // old, since they should not return null anyways
-                                if (blockNumber - eventBlockNumber > 12) {
-                                    delete _this._emitted[key];
-                                }
-                            });
-                        }
-                        // First polling cycle
-                        if (this._lastBlockNumber === -2) {
-                            this._lastBlockNumber = blockNumber - 1;
-                        }
-                        // Find all transaction hashes we are waiting on
-                        this._events.forEach(function (event) {
-                            switch (event.type) {
-                                case "tx": {
-                                    var hash_2 = event.hash;
-                                    var runner = _this.getTransactionReceipt(hash_2).then(function (receipt) {
-                                        if (!receipt || receipt.blockNumber == null) {
-                                            return null;
-                                        }
-                                        _this._emitted["t:" + hash_2] = receipt.blockNumber;
-                                        _this.emit(hash_2, receipt);
-                                        return null;
-                                    }).catch(function (error) { _this.emit("error", error); });
-                                    runners.push(runner);
-                                    break;
-                                }
-                                case "filter": {
-                                    var filter_1 = event.filter;
-                                    filter_1.fromBlock = _this._lastBlockNumber + 1;
-                                    filter_1.toBlock = blockNumber;
-                                    var runner = _this.getLogs(filter_1).then(function (logs) {
-                                        if (logs.length === 0) {
-                                            return;
-                                        }
-                                        logs.forEach(function (log) {
-                                            _this._emitted["b:" + log.blockHash] = log.blockNumber;
-                                            _this._emitted["t:" + log.transactionHash] = log.blockNumber;
-                                            _this.emit(filter_1, log);
-                                        });
-                                    }).catch(function (error) { _this.emit("error", error); });
-                                    runners.push(runner);
-                                    break;
-                                }
-                            }
-                        });
-                        this._lastBlockNumber = blockNumber;
-                        // Once all events for this loop have been processed, emit "didPoll"
-                        Promise.all(runners).then(function () {
-                            _this.emit("didPoll", pollId);
-                        }).catch(function (error) { _this.emit("error", error); });
-                        return [2 /*return*/];
+                pollId = nextPollId++;
+                runners = [];
+                blockNumber = null;
+                try {
+                    // blockNumber = await this._getInternalBlockNumber(100 + this.pollingInterval / 2);
                 }
+                catch (error) {
+                    this.emit("error", error);
+                    return [2 /*return*/];
+                }
+                // this._setFastBlockNumber(blockNumber);
+                // Emit a poll event after we have the latest (fast) block number
+                this.emit("poll", pollId, blockNumber);
+                // If the block has not changed, meh.
+                if (blockNumber === this._lastBlockNumber) {
+                    this.emit("didPoll", pollId);
+                    return [2 /*return*/];
+                }
+                // First polling cycle, trigger a "block" events
+                if (this._emitted.block === -2) {
+                    this._emitted.block = blockNumber - 1;
+                }
+                if (Math.abs((this._emitted.block) - blockNumber) > 1000) {
+                    logger.warn("network block skew detected; skipping block events (emitted=" + this._emitted.block + " blockNumber" + blockNumber + ")");
+                    this.emit("error", logger.makeError("network block skew detected", logger_1.Logger.errors.NETWORK_ERROR, {
+                        blockNumber: blockNumber,
+                        event: "blockSkew",
+                        previousBlockNumber: this._emitted.block
+                    }));
+                    this.emit("block", blockNumber);
+                }
+                else {
+                    // Notify all listener for each block that has passed
+                    for (i = this._emitted.block + 1; i <= blockNumber; i++) {
+                        this.emit("block", i);
+                    }
+                }
+                // The emitted block was updated, check for obsolete events
+                if (this._emitted.block !== blockNumber) {
+                    this._emitted.block = blockNumber;
+                    Object.keys(this._emitted).forEach(function (key) {
+                        // The block event does not expire
+                        if (key === "block") {
+                            return;
+                        }
+                        // The block we were at when we emitted this event
+                        var eventBlockNumber = _this._emitted[key];
+                        // We cannot garbage collect pending transactions or blocks here
+                        // They should be garbage collected by the Provider when setting
+                        // "pending" events
+                        if (eventBlockNumber === "pending") {
+                            return;
+                        }
+                        // Evict any transaction hashes or block hashes over 12 blocks
+                        // old, since they should not return null anyways
+                        if (blockNumber - eventBlockNumber > 12) {
+                            delete _this._emitted[key];
+                        }
+                    });
+                }
+                // First polling cycle
+                if (this._lastBlockNumber === -2) {
+                    this._lastBlockNumber = blockNumber - 1;
+                }
+                // Find all transaction hashes we are waiting on
+                this._events.forEach(function (event) {
+                    switch (event.type) {
+                        case "tx": {
+                            var hash_2 = event.hash;
+                            var runner = _this.getTransactionReceipt(hash_2).then(function (receipt) {
+                                if (!receipt || receipt.blockNumber == null) {
+                                    return null;
+                                }
+                                _this._emitted["t:" + hash_2] = receipt.blockNumber;
+                                _this.emit(hash_2, receipt);
+                                return null;
+                            }).catch(function (error) { _this.emit("error", error); });
+                            runners.push(runner);
+                            break;
+                        }
+                        case "filter": {
+                            var filter_1 = event.filter;
+                            filter_1.fromBlock = _this._lastBlockNumber + 1;
+                            filter_1.toBlock = blockNumber;
+                            var runner = _this.getLogs(filter_1).then(function (logs) {
+                                if (logs.length === 0) {
+                                    return;
+                                }
+                                logs.forEach(function (log) {
+                                    _this._emitted["b:" + log.blockHash] = log.blockNumber;
+                                    _this._emitted["t:" + log.transactionHash] = log.blockNumber;
+                                    _this.emit(filter_1, log);
+                                });
+                            }).catch(function (error) { _this.emit("error", error); });
+                            runners.push(runner);
+                            break;
+                        }
+                    }
+                });
+                this._lastBlockNumber = blockNumber;
+                // Once all events for this loop have been processed, emit "didPoll"
+                Promise.all(runners).then(function () {
+                    _this.emit("didPoll", pollId);
+                }).catch(function (error) { _this.emit("error", error); });
+                return [2 /*return*/];
             });
         });
     };
@@ -995,17 +909,6 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    Object.defineProperty(BaseProvider.prototype, "blockNumber", {
-        get: function () {
-            var _this = this;
-            this._getInternalBlockNumber(100 + this.pollingInterval / 2).then(function (blockNumber) {
-                _this._setFastBlockNumber(blockNumber);
-            }, function (error) { });
-            return (this._fastBlockNumber != null) ? this._fastBlockNumber : -1;
-        },
-        enumerable: false,
-        configurable: true
-    });
     Object.defineProperty(BaseProvider.prototype, "polling", {
         get: function () {
             return (this._poller != null);
@@ -1057,34 +960,6 @@ var BaseProvider = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
-    BaseProvider.prototype._getFastBlockNumber = function () {
-        var _this = this;
-        var now = getTime();
-        // Stale block number, request a newer value
-        if ((now - this._fastQueryDate) > 2 * this._pollingInterval) {
-            this._fastQueryDate = now;
-            this._fastBlockNumberPromise = this.getBlockNumber().then(function (blockNumber) {
-                if (_this._fastBlockNumber == null || blockNumber > _this._fastBlockNumber) {
-                    _this._fastBlockNumber = blockNumber;
-                }
-                return _this._fastBlockNumber;
-            });
-        }
-        return this._fastBlockNumberPromise;
-    };
-    BaseProvider.prototype._setFastBlockNumber = function (blockNumber) {
-        // Older block, maybe a stale request
-        if (this._fastBlockNumber != null && blockNumber < this._fastBlockNumber) {
-            return;
-        }
-        // Update the time we updated the blocknumber
-        this._fastQueryDate = getTime();
-        // Newer block number, use  it
-        if (this._fastBlockNumber == null || blockNumber > this._fastBlockNumber) {
-            this._fastBlockNumber = blockNumber;
-            this._fastBlockNumberPromise = Promise.resolve(blockNumber);
-        }
-    };
     BaseProvider.prototype.waitForTransaction = function (transactionHash, confirmations, timeout) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -1094,211 +969,8 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._waitForTransaction = function (transactionHash, confirmations, timeout, replaceable) {
         return __awaiter(this, void 0, void 0, function () {
-            var receipt;
-            var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getTransactionReceipt(transactionHash)];
-                    case 1:
-                        receipt = _a.sent();
-                        // Receipt is already good
-                        if ((receipt ? receipt.confirmations : 0) >= confirmations) {
-                            return [2 /*return*/, receipt];
-                        }
-                        // Poll until the receipt is good...
-                        return [2 /*return*/, new Promise(function (resolve, reject) {
-                                var cancelFuncs = [];
-                                var done = false;
-                                var alreadyDone = function () {
-                                    if (done) {
-                                        return true;
-                                    }
-                                    done = true;
-                                    cancelFuncs.forEach(function (func) { func(); });
-                                    return false;
-                                };
-                                var minedHandler = function (receipt) {
-                                    if (receipt.confirmations < confirmations) {
-                                        return;
-                                    }
-                                    if (alreadyDone()) {
-                                        return;
-                                    }
-                                    resolve(receipt);
-                                };
-                                _this.on(transactionHash, minedHandler);
-                                cancelFuncs.push(function () { _this.removeListener(transactionHash, minedHandler); });
-                                if (replaceable) {
-                                    var lastBlockNumber_1 = replaceable.startBlock;
-                                    var scannedBlock_1 = null;
-                                    var replaceHandler_1 = function (blockNumber) { return __awaiter(_this, void 0, void 0, function () {
-                                        var _this = this;
-                                        return __generator(this, function (_a) {
-                                            switch (_a.label) {
-                                                case 0:
-                                                    if (done) {
-                                                        return [2 /*return*/];
-                                                    }
-                                                    // Wait 1 second; this is only used in the case of a fault, so
-                                                    // we will trade off a little bit of latency for more consistent
-                                                    // results and fewer JSON-RPC calls
-                                                    return [4 /*yield*/, stall(1000)];
-                                                case 1:
-                                                    // Wait 1 second; this is only used in the case of a fault, so
-                                                    // we will trade off a little bit of latency for more consistent
-                                                    // results and fewer JSON-RPC calls
-                                                    _a.sent();
-                                                    this.getTransactionCount(replaceable.from).then(function (nonce) { return __awaiter(_this, void 0, void 0, function () {
-                                                        var mined, block, ti, tx, receipt_1, reason;
-                                                        return __generator(this, function (_a) {
-                                                            switch (_a.label) {
-                                                                case 0:
-                                                                    if (done) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    if (!(nonce <= replaceable.nonce)) return [3 /*break*/, 1];
-                                                                    lastBlockNumber_1 = blockNumber;
-                                                                    return [3 /*break*/, 9];
-                                                                case 1: return [4 /*yield*/, this.getTransaction(transactionHash)];
-                                                                case 2:
-                                                                    mined = _a.sent();
-                                                                    if (mined && mined.blockNumber != null) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    // First time scanning. We start a little earlier for some
-                                                                    // wiggle room here to handle the eventually consistent nature
-                                                                    // of blockchain (e.g. the getTransactionCount was for a
-                                                                    // different block)
-                                                                    if (scannedBlock_1 == null) {
-                                                                        scannedBlock_1 = lastBlockNumber_1 - 3;
-                                                                        if (scannedBlock_1 < replaceable.startBlock) {
-                                                                            scannedBlock_1 = replaceable.startBlock;
-                                                                        }
-                                                                    }
-                                                                    _a.label = 3;
-                                                                case 3:
-                                                                    if (!(scannedBlock_1 <= blockNumber)) return [3 /*break*/, 9];
-                                                                    if (done) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    return [4 /*yield*/, this.getBlockWithTransactions(scannedBlock_1)];
-                                                                case 4:
-                                                                    block = _a.sent();
-                                                                    ti = 0;
-                                                                    _a.label = 5;
-                                                                case 5:
-                                                                    if (!(ti < block.transactions.length)) return [3 /*break*/, 8];
-                                                                    tx = block.transactions[ti];
-                                                                    // Successfully mined!
-                                                                    if (tx.hash === transactionHash) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    if (!(tx.from === replaceable.from && tx.nonce === replaceable.nonce)) return [3 /*break*/, 7];
-                                                                    if (done) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    return [4 /*yield*/, this.waitForTransaction(tx.hash, confirmations)];
-                                                                case 6:
-                                                                    receipt_1 = _a.sent();
-                                                                    // Already resolved or rejected (prolly a timeout)
-                                                                    if (alreadyDone()) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    reason = "replaced";
-                                                                    if (tx.data === replaceable.data && tx.to === replaceable.to && tx.value.eq(replaceable.value)) {
-                                                                        reason = "repriced";
-                                                                    }
-                                                                    else if (tx.data === "0x" && tx.from === tx.to && tx.value.isZero()) {
-                                                                        reason = "cancelled";
-                                                                    }
-                                                                    // Explain why we were replaced
-                                                                    reject(logger.makeError("transaction was replaced", logger_1.Logger.errors.TRANSACTION_REPLACED, {
-                                                                        cancelled: (reason === "replaced" || reason === "cancelled"),
-                                                                        reason: reason,
-                                                                        replacement: this._wrapTransaction(tx),
-                                                                        hash: transactionHash,
-                                                                        receipt: receipt_1
-                                                                    }));
-                                                                    return [2 /*return*/];
-                                                                case 7:
-                                                                    ti++;
-                                                                    return [3 /*break*/, 5];
-                                                                case 8:
-                                                                    scannedBlock_1++;
-                                                                    return [3 /*break*/, 3];
-                                                                case 9:
-                                                                    if (done) {
-                                                                        return [2 /*return*/];
-                                                                    }
-                                                                    this.once("block", replaceHandler_1);
-                                                                    return [2 /*return*/];
-                                                            }
-                                                        });
-                                                    }); }, function (error) {
-                                                        if (done) {
-                                                            return;
-                                                        }
-                                                        _this.once("block", replaceHandler_1);
-                                                    });
-                                                    return [2 /*return*/];
-                                            }
-                                        });
-                                    }); };
-                                    if (done) {
-                                        return;
-                                    }
-                                    _this.once("block", replaceHandler_1);
-                                    cancelFuncs.push(function () {
-                                        _this.removeListener("block", replaceHandler_1);
-                                    });
-                                }
-                                if (typeof (timeout) === "number" && timeout > 0) {
-                                    var timer_1 = setTimeout(function () {
-                                        if (alreadyDone()) {
-                                            return;
-                                        }
-                                        reject(logger.makeError("timeout exceeded", logger_1.Logger.errors.TIMEOUT, { timeout: timeout }));
-                                    }, timeout);
-                                    if (timer_1.unref) {
-                                        timer_1.unref();
-                                    }
-                                    cancelFuncs.push(function () { clearTimeout(timer_1); });
-                                }
-                            })];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype.getBlockNumber = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, this._getInternalBlockNumber(0)];
-            });
-        });
-    };
-    BaseProvider.prototype.getGasPrice = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, this.perform("getGasPrice", {})];
-                    case 2:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, bignumber_1.BigNumber.from(result)];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getGasPrice",
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
-                }
+                return [2 /*return*/, logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION)];
             });
         });
     };
@@ -1310,7 +982,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getBalance = function (addressOrName) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_7;
+            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_5;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1333,46 +1005,13 @@ var BaseProvider = /** @class */ (function (_super) {
                         balance = _b.sent();
                         return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
                     case 5:
-                        error_7 = _b.sent();
+                        error_5 = _b.sent();
                         return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "AccountBalanceQuery",
                                 params: { address: addressOrName },
-                                error: error_7
+                                error: error_5
                             })];
                     case 6: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype.getTransactionCount = function (addressOrName, blockTag) {
-        return __awaiter(this, void 0, void 0, function () {
-            var params, result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                address: this._getAddress(addressOrName),
-                                blockTag: this._getBlockTag(blockTag)
-                            })];
-                    case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("getTransactionCount", params)];
-                    case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, bignumber_1.BigNumber.from(result).toNumber()];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getTransactionCount",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
                 }
             });
         });
@@ -1387,7 +1026,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         _a.sent();
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({
                                 address: this._getAddress(addressOrName),
-                                blockTag: this._getBlockTag(blockTag)
                             })];
                     case 2:
                         params = _a.sent();
@@ -1400,40 +1038,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         catch (error) {
                             return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                     method: "getCode",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype.getStorageAt = function (addressOrName, position, blockTag) {
-        return __awaiter(this, void 0, void 0, function () {
-            var params, result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                address: this._getAddress(addressOrName),
-                                blockTag: this._getBlockTag(blockTag),
-                                position: Promise.resolve(position).then(function (p) { return (0, bytes_1.hexValue)(p); })
-                            })];
-                    case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("getStorageAt", params)];
-                    case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, (0, bytes_1.hexlify)(result)];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getStorageAt",
                                     params: params,
                                     result: result,
                                     error: error
@@ -1498,38 +1102,11 @@ var BaseProvider = /** @class */ (function (_super) {
         }); };
         return result;
     };
+    // FIXME:
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         return __awaiter(this, void 0, void 0, function () {
-            var hexTx, tx, blockNumber, hash, error_8;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, Promise.resolve(signedTransaction).then(function (t) { return (0, bytes_1.hexlify)(t); })];
-                    case 2:
-                        hexTx = _a.sent();
-                        tx = this.formatter.transaction(signedTransaction);
-                        if (tx.confirmations == null) {
-                            tx.confirmations = 0;
-                        }
-                        return [4 /*yield*/, this._getInternalBlockNumber(100 + 2 * this.pollingInterval)];
-                    case 3:
-                        blockNumber = _a.sent();
-                        _a.label = 4;
-                    case 4:
-                        _a.trys.push([4, 6, , 7]);
-                        return [4 /*yield*/, this.perform("sendTransaction", { signedTransaction: hexTx })];
-                    case 5:
-                        hash = _a.sent();
-                        return [2 /*return*/, this._wrapTransaction(tx, hash, blockNumber)];
-                    case 6:
-                        error_8 = _a.sent();
-                        error_8.transaction = tx;
-                        error_8.transactionHash = tx.hash;
-                        throw error_8;
-                    case 7: return [2 /*return*/];
-                }
+                return [2 /*return*/, null];
             });
         });
     };
@@ -1580,7 +1157,6 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype._getFilter = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
             var result, _a, _b;
-            var _this = this;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, filter];
@@ -1600,7 +1176,6 @@ var BaseProvider = /** @class */ (function (_super) {
                             if (filter[key] == null) {
                                 return;
                             }
-                            result[key] = _this._getBlockTag(filter[key]);
                         });
                         _b = (_a = this.formatter).filter;
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(result)];
@@ -1619,7 +1194,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         _a.sent();
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({
                                 transaction: this._getTransactionRequest(transaction),
-                                blockTag: this._getBlockTag(blockTag)
                             })];
                     case 2:
                         params = _a.sent();
@@ -1698,111 +1272,6 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype._getBlock = function (blockHashOrBlockTag, includeTransactions) {
-        return __awaiter(this, void 0, void 0, function () {
-            var blockNumber, params, _a, error_9;
-            var _this = this;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _b.sent();
-                        return [4 /*yield*/, blockHashOrBlockTag];
-                    case 2:
-                        blockHashOrBlockTag = _b.sent();
-                        blockNumber = -128;
-                        params = {
-                            includeTransactions: !!includeTransactions
-                        };
-                        if (!(0, bytes_1.isHexString)(blockHashOrBlockTag, 32)) return [3 /*break*/, 3];
-                        params.blockHash = blockHashOrBlockTag;
-                        return [3 /*break*/, 6];
-                    case 3:
-                        _b.trys.push([3, 5, , 6]);
-                        _a = params;
-                        return [4 /*yield*/, this._getBlockTag(blockHashOrBlockTag)];
-                    case 4:
-                        _a.blockTag = _b.sent();
-                        if ((0, bytes_1.isHexString)(params.blockTag)) {
-                            blockNumber = parseInt(params.blockTag.substring(2), 16);
-                        }
-                        return [3 /*break*/, 6];
-                    case 5:
-                        error_9 = _b.sent();
-                        logger.throwArgumentError("invalid block hash or block tag", "blockHashOrBlockTag", blockHashOrBlockTag);
-                        return [3 /*break*/, 6];
-                    case 6: return [2 /*return*/, (0, web_1.poll)(function () { return __awaiter(_this, void 0, void 0, function () {
-                            var block, blockNumber_1, i, tx, confirmations, blockWithTxs;
-                            var _this = this;
-                            return __generator(this, function (_a) {
-                                switch (_a.label) {
-                                    case 0: return [4 /*yield*/, this.perform("getBlock", params)];
-                                    case 1:
-                                        block = _a.sent();
-                                        // Block was not found
-                                        if (block == null) {
-                                            // For blockhashes, if we didn't say it existed, that blockhash may
-                                            // not exist. If we did see it though, perhaps from a log, we know
-                                            // it exists, and this node is just not caught up yet.
-                                            if (params.blockHash != null) {
-                                                if (this._emitted["b:" + params.blockHash] == null) {
-                                                    return [2 /*return*/, null];
-                                                }
-                                            }
-                                            // For block tags, if we are asking for a future block, we return null
-                                            if (params.blockTag != null) {
-                                                if (blockNumber > this._emitted.block) {
-                                                    return [2 /*return*/, null];
-                                                }
-                                            }
-                                            // Retry on the next block
-                                            return [2 /*return*/, undefined];
-                                        }
-                                        if (!includeTransactions) return [3 /*break*/, 8];
-                                        blockNumber_1 = null;
-                                        i = 0;
-                                        _a.label = 2;
-                                    case 2:
-                                        if (!(i < block.transactions.length)) return [3 /*break*/, 7];
-                                        tx = block.transactions[i];
-                                        if (!(tx.blockNumber == null)) return [3 /*break*/, 3];
-                                        tx.confirmations = 0;
-                                        return [3 /*break*/, 6];
-                                    case 3:
-                                        if (!(tx.confirmations == null)) return [3 /*break*/, 6];
-                                        if (!(blockNumber_1 == null)) return [3 /*break*/, 5];
-                                        return [4 /*yield*/, this._getInternalBlockNumber(100 + 2 * this.pollingInterval)];
-                                    case 4:
-                                        blockNumber_1 = _a.sent();
-                                        _a.label = 5;
-                                    case 5:
-                                        confirmations = (blockNumber_1 - tx.blockNumber) + 1;
-                                        if (confirmations <= 0) {
-                                            confirmations = 1;
-                                        }
-                                        tx.confirmations = confirmations;
-                                        _a.label = 6;
-                                    case 6:
-                                        i++;
-                                        return [3 /*break*/, 2];
-                                    case 7:
-                                        blockWithTxs = this.formatter.blockWithTransactions(block);
-                                        blockWithTxs.transactions = blockWithTxs.transactions.map(function (tx) { return _this._wrapTransaction(tx); });
-                                        return [2 /*return*/, blockWithTxs];
-                                    case 8: return [2 /*return*/, this.formatter.block(block)];
-                                }
-                            });
-                        }); }, { oncePoll: this })];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype.getBlock = function (blockHashOrBlockTag) {
-        return (this._getBlock(blockHashOrBlockTag, false));
-    };
-    BaseProvider.prototype.getBlockWithTransactions = function (blockHashOrBlockTag) {
-        return (this._getBlock(blockHashOrBlockTag, true));
-    };
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
@@ -1844,7 +1313,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         transactionHash = _a.sent();
                         params = { transactionHash: this.formatter.hash(transactionHash, true) };
                         return [2 /*return*/, (0, web_1.poll)(function () { return __awaiter(_this, void 0, void 0, function () {
-                                var result, receipt, blockNumber, confirmations;
+                                var result, receipt;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0: return [4 /*yield*/, this.perform("getTransactionReceipt", params)];
@@ -1861,21 +1330,18 @@ var BaseProvider = /** @class */ (function (_super) {
                                                 return [2 /*return*/, undefined];
                                             }
                                             receipt = this.formatter.receipt(result);
-                                            if (!(receipt.blockNumber == null)) return [3 /*break*/, 2];
-                                            receipt.confirmations = 0;
-                                            return [3 /*break*/, 4];
-                                        case 2:
-                                            if (!(receipt.confirmations == null)) return [3 /*break*/, 4];
-                                            return [4 /*yield*/, this._getInternalBlockNumber(100 + 2 * this.pollingInterval)];
-                                        case 3:
-                                            blockNumber = _a.sent();
-                                            confirmations = (blockNumber - receipt.blockNumber) + 1;
-                                            if (confirmations <= 0) {
-                                                confirmations = 1;
+                                            if (receipt.blockNumber == null) {
+                                                receipt.confirmations = 0;
                                             }
-                                            receipt.confirmations = confirmations;
-                                            _a.label = 4;
-                                        case 4: return [2 /*return*/, receipt];
+                                            else if (receipt.confirmations == null) {
+                                                // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+                                                //
+                                                // Add the confirmations using the fast block number (pessimistic)
+                                                // let confirmations = (blockNumber - receipt.blockNumber) + 1;
+                                                // if (confirmations <= 0) { confirmations = 1; }
+                                                // receipt.confirmations = confirmations;
+                                            }
+                                            return [2 /*return*/, receipt];
                                     }
                                 });
                             }); }, { oncePoll: this })];
@@ -1907,46 +1373,16 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.getEtherPrice = function () {
+    BaseProvider.prototype.getHbarPrice = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/, this.perform("getEtherPrice", {})];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype._getBlockTag = function (blockTag) {
-        return __awaiter(this, void 0, void 0, function () {
-            var blockNumber;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, blockTag];
-                    case 1:
-                        blockTag = _a.sent();
-                        if (!(typeof (blockTag) === "number" && blockTag < 0)) return [3 /*break*/, 3];
-                        if (blockTag % 1) {
-                            logger.throwArgumentError("invalid BlockTag", "blockTag", blockTag);
-                        }
-                        return [4 /*yield*/, this._getInternalBlockNumber(100 + 2 * this.pollingInterval)];
-                    case 2:
-                        blockNumber = _a.sent();
-                        blockNumber += blockTag;
-                        if (blockNumber < 0) {
-                            blockNumber = 0;
-                        }
-                        return [2 /*return*/, this.formatter.blockTag(blockNumber)];
-                    case 3: return [2 /*return*/, this.formatter.blockTag(blockTag)];
-                }
+                return [2 /*return*/, logger.throwError("NOT_IMPLEMENTED", logger_1.Logger.errors.NOT_IMPLEMENTED)];
             });
         });
     };
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_10;
+            var address, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1959,8 +1395,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_10 = _a.sent();
-                        if (error_10.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_6 = _a.sent();
+                        if (error_6.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];
@@ -1971,7 +1407,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var network, transaction, _a, _b, error_11;
+            var network, transaction, _a, _b, error_7;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1992,11 +1428,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.call(transaction)];
                     case 3: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                     case 4:
-                        error_11 = _c.sent();
-                        if (error_11.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_7 = _c.sent();
+                        if (error_7.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
-                        throw error_11;
+                        throw error_7;
                     case 5: return [2 /*return*/];
                 }
             });

@@ -21,6 +21,9 @@ var _version_1 = require("./_version");
 var logger = new ethers_1.ethers.utils.Logger(_version_1.version);
 // @TODO: Keep a per-NonceManager pool of sent but unmined transactions for
 //        rebroadcasting, in case we overrun the transaction pool
+/**
+ * TODO: This class and it's usage in the hedera network must be explored.
+ */
 var NonceManager = /** @class */ (function (_super) {
     __extends(NonceManager, _super);
     function NonceManager(signer) {
@@ -39,16 +42,6 @@ var NonceManager = /** @class */ (function (_super) {
     NonceManager.prototype.getAddress = function () {
         return this.signer.getAddress();
     };
-    NonceManager.prototype.getTransactionCount = function (blockTag) {
-        if (blockTag === "pending") {
-            if (!this._initialPromise) {
-                this._initialPromise = this.signer.getTransactionCount("pending");
-            }
-            var deltaCount_1 = this._deltaCount;
-            return this._initialPromise.then(function (initial) { return (initial + deltaCount_1); });
-        }
-        return this.signer.getTransactionCount(blockTag);
-    };
     NonceManager.prototype.setTransactionCount = function (transactionCount) {
         this._initialPromise = Promise.resolve(transactionCount).then(function (nonce) {
             return ethers_1.ethers.BigNumber.from(nonce).toNumber();
@@ -66,17 +59,7 @@ var NonceManager = /** @class */ (function (_super) {
         return this.signer.signTransaction(transaction);
     };
     NonceManager.prototype.sendTransaction = function (transaction) {
-        if (transaction.nonce == null) {
-            transaction = ethers_1.ethers.utils.shallowCopy(transaction);
-            transaction.nonce = this.getTransactionCount("pending");
-            this.incrementTransactionCount();
-        }
-        else {
-            this.setTransactionCount(transaction.nonce);
-        }
-        return this.signer.sendTransaction(transaction).then(function (tx) {
-            return tx;
-        });
+        return null;
     };
     return NonceManager;
 }(ethers_1.ethers.Signer));

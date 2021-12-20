@@ -274,16 +274,14 @@ function getProcessFunc(provider, method, params) {
 function waitForSync(config, blockNumber) {
     return __awaiter(this, void 0, void 0, function* () {
         const provider = (config.provider);
-        if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
-            return provider;
-        }
+        // if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
+        //     return provider;
+        // }
         return poll(() => {
             return new Promise((resolve, reject) => {
                 setTimeout(function () {
                     // We are synced
-                    if (provider.blockNumber >= blockNumber) {
-                        return resolve(provider);
-                    }
+                    // if (provider.blockNumber >= blockNumber) { return resolve(provider); }
                     // We're done; just quit
                     if (config.cancelled) {
                         return resolve(null);
@@ -299,36 +297,18 @@ function getRunner(config, currentBlockNumber, method, params) {
     return __awaiter(this, void 0, void 0, function* () {
         let provider = config.provider;
         switch (method) {
-            case "getBlockNumber":
             case "getGasPrice":
                 return provider[method]();
-            case "getEtherPrice":
+            case "getHbarPrice":
                 if (provider.getEtherPrice) {
                     return provider.getEtherPrice();
                 }
                 break;
             case "getBalance":
-            case "getTransactionCount":
             case "getCode":
-                if (params.blockTag && isHexString(params.blockTag)) {
-                    provider = yield waitForSync(config, currentBlockNumber);
-                }
-                return provider[method](params.address, params.blockTag || "latest");
-            case "getStorageAt":
-                if (params.blockTag && isHexString(params.blockTag)) {
-                    provider = yield waitForSync(config, currentBlockNumber);
-                }
-                return provider.getStorageAt(params.address, params.position, params.blockTag || "latest");
-            case "getBlock":
-                if (params.blockTag && isHexString(params.blockTag)) {
-                    provider = yield waitForSync(config, currentBlockNumber);
-                }
-                return provider[(params.includeTransactions ? "getBlockWithTransactions" : "getBlock")](params.blockTag || params.blockHash);
+                return provider[method](params.address);
             case "call":
             case "estimateGas":
-                if (params.blockTag && isHexString(params.blockTag)) {
-                    provider = yield waitForSync(config, currentBlockNumber);
-                }
                 return provider[method](params.transaction);
             case "getTransaction":
             case "getTransactionReceipt":
@@ -427,8 +407,9 @@ export class FallbackProvider extends BaseProvider {
             }
             // We need to make sure we are in sync with our backends, so we need
             // to know this before we can make a lot of calls
+            // TODO: will be refactored
             if (this._highestBlockNumber === -1 && method !== "getBlockNumber") {
-                yield this.getBlockNumber();
+                // await this.getBlockNumber();
             }
             const processFunc = getProcessFunc(this, method, params);
             // Shuffle the providers and then sort them by their priority; we

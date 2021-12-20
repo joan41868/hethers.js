@@ -119,7 +119,8 @@ export class Wallet extends Signer {
         const eoa = {
             privateKey: this._signingKey().privateKey,
             address: getAddressFromAccount(accountLike),
-            alias: this.alias
+            alias: this.alias,
+            mnemonic: this._mnemonic()
         };
         return new Wallet(eoa, this.provider);
     }

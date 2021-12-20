@@ -22,7 +22,7 @@ describe('Private key generation & Alias population', function() {
 
         it(('correctly converts private key - ' + test.name), function() {
             let wallet = new ethers.Wallet(test.privateKey);
-            assert.strictEqual(wallet.alias.toLowerCase(), test.alias.toLowerCase(),
+            assert.strictEqual(wallet.alias, test.alias,
                 'correctly computes privateKey - ' + test.privateKey);
         });
     });

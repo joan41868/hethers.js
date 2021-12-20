@@ -63,9 +63,11 @@ export class HDNode {
             const signingKey = new SigningKey(privateKey);
             defineReadOnly(this, "privateKey", signingKey.privateKey);
             defineReadOnly(this, "publicKey", signingKey.compressedPublicKey);
+            defineReadOnly(this, "alias", computeAlias(this.privateKey));
         }
         else {
             defineReadOnly(this, "privateKey", null);
+            defineReadOnly(this, "alias", null);
             defineReadOnly(this, "publicKey", hexlify(publicKey));
         }
         defineReadOnly(this, "alias", computeAlias(this.privateKey));
