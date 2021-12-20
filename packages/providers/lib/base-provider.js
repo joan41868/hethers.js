@@ -1102,11 +1102,24 @@ var BaseProvider = /** @class */ (function (_super) {
         }); };
         return result;
     };
-    // FIXME:
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, null];
+            var txBytes, _a, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 1:
+                        _c.sent();
+                        return [4 /*yield*/, signedTransaction];
+                    case 2:
+                        signedTransaction = _c.sent();
+                        txBytes = (0, bytes_1.arrayify)(signedTransaction);
+                        _b = (_a = console).log;
+                        return [4 /*yield*/, sdk_1.Transaction.fromBytes(txBytes).execute(this.hederaClient)];
+                    case 3:
+                        _b.apply(_a, [_c.sent()]);
+                        return [2 /*return*/, new Promise(function () { })];
+                }
             });
         });
     };
