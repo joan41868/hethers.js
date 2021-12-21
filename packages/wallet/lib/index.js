@@ -79,19 +79,6 @@ function hasMnemonic(value) {
 function hasAlias(value) {
     return isAccount(value) && value.alias != null;
 }
-var account = {
-    "operator": {
-        "accountId": "0.0.1280",
-        "publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
-        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
-    },
-    "network": {
-        "35.231.208.148:50211": "0.0.3",
-        "35.199.15.177:50211": "0.0.4",
-        "35.225.201.195:50211": "0.0.5",
-        "35.247.109.135:50211": "0.0.6"
-    }
-};
 var Wallet = /** @class */ (function (_super) {
     __extends(Wallet, _super);
     function Wallet(identity, provider) {
@@ -214,7 +201,7 @@ var Wallet = /** @class */ (function (_super) {
         var _a, _b;
         var tx;
         var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
-        var gas = ethers_1.BigNumber.from(transaction.gasLimit).toNumber();
+        var gas = numberify(transaction.gasLimit);
         if (transaction.to) {
             tx = new sdk_1.ContractExecuteTransaction()
                 .setContractId(sdk_1.ContractId.fromSolidityAddress(transaction.to.toString()))
@@ -246,12 +233,18 @@ var Wallet = /** @class */ (function (_super) {
                 }
             }
         }
+        var accountID = (0, address_1.getAccountFromAddress)(this.address);
         tx // FIXME - should be taken from the wallet's identity
-            .setTransactionId(sdk_1.TransactionId.generate("0.0.98"))
+            .setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
+            shard: numberify(accountID.shard),
+            realm: numberify(accountID.realm),
+            num: numberify(accountID.num)
+        })))
             // FIXME - should be taken from the network/ wallet's provider
             .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
             .freeze();
-        var privKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
+        // const privKey = PrivateKey.fromString(this._signingKey().privateKey);
+        var privKey = sdk_1.PrivateKey.fromString("302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8");
         return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
             var signed;
             return __generator(this, function (_a) {
@@ -349,4 +342,7 @@ function verifyTypedData(domain, types, value, signature) {
     return (0, transactions_1.recoverAddress)(hash_1._TypedDataEncoder.hash(domain, types, value), signature);
 }
 exports.verifyTypedData = verifyTypedData;
+function numberify(num) {
+    return ethers_1.BigNumber.from(num).toNumber();
+}
 //# sourceMappingURL=index.js.map

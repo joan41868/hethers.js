@@ -44,7 +44,7 @@ import {
     Transaction,
     TransactionId
 } from "@hashgraph/sdk";
-import { BigNumber } from "ethers";
+import { BigNumber, BigNumberish } from "ethers";
 
 const logger = new Logger(version);
 
@@ -60,21 +60,6 @@ function hasMnemonic(value: any): value is { mnemonic: Mnemonic } {
 function hasAlias(value: any): value is ExternallyOwnedAccount {
     return isAccount(value) && value.alias != null;
 }
-
-const account = {
-    "operator": {
-        "accountId": "0.0.1280",
-        "publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
-        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
-    },
-    "network": {
-        "35.231.208.148:50211": "0.0.3",
-        "35.199.15.177:50211": "0.0.4",
-        "35.225.201.195:50211": "0.0.5",
-        "35.247.109.135:50211": "0.0.6"
-    }
-};
-
 
 export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
 
@@ -154,7 +139,6 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         if (provider && !Provider.isProvider(provider)) {
             logger.throwArgumentError("invalid provider", "provider", provider);
         }
-
         defineReadOnly(this, "provider", provider || null);
     }
 
@@ -209,7 +193,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
     signTransaction(transaction: TransactionRequest): Promise<string> {
         let tx: Transaction;
         const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = BigNumber.from(transaction.gasLimit).toNumber();
+        const gas = numberify(transaction.gasLimit);
         if (transaction.to) {
             tx = new ContractExecuteTransaction()
                 .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
@@ -240,12 +224,18 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
                 }
             }
         }
+        const accountID = getAccountFromAddress(this.address);
         tx  // FIXME - should be taken from the wallet's identity
-            .setTransactionId(TransactionId.generate("0.0.98"))
+            .setTransactionId(TransactionId.generate(new AccountId({
+                shard: numberify(accountID.shard),
+                realm: numberify(accountID.realm),
+                num: numberify(accountID.num)
+            })))
             // FIXME - should be taken from the network/ wallet's provider
             .setNodeAccountIds([ new AccountId(0, 0, 3) ])
             .freeze();
-        const privKey = PrivateKey.fromString(account.operator.privateKey);
+        // const privKey = PrivateKey.fromString(this._signingKey().privateKey);
+        const privKey = PrivateKey.fromString("302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8");
         return new Promise<string>(async (resolve) => {
             const signed = await tx.sign(privKey);
             resolve(hexlify(signed.toBytes()));
@@ -333,4 +323,8 @@ export function verifyMessage(message: Bytes | string, signature: SignatureLike)
 // TODO to be revised
 export function verifyTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, signature: SignatureLike): string {
     return recoverAddress(_TypedDataEncoder.hash(domain, types, value), signature);
+}
+
+function numberify(num: BigNumberish) {
+    return BigNumber.from(num).toNumber();
 }
