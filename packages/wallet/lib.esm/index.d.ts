@@ -22,6 +22,16 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     getAlias(): Promise<string>;
     connect(provider: Provider): Wallet;
     connectAccount(accountLike: AccountLike): Wallet;
+    /**
+     * Signs a transaction with the key given upon creation.
+     * The transaction can be:
+     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
+     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
+     * - ContractCreate - when there is a `bytecodeFileId` field
+     * - ContractCall - when there is a `to` field present. Ignores the other fields
+     *
+     * @param transaction - the transaction to be signed.
+     */
     signTransaction(transaction: TransactionRequest): Promise<string>;
     signMessage(message: Bytes | string): Promise<string>;
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;

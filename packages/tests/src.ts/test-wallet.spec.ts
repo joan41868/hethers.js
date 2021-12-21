@@ -2,9 +2,16 @@
 
 import assert from "assert";
 
-import { ethers } from "ethers";
+import  {  ethers } from "ethers";
 import { loadTests, TestCase } from "@ethersproject/testcases";
 import * as utils from './utils';
+import { arrayify, getAddressFromAccount } from "ethers/lib/utils";
+import {
+    ContractCreateTransaction,
+    ContractExecuteTransaction,
+    FileAppendTransaction,
+    FileCreateTransaction, Transaction
+} from "@hashgraph/sdk";
 
 
 describe('Test JSON Wallets', function() {
@@ -354,4 +361,71 @@ describe("Wallet Errors", function() {
     //         reject(new Error("assert failed; did not throw"));
     //     });
     // });
+});
+
+describe("Wallet tx signing", function () {
+    const wallet = ethers.Wallet.createRandom();
+
+    it("Should sign ContractCall", async function() {
+        const data = Buffer.from(`"abi":{},"values":{}`).toString('hex');
+        const tx = {
+            to: getAddressFromAccount("0.0.98"),
+            from: wallet.address,
+            data: '0x'+data,
+            gasLimit: 100000
+
+        };
+        const signed = await wallet.signTransaction(tx);
+        assert.ok(signed !== "", "Unexpected nil signed tx");
+        const fromBytes = Transaction.fromBytes(arrayify(signed));
+        const cc = fromBytes as ContractExecuteTransaction;
+        assert.ok(cc.gas.toNumber() === tx.gasLimit, "Gas mismatch");
+    });
+
+    it("Should sign ContractCreate", async function() {
+        const tx = {
+            from: wallet.address,
+            gasLimit: 10000,
+            customData: {
+                bytecodeFileId: "0.0.122121"
+            }
+        };
+        const signed = await wallet.signTransaction(tx);
+        assert.ok(signed !== "", "Unexpected nil signed tx");
+        const fromBytes = Transaction.fromBytes(arrayify(signed));
+        const cc = fromBytes as ContractCreateTransaction;
+        assert.ok(cc.gas.toNumber() === tx.gasLimit, "Gas mismatch");
+    });
+
+    it("Should sign FileCreate", async function() {
+       const tx = {
+           from: wallet.address,
+           gasLimit: 10000,
+           customData: {
+               fileChunk: "Hello world! I will definitely break your smart contract experience"
+           }
+       };
+        const signed = await wallet.signTransaction(tx);
+        assert.ok(signed !== "", "Unexpected nil signed tx");
+        const fromBytes = Transaction.fromBytes(arrayify(signed));
+        const fc = fromBytes as FileCreateTransaction;
+        assert.ok(Buffer.from(fc.contents).toString() == tx.customData.fileChunk, "Contents mismatch");
+    });
+
+    it("Should sign FileAppend", async function() {
+        const tx = {
+            from: wallet.address,
+            gasLimit: 10000,
+            customData: {
+                fileChunk: "Hello world! I will definitely break your smart contract experience",
+                fileId: "0.0.12212"
+            }
+        };
+        const signed = await wallet.signTransaction(tx);
+        assert.ok(signed !== "", "Unexpected nil signed tx");
+        const fromBytes = Transaction.fromBytes(arrayify(signed));
+        const fa = fromBytes as FileAppendTransaction;
+        assert.ok(Buffer.from(fa.contents).toString() == tx.customData.fileChunk, "Contents mismatch");
+        assert.ok(fa.fileId.toString() == tx.customData.fileId, "FileId mismatch");
+    });
 });

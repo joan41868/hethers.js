@@ -1,6 +1,12 @@
-import { AccountCreateTransaction, AccountId, TransactionId, TransferTransaction } from "@hashgraph/sdk";
-import { AccessListish, AccountLike, BytesLike, getAddressFromAccount, hexlify } from "ethers/lib/utils";
-import { BigNumberish } from "@ethersproject/bignumber";
+import {
+	AccountCreateTransaction,
+	AccountId,
+	ContractExecuteTransaction, Transaction,
+	TransactionId,
+	TransferTransaction
+} from "@hashgraph/sdk";
+import { AccessListish, AccountLike, arrayify, BytesLike, getAddressFromAccount, hexlify } from "ethers/lib/utils";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 
 const hethers = require("ethers");
 
@@ -91,28 +97,16 @@ const hethers = require("ethers");
 	console.log(decryptedWalletSync);
 
 	const wallet = hethers.Wallet.createRandom();
-	const txData = await new TransferTransaction()
-		.setTransactionId(TransactionId.generate("0.0.98"))
-		.setNodeAccountIds([new AccountId(0, 0, 3)])
-		.freeze()
-		.toBytesAsync();
+	const data = Buffer.from(`"abi":{},"values":{}`).toString('hex');
 	const tx = {
-		to : getAddressFromAccount("0.0.98"),
-		from: "",
-		gasLimit: 0,
-		data: hexlify(txData),
-		value : 0,
-		chainId: 292,
-		type : 1,
-		customData: {
-			abi:{
+		to: getAddressFromAccount("0.0.12999"),
+		from: wallet.address,
+		data: '0x'+data,
+		gasLimit: 100000
 
-			},
-			values:{
-
-			}
-		}
 	};
 	const signed = await wallet.signTransaction(tx);
-	console.log(signed);
+	const fromBytes = Transaction.fromBytes(arrayify(signed));
+	const cc = fromBytes as ContractExecuteTransaction;
+	console.log(cc); // Real contract create
 })()

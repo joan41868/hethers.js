@@ -86333,23 +86333,57 @@ class Wallet extends Signer {
         };
         return new Wallet(eoa, this.provider);
     }
-    // TODO to be revised
-    // 1. TransactionRequest must be addressed and modified
-    // 2. We must check whether it is Contract Create or Call (if there is no `to` field, we must sign FileCreate;
-    // If there is `to` field we must read the `customData` and see whether we should sign ContractCreate or
-    // ContractCall)
-    // FIXME:
-    //  the wallet has an identity, thus it has privateKey, publicKey and accountId.
-    //  Those properties should be added to the class itself in the future.
-    //  There will probably be an instance of the hedera client with an operator already set.
+    /**
+     * Signs a transaction with the key given upon creation.
+     * The transaction can be:
+     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
+     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
+     * - ContractCreate - when there is a `bytecodeFileId` field
+     * - ContractCall - when there is a `to` field present. Ignores the other fields
+     *
+     * @param transaction - the transaction to be signed.
+     */
     signTransaction(transaction) {
-        // Assuming it's always going to be a `ContractCall` transaction. FIXME
-        const tx = new ContractExecuteTransaction()
-            .setContractId(ContractId.fromSolidityAddress((transaction.to.toString())))
-            .setFunctionParameters(arrayify(transaction.data))
-            .setPayableAmount(transaction.value.toString())
-            .setGas(BigNumber.from(transaction.gasLimit).toNumber())
-            .setTransactionId(TransactionId.generate(account.operator.accountId))
+        var _a, _b;
+        let tx;
+        let arrayifiedData;
+        if (transaction.data) {
+            arrayifiedData = arrayify(transaction.data);
+        }
+        const gas = BigNumber.from(transaction.gasLimit).toNumber();
+        if (transaction.to) {
+            tx = new ContractExecuteTransaction()
+                .setContractId(ContractId.fromSolidityAddress((transaction.to.toString())))
+                .setFunctionParameters(arrayifiedData)
+                .setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString())
+                .setGas(gas);
+        }
+        else {
+            if (transaction.customData.bytecodeFileId) {
+                tx = new ContractCreateTransaction()
+                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
+                    .setConstructorParameters(arrayifiedData)
+                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
+                    .setGas(gas);
+            }
+            else {
+                if (transaction.customData.fileChunk && transaction.customData.fileId) {
+                    tx = new FileAppendTransaction()
+                        .setContents(transaction.customData.fileChunk)
+                        .setFileId(transaction.customData.fileId);
+                }
+                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
+                    // only a chunk, thus the first one
+                    tx = new FileCreateTransaction()
+                        .setContents(transaction.customData.fileChunk);
+                }
+                else {
+                    logger$p.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
+                }
+            }
+        }
+        // const accountId = `${this.account.shard}.${this.account.realm}.${this.account.num}`;
+        tx.setTransactionId(TransactionId.generate("0.0.98"))
             .setNodeAccountIds([new AccountId(0, 0, 3)]) // FIXME - should be taken from the network
             .freeze();
         const privKey = PrivateKey.fromString(account.operator.privateKey);

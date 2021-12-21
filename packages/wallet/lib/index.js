@@ -199,24 +199,58 @@ var Wallet = /** @class */ (function (_super) {
         };
         return new Wallet(eoa, this.provider);
     };
-    // TODO to be revised
-    // 1. TransactionRequest must be addressed and modified
-    // 2. We must check whether it is Contract Create or Call (if there is no `to` field, we must sign FileCreate;
-    // If there is `to` field we must read the `customData` and see whether we should sign ContractCreate or
-    // ContractCall)
-    // FIXME:
-    //  the wallet has an identity, thus it has privateKey, publicKey and accountId.
-    //  Those properties should be added to the class itself in the future.
-    //  There will probably be an instance of the hedera client with an operator already set.
+    /**
+     * Signs a transaction with the key given upon creation.
+     * The transaction can be:
+     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
+     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
+     * - ContractCreate - when there is a `bytecodeFileId` field
+     * - ContractCall - when there is a `to` field present. Ignores the other fields
+     *
+     * @param transaction - the transaction to be signed.
+     */
     Wallet.prototype.signTransaction = function (transaction) {
         var _this = this;
-        // Assuming it's always going to be a `ContractCall` transaction. FIXME
-        var tx = new sdk_1.ContractExecuteTransaction()
-            .setContractId(sdk_1.ContractId.fromSolidityAddress((transaction.to.toString())))
-            .setFunctionParameters((0, bytes_1.arrayify)(transaction.data))
-            .setPayableAmount(transaction.value.toString())
-            .setGas(ethers_1.BigNumber.from(transaction.gasLimit).toNumber())
-            .setTransactionId(sdk_1.TransactionId.generate(account.operator.accountId))
+        var _a, _b;
+        var tx;
+        var arrayifiedData;
+        if (transaction.data) {
+            arrayifiedData = (0, bytes_1.arrayify)(transaction.data);
+        }
+        var gas = ethers_1.BigNumber.from(transaction.gasLimit).toNumber();
+        if (transaction.to) {
+            tx = new sdk_1.ContractExecuteTransaction()
+                .setContractId(sdk_1.ContractId.fromSolidityAddress((transaction.to.toString())))
+                .setFunctionParameters(arrayifiedData)
+                .setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString())
+                .setGas(gas);
+        }
+        else {
+            if (transaction.customData.bytecodeFileId) {
+                tx = new sdk_1.ContractCreateTransaction()
+                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
+                    .setConstructorParameters(arrayifiedData)
+                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
+                    .setGas(gas);
+            }
+            else {
+                if (transaction.customData.fileChunk && transaction.customData.fileId) {
+                    tx = new sdk_1.FileAppendTransaction()
+                        .setContents(transaction.customData.fileChunk)
+                        .setFileId(transaction.customData.fileId);
+                }
+                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
+                    // only a chunk, thus the first one
+                    tx = new sdk_1.FileCreateTransaction()
+                        .setContents(transaction.customData.fileChunk);
+                }
+                else {
+                    logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
+                }
+            }
+        }
+        // const accountId = `${this.account.shard}.${this.account.realm}.${this.account.num}`;
+        tx.setTransactionId(sdk_1.TransactionId.generate("0.0.98"))
             .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)]) // FIXME - should be taken from the network
             .freeze();
         var privKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
