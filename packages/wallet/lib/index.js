@@ -213,14 +213,11 @@ var Wallet = /** @class */ (function (_super) {
         var _this = this;
         var _a, _b;
         var tx;
-        var arrayifiedData;
-        if (transaction.data) {
-            arrayifiedData = (0, bytes_1.arrayify)(transaction.data);
-        }
+        var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
         var gas = ethers_1.BigNumber.from(transaction.gasLimit).toNumber();
         if (transaction.to) {
             tx = new sdk_1.ContractExecuteTransaction()
-                .setContractId(sdk_1.ContractId.fromSolidityAddress((transaction.to.toString())))
+                .setContractId(sdk_1.ContractId.fromSolidityAddress(transaction.to.toString()))
                 .setFunctionParameters(arrayifiedData)
                 .setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString())
                 .setGas(gas);
@@ -249,9 +246,10 @@ var Wallet = /** @class */ (function (_super) {
                 }
             }
         }
-        // const accountId = `${this.account.shard}.${this.account.realm}.${this.account.num}`;
-        tx.setTransactionId(sdk_1.TransactionId.generate("0.0.98"))
-            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)]) // FIXME - should be taken from the network
+        tx // FIXME - should be taken from the wallet's identity
+            .setTransactionId(sdk_1.TransactionId.generate("0.0.98"))
+            // FIXME - should be taken from the network/ wallet's provider
+            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
             .freeze();
         var privKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
         return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {

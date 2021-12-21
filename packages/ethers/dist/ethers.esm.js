@@ -86346,14 +86346,11 @@ class Wallet extends Signer {
     signTransaction(transaction) {
         var _a, _b;
         let tx;
-        let arrayifiedData;
-        if (transaction.data) {
-            arrayifiedData = arrayify(transaction.data);
-        }
+        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
         const gas = BigNumber.from(transaction.gasLimit).toNumber();
         if (transaction.to) {
             tx = new ContractExecuteTransaction()
-                .setContractId(ContractId.fromSolidityAddress((transaction.to.toString())))
+                .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
                 .setFunctionParameters(arrayifiedData)
                 .setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString())
                 .setGas(gas);
@@ -86382,9 +86379,10 @@ class Wallet extends Signer {
                 }
             }
         }
-        // const accountId = `${this.account.shard}.${this.account.realm}.${this.account.num}`;
-        tx.setTransactionId(TransactionId.generate("0.0.98"))
-            .setNodeAccountIds([new AccountId(0, 0, 3)]) // FIXME - should be taken from the network
+        tx // FIXME - should be taken from the wallet's identity
+            .setTransactionId(TransactionId.generate("0.0.98"))
+            // FIXME - should be taken from the network/ wallet's provider
+            .setNodeAccountIds([new AccountId(0, 0, 3)])
             .freeze();
         const privKey = PrivateKey.fromString(account.operator.privateKey);
         return new Promise((resolve) => __awaiter$4(this, void 0, void 0, function* () {
