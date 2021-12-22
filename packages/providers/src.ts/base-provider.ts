@@ -1044,18 +1044,17 @@ export class BaseProvider extends Provider implements EnsProvider {
         signedTransaction = await signedTransaction;
 
         const txBytes = arrayify(signedTransaction);
-        const tx = HederaTransaction.fromBytes(txBytes);
-        const txHash = hexlify(await tx.getTransactionHash());
+        const hederaTx = HederaTransaction.fromBytes(txBytes);
+        const ethersTx = await this.formatter.transaction(signedTransaction);
+        const txHash = hexlify(await hederaTx.getTransactionHash());
         try {
             // TODO once we have fallback provider use `provider.perform("sendTransaction")`
             // TODO Before submission verify that the nodeId is the one that the provider is connected to
-            await tx.execute(this.hederaClient);
-
-            const parsedTx = await this.formatter.transaction(signedTransaction);
-            return this._wrapTransaction(parsedTx, txHash);
+            await hederaTx.execute(this.hederaClient);
+            return this._wrapTransaction(ethersTx, txHash);
         } catch (error) {
-            const err = logger.makeError(error.message, error.status.toString());
-            (<any>err).transaction = tx;
+            const err = logger.makeError(error.message, error.status?.toString());
+            (<any>err).transaction = ethersTx;
             (<any>err).transactionHash = txHash;
             throw  err;
         }

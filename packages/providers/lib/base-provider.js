@@ -1103,40 +1103,42 @@ var BaseProvider = /** @class */ (function (_super) {
         return result;
     };
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, tx, txHash, _a, parsedTx, error_6, err;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var txBytes, hederaTx, ethersTx, txHash, _b, _c, _d, error_6, err;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
-                        _b.sent();
+                        _e.sent();
                         return [4 /*yield*/, signedTransaction];
                     case 2:
-                        signedTransaction = _b.sent();
+                        signedTransaction = _e.sent();
                         txBytes = (0, bytes_1.arrayify)(signedTransaction);
-                        tx = sdk_1.Transaction.fromBytes(txBytes);
-                        _a = bytes_1.hexlify;
-                        return [4 /*yield*/, tx.getTransactionHash()];
-                    case 3:
-                        txHash = _a.apply(void 0, [_b.sent()]);
-                        _b.label = 4;
-                    case 4:
-                        _b.trys.push([4, 7, , 8]);
-                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
-                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
-                        return [4 /*yield*/, tx.execute(this.hederaClient)];
-                    case 5:
-                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
-                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
-                        _b.sent();
+                        hederaTx = sdk_1.Transaction.fromBytes(txBytes);
                         return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
+                    case 3:
+                        ethersTx = _e.sent();
+                        _b = bytes_1.hexlify;
+                        return [4 /*yield*/, hederaTx.getTransactionHash()];
+                    case 4:
+                        txHash = _b.apply(void 0, [_e.sent()]);
+                        _e.label = 5;
+                    case 5:
+                        _e.trys.push([5, 7, , 8]);
+                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
+                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
+                        _d = (_c = console).log;
+                        return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
                     case 6:
-                        parsedTx = _b.sent();
-                        return [2 /*return*/, this._wrapTransaction(parsedTx, txHash)];
+                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
+                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
+                        _d.apply(_c, [_e.sent()]);
+                        return [2 /*return*/, new Promise(function () { })];
                     case 7:
-                        error_6 = _b.sent();
-                        err = logger.makeError(error_6.message, error_6.status.toString());
-                        err.transaction = tx;
+                        error_6 = _e.sent();
+                        err = logger.makeError(error_6.message, (_a = error_6.status) === null || _a === void 0 ? void 0 : _a.toString());
+                        err.transaction = ethersTx;
                         err.transactionHash = txHash;
                         throw err;
                     case 8: return [2 /*return*/];
