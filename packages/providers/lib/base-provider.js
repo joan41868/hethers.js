@@ -1104,21 +1104,42 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, _a, _b;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var txBytes, tx, txHash, _a, parsedTx, error_6, err;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
-                        _c.sent();
+                        _b.sent();
                         return [4 /*yield*/, signedTransaction];
                     case 2:
-                        signedTransaction = _c.sent();
+                        signedTransaction = _b.sent();
                         txBytes = (0, bytes_1.arrayify)(signedTransaction);
-                        _b = (_a = console).log;
-                        return [4 /*yield*/, sdk_1.Transaction.fromBytes(txBytes).execute(this.hederaClient)];
+                        tx = sdk_1.Transaction.fromBytes(txBytes);
+                        _a = bytes_1.hexlify;
+                        return [4 /*yield*/, tx.getTransactionHash()];
                     case 3:
-                        _b.apply(_a, [_c.sent()]);
-                        return [2 /*return*/, new Promise(function () { })];
+                        txHash = _a.apply(void 0, [_b.sent()]);
+                        _b.label = 4;
+                    case 4:
+                        _b.trys.push([4, 7, , 8]);
+                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
+                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
+                        return [4 /*yield*/, tx.execute(this.hederaClient)];
+                    case 5:
+                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
+                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
+                        _b.sent();
+                        return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
+                    case 6:
+                        parsedTx = _b.sent();
+                        return [2 /*return*/, this._wrapTransaction(parsedTx, txHash)];
+                    case 7:
+                        error_6 = _b.sent();
+                        err = logger.makeError(error_6.message, error_6.status.toString());
+                        err.transaction = tx;
+                        err.transactionHash = txHash;
+                        throw err;
+                    case 8: return [2 /*return*/];
                 }
             });
         });
@@ -1395,7 +1416,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_6;
+            var address, error_7;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1408,8 +1429,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_6 = _a.sent();
-                        if (error_6.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_7 = _a.sent();
+                        if (error_7.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];
@@ -1420,7 +1441,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var network, transaction, _a, _b, error_7;
+            var network, transaction, _a, _b, error_8;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1441,11 +1462,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.call(transaction)];
                     case 3: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                     case 4:
-                        error_7 = _c.sent();
-                        if (error_7.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_8 = _c.sent();
+                        if (error_8.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
-                        throw error_7;
+                        throw error_8;
                     case 5: return [2 /*return*/];
                 }
             });

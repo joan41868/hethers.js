@@ -1,3 +1,4 @@
+import { Transaction as Transaction$1 } from '@hashgraph/sdk/lib/exports';
 import crypto$2 from 'crypto';
 import util$2 from 'util';
 import fs$1 from 'fs';
@@ -13806,6 +13807,7 @@ class HDNode {
             defineReadOnly(this, "alias", null);
             defineReadOnly(this, "publicKey", hexlify(publicKey));
         }
+        defineReadOnly(this, "alias", computeAlias(this.privateKey));
         defineReadOnly(this, "parentFingerprint", parentFingerprint);
         defineReadOnly(this, "fingerprint", hexDataSlice(ripemd160$1(sha256$1(this.publicKey)), 0, 4));
         defineReadOnly(this, "chainCode", chainCode);
@@ -16915,12 +16917,11 @@ var TransactionTypes;
 })(TransactionTypes || (TransactionTypes = {}));
 ;
 ///////////////////////////////
-function handleAddress(value) {
-    if (value === "0x") {
-        return null;
-    }
-    return getAddress(value);
-}
+//
+// function handleAddress(value: string): string {
+//     if (value === "0x") { return null; }
+//     return getAddress(value);
+// }
 function handleNumber(value) {
     if (value === "0x") {
         return Zero$1;
@@ -17138,157 +17139,180 @@ function serialize(transaction, signature) {
         transactionType: transaction.type
     });
 }
-function _parseEipSignature(tx, fields, serialize) {
-    try {
-        const recid = handleNumber(fields[0]).toNumber();
-        if (recid !== 0 && recid !== 1) {
-            throw new Error("bad recid");
-        }
-        tx.v = recid;
-    }
-    catch (error) {
-        logger$r.throwArgumentError("invalid v for transaction type: 1", "v", fields[0]);
-    }
-    tx.r = hexZeroPad(fields[1], 32);
-    tx.s = hexZeroPad(fields[2], 32);
-    try {
-        const digest = keccak256(serialize(tx));
-        tx.from = recoverAddress(digest, { r: tx.r, s: tx.s, recoveryParam: tx.v });
-    }
-    catch (error) {
-        console.log(error);
-    }
-}
-function _parseEip1559(payload) {
-    const transaction = decode(payload.slice(1));
-    if (transaction.length !== 9 && transaction.length !== 12) {
-        logger$r.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
-    }
-    const maxPriorityFeePerGas = handleNumber(transaction[2]);
-    const maxFeePerGas = handleNumber(transaction[3]);
-    const tx = {
-        type: 2,
-        chainId: handleNumber(transaction[0]).toNumber(),
-        nonce: handleNumber(transaction[1]).toNumber(),
-        maxPriorityFeePerGas: maxPriorityFeePerGas,
-        maxFeePerGas: maxFeePerGas,
-        gasPrice: null,
-        gasLimit: handleNumber(transaction[4]),
-        to: handleAddress(transaction[5]),
-        value: handleNumber(transaction[6]),
-        data: transaction[7],
-        accessList: accessListify(transaction[8]),
-    };
-    // Unsigned EIP-1559 Transaction
-    if (transaction.length === 9) {
-        return tx;
-    }
-    tx.hash = keccak256(payload);
-    _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
-    return tx;
-}
-function _parseEip2930(payload) {
-    const transaction = decode(payload.slice(1));
-    if (transaction.length !== 8 && transaction.length !== 11) {
-        logger$r.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
-    }
-    const tx = {
-        type: 1,
-        chainId: handleNumber(transaction[0]).toNumber(),
-        nonce: handleNumber(transaction[1]).toNumber(),
-        gasPrice: handleNumber(transaction[2]),
-        gasLimit: handleNumber(transaction[3]),
-        to: handleAddress(transaction[4]),
-        value: handleNumber(transaction[5]),
-        data: transaction[6],
-        accessList: accessListify(transaction[7])
-    };
-    // Unsigned EIP-2930 Transaction
-    if (transaction.length === 8) {
-        return tx;
-    }
-    tx.hash = keccak256(payload);
-    _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
-    return tx;
-}
-// Legacy Transactions and EIP-155
-function _parse(rawTransaction) {
-    const transaction = decode(rawTransaction);
-    if (transaction.length !== 9 && transaction.length !== 6) {
-        logger$r.throwArgumentError("invalid raw transaction", "rawTransaction", rawTransaction);
-    }
-    const tx = {
-        nonce: handleNumber(transaction[0]).toNumber(),
-        gasPrice: handleNumber(transaction[1]),
-        gasLimit: handleNumber(transaction[2]),
-        to: handleAddress(transaction[3]),
-        value: handleNumber(transaction[4]),
-        data: transaction[5],
-        chainId: 0
-    };
-    // Legacy unsigned transaction
-    if (transaction.length === 6) {
-        return tx;
-    }
-    try {
-        tx.v = BigNumber.from(transaction[6]).toNumber();
-    }
-    catch (error) {
-        console.log(error);
-        return tx;
-    }
-    tx.r = hexZeroPad(transaction[7], 32);
-    tx.s = hexZeroPad(transaction[8], 32);
-    if (BigNumber.from(tx.r).isZero() && BigNumber.from(tx.s).isZero()) {
-        // EIP-155 unsigned transaction
-        tx.chainId = tx.v;
-        tx.v = 0;
-    }
-    else {
-        // Signed Transaction
-        tx.chainId = Math.floor((tx.v - 35) / 2);
-        if (tx.chainId < 0) {
-            tx.chainId = 0;
-        }
-        let recoveryParam = tx.v - 27;
-        const raw = transaction.slice(0, 6);
-        if (tx.chainId !== 0) {
-            raw.push(hexlify(tx.chainId));
-            raw.push("0x");
-            raw.push("0x");
-            recoveryParam -= tx.chainId * 2 + 8;
-        }
-        const digest = keccak256(encode(raw));
-        try {
-            tx.from = recoverAddress(digest, { r: hexlify(tx.r), s: hexlify(tx.s), recoveryParam: recoveryParam });
-        }
-        catch (error) {
-            console.log(error);
-        }
-        tx.hash = keccak256(rawTransaction);
-    }
-    tx.type = null;
-    return tx;
-}
+// function _parseEipSignature(tx: Transaction, fields: Array<string>, serialize: (tx: UnsignedTransaction) => string): void {
+//     try {
+//         const recid = handleNumber(fields[0]).toNumber();
+//         if (recid !== 0 && recid !== 1) { throw new Error("bad recid"); }
+//         tx.v = recid;
+//     } catch (error) {
+//         logger.throwArgumentError("invalid v for transaction type: 1", "v", fields[0]);
+//     }
+//
+//     tx.r = hexZeroPad(fields[1], 32);
+//     tx.s = hexZeroPad(fields[2], 32);
+//
+//     try {
+//         const digest = keccak256(serialize(tx));
+//         tx.from = recoverAddress(digest, { r: tx.r, s: tx.s, recoveryParam: tx.v });
+//     } catch (error) {
+//         console.log(error);
+//     }
+// }
+// function _parseEip1559(payload: Uint8Array): Transaction {
+//     const transaction = RLP.decode(payload.slice(1));
+//
+//     if (transaction.length !== 9 && transaction.length !== 12) {
+//         logger.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
+//     }
+//
+//     const maxPriorityFeePerGas = handleNumber(transaction[2]);
+//     const maxFeePerGas = handleNumber(transaction[3]);
+//     const tx: Transaction = {
+//         type:                  2,
+//         chainId:               handleNumber(transaction[0]).toNumber(),
+//         nonce:                 handleNumber(transaction[1]).toNumber(),
+//         maxPriorityFeePerGas:  maxPriorityFeePerGas,
+//         maxFeePerGas:          maxFeePerGas,
+//         gasPrice:              null,
+//         gasLimit:              handleNumber(transaction[4]),
+//         to:                    handleAddress(transaction[5]),
+//         value:                 handleNumber(transaction[6]),
+//         data:                  transaction[7],
+//         accessList:            accessListify(transaction[8]),
+//     };
+//
+//     // Unsigned EIP-1559 Transaction
+//     if (transaction.length === 9) { return tx; }
+//
+//     tx.hash = keccak256(payload);
+//
+//     _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
+//
+//     return tx;
+// }
+//
+// function _parseEip2930(payload: Uint8Array): Transaction {
+//     const transaction = RLP.decode(payload.slice(1));
+//
+//     if (transaction.length !== 8 && transaction.length !== 11) {
+//         logger.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
+//     }
+//
+//     const tx: Transaction = {
+//         type:       1,
+//         chainId:    handleNumber(transaction[0]).toNumber(),
+//         nonce:      handleNumber(transaction[1]).toNumber(),
+//         gasPrice:   handleNumber(transaction[2]),
+//         gasLimit:   handleNumber(transaction[3]),
+//         to:         handleAddress(transaction[4]),
+//         value:      handleNumber(transaction[5]),
+//         data:       transaction[6],
+//         accessList: accessListify(transaction[7])
+//     };
+//
+//     // Unsigned EIP-2930 Transaction
+//     if (transaction.length === 8) { return tx; }
+//
+//     tx.hash = keccak256(payload);
+//
+//     _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
+//
+//     return tx;
+// }
+//
+// // Legacy Transactions and EIP-155
+// function _parse(rawTransaction: Uint8Array): Transaction {
+//     const transaction = RLP.decode(rawTransaction);
+//
+//     if (transaction.length !== 9 && transaction.length !== 6) {
+//         logger.throwArgumentError("invalid raw transaction", "rawTransaction", rawTransaction);
+//     }
+//
+//     const tx: Transaction = {
+//         nonce:    handleNumber(transaction[0]).toNumber(),
+//         gasPrice: handleNumber(transaction[1]),
+//         gasLimit: handleNumber(transaction[2]),
+//         to:       handleAddress(transaction[3]),
+//         value:    handleNumber(transaction[4]),
+//         data:     transaction[5],
+//         chainId:  0
+//     };
+//
+//     // Legacy unsigned transaction
+//     if (transaction.length === 6) { return tx; }
+//
+//     try {
+//         tx.v = BigNumber.from(transaction[6]).toNumber();
+//
+//     } catch (error) {
+//         console.log(error);
+//         return tx;
+//     }
+//
+//     tx.r = hexZeroPad(transaction[7], 32);
+//     tx.s = hexZeroPad(transaction[8], 32);
+//
+//     if (BigNumber.from(tx.r).isZero() && BigNumber.from(tx.s).isZero()) {
+//         // EIP-155 unsigned transaction
+//         tx.chainId = tx.v;
+//         tx.v = 0;
+//
+//     } else {
+//         // Signed Transaction
+//
+//         tx.chainId = Math.floor((tx.v - 35) / 2);
+//         if (tx.chainId < 0) { tx.chainId = 0; }
+//
+//         let recoveryParam = tx.v - 27;
+//
+//         const raw = transaction.slice(0, 6);
+//
+//         if (tx.chainId !== 0) {
+//             raw.push(hexlify(tx.chainId));
+//             raw.push("0x");
+//             raw.push("0x");
+//             recoveryParam -= tx.chainId * 2 + 8;
+//         }
+//
+//         const digest = keccak256(RLP.encode(raw));
+//         try {
+//             tx.from = recoverAddress(digest, { r: hexlify(tx.r), s: hexlify(tx.s), recoveryParam: recoveryParam });
+//         } catch (error) {
+//             console.log(error);
+//         }
+//
+//         tx.hash = keccak256(rawTransaction);
+//     }
+//
+//     tx.type = null;
+//
+//     return tx;
+// }
 function parse(rawTransaction) {
     const payload = arrayify(rawTransaction);
-    // Legacy and EIP-155 Transactions
-    if (payload[0] > 0x7f) {
-        return _parse(payload);
+    let parsed;
+    try {
+        parsed = Transaction$1.fromBytes(payload);
     }
-    // Typed Transaction (EIP-2718)
-    switch (payload[0]) {
-        case 1:
-            return _parseEip2930(payload);
-        case 2:
-            return _parseEip1559(payload);
-        default:
-            break;
+    catch (error) {
+        logger$r.throwArgumentError(error.message, "rawTransaction", rawTransaction);
     }
-    return logger$r.throwError(`unsupported transaction type: ${payload[0]}`, Logger.errors.UNSUPPORTED_OPERATION, {
-        operation: "parseTransaction",
-        transactionType: payload[0]
-    });
+    console.log(parsed);
+    return {
+        hash: '',
+        to: '',
+        from: '',
+        nonce: 0,
+        gasLimit: handleNumber('0'),
+        gasPrice: handleNumber('0'),
+        data: '',
+        value: handleNumber('0'),
+        chainId: 0,
+        r: '',
+        s: '',
+        v: 0,
+        type: null,
+    };
 }
 
 const version$m = "contracts/5.5.0";
@@ -81950,22 +81974,46 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var name = "@grpc/grpc-js";
-var version$p = "1.4.4";
-var description = "gRPC Library for Node - pure JS implementation";
-var homepage = "https://grpc.io/";
-var repository = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
-var main = "build/src/index.js";
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var _from = "@grpc/grpc-js@^1.3.4";
+var _id = "@grpc/grpc-js@1.4.4";
+var _inBundle = false;
+var _integrity = "sha512-a6222b7Dl6fIlMgzVl7e+NiRoLiZFbpcwvBH2Oli56Bn7W4/3Ld+86hK4ffPn5rx2DlDidmIcvIJiOQXyhv9gA==";
+var _location = "/@grpc/grpc-js";
+var _phantomChildren = {
 };
-var keywords = [
+var _requested = {
+	type: "range",
+	registry: true,
+	raw: "@grpc/grpc-js@^1.3.4",
+	name: "@grpc/grpc-js",
+	escapedName: "@grpc%2fgrpc-js",
+	scope: "@grpc",
+	rawSpec: "^1.3.4",
+	saveSpec: null,
+	fetchSpec: "^1.3.4"
+};
+var _requiredBy = [
+	"/@hashgraph/sdk"
 ];
+var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.4.tgz";
+var _shasum = "59336f13d77bc446bbdf2161564a32639288dc5b";
+var _spec = "@grpc/grpc-js@^1.3.4";
+var _where = "/Users/danielivanov/limechain/hedera/hethers.js/node_modules/@hashgraph/sdk";
 var author = {
 	name: "Google Inc."
 };
-var types = "build/src/index.d.ts";
-var license = "Apache-2.0";
+var bundleDependencies = false;
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var dependencies = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
+};
+var deprecated = false;
+var description = "gRPC Library for Node - pure JS implementation";
 var devDependencies = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -81989,28 +82037,8 @@ var devDependencies = {
 	typescript: "^3.7.2",
 	yargs: "^15.4.1"
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var scripts = {
-	build: "npm run compile",
-	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
-	compile: "tsc -p .",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	lint: "npm run check",
-	prepare: "npm run generate-types && npm run compile",
-	test: "gulp test",
-	check: "gts check src/**/*.ts",
-	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run compile",
-	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto"
-};
-var dependencies = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
 var files = [
 	"src/**/*.ts",
@@ -82026,29 +82054,63 @@ var files = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.4.tgz";
-var _integrity = "sha512-a6222b7Dl6fIlMgzVl7e+NiRoLiZFbpcwvBH2Oli56Bn7W4/3Ld+86hK4ffPn5rx2DlDidmIcvIJiOQXyhv9gA==";
-var _from = "@grpc/grpc-js@1.4.4";
+var homepage = "https://grpc.io/";
+var keywords = [
+];
+var license = "Apache-2.0";
+var main = "build/src/index.js";
+var name = "@grpc/grpc-js";
+var repository = {
+	type: "git",
+	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
+};
+var scripts = {
+	build: "npm run compile",
+	check: "gts check src/**/*.ts",
+	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
+	compile: "tsc -p .",
+	fix: "gts fix src/*.ts",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto",
+	lint: "npm run check",
+	posttest: "npm run check && madge -c ./build/src",
+	prepare: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run compile",
+	test: "gulp test"
+};
+var types = "build/src/index.d.ts";
+var version$p = "1.4.4";
 var require$$0$2 = {
-	name: name,
-	version: version$p,
-	description: description,
-	homepage: homepage,
-	repository: repository,
-	main: main,
-	engines: engines,
-	keywords: keywords,
-	author: author,
-	types: types,
-	license: license,
-	devDependencies: devDependencies,
-	contributors: contributors,
-	scripts: scripts,
-	dependencies: dependencies,
-	files: files,
-	_resolved: _resolved,
+	_from: _from,
+	_id: _id,
+	_inBundle: _inBundle,
 	_integrity: _integrity,
-	_from: _from
+	_location: _location,
+	_phantomChildren: _phantomChildren,
+	_requested: _requested,
+	_requiredBy: _requiredBy,
+	_resolved: _resolved,
+	_shasum: _shasum,
+	_spec: _spec,
+	_where: _where,
+	author: author,
+	bundleDependencies: bundleDependencies,
+	contributors: contributors,
+	dependencies: dependencies,
+	deprecated: deprecated,
+	description: description,
+	devDependencies: devDependencies,
+	engines: engines,
+	files: files,
+	homepage: homepage,
+	keywords: keywords,
+	license: license,
+	main: main,
+	name: name,
+	repository: repository,
+	scripts: scripts,
+	types: types,
+	version: version$p
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -91913,10 +91975,45 @@ class BaseProvider extends Provider {
         });
         return result;
     }
-    // FIXME:
     sendTransaction(signedTransaction) {
         return __awaiter$8(this, void 0, void 0, function* () {
-            return null;
+            yield this.getNetwork();
+            signedTransaction = yield signedTransaction;
+            const txBytes = arrayify(signedTransaction);
+            const tx = Transaction.fromBytes(txBytes);
+            const txHash = hexlify(yield tx.getTransactionHash());
+            try {
+                // TODO once we have fallback provider use `provider.perform("sendTransaction")`
+                yield tx.execute(this.hederaClient);
+                const parsedTx = this.formatter.transaction(signedTransaction);
+                return this._wrapTransaction(parsedTx, txHash);
+            }
+            catch (error) {
+                const err = logger$v.makeError(error.message, error.status.toString());
+                err.transaction = tx;
+                err.transactionHash = txHash;
+                throw err;
+            }
+            // // in first step we will not do anything with parsing. After we have the submission, we must:
+            // // 1. Parse the signed transaction into `Transaction` object
+            // // 2. Before submission verify that the nodeId is the one that the provider is connected to
+            // const tx = this.formatter.transaction(signedTransaction);
+            // if (tx.confirmations == null) { tx.confirmations = 0; }
+            // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+            // try {
+            //     // Figure out how in the JS sdk we can submit a signed transaction (bytes)
+            //     const hash = await this.perform("sendTransaction", { signedTransaction: hexTx });
+            //     // Wrapping of the Transaction will be implemented after step 1 and once we have the parsing of the
+            //     // transaction.
+            //     // Wrapping of the transaction is done in order for users to be able to do:
+            //     // const tx = provider.sendTransaction(signedTx);
+            //     // tx.wait() -> wait for it to be mined
+            //     return this._wrapTransaction(tx, hash, blockNumber);
+            // } catch (error) {
+            //     (<any>error).transaction = tx;
+            //     (<any>error).transactionHash = tx.hash;
+            //     throw error;
+            // }
         });
     }
     _getTransactionRequest(transaction) {
