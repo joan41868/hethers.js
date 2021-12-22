@@ -96,146 +96,148 @@ describe('Test JSON Wallets', function() {
     });
 });
 
-// describe('Test Transaction Signing and Parsing', function() {
-//     function checkTransaction(parsedTransaction: any, test: TestCase.SignedTransaction): any {
-//         let transaction: any = { };
-//
-//         ['nonce', 'gasLimit', 'gasPrice', 'to', 'value', 'data'].forEach((key: (keyof TestCase.SignedTransaction)) => {
-//             let expected = test[key];
-//
-//             let value = parsedTransaction[key];
-//
-//             if ([ "gasLimit", "gasPrice", "value"].indexOf(key) >= 0) {
-//                 assert.ok((ethers.BigNumber.isBigNumber(value)),
-//                     'parsed into a big number - ' + key);
-//                 value = value.toHexString();
-//
-//                 if (!expected || expected === '0x') { expected = '0x00'; }
-//
-//             } else if (key === 'nonce') {
-//                 assert.equal(typeof(value), 'number',
-//                     'parse into a number - nonce');
-//
-//                 value = ethers.utils.hexlify(value);
-//
-//                 if (!expected || expected === '0x') { expected = '0x00'; }
-//
-//             } else if (key === 'data') {
-//                 if (!expected) { expected = '0x'; }
-//
-//             } else if (key === 'to') {
-//                 if (value) {
-//                     // Make sure the address is valid
-//                     ethers.utils.getAddress(value);
-//                     value = value.toLowerCase();
-//                 }
-//             }
-//
-//             assert.equal(value, expected, 'parses ' + key + ' (legacy)');
-//
-//             transaction[key] = test[key];
-//         });
-//
-//         return transaction;
-//     }
-//
-//
-//     let tests: Array<TestCase.SignedTransaction> = loadTests('transactions');
-//     tests.forEach((test) => {
-//         it(('parses and signs transaction - ' + test.name), function() {
-//             this.timeout(120000);
-//
-//             let signingKey = new ethers.utils.SigningKey(test.privateKey);
-//             let signDigest = signingKey.signDigest.bind(signingKey);
-//
-//             // Legacy parsing unsigned transaction
-//             checkTransaction(ethers.utils.parseTransaction(test.unsignedTransaction), test);
-//
-//             let parsedTransaction = ethers.utils.parseTransaction(test.signedTransaction);
-//             let transaction = checkTransaction(parsedTransaction, test);
-//
-//             // Legacy signed transaction ecrecover
-//             assert.equal(parsedTransaction.from, ethers.utils.getAddress(test.accountAddress),
-//                 'computed from');
-//
-//             // Legacy transaction chain ID
-//             assert.equal(parsedTransaction.chainId, 0, 'parses chainId (legacy)');
-//
-//             // Legacy serializes unsigned transaction
-//             (function() {
-//                 let unsignedTx = ethers.utils.serializeTransaction(transaction);
-//                 assert.equal(unsignedTx, test.unsignedTransaction,
-//                     'serializes unsigned transaction (legacy)');
-//
-//                 // Legacy signed serialized transaction
-//                 let signature = signDigest(ethers.utils.keccak256(unsignedTx));
-//                 assert.equal(ethers.utils.serializeTransaction(transaction, signature), test.signedTransaction,
-//                     'signs transaction (legacy)');
-//             })();
-//
-//
-//             // EIP155
-//
-//             // EIP-155 parsing unsigned transaction
-//             let parsedUnsignedTransactionChainId5 = ethers.utils.parseTransaction(test.unsignedTransactionChainId5);
-//             checkTransaction(parsedUnsignedTransactionChainId5, test);
-//             assert.equal(parsedUnsignedTransactionChainId5.chainId, 5, 'parses chainId (eip155)');
-//
-//             // EIP-155 fields
-//             let parsedTransactionChainId5 = ethers.utils.parseTransaction(test.signedTransactionChainId5);
-//
-//             type TxStringKey = 'data' | 'from' | 'nonce' | 'to';
-//             ['data', 'from', 'nonce', 'to'].forEach((key: TxStringKey) => {
-//                 assert.equal(parsedTransaction[key], parsedTransactionChainId5[key],
-//                     'parses ' + key + ' (eip155)');
-//             });
-//
-//             type TxNumberKey = 'gasLimit' | 'gasPrice' | 'value';
-//             ['gasLimit', 'gasPrice', 'value'].forEach((key: TxNumberKey) => {
-//                 assert.ok(parsedTransaction[key].eq(parsedTransactionChainId5[key]),
-//                     'parses ' + key + ' (eip155)');
-//             });
-//
-//             // EIP-155 chain ID
-//             assert.equal(parsedTransactionChainId5.chainId, 5,
-//                 'parses chainId (eip155)');
-//
-//             transaction.chainId = 5;
-//
-//             (function() {
-//                 // EIP-155 serialized unsigned transaction
-//                 let unsignedTx = ethers.utils.serializeTransaction(transaction);
-//                 assert.equal(unsignedTx, test.unsignedTransactionChainId5,
-//                     'serializes unsigned transaction (eip155) ');
-//
-//                 // EIP-155 signed serialized transaction
-//                 let signature = signDigest(ethers.utils.keccak256(unsignedTx));
-//                 assert.equal(ethers.utils.serializeTransaction(transaction, signature), test.signedTransactionChainId5,
-//                     'signs transaction (eip155)');
-//             })();
-//         });
-//     });
-//
-//     tests.forEach((test) => {
-//         it(('wallet signs transaction - ' + test.name), async function() {
-//             this.timeout(120000);
-//
-//             const wallet = new ethers.Wallet(test.privateKey);
-//             const transaction = {
-//                 to: test.to,
-//                 data: test.data,
-//                 gasLimit: test.gasLimit,
-//                 gasPrice: test.gasPrice,
-//                 value: test.value,
-//                 nonce: ((<any>(test.nonce)) === "0x") ? 0: test.nonce,
-//                 chainId: 5
-//             };
-//
-//             const signedTx = await wallet.signTransaction(transaction);
-//             assert.equal(signedTx, test.signedTransactionChainId5);
-//         });
-//     });
-// });
+describe('Test Transaction Signing and Parsing', function() {
+    // FIXME
+    // function checkTransaction(parsedTransaction: any, test: TestCase.SignedTransaction): any {
+    //     let transaction: any = { };
+    //
+    //     ['nonce', 'gasLimit', 'gasPrice', 'to', 'value', 'data'].forEach((key: (keyof TestCase.SignedTransaction)) => {
+    //         let expected = test[key];
+    //
+    //         let value = parsedTransaction[key];
+    //
+    //         if ([ "gasLimit", "gasPrice", "value"].indexOf(key) >= 0) {
+    //             assert.ok((ethers.BigNumber.isBigNumber(value)),
+    //                 'parsed into a big number - ' + key);
+    //             value = value.toHexString();
+    //
+    //             if (!expected || expected === '0x') { expected = '0x00'; }
+    //
+    //         } else if (key === 'nonce') {
+    //             assert.equal(typeof(value), 'number',
+    //                 'parse into a number - nonce');
+    //
+    //             value = ethers.utils.hexlify(value);
+    //
+    //             if (!expected || expected === '0x') { expected = '0x00'; }
+    //
+    //         } else if (key === 'data') {
+    //             if (!expected) { expected = '0x'; }
+    //
+    //         } else if (key === 'to') {
+    //             if (value) {
+    //                 // Make sure the address is valid
+    //                 ethers.utils.getAddress(value);
+    //                 value = value.toLowerCase();
+    //             }
+    //         }
+    //
+    //         assert.equal(value, expected, 'parses ' + key + ' (legacy)');
+    //
+    //         transaction[key] = test[key];
+    //     });
+    //
+    //     return transaction;
+    // }
+
+
+    // FIXME
+    let tests: Array<TestCase.SignedTransaction> = loadTests('transactions');
+    tests.forEach((test) => {
+        // it(('parses and signs transaction - ' + test.name), function() {
+        //     this.timeout(120000);
+        //
+        //     let signingKey = new ethers.utils.SigningKey(test.privateKey);
+        //     let signDigest = signingKey.signDigest.bind(signingKey);
+        //
+        //     // Legacy parsing unsigned transaction
+        //     checkTransaction(ethers.utils.parseTransaction(test.unsignedTransaction), test);
+        //
+        //     let parsedTransaction = ethers.utils.parseTransaction(test.signedTransaction);
+        //     let transaction = checkTransaction(parsedTransaction, test);
+        //
+        //     // Legacy signed transaction ecrecover
+        //     // assert.equal(parsedTransaction.from, ethers.utils.getAddress(test.accountAddress),
+        //     //     'computed from');
+        //
+        //     // Legacy transaction chain ID
+        //     // assert.equal(parsedTransaction.chainId, 0, 'parses chainId (legacy)');
+        //
+        //     // Legacy serializes unsigned transaction
+        //     (function() {
+        //         let unsignedTx = ethers.utils.serializeTransaction(transaction);
+        //         assert.equal(unsignedTx, test.unsignedTransaction,
+        //             'serializes unsigned transaction (legacy)');
+        //
+        //         // Legacy signed serialized transaction
+        //         let signature = signDigest(ethers.utils.keccak256(unsignedTx));
+        //         assert.equal(ethers.utils.serializeTransaction(transaction, signature), test.signedTransaction,
+        //             'signs transaction (legacy)');
+        //     })();
+        //
+        //
+        //     // EIP155
+        //
+        //     // EIP-155 parsing unsigned transaction
+        //     let parsedUnsignedTransactionChainId5 = ethers.utils.parseTransaction(test.unsignedTransactionChainId5);
+        //     checkTransaction(parsedUnsignedTransactionChainId5, test);
+        //     // assert.equal(parsedUnsignedTransactionChainId5.chainId, 5, 'parses chainId (eip155)');
+        //
+        //     // EIP-155 fields
+        //     let parsedTransactionChainId5 = ethers.utils.parseTransaction(test.signedTransactionChainId5);
+        //
+        //     type TxStringKey = 'data' | 'from' | 'nonce' | 'to';
+        //     ['data', 'from', 'nonce', 'to'].forEach((key: TxStringKey) => {
+        //         assert.equal(parsedTransaction[key], parsedTransactionChainId5[key],
+        //             'parses ' + key + ' (eip155)');
+        //     });
+        //
+        //     type TxNumberKey = 'gasLimit' | 'gasPrice' | 'value';
+        //     ['gasLimit', 'gasPrice', 'value'].forEach((key: TxNumberKey) => {
+        //         assert.ok(parsedTransaction[key].eq(parsedTransactionChainId5[key]),
+        //             'parses ' + key + ' (eip155)');
+        //     });
+        //
+        //     // EIP-155 chain ID
+        //     assert.equal(parsedTransactionChainId5.chainId, 5,
+        //         'parses chainId (eip155)');
+        //
+        //     transaction.chainId = 5;
+        //
+        //     (function() {
+        //         // EIP-155 serialized unsigned transaction
+        //         let unsignedTx = ethers.utils.serializeTransaction(transaction);
+        //         assert.equal(unsignedTx, test.unsignedTransactionChainId5,
+        //             'serializes unsigned transaction (eip155) ');
+        //
+        //         // EIP-155 signed serialized transaction
+        //         let signature = signDigest(ethers.utils.keccak256(unsignedTx));
+        //         assert.equal(ethers.utils.serializeTransaction(transaction, signature), test.signedTransactionChainId5,
+        //             'signs transaction (eip155)');
+        //     })();
+        // });
+    });
+
+    tests.forEach((test) => {
+        it(('wallet signs transaction - ' + test.name), async function() {
+            this.timeout(120000);
+
+            const wallet = new ethers.Wallet(test.privateKey);
+            const transaction = {
+                to: test.to,
+                data: test.data,
+                gasLimit: test.gasLimit,
+                gasPrice: test.gasPrice,
+                value: test.value,
+                nonce: ((<any>(test.nonce)) === "0x") ? 0: test.nonce,
+                chainId: 5
+            };
+
+            const signedTx = await wallet.signTransaction(transaction);
+            assert.equal(signedTx, test.signedTransactionChainId5);
+        });
+    });
+});
 
 describe('Test Signing Messages', function() {
     type TestCase = {

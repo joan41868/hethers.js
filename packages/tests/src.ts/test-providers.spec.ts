@@ -1227,6 +1227,7 @@ describe("Test Hedera Provider", function () {
     const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
     const solAddr = getAddressFromAccount(accountConfig);
     const timeout = 15000;
+
     it('Gets the balance', async function () {
         const balance = await provider.getBalance(solAddr);
         // the balance of 0.0.98 cannot be negative
@@ -1265,4 +1266,22 @@ describe("Test Hedera Provider", function () {
         const balance = await defaultMainnetProvider.getBalance(solAddr);
         assert.strictEqual(true, balance.gte(0));
     }).timeout(timeout * 4);
+
+    it('should submit signed transaction', async function() {
+        // 1. Sign TX -> `sign-transaction.ts`
+
+        // const tx = await new TransferTransaction()
+        //     .addHbarTransfer("0.0.98", Hbar.fromTinybars(1))
+        //     .addHbarTransfer(operatorId, Hbar.fromTinybars(-1))
+        //     .setTransactionId(TransactionId.generate(operatorId))
+        //     .setNodeAccountIds([AccountId.fromString("0.0.3")])
+        //     .freeze()
+        //     .sign(privateKey);
+        // const txBytes = tx.toBytes();
+        // const signedTx = hethers.utils.hexlify(txBytes);
+        // console.log(signedTx);
+
+        // 2. Instance of Testnet provider
+        // 3. provider.submitTransaction
+    });
 });

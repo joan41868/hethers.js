@@ -49,23 +49,24 @@ export type TransactionRequest = {
 }
 
 export interface TransactionResponse extends Transaction {
+    // Populate it
     hash: string;
 
     // Only if a transaction has been mined
-    blockNumber?: number,
-    blockHash?: string,
-    timestamp?: number,
+    blockNumber?: number, // Ignore and not populate it
+    blockHash?: string, // Ignore and not populate it
+    timestamp?: number, // Populate it if transaction has been mined and mirror node returns it
 
-    confirmations: number,
+    confirmations: number, // hardcode 0 for now
 
     // Not optional (as it is in Transaction)
-    from: string;
+    from: string; // populate it from ethersTx
 
     // The raw transaction
-    raw?: string,
+    raw?: string, // equivalent of signed transaction
 
     // This function waits until the transaction has been mined
-    wait: (confirmations?: number) => Promise<TransactionReceipt>
+    wait: (confirmations?: number) => Promise<TransactionReceipt> // Should poll the mirror node
 };
 
 export type BlockTag = string | number;
