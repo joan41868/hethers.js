@@ -1,9 +1,6 @@
-import {
-	AccountId, Client, PrivateKey, Transaction,
-} from "@hashgraph/sdk";
 import {readFileSync} from 'fs';
 import * as hethers from "ethers";
-import {getAddressFromAccount, arrayify}  from "ethers/lib/utils";
+import { getAddressFromAccount } from "ethers/lib/utils";
 
 const account = {
 	"operator": {
@@ -24,11 +21,6 @@ const account = {
 
 // main
 (async () => {
-	/* create the operator */
-	const privateKey = PrivateKey.fromString(account.operator.privateKey);
-	const operatorId = AccountId.fromString(account.operator.accountId);
-	const client = Client.forNetwork(account.network);
-	client.setOperator(operatorId, privateKey);
 	const hederaEoa = {
 		account: account.operator.accountId, //  mock key, real key is hardcoded
 		privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
@@ -49,7 +41,7 @@ const account = {
 	// @ts-ignore
 	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData.contractId, abi, wallet);
 	const params = contract.interface.encodeFunctionData('approve', [
-		operatorId.toSolidityAddress(),
+		getAddressFromAccount(account.operator.accountId),
 		1000
 	]);
 	const approveResponse = await wallet.sendTransaction({
