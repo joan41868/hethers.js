@@ -198,8 +198,10 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
             tx = new ContractExecuteTransaction()
                 .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
                 .setFunctionParameters(arrayifiedData)
-                .setPayableAmount(transaction.value?.toString())
                 .setGas(gas)
+            if (transaction.value) {
+                (tx as ContractExecuteTransaction).setPayableAmount(transaction.value?.toString())
+            }
         } else {
             if (transaction.customData.bytecodeFileId) {
                 tx = new ContractCreateTransaction()
@@ -225,7 +227,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
             }
         }
         const accountID = getAccountFromAddress(this.address);
-        tx  // FIXME - should be taken from the wallet's identity
+        tx
             .setTransactionId(TransactionId.generate(new AccountId({
                 shard: numberify(accountID.shard),
                 realm: numberify(accountID.realm),

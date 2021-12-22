@@ -206,8 +206,10 @@ var Wallet = /** @class */ (function (_super) {
             tx = new sdk_1.ContractExecuteTransaction()
                 .setContractId(sdk_1.ContractId.fromSolidityAddress(transaction.to.toString()))
                 .setFunctionParameters(arrayifiedData)
-                .setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString())
                 .setGas(gas);
+            if (transaction.value) {
+                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
+            }
         }
         else {
             if (transaction.customData.bytecodeFileId) {
@@ -234,7 +236,7 @@ var Wallet = /** @class */ (function (_super) {
             }
         }
         var accountID = (0, address_1.getAccountFromAddress)(this.address);
-        tx // FIXME - should be taken from the wallet's identity
+        tx
             .setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
             shard: numberify(accountID.shard),
             realm: numberify(accountID.realm),

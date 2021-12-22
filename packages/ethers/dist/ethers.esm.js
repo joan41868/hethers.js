@@ -9262,7 +9262,7 @@ var __awaiter$2 = (window && window.__awaiter) || function (thisArg, _arguments,
 };
 const logger$f = new Logger(version$a);
 const allowedTransactionKeys = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "nonce", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
 ];
 const forwardErrors = [
     Logger.errors.INSUFFICIENT_FUNDS,
@@ -86229,19 +86229,6 @@ function hasMnemonic$1(value) {
 function hasAlias(value) {
     return isAccount(value) && value.alias != null;
 }
-const account = {
-    "operator": {
-        "accountId": "0.0.1280",
-        "publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
-        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
-    },
-    "network": {
-        "35.231.208.148:50211": "0.0.3",
-        "35.199.15.177:50211": "0.0.4",
-        "35.225.201.195:50211": "0.0.5",
-        "35.247.109.135:50211": "0.0.6"
-    }
-};
 class Wallet extends Signer {
     constructor(identity, provider) {
         logger$p.checkNew(new.target, Wallet);
@@ -86347,13 +86334,15 @@ class Wallet extends Signer {
         var _a, _b;
         let tx;
         const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = BigNumber.from(transaction.gasLimit).toNumber();
+        const gas = numberify(transaction.gasLimit);
         if (transaction.to) {
             tx = new ContractExecuteTransaction()
                 .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
                 .setFunctionParameters(arrayifiedData)
-                .setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString())
                 .setGas(gas);
+            if (transaction.value) {
+                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
+            }
         }
         else {
             if (transaction.customData.bytecodeFileId) {
@@ -86379,12 +86368,18 @@ class Wallet extends Signer {
                 }
             }
         }
-        tx // FIXME - should be taken from the wallet's identity
-            .setTransactionId(TransactionId.generate("0.0.98"))
+        const accountID = getAccountFromAddress(this.address);
+        tx
+            .setTransactionId(TransactionId.generate(new AccountId({
+            shard: numberify(accountID.shard),
+            realm: numberify(accountID.realm),
+            num: numberify(accountID.num)
+        })))
             // FIXME - should be taken from the network/ wallet's provider
             .setNodeAccountIds([new AccountId(0, 0, 3)])
             .freeze();
-        const privKey = PrivateKey.fromString(account.operator.privateKey);
+        // const privKey = PrivateKey.fromString(this._signingKey().privateKey);
+        const privKey = PrivateKey.fromString("302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8");
         return new Promise((resolve) => __awaiter$4(this, void 0, void 0, function* () {
             const signed = yield tx.sign(privKey);
             resolve(hexlify(signed.toBytes()));
@@ -86460,6 +86455,9 @@ function verifyMessage(message, signature) {
 // TODO to be revised
 function verifyTypedData(domain, types, value, signature) {
     return recoverAddress(TypedDataEncoder.hash(domain, types, value), signature);
+}
+function numberify(num) {
+    return BigNumber.from(num).toNumber();
 }
 
 var lib_esm$i = /*#__PURE__*/Object.freeze({

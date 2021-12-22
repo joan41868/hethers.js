@@ -7,24 +7,25 @@ const {
 	PrivateKey,
 	Transaction,
 	FileContentsQuery,
+	TransactionRecordQuery,
 	TransactionId,
 	Hbar, ContractFunctionParameters, ContractFunctionSelector
 } = require("@hashgraph/sdk");
 const {readFileSync} = require('fs');
 const hethers = require("ethers");
-const {getAddressFromAccount} = require("ethers/lib/utils");
+const {getAddressFromAccount, arrayify, hexlify} = require("ethers/lib/utils");
 
 const account = {
 	"operator": {
-		"accountId": "0.0.19041642",
-		"publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
-		"privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
+		"accountId": "0.0.1280",
+		"publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
+		"privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
 	},
 	"network": {
-		"0.testnet.hedera.com:50211": "0.0.3",
-		// "1.testnet.hedera.com:50211": "0.0.4",
-		// "2.testnet.hedera.com:50211": "0.0.5",
-		// "3.testnet.hedera.com:50211": "0.0.6"
+		"35.231.208.148:50211": "0.0.3",
+		"35.199.15.177:50211": "0.0.4",
+		"35.225.201.195:50211": "0.0.5",
+		"35.247.109.135:50211": "0.0.6"
 	}
 };
 
@@ -36,7 +37,7 @@ const account = {
 	client.setOperator(operatorId, privateKey);
 
 	// TODO: deploy
-	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin', 'hex');
+	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
 	console.log(`contractByteCode length: ${contractByteCode.length} `);
 
 	let chunks = splitInChunks(contractByteCode, 4096);
@@ -60,18 +61,15 @@ const account = {
 		.setFileId(fileCreateResp.fileId)
 		.execute(client);
 
-	console.log('Contents are equal:', contents.toString() === contractByteCode);
+	console.log('Contents are equal:', contents.toString() === contractByteCode.toString());
 
 	// TODO: try from hethers
 	const contractCreateTx = await new ContractCreateTransaction()
-		.setTransactionId(TransactionId.generate(operatorId))
 		.setBytecodeFileId(fileCreateResp.fileId)
 		.setAdminKey(client.operatorPublicKey)
 		.setGas(300000)
-		.setInitialBalance(new Hbar(1))
 		.execute(client);
 	const contractCreateReceipt = await contractCreateTx.getReceipt(client);
-	console.log(contractCreateReceipt.contractId);
 
 	const hederaEoa = {
 		account: account.operator.accountId,
@@ -79,20 +77,26 @@ const account = {
 	};
 	const wallet = new hethers.Wallet(hederaEoa, hethers.providers.getDefaultProvider('testnet'));
 
+	const approveAbi = require('./assets/abi/GLDToken_approve.abi.json');
+	console.log('Using contract:', contractCreateReceipt.contractId.toString());
+	console.log('Wallet account:', wallet.account.toString());
 
-	// // TODO: arguments
-	// const data = Buffer.from(`"abi":{},"values":{}`).toString('hex');
-	// const tx = {
-	//     to: getAddressFromAccount("0.0.12999"),
-	//     from: wallet.address,
-	//     data: '0x'+data,
-	//     gasLimit: 100000
-	//
-	// };
-	// const signed = await wallet.signTransaction(tx);
-	// const fromBytes = Transaction.fromBytes(arrayify(signed));
-	// const cc = fromBytes as ContractExecuteTransaction;
-	// console.log(cc); // Real contract create;
+	const abi = require('./assets/abi/GLDToken_abi.json');
+	const contract = hethers.ContractFactory.getContract(getAddressFromAccount(contractCreateReceipt.contractId.toString()), abi, wallet);
+	console.log(contract);
+	const params = contract.interface.encodeFunctionData('approve', [operatorId.toSolidityAddress(), 100]);
+	console.log(params);
+	const approveTx = {
+		to: getAddressFromAccount(contractCreateReceipt.contractId.toString()),
+		from: getAddressFromAccount(wallet.account),
+		data: params,
+		gasLimit: 100000,
+	};
+	const signedTx = await wallet.signTransaction(approveTx);
+	const hederaTx = Transaction.fromBytes(arrayify(signedTx));
+	const callResponse = await hederaTx.execute(client);
+	const receipt = await callResponse.getReceipt(client);
+	console.log(receipt);
 })();
 
 

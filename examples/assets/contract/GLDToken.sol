@@ -8,4 +8,9 @@ contract GLDToken is ERC20 {
         emit Mint(msg.sender, 10000);
         _mint(msg.sender, 10000);
     }
+
+    function mint(uint256 amount) public{
+        emit Mint(msg.sender, amount);
+        _mint(msg.sender, amount);
+    }
 }
