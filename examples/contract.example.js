@@ -1,19 +1,13 @@
 // main
 const {
 	AccountId,
-	Client, ContractCreateTransaction,
-	ContractExecuteTransaction, FileAppendTransaction,
-	FileCreateTransaction,
+	Client,
 	PrivateKey,
 	Transaction,
-	FileContentsQuery,
-	TransactionRecordQuery,
-	TransactionId,
-	Hbar, ContractFunctionParameters, ContractFunctionSelector
 } = require("@hashgraph/sdk");
 const {readFileSync} = require('fs');
 const hethers = require("ethers");
-const {getAddressFromAccount, arrayify, hexlify} = require("ethers/lib/utils");
+const {getAddressFromAccount, arrayify} = require("ethers/lib/utils");
 
 const account = {
 	"operator": {
@@ -35,57 +29,54 @@ const account = {
 	const operatorId = AccountId.fromString(account.operator.accountId);
 	const client = Client.forNetwork(account.network);
 	client.setOperator(operatorId, privateKey);
-
-	// TODO: deploy
-	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
-	console.log(`contractByteCode length: ${contractByteCode.length} `);
-
-	let chunks = splitInChunks(contractByteCode, 4096);
-	const chunksLen = chunks.map(c => c.length)
-		.reduce((a, b) => a + b, 0);
-	console.log('Chunks total size:', chunksLen);
-	const fileCreateTx = await new FileCreateTransaction()
-		.setKeys([client.operatorPublicKey])
-		.setContents(chunks[0])
-		.execute(client);
-
-	const fileCreateResp = (await fileCreateTx.getReceipt(client));
-	for (let chunk of chunks.slice(1)) {
-		await new FileAppendTransaction()
-			.setFileId(fileCreateResp.fileId)
-			.setContents(chunk)
-			.execute(client);
-	}
-	console.log('File ready.');
-	const contents = await new FileContentsQuery()
-		.setFileId(fileCreateResp.fileId)
-		.execute(client);
-
-	console.log('Contents are equal:', contents.toString() === contractByteCode.toString());
-
-	// TODO: try from hethers
-	const contractCreateTx = await new ContractCreateTransaction()
-		.setBytecodeFileId(fileCreateResp.fileId)
-		.setAdminKey(client.operatorPublicKey)
-		.setGas(300000)
-		.execute(client);
-	const contractCreateReceipt = await contractCreateTx.getReceipt(client);
-
 	const hederaEoa = {
 		account: account.operator.accountId,
+		//  mock key, real key is hardcoded
 		privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
 	};
 	const wallet = new hethers.Wallet(hederaEoa, hethers.providers.getDefaultProvider('testnet'));
+	console.log('Wallet.account:', wallet.account.toString());
 
-	const approveAbi = require('./assets/abi/GLDToken_approve.abi.json');
-	console.log('Using contract:', contractCreateReceipt.contractId.toString());
-	console.log('Wallet account:', wallet.account.toString());
+	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+	let chunks = splitInChunks(contractByteCode, 4096);
+	const fileCreate = {
+		customData:{
+			fileChunk: chunks[0],
+			fileKey: client.operatorPublicKey
+		}
+	};
+	const signedFileCreate  = await wallet.signTransaction(fileCreate);
+	const executableFileCreate = Transaction.fromBytes(arrayify(signedFileCreate));
+	const fileCreateResp = await executableFileCreate.execute(client);
+
+	const fileCreateReceipt = await fileCreateResp.getReceipt(client);
+	for (let chunk of chunks.slice(1)) {
+		const fileAppend = {
+			customData:{
+				fileId: fileCreateReceipt.fileId.toString(),
+				fileChunk: chunk
+			}
+		};
+		const signedFileAppend = await wallet.signTransaction(fileAppend);
+		await Transaction.fromBytes(arrayify(signedFileAppend))
+			.execute(client);
+	}
+
+	const contractCreate = {
+		gasLimit: 300000,
+		customData:{
+			bytecodeFileId: fileCreateReceipt.fileId.toString()
+		}
+	}
+	const signedContractCreate = await wallet.signTransaction(contractCreate);
+	const contractCreateTx = await Transaction.fromBytes(arrayify(signedContractCreate))
+		.execute(client);
+	const contractCreateReceipt = await contractCreateTx.getReceipt(client);
+	console.log('Contract:', contractCreateReceipt.contractId.toString());
 
 	const abi = require('./assets/abi/GLDToken_abi.json');
 	const contract = hethers.ContractFactory.getContract(getAddressFromAccount(contractCreateReceipt.contractId.toString()), abi, wallet);
-	console.log(contract);
 	const params = contract.interface.encodeFunctionData('approve', [operatorId.toSolidityAddress(), 100]);
-	console.log(params);
 	const approveTx = {
 		to: getAddressFromAccount(contractCreateReceipt.contractId.toString()),
 		from: getAddressFromAccount(wallet.account),
@@ -95,8 +86,9 @@ const account = {
 	const signedTx = await wallet.signTransaction(approveTx);
 	const hederaTx = Transaction.fromBytes(arrayify(signedTx));
 	const callResponse = await hederaTx.execute(client);
+	console.log(`ContractCall response:`, callResponse);
 	const receipt = await callResponse.getReceipt(client);
-	console.log(receipt);
+	console.log(`ContractCall receipt:`, receipt);
 })();
 
 

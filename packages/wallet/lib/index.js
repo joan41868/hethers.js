@@ -201,7 +201,7 @@ var Wallet = /** @class */ (function (_super) {
         var _a, _b;
         var tx;
         var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
-        var gas = numberify(transaction.gasLimit);
+        var gas = numberify(transaction.gasLimit ? transaction.gasLimit : 10000);
         if (transaction.to) {
             tx = new sdk_1.ContractExecuteTransaction()
                 .setContractId(sdk_1.ContractId.fromSolidityAddress(transaction.to.toString()))
@@ -228,7 +228,8 @@ var Wallet = /** @class */ (function (_super) {
                 else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
                     // only a chunk, thus the first one
                     tx = new sdk_1.FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk);
+                        .setContents(transaction.customData.fileChunk)
+                        .setKeys([transaction.customData.fileKey ? transaction.customData.fileKey : this.publicKey]);
                 }
                 else {
                     logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
