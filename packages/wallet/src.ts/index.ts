@@ -1,7 +1,7 @@
 "use strict";
 
 import { Account, AccountLike, getAccountFromAddress, getAddress, getAddressFromAccount } from "@ethersproject/address";
-import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
+import { Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import {
     ExternallyOwnedAccount,
     Signer,
@@ -14,7 +14,8 @@ import {
     Bytes,
     BytesLike,
     concat,
-    hexDataSlice, hexlify,
+    hexDataSlice,
+    hexlify,
     isHexString,
     joinSignature,
     SignatureLike
@@ -22,7 +23,7 @@ import {
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import { defineReadOnly } from "@ethersproject/properties";
+import { Deferrable, defineReadOnly, resolveProperties } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import {
@@ -37,10 +38,13 @@ import { Wordlist } from "@ethersproject/wordlists";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import {
-    AccountId, ContractCreateTransaction,
+    AccountId,
+    ContractCreateTransaction,
     ContractExecuteTransaction,
-    ContractId, FileAppendTransaction, FileCreateTransaction,
-    PrivateKey,
+    ContractId,
+    FileAppendTransaction,
+    FileCreateTransaction,
+    PrivateKey, PublicKey,
     Transaction,
     TransactionId
 } from "@hashgraph/sdk";
@@ -180,6 +184,56 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         return new Wallet(eoa, this.provider);
     }
 
+    //
+    // async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
+    //
+    //     return null;
+    // }
+
+    async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
+        const tx = await resolveProperties(transaction);
+        // to - sign & send
+        // no `to` - file create and appends and contract create;
+        // create TransactionRequest objects and pass them down to the sign fn
+        // sign & send on each tx
+        // contract create would be the expected result of create + append + contract create
+
+        if (tx.to) {
+            const signed = await this.signTransaction(tx);
+            return await this.provider.sendTransaction(signed);
+        } else {
+            const contractByteCode = tx.data;
+            let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
+            const fileCreate = {
+                customData: {
+                    fileChunk: chunks[0],
+                    fileKey: PublicKey.fromString('302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0') //this._signingKey().compressedPublicKey
+                }
+            };
+            const signedFileCreate = await this.signTransaction(fileCreate);
+            const resp =  await this.provider.sendTransaction(signedFileCreate);
+            for (let chunk of chunks.slice(1)) {
+                const fileAppend = {
+                    customData: {
+                        fileId: resp.customData.fileId.toString(),
+                        fileChunk: chunk
+                    }
+                };
+                const signedFileAppend = await this.signTransaction(fileAppend);
+                await this.provider.sendTransaction(signedFileAppend);
+            }
+
+            const contractCreate = {
+                gasLimit: tx.gasLimit,
+                customData: {
+                    bytecodeFileId: resp.customData.fileId.toString()
+                }
+            }
+            const signedContractCreate = await this.signTransaction(contractCreate);
+            return await this.provider.sendTransaction(signedContractCreate);
+        }
+    }
+
     /**
      * Signs a transaction with the key given upon creation.
      * The transaction can be:
@@ -193,7 +247,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
     signTransaction(transaction: TransactionRequest): Promise<string> {
         let tx: Transaction;
         const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 10000);
+        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
         if (transaction.to) {
             tx = new ContractExecuteTransaction()
                 .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
@@ -328,6 +382,20 @@ export function verifyTypedData(domain: TypedDataDomain, types: Record<string, A
     return recoverAddress(_TypedDataEncoder.hash(domain, types, value), signature);
 }
 
+// TODO: think about moving those utils
+
 function numberify(num: BigNumberish) {
     return BigNumber.from(num).toNumber();
+}
+
+// @ts-ignore
+function splitInChunks(data: string, chunkSize: number): string[] {
+    const chunks = [];
+    let num = 0;
+    while (num <= data.length) {
+        const slice = data.slice(num, chunkSize + num);
+        num += chunkSize;
+        chunks.push(slice);
+    }
+    return chunks;
 }

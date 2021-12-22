@@ -503,6 +503,14 @@ function parse(rawTransaction) {
                         // TODO IMPORTANT! We are setting only the constructor arguments and not the whole bytecode + constructor args
                         contents.data = parsed.constructorParameters ? (0, bytes_1.hexlify)(parsed.constructorParameters) : '0x';
                     }
+                    else if (parsed instanceof sdk_1.FileCreateTransaction) {
+                        parsed = parsed;
+                        contents.data = (0, bytes_1.hexlify)(Buffer.from(parsed.contents));
+                    }
+                    else if (parsed instanceof sdk_1.FileAppendTransaction) {
+                        parsed = parsed;
+                        contents.data = (0, bytes_1.hexlify)(Buffer.from(parsed.contents));
+                    }
                     else {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];
                     }

@@ -66,8 +66,11 @@ export interface TransactionResponse extends Transaction {
     raw?: string, // equivalent of signed transaction
 
     // This function waits until the transaction has been mined
-    wait: (confirmations?: number) => Promise<TransactionReceipt> // Should poll the mirror node
-};
+    wait: (confirmations?: number) => Promise<TransactionReceipt>,// Should poll the mirror node
+    customData?: {
+        [key: string]:any;
+    }
+}
 
 export type BlockTag = string | number;
 

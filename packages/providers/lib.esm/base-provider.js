@@ -841,11 +841,17 @@ export class BaseProvider extends Provider {
         });
     }
     // This should be called by any subclass wrapping a TransactionResponse
-    _wrapTransaction(tx, hash, startBlock) {
-        if (hash != null && hexDataLength(hash) !== 32) {
-            throw new Error("invalid response - sendTransaction");
-        }
+    _wrapTransaction(tx, hash, receipt) {
+        // if (hash != null && hexDataLength(hash) !== 32) { throw new Error("invalid response - sendTransaction"); }
         const result = tx;
+        if (!result.customData)
+            result.customData = {};
+        if (receipt.fileId) {
+            result.customData.fileId = receipt.fileId.toString();
+        }
+        if (receipt.contractId) {
+            result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
@@ -859,14 +865,14 @@ export class BaseProvider extends Provider {
             }
             // Get the details to detect replacement
             let replacement = undefined;
-            if (confirms !== 0 && startBlock != null) {
+            if (confirms !== 0) {
                 replacement = {
                     data: tx.data,
                     from: tx.from,
                     nonce: tx.nonce,
                     to: tx.to,
                     value: tx.value,
-                    startBlock
+                    startBlock: 0
                 };
             }
             const receipt = yield this._waitForTransaction(tx.hash, confirms, timeout, replacement);
@@ -887,44 +893,27 @@ export class BaseProvider extends Provider {
         return result;
     }
     sendTransaction(signedTransaction) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
             signedTransaction = yield signedTransaction;
             const txBytes = arrayify(signedTransaction);
-            const tx = HederaTransaction.fromBytes(txBytes);
-            const txHash = hexlify(yield tx.getTransactionHash());
+            const hederaTx = HederaTransaction.fromBytes(txBytes);
+            const ethersTx = yield this.formatter.transaction(signedTransaction);
+            const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
                 // TODO once we have fallback provider use `provider.perform("sendTransaction")`
-                yield tx.execute(this.hederaClient);
-                const parsedTx = this.formatter.transaction(signedTransaction);
-                return this._wrapTransaction(parsedTx, txHash);
+                // TODO Before submission verify that the nodeId is the one that the provider is connected to
+                const resp = yield hederaTx.execute(this.hederaClient);
+                const receipt = yield resp.getReceipt(this.hederaClient);
+                return this._wrapTransaction(ethersTx, txHash, receipt);
             }
             catch (error) {
-                const err = logger.makeError(error.message, error.status.toString());
-                err.transaction = tx;
+                const err = logger.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
+                err.transaction = ethersTx;
                 err.transactionHash = txHash;
                 throw err;
             }
-            // // in first step we will not do anything with parsing. After we have the submission, we must:
-            // // 1. Parse the signed transaction into `Transaction` object
-            // // 2. Before submission verify that the nodeId is the one that the provider is connected to
-            // const tx = this.formatter.transaction(signedTransaction);
-            // if (tx.confirmations == null) { tx.confirmations = 0; }
-            // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-            // try {
-            //     // Figure out how in the JS sdk we can submit a signed transaction (bytes)
-            //     const hash = await this.perform("sendTransaction", { signedTransaction: hexTx });
-            //     // Wrapping of the Transaction will be implemented after step 1 and once we have the parsing of the
-            //     // transaction.
-            //     // Wrapping of the transaction is done in order for users to be able to do:
-            //     // const tx = provider.sendTransaction(signedTx);
-            //     // tx.wait() -> wait for it to be mined
-            //     return this._wrapTransaction(tx, hash, blockNumber);
-            // } catch (error) {
-            //     (<any>error).transaction = tx;
-            //     (<any>error).transactionHash = tx.hash;
-            //     throw error;
-            // }
         });
     }
     _getTransactionRequest(transaction) {

@@ -1,6 +1,6 @@
 "use strict";
 
-import {getAddress} from "@ethersproject/address";
+import { AccountLike, getAddress } from "@ethersproject/address";
 import {BigNumber, BigNumberish} from "@ethersproject/bignumber";
 import {
     arrayify,
@@ -25,7 +25,12 @@ import {computePublicKey, recoverPublicKey} from "@ethersproject/signing-key";
 import {Logger} from "@ethersproject/logger";
 import {version} from "./_version";
 import {base64, getAddressFromAccount} from "ethers/lib/utils";
-import {ContractCreateTransaction, ContractExecuteTransaction, Transaction as HederaTransaction} from "@hashgraph/sdk";
+import {
+    ContractCreateTransaction,
+    ContractExecuteTransaction, FileAppendTransaction,
+    FileCreateTransaction,
+    Transaction as HederaTransaction
+} from "@hashgraph/sdk";
 
 const logger = new Logger(version);
 
@@ -542,6 +547,12 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
             handleNumber(parsed.initialBalance.toTinybars().toString()) : handleNumber('0');
         // TODO IMPORTANT! We are setting only the constructor arguments and not the whole bytecode + constructor args
         contents.data = parsed.constructorParameters ? hexlify(parsed.constructorParameters) : '0x';
+    } else if (parsed instanceof FileCreateTransaction) {
+        parsed = parsed as FileCreateTransaction;
+        contents.data = hexlify(Buffer.from(parsed.contents));
+    } else if (parsed instanceof FileAppendTransaction) {
+        parsed = parsed as FileAppendTransaction;
+        contents.data = hexlify(Buffer.from(parsed.contents));
     } else {
         return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, {operation: "parse"});
     }

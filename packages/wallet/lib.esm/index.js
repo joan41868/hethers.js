@@ -15,14 +15,14 @@ import { arrayify, concat, hexDataSlice, hexlify, isHexString, joinSignature } f
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import { defineReadOnly } from "@ethersproject/properties";
+import { defineReadOnly, resolveProperties } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethersproject/json-wallets";
 import { computeAlias, recoverAddress, } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { AccountId, ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, PrivateKey, TransactionId } from "@hashgraph/sdk";
+import { AccountId, ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, PrivateKey, PublicKey, TransactionId } from "@hashgraph/sdk";
 import { BigNumber } from "ethers";
 const logger = new Logger(version);
 function isAccount(value) {
@@ -126,6 +126,55 @@ export class Wallet extends Signer {
         };
         return new Wallet(eoa, this.provider);
     }
+    //
+    // async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
+    //
+    //     return null;
+    // }
+    sendTransaction(transaction) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const tx = yield resolveProperties(transaction);
+            // to - sign & send
+            // no `to` - file create and appends and contract create;
+            // create TransactionRequest objects and pass them down to the sign fn
+            // sign & send on each tx
+            // contract create would be the expected result of create + append + contract create
+            if (tx.to) {
+                const signed = yield this.signTransaction(tx);
+                return yield this.provider.sendTransaction(signed);
+            }
+            else {
+                const contractByteCode = tx.data;
+                let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
+                const fileCreate = {
+                    customData: {
+                        fileChunk: chunks[0],
+                        fileKey: PublicKey.fromString('302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0') //this._signingKey().compressedPublicKey
+                    }
+                };
+                const signedFileCreate = yield this.signTransaction(fileCreate);
+                const resp = yield this.provider.sendTransaction(signedFileCreate);
+                for (let chunk of chunks.slice(1)) {
+                    const fileAppend = {
+                        customData: {
+                            fileId: resp.customData.fileId.toString(),
+                            fileChunk: chunk
+                        }
+                    };
+                    const signedFileAppend = yield this.signTransaction(fileAppend);
+                    yield this.provider.sendTransaction(signedFileAppend);
+                }
+                const contractCreate = {
+                    gasLimit: tx.gasLimit,
+                    customData: {
+                        bytecodeFileId: resp.customData.fileId.toString()
+                    }
+                };
+                const signedContractCreate = yield this.signTransaction(contractCreate);
+                return yield this.provider.sendTransaction(signedContractCreate);
+            }
+        });
+    }
     /**
      * Signs a transaction with the key given upon creation.
      * The transaction can be:
@@ -140,7 +189,7 @@ export class Wallet extends Signer {
         var _a, _b;
         let tx;
         const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = numberify(transaction.gasLimit);
+        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
         if (transaction.to) {
             tx = new ContractExecuteTransaction()
                 .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
@@ -167,7 +216,8 @@ export class Wallet extends Signer {
                 else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
                     // only a chunk, thus the first one
                     tx = new FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk);
+                        .setContents(transaction.customData.fileChunk)
+                        .setKeys([transaction.customData.fileKey ? transaction.customData.fileKey : this.publicKey]);
                 }
                 else {
                     logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
@@ -262,7 +312,19 @@ export function verifyMessage(message, signature) {
 export function verifyTypedData(domain, types, value, signature) {
     return recoverAddress(_TypedDataEncoder.hash(domain, types, value), signature);
 }
+// TODO: think about moving those utils
 function numberify(num) {
     return BigNumber.from(num).toNumber();
+}
+// @ts-ignore
+function splitInChunks(data, chunkSize) {
+    const chunks = [];
+    let num = 0;
+    while (num <= data.length) {
+        const slice = data.slice(num, chunkSize + num);
+        num += chunkSize;
+        chunks.push(slice);
+    }
+    return chunks;
 }
 //# sourceMappingURL=index.js.map

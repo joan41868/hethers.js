@@ -1049,12 +1049,18 @@ var BaseProvider = /** @class */ (function (_super) {
         });
     };
     // This should be called by any subclass wrapping a TransactionResponse
-    BaseProvider.prototype._wrapTransaction = function (tx, hash, startBlock) {
+    BaseProvider.prototype._wrapTransaction = function (tx, hash, receipt) {
+        // if (hash != null && hexDataLength(hash) !== 32) { throw new Error("invalid response - sendTransaction"); }
         var _this = this;
-        if (hash != null && (0, bytes_1.hexDataLength)(hash) !== 32) {
-            throw new Error("invalid response - sendTransaction");
-        }
         var result = tx;
+        if (!result.customData)
+            result.customData = {};
+        if (receipt.fileId) {
+            result.customData.fileId = receipt.fileId.toString();
+        }
+        if (receipt.contractId) {
+            result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", logger_1.Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
@@ -1071,14 +1077,14 @@ var BaseProvider = /** @class */ (function (_super) {
                             timeout = 0;
                         }
                         replacement = undefined;
-                        if (confirms !== 0 && startBlock != null) {
+                        if (confirms !== 0) {
                             replacement = {
                                 data: tx.data,
                                 from: tx.from,
                                 nonce: tx.nonce,
                                 to: tx.to,
                                 value: tx.value,
-                                startBlock: startBlock
+                                startBlock: 0
                             };
                         }
                         return [4 /*yield*/, this._waitForTransaction(tx.hash, confirms, timeout, replacement)];
@@ -1105,43 +1111,41 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, hederaTx, ethersTx, txHash, _b, _c, _d, error_6, err;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var txBytes, hederaTx, ethersTx, txHash, _b, resp, receipt, error_6, err;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
-                        _e.sent();
+                        _c.sent();
                         return [4 /*yield*/, signedTransaction];
                     case 2:
-                        signedTransaction = _e.sent();
+                        signedTransaction = _c.sent();
                         txBytes = (0, bytes_1.arrayify)(signedTransaction);
                         hederaTx = sdk_1.Transaction.fromBytes(txBytes);
                         return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
                     case 3:
-                        ethersTx = _e.sent();
+                        ethersTx = _c.sent();
                         _b = bytes_1.hexlify;
                         return [4 /*yield*/, hederaTx.getTransactionHash()];
                     case 4:
-                        txHash = _b.apply(void 0, [_e.sent()]);
-                        _e.label = 5;
+                        txHash = _b.apply(void 0, [_c.sent()]);
+                        _c.label = 5;
                     case 5:
-                        _e.trys.push([5, 7, , 8]);
-                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
-                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
-                        _d = (_c = console).log;
+                        _c.trys.push([5, 8, , 9]);
                         return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
                     case 6:
-                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
-                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
-                        _d.apply(_c, [_e.sent()]);
-                        return [2 /*return*/, new Promise(function () { })];
+                        resp = _c.sent();
+                        return [4 /*yield*/, resp.getReceipt(this.hederaClient)];
                     case 7:
-                        error_6 = _e.sent();
+                        receipt = _c.sent();
+                        return [2 /*return*/, this._wrapTransaction(ethersTx, txHash, receipt)];
+                    case 8:
+                        error_6 = _c.sent();
                         err = logger.makeError(error_6.message, (_a = error_6.status) === null || _a === void 0 ? void 0 : _a.toString());
                         err.transaction = ethersTx;
                         err.transactionHash = txHash;
                         throw err;
-                    case 8: return [2 /*return*/];
+                    case 9: return [2 /*return*/];
                 }
             });
         });

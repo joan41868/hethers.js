@@ -4,6 +4,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
+import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
 export declare class Event {
     readonly listener: Listener;
@@ -112,7 +113,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      */
     getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
-    _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse;
+    _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     _getTransactionRequest(transaction: Deferrable<TransactionRequest>): Promise<Transaction>;
     _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;

@@ -1,8 +1,9 @@
 import { Account, AccountLike } from "@ethersproject/address";
-import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
+import { Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@ethersproject/abstract-signer";
 import { Bytes, BytesLike, SignatureLike } from "@ethersproject/bytes";
 import { Mnemonic } from "@ethersproject/hdnode";
+import { Deferrable } from "@ethersproject/properties";
 import { SigningKey } from "@ethersproject/signing-key";
 import { ProgressCallback } from "@ethersproject/json-wallets";
 import { Wordlist } from "@ethersproject/wordlists";
@@ -22,6 +23,7 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     getAlias(): Promise<string>;
     connect(provider: Provider): Wallet;
     connectAccount(accountLike: AccountLike): Wallet;
+    sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse>;
     /**
      * Signs a transaction with the key given upon creation.
      * The transaction can be:

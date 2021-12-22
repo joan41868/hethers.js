@@ -26,6 +26,9 @@ export interface TransactionResponse extends Transaction {
     from: string;
     raw?: string;
     wait: (confirmations?: number) => Promise<TransactionReceipt>;
+    customData?: {
+        [key: string]: any;
+    };
 }
 export declare type BlockTag = string | number;
 export interface _Block {

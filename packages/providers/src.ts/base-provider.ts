@@ -15,7 +15,7 @@ import { Transaction } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import { fetchJson, poll } from "@ethersproject/web";
-
+import {TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
@@ -993,11 +993,17 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     // This should be called by any subclass wrapping a TransactionResponse
-    _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse {
-        if (hash != null && hexDataLength(hash) !== 32) { throw new Error("invalid response - sendTransaction"); }
+    _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse {
+        // if (hash != null && hexDataLength(hash) !== 32) { throw new Error("invalid response - sendTransaction"); }
 
         const result = <TransactionResponse>tx;
-
+        if (!result.customData) result.customData = {};
+        if (receipt.fileId) {
+            result.customData.fileId = receipt.fileId.toString();
+        }
+        if (receipt.contractId) {
+            result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
@@ -1009,14 +1015,14 @@ export class BaseProvider extends Provider implements EnsProvider {
 
             // Get the details to detect replacement
             let replacement = undefined;
-            if (confirms !== 0 && startBlock != null) {
+            if (confirms !== 0) {
                 replacement = {
                     data: tx.data,
                     from: tx.from,
                     nonce: tx.nonce,
                     to: tx.to,
                     value: tx.value,
-                    startBlock
+                    startBlock: 0
                 };
             }
 
@@ -1050,8 +1056,9 @@ export class BaseProvider extends Provider implements EnsProvider {
         try {
             // TODO once we have fallback provider use `provider.perform("sendTransaction")`
             // TODO Before submission verify that the nodeId is the one that the provider is connected to
-            await hederaTx.execute(this.hederaClient);
-            return this._wrapTransaction(ethersTx, txHash);
+            const resp = await hederaTx.execute(this.hederaClient);
+            const receipt = await resp.getReceipt(this.hederaClient);
+            return this._wrapTransaction(ethersTx, txHash, receipt);
         } catch (error) {
             const err = logger.makeError(error.message, error.status?.toString());
             (<any>err).transaction = ethersTx;
