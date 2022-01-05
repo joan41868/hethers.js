@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 import { getAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexConcat, hexDataLength, hexDataSlice, hexlify, 
@@ -11,8 +20,8 @@ import * as RLP from "@ethersproject/rlp";
 import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { base64 } from "ethers/lib/utils";
-import { Transaction as HederaTransaction } from "@hashgraph/sdk/lib/exports";
+import { base64, getAddressFromAccount } from "ethers/lib/utils";
+import { ContractCreateTransaction, ContractExecuteTransaction, Transaction as HederaTransaction } from "@hashgraph/sdk";
 const logger = new Logger(version);
 export var TransactionTypes;
 (function (TransactionTypes) {
@@ -20,7 +29,6 @@ export var TransactionTypes;
     TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes || (TransactionTypes = {}));
-;
 ///////////////////////////////
 //
 // function handleAddress(value: string): string {
@@ -394,29 +402,41 @@ export function serialize(transaction, signature) {
 //     return tx;
 // }
 export function parse(rawTransaction) {
-    const payload = arrayify(rawTransaction);
-    let parsed;
-    try {
-        parsed = HederaTransaction.fromBytes(payload);
-    }
-    catch (error) {
-        logger.throwArgumentError(error.message, "rawTransaction", rawTransaction);
-    }
-    console.log(parsed);
-    return {
-        hash: '',
-        to: '',
-        from: '',
-        nonce: 0,
-        gasLimit: handleNumber('0'),
-        gasPrice: handleNumber('0'),
-        data: '',
-        value: handleNumber('0'),
-        chainId: 0,
-        r: '',
-        s: '',
-        v: 0,
-        type: null,
-    };
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const payload = arrayify(rawTransaction);
+        let parsed;
+        try {
+            parsed = HederaTransaction.fromBytes(payload);
+        }
+        catch (error) {
+            logger.throwArgumentError(error.message, "rawTransaction", rawTransaction);
+        }
+        let contents = {
+            hash: hexlify(yield parsed.getTransactionHash()),
+            from: getAddressFromAccount(parsed.transactionId.accountId.toString()),
+        };
+        if (parsed instanceof ContractExecuteTransaction) {
+            parsed = parsed;
+            contents.to = getAddressFromAccount((_a = parsed.contractId) === null || _a === void 0 ? void 0 : _a.toString());
+            contents.gasLimit = handleNumber(parsed.gas.toString());
+            contents.value = parsed.payableAmount ?
+                handleNumber(parsed.payableAmount.toTinybars().toString()) : handleNumber('0');
+            contents.data = parsed.functionParameters ? hexlify(parsed.functionParameters) : '0x';
+        }
+        else if (parsed instanceof ContractCreateTransaction) {
+            parsed = parsed;
+            contents.gasLimit = handleNumber(parsed.gas.toString());
+            contents.value = parsed.initialBalance ?
+                handleNumber(parsed.initialBalance.toTinybars().toString()) : handleNumber('0');
+            // TODO IMPORTANT! We are setting only the constructor arguments and not the whole bytecode + constructor args
+            contents.data = parsed.constructorParameters ? hexlify(parsed.constructorParameters) : '0x';
+        }
+        else {
+            return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
+        }
+        // TODO populate r, s ,v
+        return Object.assign(Object.assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null });
+    });
 }
 //# sourceMappingURL=index.js.map

@@ -1105,38 +1105,37 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, hederaTx, ethersTx, txHash, _b, _c, _d, error_6, err;
-            return __generator(this, function (_e) {
-                switch (_e.label) {
+            var txBytes, hederaTx, ethersTx, txHash, _b, error_6, err;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
-                        _e.sent();
+                        _c.sent();
                         return [4 /*yield*/, signedTransaction];
                     case 2:
-                        signedTransaction = _e.sent();
+                        signedTransaction = _c.sent();
                         txBytes = (0, bytes_1.arrayify)(signedTransaction);
                         hederaTx = sdk_1.Transaction.fromBytes(txBytes);
                         return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
                     case 3:
-                        ethersTx = _e.sent();
+                        ethersTx = _c.sent();
                         _b = bytes_1.hexlify;
                         return [4 /*yield*/, hederaTx.getTransactionHash()];
                     case 4:
-                        txHash = _b.apply(void 0, [_e.sent()]);
-                        _e.label = 5;
+                        txHash = _b.apply(void 0, [_c.sent()]);
+                        _c.label = 5;
                     case 5:
-                        _e.trys.push([5, 7, , 8]);
+                        _c.trys.push([5, 7, , 8]);
                         // TODO once we have fallback provider use `provider.perform("sendTransaction")`
                         // TODO Before submission verify that the nodeId is the one that the provider is connected to
-                        _d = (_c = console).log;
                         return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
                     case 6:
                         // TODO once we have fallback provider use `provider.perform("sendTransaction")`
                         // TODO Before submission verify that the nodeId is the one that the provider is connected to
-                        _d.apply(_c, [_e.sent()]);
-                        return [2 /*return*/, new Promise(function () { })];
+                        _c.sent();
+                        return [2 /*return*/, this._wrapTransaction(ethersTx, txHash)];
                     case 7:
-                        error_6 = _e.sent();
+                        error_6 = _c.sent();
                         err = logger.makeError(error_6.message, (_a = error_6.status) === null || _a === void 0 ? void 0 : _a.toString());
                         err.transaction = ethersTx;
                         err.transactionHash = txHash;
