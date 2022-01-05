@@ -67,7 +67,9 @@ var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var sdk_1 = require("@hashgraph/sdk");
+// import {EcdsaPrivateKey, EcdsaPublicKey} from '@hashgraph/cryptography';
 var ethers_1 = require("ethers");
+var proto_1 = require("@hashgraph/proto");
 var logger = new logger_1.Logger(_version_1.version);
 function isAccount(value) {
     return value != null && (0, bytes_1.isHexString)(value.privateKey, 32);
@@ -211,7 +213,7 @@ var Wallet = /** @class */ (function (_super) {
                         fileCreate = {
                             customData: {
                                 fileChunk: chunks[0],
-                                fileKey: sdk_1.PublicKey.fromString('302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0') //this._signingKey().compressedPublicKey
+                                fileKey: ecdsaPublicKeyToProtobufKey(sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey))
                             }
                         };
                         return [4 /*yield*/, this.signTransaction(fileCreate)];
@@ -300,7 +302,9 @@ var Wallet = /** @class */ (function (_super) {
                     // only a chunk, thus the first one
                     tx = new sdk_1.FileCreateTransaction()
                         .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ? transaction.customData.fileKey : this.publicKey]);
+                        .setKeys([transaction.customData.fileKey ?
+                            ecdsaPublicKeyToProtobufKey(transaction.customData.fileKey) :
+                            ecdsaPublicKeyToProtobufKey(sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey))]);
                 }
                 else {
                     logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
@@ -317,13 +321,12 @@ var Wallet = /** @class */ (function (_super) {
             // FIXME - should be taken from the network/ wallet's provider
             .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
             .freeze();
-        // const privKey = PrivateKey.fromString(this._signingKey().privateKey);
-        var privKey = sdk_1.PrivateKey.fromString("302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8");
+        var privKey = sdk_1.PrivateKey.fromString(this._signingKey().privateKey);
         return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
             var signed;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, tx.sign(privKey)];
+                    case 0: return [4 /*yield*/, tx.sign(sdk_1.PrivateKey.fromBytes(privKey.toBytesRaw()))];
                     case 1:
                         signed = _a.sent();
                         resolve((0, bytes_1.hexlify)(signed.toBytes()));
@@ -430,5 +433,11 @@ function splitInChunks(data, chunkSize) {
         chunks.push(slice);
     }
     return chunks;
+}
+function ecdsaPublicKeyToProtobufKey(k1) {
+    var protoKey = proto_1.Key.create({
+        ECDSASecp256k1: k1.toBytesRaw()
+    });
+    return sdk_1.Key._fromProtobufKey(protoKey);
 }
 //# sourceMappingURL=index.js.map
