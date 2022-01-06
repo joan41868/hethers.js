@@ -13806,7 +13806,6 @@ class HDNode {
             defineReadOnly(this, "alias", null);
             defineReadOnly(this, "publicKey", hexlify(publicKey));
         }
-        defineReadOnly(this, "alias", computeAlias(this.privateKey));
         defineReadOnly(this, "parentFingerprint", parentFingerprint);
         defineReadOnly(this, "fingerprint", hexDataSlice(ripemd160$1(sha256$1(this.publicKey)), 0, 4));
         defineReadOnly(this, "chainCode", chainCode);
@@ -26025,10 +26024,10 @@ async function derive(parentKey, chainCode, index) {
 }
 
 /*
- *      bignumber.js v9.0.2
+ *      bignumber.js v9.0.1
  *      A JavaScript library for arbitrary-precision arithmetic.
  *      https://github.com/MikeMcl/bignumber.js
- *      Copyright (c) 2021 Michael Mclaughlin <M8ch88l@gmail.com>
+ *      Copyright (c) 2020 Michael Mclaughlin <M8ch88l@gmail.com>
  *      MIT Licensed.
  *
  *      BigNumber.prototype methods     |  BigNumber methods
@@ -26074,6 +26073,7 @@ async function derive(parentKey, chainCode, index) {
 
 var
   isNumeric = /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i,
+
   mathceil = Math.ceil,
   mathfloor = Math.floor,
 
@@ -26168,7 +26168,7 @@ function clone(configObject) {
 
     // The maximum number of significant digits of the result of the exponentiatedBy operation.
     // If POW_PRECISION is 0, there will be unlimited significant digits.
-    POW_PRECISION = 0,                       // 0 to MAX
+    POW_PRECISION = 0,                    // 0 to MAX
 
     // The format specification used by the BigNumber.prototype.toFormat method.
     FORMAT = {
@@ -26178,15 +26178,14 @@ function clone(configObject) {
       groupSeparator: ',',
       decimalSeparator: '.',
       fractionGroupSize: 0,
-      fractionGroupSeparator: '\xA0',        // non-breaking space
+      fractionGroupSeparator: '\xA0',      // non-breaking space
       suffix: ''
     },
 
     // The alphabet used for base conversion. It must be at least 2 characters long, with no '+',
     // '-', '.', whitespace, or repeated character.
     // '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_'
-    ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz',
-    alphabetHasNormalDecimalDigits = true;
+    ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
 
 
   //------------------------------------------------------------------------------------------
@@ -26276,7 +26275,7 @@ function clone(configObject) {
 
       // Allow exponential notation to be used with base 10 argument, while
       // also rounding to DECIMAL_PLACES as with other bases.
-      if (b == 10 && alphabetHasNormalDecimalDigits) {
+      if (b == 10) {
         x = new BigNumber(v);
         return round(x, DECIMAL_PLACES + x.e + 1, ROUNDING_MODE);
       }
@@ -26430,7 +26429,7 @@ function clone(configObject) {
    *   MODULO_MODE      {number}           0 to 9
    *   POW_PRECISION       {number}           0 to MAX
    *   ALPHABET         {string}           A string of two or more unique characters which does
-   *                                       not contain '.'.
+   *                                     not contain '.'.
    *   FORMAT           {object}           An object with some of the following properties:
    *     prefix                 {string}
    *     groupSize              {number}
@@ -26565,10 +26564,9 @@ function clone(configObject) {
         if (obj.hasOwnProperty(p = 'ALPHABET')) {
           v = obj[p];
 
-          // Disallow if less than two characters,
+          // Disallow if only one character,
           // or if it contains '+', '-', '.', whitespace, or a repeated character.
-          if (typeof v == 'string' && !/^.?$|[+\-.\s]|(.).*\1/.test(v)) {
-            alphabetHasNormalDecimalDigits = v.slice(0, 10) == '0123456789';
+          if (typeof v == 'string' && !/^.$|[+-.\s]|(.).*\1/.test(v)) {
             ALPHABET = v;
           } else {
             throw Error
@@ -28743,7 +28741,7 @@ function clone(configObject) {
         str = e <= TO_EXP_NEG || e >= TO_EXP_POS
          ? toExponential(coeffToString(n.c), e)
          : toFixedPoint(coeffToString(n.c), e, '0');
-      } else if (b === 10 && alphabetHasNormalDecimalDigits) {
+      } else if (b === 10) {
         n = round(new BigNumber(n), DECIMAL_PLACES + e + 1, ROUNDING_MODE);
         str = toFixedPoint(coeffToString(n.c), n.e, '0');
       } else {
@@ -80038,46 +80036,22 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var _from = "@grpc/grpc-js@^1.3.4";
-var _id = "@grpc/grpc-js@1.4.5";
-var _inBundle = false;
-var _integrity = "sha512-A6cOzSu7dqXZ7rzvh/9JZf+Jg/MOpLEMP0IdT8pT8hrWJZ6TB4ydN/MRuqOtAugInJe/VQ9F8BPricUpYZSaZA==";
-var _location = "/@grpc/grpc-js";
-var _phantomChildren = {
+var name = "@grpc/grpc-js";
+var version$m = "1.4.6";
+var description = "gRPC Library for Node - pure JS implementation";
+var homepage = "https://grpc.io/";
+var repository = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
+var main = "build/src/index.js";
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
-var _requested = {
-	type: "range",
-	registry: true,
-	raw: "@grpc/grpc-js@^1.3.4",
-	name: "@grpc/grpc-js",
-	escapedName: "@grpc%2fgrpc-js",
-	scope: "@grpc",
-	rawSpec: "^1.3.4",
-	saveSpec: null,
-	fetchSpec: "^1.3.4"
-};
-var _requiredBy = [
-	"/@hashgraph/sdk"
+var keywords = [
 ];
-var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.5.tgz";
-var _shasum = "0cd840b47180624eeedf066f2cdc422d052401f8";
-var _spec = "@grpc/grpc-js@^1.3.4";
-var _where = "/Users/danielivanov/limechain/hedera/hethers.js/node_modules/@hashgraph/sdk";
 var author = {
 	name: "Google Inc."
 };
-var bundleDependencies = false;
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var dependencies = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
-};
-var deprecated = false;
-var description = "gRPC Library for Node - pure JS implementation";
+var types = "build/src/index.d.ts";
+var license = "Apache-2.0";
 var devDependencies = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -80101,8 +80075,28 @@ var devDependencies = {
 	typescript: "^3.7.2",
 	yargs: "^15.4.1"
 };
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var scripts = {
+	build: "npm run compile",
+	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
+	compile: "tsc -p .",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	lint: "npm run check",
+	prepare: "npm run generate-types && npm run compile",
+	test: "gulp test",
+	check: "gts check src/**/*.ts",
+	fix: "gts fix src/*.ts",
+	pretest: "npm run generate-types && npm run compile",
+	posttest: "npm run check && madge -c ./build/src",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto"
+};
+var dependencies = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
 };
 var files = [
 	"src/**/*.ts",
@@ -80118,63 +80112,29 @@ var files = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var homepage = "https://grpc.io/";
-var keywords = [
-];
-var license = "Apache-2.0";
-var main = "build/src/index.js";
-var name = "@grpc/grpc-js";
-var repository = {
-	type: "git",
-	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
-};
-var scripts = {
-	build: "npm run compile",
-	check: "gts check src/**/*.ts",
-	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
-	compile: "tsc -p .",
-	fix: "gts fix src/*.ts",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto",
-	lint: "npm run check",
-	posttest: "npm run check && madge -c ./build/src",
-	prepare: "npm run generate-types && npm run compile",
-	pretest: "npm run generate-types && npm run compile",
-	test: "gulp test"
-};
-var types = "build/src/index.d.ts";
-var version$m = "1.4.5";
+var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.6.tgz";
+var _integrity = "sha512-Byau4xiXfIixb1PnW30V/P9mkrZ05lknyNqiK+cVY9J5hj3gecxd/anwaUbAM8j834zg1x78NvAbwGnMfWEu7A==";
+var _from = "@grpc/grpc-js@1.4.6";
 var require$$0$2 = {
-	_from: _from,
-	_id: _id,
-	_inBundle: _inBundle,
-	_integrity: _integrity,
-	_location: _location,
-	_phantomChildren: _phantomChildren,
-	_requested: _requested,
-	_requiredBy: _requiredBy,
-	_resolved: _resolved,
-	_shasum: _shasum,
-	_spec: _spec,
-	_where: _where,
-	author: author,
-	bundleDependencies: bundleDependencies,
-	contributors: contributors,
-	dependencies: dependencies,
-	deprecated: deprecated,
-	description: description,
-	devDependencies: devDependencies,
-	engines: engines,
-	files: files,
-	homepage: homepage,
-	keywords: keywords,
-	license: license,
-	main: main,
 	name: name,
+	version: version$m,
+	description: description,
+	homepage: homepage,
 	repository: repository,
-	scripts: scripts,
+	main: main,
+	engines: engines,
+	keywords: keywords,
+	author: author,
 	types: types,
-	version: version$m
+	license: license,
+	devDependencies: devDependencies,
+	contributors: contributors,
+	scripts: scripts,
+	dependencies: dependencies,
+	files: files,
+	_resolved: _resolved,
+	_integrity: _integrity,
+	_from: _from
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -82405,7 +82365,7 @@ class ServerWritableStreamImpl extends stream_1.Writable {
         if (metadata) {
             this.trailingMetadata = metadata;
         }
-        super.end();
+        return super.end();
     }
 }
 exports.ServerWritableStreamImpl = ServerWritableStreamImpl;
@@ -82439,7 +82399,7 @@ class ServerDuplexStreamImpl extends stream_1.Duplex {
         if (metadata) {
             this.trailingMetadata = metadata;
         }
-        super.end();
+        return super.end();
     }
 }
 exports.ServerDuplexStreamImpl = ServerDuplexStreamImpl;
@@ -82449,7 +82409,6 @@ ServerDuplexStreamImpl.prototype._write =
     ServerWritableStreamImpl.prototype._write;
 ServerDuplexStreamImpl.prototype._final =
     ServerWritableStreamImpl.prototype._final;
-ServerDuplexStreamImpl.prototype.end = ServerWritableStreamImpl.prototype.end;
 // Internal class that wraps the HTTP2 request.
 class Http2ServerCallStream extends events_1.EventEmitter {
     constructor(stream, handler, options) {
@@ -85569,11 +85528,6 @@ var TransactionTypes;
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes || (TransactionTypes = {}));
 ///////////////////////////////
-//
-// function handleAddress(value: string): string {
-//     if (value === "0x") { return null; }
-//     return getAddress(value);
-// }
 function handleNumber(value) {
     if (value === "0x") {
         return Zero$1;
@@ -85809,67 +85763,6 @@ function serialize(transaction, signature) {
 //     } catch (error) {
 //         console.log(error);
 //     }
-// }
-// function _parseEip1559(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
-//
-//     if (transaction.length !== 9 && transaction.length !== 12) {
-//         logger.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
-//     }
-//
-//     const maxPriorityFeePerGas = handleNumber(transaction[2]);
-//     const maxFeePerGas = handleNumber(transaction[3]);
-//     const tx: Transaction = {
-//         type:                  2,
-//         chainId:               handleNumber(transaction[0]).toNumber(),
-//         nonce:                 handleNumber(transaction[1]).toNumber(),
-//         maxPriorityFeePerGas:  maxPriorityFeePerGas,
-//         maxFeePerGas:          maxFeePerGas,
-//         gasPrice:              null,
-//         gasLimit:              handleNumber(transaction[4]),
-//         to:                    handleAddress(transaction[5]),
-//         value:                 handleNumber(transaction[6]),
-//         data:                  transaction[7],
-//         accessList:            accessListify(transaction[8]),
-//     };
-//
-//     // Unsigned EIP-1559 Transaction
-//     if (transaction.length === 9) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
-//
-//     return tx;
-// }
-//
-// function _parseEip2930(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
-//
-//     if (transaction.length !== 8 && transaction.length !== 11) {
-//         logger.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
-//     }
-//
-//     const tx: Transaction = {
-//         type:       1,
-//         chainId:    handleNumber(transaction[0]).toNumber(),
-//         nonce:      handleNumber(transaction[1]).toNumber(),
-//         gasPrice:   handleNumber(transaction[2]),
-//         gasLimit:   handleNumber(transaction[3]),
-//         to:         handleAddress(transaction[4]),
-//         value:      handleNumber(transaction[5]),
-//         data:       transaction[6],
-//         accessList: accessListify(transaction[7])
-//     };
-//
-//     // Unsigned EIP-2930 Transaction
-//     if (transaction.length === 8) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
-//
-//     return tx;
 // }
 //
 // // Legacy Transactions and EIP-155
@@ -90269,12 +90162,11 @@ function removeMatchingHeaders(regex, headers) {
   var lastValue;
   for (var header in headers) {
     if (regex.test(header)) {
-      lastValue = headers[header];
+      lastValue = headers[header].toString().trim();
       delete headers[header];
     }
   }
-  return (lastValue === null || typeof lastValue === "undefined") ?
-    undefined : String(lastValue).trim();
+  return lastValue;
 }
 
 function createErrorType(code, defaultMessage) {

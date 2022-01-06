@@ -418,6 +418,8 @@ describe("Test nameprep", function() {
     });
 });
 
+// TODO: send transaction test with ed key
+
 // FIXME
 describe("Test Signature Manipulation", function() {
     // TODO: fix by recovering PublicKey and not address (ecrecover)
