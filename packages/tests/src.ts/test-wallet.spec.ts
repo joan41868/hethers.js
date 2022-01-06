@@ -6,10 +6,6 @@ import { ethers } from "ethers";
 import { loadTests, TestCase } from "@ethersproject/testcases";
 import * as utils from './utils';
 
-/**
- * Delete unused tests
- */
-
 describe('Test JSON Wallets', function() {
 
     let tests: Array<TestCase.Wallet> = loadTests('wallets');

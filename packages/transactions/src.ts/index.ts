@@ -468,13 +468,13 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
         contents.to = getAddressFromAccount(parsed.contractId?.toString());
         contents.gasLimit = handleNumber(parsed.gas.toString());
         contents.value = parsed.payableAmount ?
-            handleNumber(parsed.payableAmount.toTinybars().toString()) : handleNumber('0');
+            handleNumber(parsed.payableAmount.toBigNumber().toString()) : handleNumber('0');
         contents.data = parsed.functionParameters ? hexlify(parsed.functionParameters) : '0x';
     } else if (parsed instanceof ContractCreateTransaction) {
         parsed = parsed as ContractCreateTransaction;
         contents.gasLimit = handleNumber(parsed.gas.toString());
         contents.value = parsed.initialBalance ?
-            handleNumber(parsed.initialBalance.toTinybars().toString()) : handleNumber('0');
+            handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
         // TODO IMPORTANT! We are setting only the constructor arguments and not the whole bytecode + constructor args
         contents.data = parsed.constructorParameters ? hexlify(parsed.constructorParameters) : '0x';
     } else {
