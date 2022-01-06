@@ -18,6 +18,24 @@ export declare type TransactionRequest = {
     maxFeePerGas?: BigNumberish;
     customData?: Record<string, any>;
 };
+export declare type HederaTransactionResponse = {
+    charged_tx_fee: number;
+    consensus_timestamp: string;
+    entity_id: string;
+    max_fee: string;
+    memo_base64: string;
+    name: string;
+    node: string;
+    nonce: number;
+    result: string;
+    scheduled: false;
+    bytes: BytesLike;
+    transaction_hash: string;
+    transaction_id: string;
+    transfers: Array<string>;
+    valid_duration_seconds: number;
+    valid_start_timestamp: string;
+};
 export interface TransactionResponse extends Transaction {
     hash: string;
     blockNumber?: number;
@@ -27,6 +45,9 @@ export interface TransactionResponse extends Transaction {
     from: string;
     raw?: string;
     wait: (confirmations?: number) => Promise<TransactionReceipt>;
+    customData?: {
+        [key: string]: any;
+    };
 }
 export declare type BlockTag = string | number;
 export interface _Block {

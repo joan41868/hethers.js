@@ -35,6 +35,26 @@ export type TransactionRequest = {
     customData?: Record<string, any>;
 }
 
+export type HederaTransactionResponse = {
+    charged_tx_fee: number,
+    consensus_timestamp: string,
+    entity_id: string,
+    max_fee: string,
+    memo_base64: string,
+    name: string,
+    node: string,
+    nonce: number,
+    result: string,
+    scheduled: false,
+    bytes: BytesLike,
+    transaction_hash: string,
+    transaction_id: string,
+    transfers: Array<string>,
+    valid_duration_seconds: number,
+    valid_start_timestamp: string;
+}
+  
+
 export interface TransactionResponse extends Transaction {
     // Populate it
     hash: string;
@@ -53,7 +73,10 @@ export interface TransactionResponse extends Transaction {
     raw?: string, // equivalent of signed transaction
 
     // This function waits until the transaction has been mined
-    wait: (confirmations?: number) => Promise<TransactionReceipt> // Should poll the mirror node
+    wait: (confirmations?: number) => Promise<TransactionReceipt>, // Should poll the mirror node
+    customData?: {
+        [key: string]:any;
+    }
 };
 
 export type BlockTag = string | number;
