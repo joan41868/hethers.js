@@ -13806,6 +13806,7 @@ class HDNode {
             defineReadOnly(this, "alias", null);
             defineReadOnly(this, "publicKey", hexlify(publicKey));
         }
+        defineReadOnly(this, "alias", computeAlias(this.privateKey));
         defineReadOnly(this, "parentFingerprint", parentFingerprint);
         defineReadOnly(this, "fingerprint", hexDataSlice(ripemd160$1(sha256$1(this.publicKey)), 0, 4));
         defineReadOnly(this, "chainCode", chainCode);
@@ -26024,10 +26025,10 @@ async function derive(parentKey, chainCode, index) {
 }
 
 /*
- *      bignumber.js v9.0.1
+ *      bignumber.js v9.0.2
  *      A JavaScript library for arbitrary-precision arithmetic.
  *      https://github.com/MikeMcl/bignumber.js
- *      Copyright (c) 2020 Michael Mclaughlin <M8ch88l@gmail.com>
+ *      Copyright (c) 2021 Michael Mclaughlin <M8ch88l@gmail.com>
  *      MIT Licensed.
  *
  *      BigNumber.prototype methods     |  BigNumber methods
@@ -26073,7 +26074,6 @@ async function derive(parentKey, chainCode, index) {
 
 var
   isNumeric = /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i,
-
   mathceil = Math.ceil,
   mathfloor = Math.floor,
 
@@ -26168,7 +26168,7 @@ function clone(configObject) {
 
     // The maximum number of significant digits of the result of the exponentiatedBy operation.
     // If POW_PRECISION is 0, there will be unlimited significant digits.
-    POW_PRECISION = 0,                    // 0 to MAX
+    POW_PRECISION = 0,                       // 0 to MAX
 
     // The format specification used by the BigNumber.prototype.toFormat method.
     FORMAT = {
@@ -26178,14 +26178,15 @@ function clone(configObject) {
       groupSeparator: ',',
       decimalSeparator: '.',
       fractionGroupSize: 0,
-      fractionGroupSeparator: '\xA0',      // non-breaking space
+      fractionGroupSeparator: '\xA0',        // non-breaking space
       suffix: ''
     },
 
     // The alphabet used for base conversion. It must be at least 2 characters long, with no '+',
     // '-', '.', whitespace, or repeated character.
     // '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_'
-    ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
+    ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz',
+    alphabetHasNormalDecimalDigits = true;
 
 
   //------------------------------------------------------------------------------------------
@@ -26275,7 +26276,7 @@ function clone(configObject) {
 
       // Allow exponential notation to be used with base 10 argument, while
       // also rounding to DECIMAL_PLACES as with other bases.
-      if (b == 10) {
+      if (b == 10 && alphabetHasNormalDecimalDigits) {
         x = new BigNumber(v);
         return round(x, DECIMAL_PLACES + x.e + 1, ROUNDING_MODE);
       }
@@ -26429,7 +26430,7 @@ function clone(configObject) {
    *   MODULO_MODE      {number}           0 to 9
    *   POW_PRECISION       {number}           0 to MAX
    *   ALPHABET         {string}           A string of two or more unique characters which does
-   *                                     not contain '.'.
+   *                                       not contain '.'.
    *   FORMAT           {object}           An object with some of the following properties:
    *     prefix                 {string}
    *     groupSize              {number}
@@ -26564,9 +26565,10 @@ function clone(configObject) {
         if (obj.hasOwnProperty(p = 'ALPHABET')) {
           v = obj[p];
 
-          // Disallow if only one character,
+          // Disallow if less than two characters,
           // or if it contains '+', '-', '.', whitespace, or a repeated character.
-          if (typeof v == 'string' && !/^.$|[+-.\s]|(.).*\1/.test(v)) {
+          if (typeof v == 'string' && !/^.?$|[+\-.\s]|(.).*\1/.test(v)) {
+            alphabetHasNormalDecimalDigits = v.slice(0, 10) == '0123456789';
             ALPHABET = v;
           } else {
             throw Error
@@ -28741,7 +28743,7 @@ function clone(configObject) {
         str = e <= TO_EXP_NEG || e >= TO_EXP_POS
          ? toExponential(coeffToString(n.c), e)
          : toFixedPoint(coeffToString(n.c), e, '0');
-      } else if (b === 10) {
+      } else if (b === 10 && alphabetHasNormalDecimalDigits) {
         n = round(new BigNumber(n), DECIMAL_PLACES + e + 1, ROUNDING_MODE);
         str = toFixedPoint(coeffToString(n.c), n.e, '0');
       } else {
@@ -80036,22 +80038,46 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var name = "@grpc/grpc-js";
-var version$m = "1.4.6";
-var description = "gRPC Library for Node - pure JS implementation";
-var homepage = "https://grpc.io/";
-var repository = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
-var main = "build/src/index.js";
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var _from = "@grpc/grpc-js@^1.3.4";
+var _id = "@grpc/grpc-js@1.4.5";
+var _inBundle = false;
+var _integrity = "sha512-A6cOzSu7dqXZ7rzvh/9JZf+Jg/MOpLEMP0IdT8pT8hrWJZ6TB4ydN/MRuqOtAugInJe/VQ9F8BPricUpYZSaZA==";
+var _location = "/@grpc/grpc-js";
+var _phantomChildren = {
 };
-var keywords = [
+var _requested = {
+	type: "range",
+	registry: true,
+	raw: "@grpc/grpc-js@^1.3.4",
+	name: "@grpc/grpc-js",
+	escapedName: "@grpc%2fgrpc-js",
+	scope: "@grpc",
+	rawSpec: "^1.3.4",
+	saveSpec: null,
+	fetchSpec: "^1.3.4"
+};
+var _requiredBy = [
+	"/@hashgraph/sdk"
 ];
+var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.5.tgz";
+var _shasum = "0cd840b47180624eeedf066f2cdc422d052401f8";
+var _spec = "@grpc/grpc-js@^1.3.4";
+var _where = "/Users/danielivanov/limechain/hedera/hethers.js/node_modules/@hashgraph/sdk";
 var author = {
 	name: "Google Inc."
 };
-var types = "build/src/index.d.ts";
-var license = "Apache-2.0";
+var bundleDependencies = false;
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var dependencies = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
+};
+var deprecated = false;
+var description = "gRPC Library for Node - pure JS implementation";
 var devDependencies = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -80075,28 +80101,8 @@ var devDependencies = {
 	typescript: "^3.7.2",
 	yargs: "^15.4.1"
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var scripts = {
-	build: "npm run compile",
-	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
-	compile: "tsc -p .",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	lint: "npm run check",
-	prepare: "npm run generate-types && npm run compile",
-	test: "gulp test",
-	check: "gts check src/**/*.ts",
-	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run compile",
-	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto"
-};
-var dependencies = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
 var files = [
 	"src/**/*.ts",
@@ -80112,29 +80118,63 @@ var files = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.6.tgz";
-var _integrity = "sha512-Byau4xiXfIixb1PnW30V/P9mkrZ05lknyNqiK+cVY9J5hj3gecxd/anwaUbAM8j834zg1x78NvAbwGnMfWEu7A==";
-var _from = "@grpc/grpc-js@1.4.6";
+var homepage = "https://grpc.io/";
+var keywords = [
+];
+var license = "Apache-2.0";
+var main = "build/src/index.js";
+var name = "@grpc/grpc-js";
+var repository = {
+	type: "git",
+	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
+};
+var scripts = {
+	build: "npm run compile",
+	check: "gts check src/**/*.ts",
+	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
+	compile: "tsc -p .",
+	fix: "gts fix src/*.ts",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto",
+	lint: "npm run check",
+	posttest: "npm run check && madge -c ./build/src",
+	prepare: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run compile",
+	test: "gulp test"
+};
+var types = "build/src/index.d.ts";
+var version$m = "1.4.5";
 var require$$0$2 = {
-	name: name,
-	version: version$m,
-	description: description,
-	homepage: homepage,
-	repository: repository,
-	main: main,
-	engines: engines,
-	keywords: keywords,
-	author: author,
-	types: types,
-	license: license,
-	devDependencies: devDependencies,
-	contributors: contributors,
-	scripts: scripts,
-	dependencies: dependencies,
-	files: files,
-	_resolved: _resolved,
+	_from: _from,
+	_id: _id,
+	_inBundle: _inBundle,
 	_integrity: _integrity,
-	_from: _from
+	_location: _location,
+	_phantomChildren: _phantomChildren,
+	_requested: _requested,
+	_requiredBy: _requiredBy,
+	_resolved: _resolved,
+	_shasum: _shasum,
+	_spec: _spec,
+	_where: _where,
+	author: author,
+	bundleDependencies: bundleDependencies,
+	contributors: contributors,
+	dependencies: dependencies,
+	deprecated: deprecated,
+	description: description,
+	devDependencies: devDependencies,
+	engines: engines,
+	files: files,
+	homepage: homepage,
+	keywords: keywords,
+	license: license,
+	main: main,
+	name: name,
+	repository: repository,
+	scripts: scripts,
+	types: types,
+	version: version$m
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -82365,7 +82405,7 @@ class ServerWritableStreamImpl extends stream_1.Writable {
         if (metadata) {
             this.trailingMetadata = metadata;
         }
-        return super.end();
+        super.end();
     }
 }
 exports.ServerWritableStreamImpl = ServerWritableStreamImpl;
@@ -82399,7 +82439,7 @@ class ServerDuplexStreamImpl extends stream_1.Duplex {
         if (metadata) {
             this.trailingMetadata = metadata;
         }
-        return super.end();
+        super.end();
     }
 }
 exports.ServerDuplexStreamImpl = ServerDuplexStreamImpl;
@@ -82409,6 +82449,7 @@ ServerDuplexStreamImpl.prototype._write =
     ServerWritableStreamImpl.prototype._write;
 ServerDuplexStreamImpl.prototype._final =
     ServerWritableStreamImpl.prototype._final;
+ServerDuplexStreamImpl.prototype.end = ServerWritableStreamImpl.prototype.end;
 // Internal class that wraps the HTTP2 request.
 class Http2ServerCallStream extends events_1.EventEmitter {
     constructor(stream, handler, options) {
@@ -90228,11 +90269,12 @@ function removeMatchingHeaders(regex, headers) {
   var lastValue;
   for (var header in headers) {
     if (regex.test(header)) {
-      lastValue = headers[header].toString().trim();
+      lastValue = headers[header];
       delete headers[header];
     }
   }
-  return lastValue;
+  return (lastValue === null || typeof lastValue === "undefined") ?
+    undefined : String(lastValue).trim();
 }
 
 function createErrorType(code, defaultMessage) {
