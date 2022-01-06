@@ -13,6 +13,7 @@ import {
     ContractFunctionParameters, Hbar,
     TransactionId, TransferTransaction
 } from "@hashgraph/sdk";
+import { hexlify } from "ethers/lib/utils";
 
 
 // @ts-ignore
@@ -465,10 +466,12 @@ describe("Test Typed Transactions", function() {
             .setGas(1000)
             .setBytecodeFileId("0.0.111111")
             .setNodeAccountIds([new AccountId(0,0,3)])
+            .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
             .setTransactionId(TransactionId.generate(sendingAccount))
             .freeze();
         const tx =await  ethers.utils.parseTransaction(cc.toBytes());
         assert(tx.gasLimit.toNumber() === 1000, "Invalid gas limit");
+        assert(tx.data == hexlify(cc.constructorParameters));
     });
 
     it("Should parse ContractExecute", async function() {
@@ -483,6 +486,7 @@ describe("Test Typed Transactions", function() {
         assert(tx.gasLimit.toNumber() === 1000, "Invalid gas");
         // remove 0x prefix
         assert(tx.to.slice(2) === ce.contractId.toSolidityAddress(), "Invalid tx.to");
+        assert(tx.data == hexlify(ce.functionParameters))
     });
 
     it("Should fail parsing other transactions", async function(){
