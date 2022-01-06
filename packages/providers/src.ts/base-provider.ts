@@ -15,6 +15,7 @@ import { Transaction } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import { fetchJson, poll } from "@ethersproject/web";
+// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 
 import bech32 from "bech32";
 
@@ -24,7 +25,10 @@ const logger = new Logger(version);
 
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
+import { 
+    AccountBalanceQuery, TransactionReceiptQuery, AccountId, Client, NetworkName, 
+    Transaction as HederaTransaction, TransactionReceipt as HederaTransactionReceipt 
+} from "@hashgraph/sdk";
 import axios from "axios";
 
 //////////////////////////////
@@ -941,12 +945,71 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     async waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt> {
-        return this._waitForTransaction(transactionHash, (confirmations == null) ? 1: confirmations, timeout || 0, null);
+        return this._waitForTransaction(transactionHash, timeout || 0);
     }
 
-    async _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: { data: string, from: string, nonce: number, to: string, value: BigNumber, startBlock: number }): Promise<TransactionReceipt> {
-        return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+    // async _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: { data: string, from: string, nonce: number, to: string, value: BigNumber, startBlock: number }): Promise<TransactionReceipt> {
+    //     return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+    // }
+
+    async _waitForTransaction2(transactionId: string, timeout: number): Promise<TransactionReceipt> {
+        
+        // Poll until the receipt is good...
+        return new Promise((resolve, reject) => {
+            // const cancelFuncs: Array<() => void> = [];
+
+            // let done = false;
+            // const alreadyDone = function() {
+            //     if (done) { return true; }
+            //     done = true;
+            //     cancelFuncs.forEach((func) => { func(); });
+            //     return false;
+            // };
+
+            // const minedHandler = (receipt: TransactionReceipt) => {
+            //     // if (receipt.confirmations < confirmations) { return; }
+            //     if (alreadyDone()) { return; }
+            //     resolve(receipt);
+            // }
+            // this.on(transactionHash, minedHandler);
+            // cancelFuncs.push(() => { this.removeListener(transactionHash, minedHandler); });
+            
+            console.log("_waitForTransaction receipt.. ");
+            resolve(this.getTransactionReceipt(transactionId)); //poll node every x sec's
+            
+            //simple poll with timeout
+            if (typeof(timeout) === "number" && timeout > 0) {
+                const timer = setTimeout(() => {
+                    // if (alreadyDone()) { return; }
+                    reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
+                }, timeout);
+                if (timer.unref) { timer.unref(); }
+
+            //     cancelFuncs.push(() => { clearTimeout(timer); });
+            }
+        });
     }
+
+
+    async _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt> {
+
+        const promiseTimeout = function(ms: number, promise: any){
+        let timeout = new Promise((resolve, reject) => {
+            let id = setTimeout(() => {
+              clearTimeout(id);
+              reject('Timed out in '+ ms + 'ms.')
+            }, ms)
+        });
+
+        return Promise.race([
+            promise,
+            timeout
+        ]);
+       }
+
+       return promiseTimeout(timeoutMs, this.getTransactionReceipt(transactionId)); 
+    }    
+
 
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
@@ -993,49 +1056,40 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     // This should be called by any subclass wrapping a TransactionResponse
-    _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse {
-        if (hash != null && hexDataLength(hash) !== 32) { throw new Error("invalid response - sendTransaction"); }
-
+    _wrapTransaction(tx: Transaction, receipt?: HederaTransactionReceipt): TransactionResponse {
+        
         const result = <TransactionResponse>tx;
 
-        // Check the hash we expect is the same as the hash the server reported
-        if (hash != null && tx.hash !== hash) {
-            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
+        if (!result.customData) {
+            result.customData = {};
+        }
+        if (receipt.fileId) {
+            result.customData.fileId = receipt.fileId.toString();
+        }
+        if (receipt.contractId) {
+            result.customData.contractId = receipt.contractId.toSolidityAddress();
         }
 
-        result.wait = async (confirms?: number, timeout?: number) => {
-            if (confirms == null) { confirms = 1; }
+        result.wait = async (timeout?: number) => {
             if (timeout == null) { timeout = 0; }
 
-            // Get the details to detect replacement
-            let replacement = undefined;
-            if (confirms !== 0 && startBlock != null) {
-                replacement = {
-                    data: tx.data,
-                    from: tx.from,
-                    nonce: tx.nonce,
-                    to: tx.to,
-                    value: tx.value,
-                    startBlock
-                };
-            }
+            // query for txRecord (txId) 
+            const txReceipt = await this._waitForTransaction(tx.transactionId, timeout);
+            
+            // if (txReceipt == null) { 
+            //     return null; 
+            // }
 
-            const receipt = await this._waitForTransaction(tx.hash, confirms, timeout, replacement);
-            if (receipt == null && confirms === 0) { return null; }
+            // if (receipt.status === 0) {
+            //     logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
+            //         transactionHash: tx.hash,
+            //         transaction: tx,
+            //         receipt: receipt
+            //     });
+            // }
 
-            // No longer pending, allow the polling loop to garbage collect this
-            this._emitted["t:" + tx.hash] = receipt.blockNumber;
-
-            if (receipt.status === 0) {
-                logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
-                    transactionHash: tx.hash,
-                    transaction: tx,
-                    receipt: receipt
-                });
-            }
-            return receipt;
+            return txReceipt;
         };
-
         return result;
     }
 
@@ -1045,13 +1099,18 @@ export class BaseProvider extends Provider implements EnsProvider {
 
         const txBytes = arrayify(signedTransaction);
         const hederaTx = HederaTransaction.fromBytes(txBytes);
-        const ethersTx = await this.formatter.transaction(signedTransaction);
+        console.log("hederaTx-Id",hederaTx.transactionId);
+        const ethersTx = await this.formatter.transaction(signedTransaction); //
         const txHash = hexlify(await hederaTx.getTransactionHash());
         try {
             // TODO once we have fallback provider use `provider.perform("sendTransaction")`
             // TODO Before submission verify that the nodeId is the one that the provider is connected to
-            await hederaTx.execute(this.hederaClient);
-            return this._wrapTransaction(ethersTx, txHash);
+            // await hederaTx.execute(this.hederaClient);
+            // return this._wrapTransaction(ethersTx);
+
+            const resp = await hederaTx.execute(this.hederaClient);
+            const receipt = await resp.getReceipt(this.hederaClient);
+            return this._wrapTransaction(ethersTx, receipt);
         } catch (error) {
             const err = logger.makeError(error.message, error.status?.toString());
             (<any>err).transaction = ethersTx;
@@ -1167,52 +1226,81 @@ export class BaseProvider extends Provider implements EnsProvider {
      *
      * @param txId - id of the transaction to search for
      */
-    async getTransaction(txId: string | Promise<string>): Promise<TransactionResponse> {
+    async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
         await this.getNetwork();
-        txId = await txId;
-        const ep = '/api/v1/transactions/'+txId;
-        let { data } = await axios.get(this.mirrorNodeUrl + ep);
-        const filtered = data.transactions
-            .filter((e: { result: string; }) => e.result === "SUCCESS");
-        return filtered.length > 0 ? filtered[0] : null;
+        transactionId = await transactionId;
+        const ep = '/api/v1/transactions/'+transactionId;
+        //check url, see checkProvider -> signer
+
+        if (!this.mirrorNodeUrl) { logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION); }
+
+        try {
+            let { data } = await axios.get(this.mirrorNodeUrl + ep);
+            const filtered = data.transactions
+            .filter((e: { result: string; }) => e.result != "DUPLICATE_TRANSACTION"); // filter all != duplicated
+            const response = filtered.length > 0 ? filtered[0] : null;
+            //fill the TransactionResponse obj from response -> wait(): just fill receipt obj form resp and resolve
+            return this.formatter.txRecordToTxResponse(response); //parse to ethers format
+            //see in eth, response of not mined tx ->404 => null
+            //if not success, e.g. reverted -> receipt.status=0
+        } catch (error) {
+            if (error.response.status != 404) {            
+                logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    method: "TransactionResponseQuery",
+                    error
+                });
+            } 
+            return  null;
+        }
     }
 
-    async getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt> {
+    async sleep(ms:number): Promise<void> {
+        return new Promise((resolve) => {
+          setTimeout(resolve, ms);
+        });
+    } 
+
+    //query for receipt by txId
+    async getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt> {
         await this.getNetwork();
+        transactionId = await transactionId;
 
-        transactionHash = await transactionHash;
+        const accountId = transactionId.split('@');
+        const txValidStart = accountId[1].split('.');
+        const result = accountId[0]+'-'+txValidStart.join('-');
+        console.log(result);
+        console.log("start sleep");
+        await this.sleep(5000);
+        console.log("end sleep");
+        const txRecord = await this.getTransaction(result);
+        console.log("getTransactionRecord: ", txRecord);
 
-        const params = { transactionHash: this.formatter.hash(transactionHash, true) };
+        try {
+            let receipt = await new TransactionReceiptQuery()
+            .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
+            .execute(this.hederaClient);
+            console.log("getTransactionReceipt: ", receipt);
+            // return this.formatter.receipt(receipt); //parse to ethers format
+            // return this.formatter.txRecordToTxReceipt(txRecord); //parse to ethers format
+            return null;
+        } catch (error) {
+            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                method: "TransactionGetReceiptQuery",
+                error
+            });
+        }
 
-        return poll(async () => {
-            const result = await this.perform("getTransactionReceipt", params);
+        // return poll(async () => {
+        //     const result = await this.perform("getTransactionReceipt", params);
 
-            if (result == null) {
-                if (this._emitted["t:" + transactionHash] == null) {
-                    return null;
-                }
-                return undefined;
-            }
+        //     if (result == null) {
+        //         return undefined;
+        //     }
 
-            // "geth-etc" returns receipts before they are ready
-            if (result.blockHash == null) { return undefined; }
+        //     const receipt = this.formatter.receipt(result); //parse to ethers format
 
-            const receipt = this.formatter.receipt(result);
-
-            if (receipt.blockNumber == null) {
-                receipt.confirmations = 0;
-
-            } else if (receipt.confirmations == null) {
-                // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                //
-                // Add the confirmations using the fast block number (pessimistic)
-                // let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                // if (confirmations <= 0) { confirmations = 1; }
-                // receipt.confirmations = confirmations;
-            }
-
-            return receipt;
-        }, { oncePoll: this });
+        //     return receipt;
+        // }, { oncePoll: this });
     }
 
     async getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>> {
