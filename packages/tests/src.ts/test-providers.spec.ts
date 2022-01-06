@@ -8,6 +8,12 @@ import { ethers } from "ethers";
 import { DefaultHederaProvider } from "@ethersproject/providers";
 import { getAddressFromAccount } from "ethers/lib/utils";
 import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-provider";
+import {
+    AccountId,
+    ContractCreateTransaction, ContractFunctionParameters,
+    PrivateKey,
+    TransactionId,
+} from "@hashgraph/sdk";
 
 const bnify = ethers.BigNumber.from;
 
@@ -1268,20 +1274,36 @@ describe("Test Hedera Provider", function () {
     }).timeout(timeout * 4);
 
     it('should submit signed transaction', async function() {
+        const account = {
+            "operator": {
+            "accountId": "0.0.1340",
+                "publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
+                "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
+            },
+            "network": {
+            "35.231.208.148:50211": "0.0.3",
+                "35.199.15.177:50211": "0.0.4",
+                "35.225.201.195:50211": "0.0.5",
+                "35.247.109.135:50211": "0.0.6"
+          }
+        };
+        const privateKey = PrivateKey.fromString(account.operator.privateKey);
         // 1. Sign TX -> `sign-transaction.ts`
-
-        // const tx = await new TransferTransaction()
-        //     .addHbarTransfer("0.0.98", Hbar.fromTinybars(1))
-        //     .addHbarTransfer(operatorId, Hbar.fromTinybars(-1))
-        //     .setTransactionId(TransactionId.generate(operatorId))
-        //     .setNodeAccountIds([AccountId.fromString("0.0.3")])
-        //     .freeze()
-        //     .sign(privateKey);
-        // const txBytes = tx.toBytes();
-        // const signedTx = hethers.utils.hexlify(txBytes);
-        // console.log(signedTx);
-
-        // 2. Instance of Testnet provider
-        // 3. provider.submitTransaction
+        const tx = await new ContractCreateTransaction()
+            .setContractMemo("memo")
+            .setGas(1000)
+            .setBytecodeFileId("0.0.111111")
+            .setNodeAccountIds([new AccountId(0,0,3)])
+            .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
+            .setTransactionId(TransactionId.generate(account.operator.accountId))
+            .freeze()
+            .sign(privateKey);
+        const txBytes = tx.toBytes();
+        const signedTx = ethers.utils.hexlify(txBytes);
+        const provider = ethers.providers.getDefaultProvider('previewnet');
+        const txResponse = await provider.sendTransaction(signedTx);
+        assert.strictEqual(txResponse.gasLimit.toNumber(), 1000);
+        assert.strictEqual(txResponse.from, getAddressFromAccount(account.operator.accountId));
+        assert.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
     });
 });

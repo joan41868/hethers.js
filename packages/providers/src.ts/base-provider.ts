@@ -994,7 +994,7 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     // This should be called by any subclass wrapping a TransactionResponse
     _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse {
-        if (hash != null && hexDataLength(hash) !== 32) { throw new Error("invalid response - sendTransaction"); }
+        if (hash != null && hexDataLength(hash) !== 48) { throw new Error("invalid response - sendTransaction"); }
 
         const result = <TransactionResponse>tx;
 
