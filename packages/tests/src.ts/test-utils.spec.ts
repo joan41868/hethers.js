@@ -496,7 +496,7 @@ describe("Test Typed Transactions", function() {
         // remove 0x prefix
         assert(tx.to.slice(2) === ce.contractId.toSolidityAddress(), "Invalid tx.to");
         assert(tx.data == hexlify(ce.functionParameters));
-
+        assert(hexlify(tx.hash) === hexlify(await ce.getTransactionHash()), "Hash mismatch");
         assert(tx.value.toString() === "1",
             `Invalid initial balance tx.value(${tx.value.toString()}) != ce.payableAmount(1); Tinybar value ${ce.payableAmount.toTinybars().toNumber()}`);
     });
