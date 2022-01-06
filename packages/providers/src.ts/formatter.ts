@@ -1,13 +1,13 @@
 "use strict";
 
-import { Block, TransactionReceipt, TransactionResponse } from "@ethersproject/abstract-provider";
+import { Block, TransactionReceipt, TransactionResponse, HederaTransactionResponse } from "@ethersproject/abstract-provider";
 import { getAddress, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@ethersproject/constants";
 import { shallowCopy } from "@ethersproject/properties";
 import { AccessList, accessListify, parse as parseTransaction } from "@ethersproject/transactions";
-
+// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
@@ -265,7 +265,9 @@ export class Formatter {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash(value: any, strict?: boolean): string {
         const result = this.hex(value, strict);
-        if (hexDataLength(result) !== 32) {
+        console.log("hash result: ", result);
+        console.log("hash result length: ", hexDataLength(result));
+        if (hexDataLength(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
         }
         return result;
@@ -392,6 +394,8 @@ export class Formatter {
         return Formatter.check(this.formats.receiptLog, value);
     }
 
+    //parse to ethers format inside here?
+    //fill the txReceipt obj
     receipt(value: any): TransactionReceipt {
         const result: TransactionReceipt = Formatter.check(this.formats.receipt, value);
 
@@ -421,6 +425,76 @@ export class Formatter {
         }
 
         return result;
+    }
+
+    //add txRecordToTxReceipt method
+    //add model TxRecord in abstract-provider index.ts
+    txRecordToTxResponse(txRecord: HederaTransactionResponse): TransactionResponse {
+        //add txHash?
+        // return {
+        //     to: '',
+        //     from: txRecord.from,
+        //     contractAddress: '',
+        //     transactionIndex: 0,
+        //     // root?: string,
+        //     gasUsed: null,
+        //     logsBloom: '',
+        //     blockHash: '',
+        //     transactionHash: txRecord.hash,
+        //     logs: null,
+        //     blockNumber: 0,
+        //     confirmations: 0,
+        //     cumulativeGasUsed: null,
+        //     effectiveGasPrice: null,
+        //     byzantium: false,
+        //     type: 0,
+        //     status: txReceipt.status._code
+        // }
+        return {
+            accessList: null,
+            blockHash: null,
+            blockNumber: 0,
+            chainId: 1,
+            confirmations: 0,
+            // creates: null,
+            data: null,
+            from: null,
+            gasLimit: null,
+            gasPrice: null,
+            hash: txRecord.transaction_hash,
+            transactionId: txRecord.transaction_id,
+            nonce: 0,
+            r: '',
+            s: '',
+            to: null,
+            // transactionIndex: 0,
+            type: 0,
+            v: 0,
+            value: null,
+            wait: null
+        }
+    }
+
+    txRecordToTxReceipt(txRecord: HederaTransactionResponse): TransactionReceipt {
+        return {
+            to: '',
+            from: '',
+            contractAddress: '',
+            transactionIndex: 0,
+            // root?: string,
+            gasUsed: null,
+            logsBloom: '',
+            blockHash: '',
+            transactionHash: txRecord.transaction_hash,
+            logs: null,
+            blockNumber: 0,
+            confirmations: 0,
+            cumulativeGasUsed: null,
+            effectiveGasPrice: null,
+            byzantium: false,
+            type: 0,
+            status: txRecord.result === "SUCCESS" ? 1 : 0
+        }
     }
 
     topics(value: any): any {

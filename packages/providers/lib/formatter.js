@@ -7,6 +7,7 @@ var bytes_1 = require("@ethersproject/bytes");
 var constants_1 = require("@ethersproject/constants");
 var properties_1 = require("@ethersproject/properties");
 var transactions_1 = require("@ethersproject/transactions");
+// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
@@ -220,7 +221,9 @@ var Formatter = /** @class */ (function () {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     Formatter.prototype.hash = function (value, strict) {
         var result = this.hex(value, strict);
-        if ((0, bytes_1.hexDataLength)(result) !== 32) {
+        console.log("hash result: ", result);
+        console.log("hash result length: ", (0, bytes_1.hexDataLength)(result));
+        if ((0, bytes_1.hexDataLength)(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
         }
         return result;
@@ -325,6 +328,8 @@ var Formatter = /** @class */ (function () {
     Formatter.prototype.receiptLog = function (value) {
         return Formatter.check(this.formats.receiptLog, value);
     };
+    //parse to ethers format inside here?
+    //fill the txReceipt obj
     Formatter.prototype.receipt = function (value) {
         var result = Formatter.check(this.formats.receipt, value);
         // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
@@ -353,6 +358,74 @@ var Formatter = /** @class */ (function () {
             result.byzantium = true;
         }
         return result;
+    };
+    //add txRecordToTxReceipt method
+    //add model TxRecord in abstract-provider index.ts
+    Formatter.prototype.txRecordToTxResponse = function (txRecord) {
+        //add txHash?
+        // return {
+        //     to: '',
+        //     from: txRecord.from,
+        //     contractAddress: '',
+        //     transactionIndex: 0,
+        //     // root?: string,
+        //     gasUsed: null,
+        //     logsBloom: '',
+        //     blockHash: '',
+        //     transactionHash: txRecord.hash,
+        //     logs: null,
+        //     blockNumber: 0,
+        //     confirmations: 0,
+        //     cumulativeGasUsed: null,
+        //     effectiveGasPrice: null,
+        //     byzantium: false,
+        //     type: 0,
+        //     status: txReceipt.status._code
+        // }
+        return {
+            accessList: null,
+            blockHash: null,
+            blockNumber: 0,
+            chainId: 1,
+            confirmations: 0,
+            // creates: null,
+            data: null,
+            from: null,
+            gasLimit: null,
+            gasPrice: null,
+            hash: txRecord.transaction_hash,
+            transactionId: txRecord.transaction_id,
+            nonce: 0,
+            r: '',
+            s: '',
+            to: null,
+            // transactionIndex: 0,
+            type: 0,
+            v: 0,
+            value: null,
+            wait: null
+        };
+    };
+    Formatter.prototype.txRecordToTxReceipt = function (txRecord) {
+        return {
+            to: '',
+            from: '',
+            contractAddress: '',
+            transactionIndex: 0,
+            // root?: string,
+            gasUsed: null,
+            logsBloom: '',
+            blockHash: '',
+            transactionHash: txRecord.transaction_hash,
+            logs: null,
+            blockNumber: 0,
+            confirmations: 0,
+            cumulativeGasUsed: null,
+            effectiveGasPrice: null,
+            byzantium: false,
+            type: 0,
+            status: txRecord.result === "SUCCESS" ? 1 : 0
+        };
     };
     Formatter.prototype.topics = function (value) {
         var _this = this;
