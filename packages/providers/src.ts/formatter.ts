@@ -429,27 +429,9 @@ export class Formatter {
 
     //add txRecordToTxReceipt method
     //add model TxRecord in abstract-provider index.ts
+    //TODO fix model mapping
     txRecordToTxResponse(txRecord: HederaTransactionResponse): TransactionResponse {
         //add txHash?
-        // return {
-        //     to: '',
-        //     from: txRecord.from,
-        //     contractAddress: '',
-        //     transactionIndex: 0,
-        //     // root?: string,
-        //     gasUsed: null,
-        //     logsBloom: '',
-        //     blockHash: '',
-        //     transactionHash: txRecord.hash,
-        //     logs: null,
-        //     blockNumber: 0,
-        //     confirmations: 0,
-        //     cumulativeGasUsed: null,
-        //     effectiveGasPrice: null,
-        //     byzantium: false,
-        //     type: 0,
-        //     status: txReceipt.status._code
-        // }
         return {
             accessList: null,
             blockHash: null,
@@ -475,25 +457,27 @@ export class Formatter {
         }
     }
 
-    txRecordToTxReceipt(txRecord: HederaTransactionResponse): TransactionReceipt {
+    //TODO fix model mapping
+    txRecordToTxReceipt(txRecord: TransactionResponse): TransactionReceipt {
         return {
-            to: '',
-            from: '',
+            to: txRecord.to,
+            from: txRecord.from,
             contractAddress: '',
             transactionIndex: 0,
             // root?: string,
             gasUsed: null,
             logsBloom: '',
             blockHash: '',
-            transactionHash: txRecord.transaction_hash,
+            transactionHash: txRecord.hash,
             logs: null,
             blockNumber: 0,
             confirmations: 0,
             cumulativeGasUsed: null,
             effectiveGasPrice: null,
             byzantium: false,
-            type: 0,
-            status: txRecord.result === "SUCCESS" ? 1 : 0
+            type: txRecord.type,
+            status: 1
+            // status: txRecord.result === "SUCCESS" ? 1 : 0
         }
     }
 

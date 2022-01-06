@@ -11,7 +11,7 @@ import { HashZero } from "@ethersproject/constants";
 import { namehash } from "@ethersproject/hash";
 import { getNetwork, Network, Networkish } from "@ethersproject/networks";
 import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
-import { Transaction } from "@ethersproject/transactions";
+import { Transaction, parseTransactionId } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import { fetchJson, poll } from "@ethersproject/web";
@@ -25,9 +25,9 @@ const logger = new Logger(version);
 
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { 
-    AccountBalanceQuery, TransactionReceiptQuery, AccountId, Client, NetworkName, 
-    Transaction as HederaTransaction, TransactionReceipt as HederaTransactionReceipt 
+import {
+    AccountBalanceQuery, TransactionReceiptQuery, AccountId, Client, NetworkName,
+    Transaction as HederaTransaction, TransactionReceipt as HederaTransactionReceipt
 } from "@hashgraph/sdk";
 import axios from "axios";
 
@@ -35,11 +35,11 @@ import axios from "axios";
 // Event Serializeing
 
 function checkTopic(topic: string): string {
-     if (topic == null) { return "null"; }
-     if (hexDataLength(topic) !== 32) {
-         logger.throwArgumentError("invalid topic", "topic", topic);
-     }
-     return topic.toLowerCase();
+    if (topic == null) { return "null"; }
+    if (hexDataLength(topic) !== 32) {
+        logger.throwArgumentError("invalid topic", "topic", topic);
+    }
+    return topic.toLowerCase();
 }
 
 function serializeTopics(topics: Array<string | Array<string>>): string {
@@ -51,7 +51,7 @@ function serializeTopics(topics: Array<string | Array<string>>): string {
         if (Array.isArray(topic)) {
 
             // Only track unique OR-topics
-            const unique: { [ topic: string ]: boolean } = { }
+            const unique: { [topic: string]: boolean } = {}
             topic.forEach((topic) => {
                 unique[checkTopic(topic)] = true;
             });
@@ -69,21 +69,21 @@ function serializeTopics(topics: Array<string | Array<string>>): string {
 }
 
 function deserializeTopics(data: string): Array<string | Array<string>> {
-    if (data === "") { return [ ]; }
+    if (data === "") { return []; }
 
     return data.split(/&/g).map((topic) => {
-        if (topic === "") { return [ ]; }
+        if (topic === "") { return []; }
 
         const comps = topic.split("|").map((topic) => {
-            return ((topic === "null") ? null: topic);
+            return ((topic === "null") ? null : topic);
         });
 
-        return ((comps.length === 1) ? comps[0]: comps);
+        return ((comps.length === 1) ? comps[0] : comps);
     });
 }
 
 function getEventTag(eventName: EventType): string {
-    if (typeof(eventName) === "string") {
+    if (typeof (eventName) === "string") {
         eventName = eventName.toLowerCase();
 
         if (hexDataLength(eventName) === 32) {
@@ -101,7 +101,7 @@ function getEventTag(eventName: EventType): string {
         logger.warn("not implemented");
         throw new Error("not implemented");
 
-    } else if (eventName && typeof(eventName) === "object") {
+    } else if (eventName && typeof (eventName) === "object") {
         return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
     }
 
@@ -135,7 +135,7 @@ function stall(duration: number): Promise<void> {
  *   - transaction hash
  */
 
-const PollableEvents = [ "block", "network", "pending", "poll" ];
+const PollableEvents = ["block", "network", "pending", "poll"];
 
 export class Event {
     readonly listener: Listener;
@@ -151,9 +151,9 @@ export class Event {
     get event(): EventType {
         switch (this.type) {
             case "tx":
-               return this.hash;
+                return this.hash;
             case "filter":
-               return this.filter;
+                return this.filter;
         }
         return this.tag;
     }
@@ -174,7 +174,7 @@ export class Event {
         const address = comps[1];
 
         const topics = deserializeTopics(comps[2]);
-        const filter: Filter = { };
+        const filter: Filter = {};
 
         if (topics.length > 0) { filter.topics = topics; }
         if (address && address !== "*") { filter.address = address; }
@@ -223,12 +223,12 @@ type CoinInfo = {
 };
 
 // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-const coinInfos: { [ coinType: string ]: CoinInfo } = {
-    "0":   { symbol: "btc",  p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
-    "2":   { symbol: "ltc",  p2pkh: 0x30, p2sh: 0x32, prefix: "ltc" },
-    "3":   { symbol: "doge", p2pkh: 0x1e, p2sh: 0x16 },
-    "60":  { symbol: "eth",  ilk: "eth" },
-    "61":  { symbol: "etc",  ilk: "eth" },
+const coinInfos: { [coinType: string]: CoinInfo } = {
+    "0": { symbol: "btc", p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
+    "2": { symbol: "ltc", p2pkh: 0x30, p2sh: 0x32, prefix: "ltc" },
+    "3": { symbol: "doge", p2pkh: 0x1e, p2sh: 0x16 },
+    "60": { symbol: "eth", ilk: "eth" },
+    "61": { symbol: "etc", ilk: "eth" },
     "700": { symbol: "xdai", ilk: "eth" },
 };
 
@@ -238,7 +238,7 @@ function bytes32ify(value: number): string {
 
 // Compute the Base58Check encoded data (checksum is first 4 bytes of sha256d)
 function base58Encode(data: Uint8Array): string {
-    return Base58.encode(concat([ data, hexDataSlice(sha256(sha256(data)), 0, 4) ]));
+    return Base58.encode(concat([data, hexDataSlice(sha256(sha256(data)), 0, 4)]));
 }
 
 export interface Avatar {
@@ -256,7 +256,7 @@ const matchers = [
 function _parseString(result: string): null | string {
     try {
         return toUtf8String(_parseBytes(result));
-    } catch(error) { }
+    } catch (error) { }
     return null;
 }
 
@@ -289,7 +289,7 @@ export class Resolver implements EnsResolver {
         // e.g. keccak256("addr(bytes32,uint256)")
         const tx = {
             to: this.address,
-            data: hexConcat([ selector, namehash(this.name), (parameters || "0x") ])
+            data: hexConcat([selector, namehash(this.name), (parameters || "0x")])
         };
 
         try {
@@ -304,8 +304,8 @@ export class Resolver implements EnsResolver {
         const coinInfo = coinInfos[String(coinType)];
 
         if (coinInfo == null) {
-            logger.throwError(`unsupported coin type: ${ coinType }`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `getAddress(${ coinType })`
+            logger.throwError(`unsupported coin type: ${coinType}`, Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: `getAddress(${coinType})`
             });
         }
 
@@ -321,7 +321,7 @@ export class Resolver implements EnsResolver {
             if (p2pkh) {
                 const length = parseInt(p2pkh[1], 16);
                 if (p2pkh[2].length === length * 2 && length >= 1 && length <= 75) {
-                    return base58Encode(concat([ [ coinInfo.p2pkh ], ("0x" + p2pkh[2]) ]));
+                    return base58Encode(concat([[coinInfo.p2pkh], ("0x" + p2pkh[2])]));
                 }
             }
         }
@@ -332,7 +332,7 @@ export class Resolver implements EnsResolver {
             if (p2sh) {
                 const length = parseInt(p2sh[1], 16);
                 if (p2sh[2].length === length * 2 && length >= 1 && length <= 75) {
-                    return base58Encode(concat([ [ coinInfo.p2sh ], ("0x" + p2sh[2]) ]));
+                    return base58Encode(concat([[coinInfo.p2sh], ("0x" + p2sh[2])]));
                 }
             }
         }
@@ -396,7 +396,7 @@ export class Resolver implements EnsResolver {
 
         if (address == null) {
             logger.throwError(`invalid or unsupported coin data`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `getAddress(${ coinType })`,
+                operation: `getAddress(${coinType})`,
                 coinType: coinType,
                 data: hexBytes
             });
@@ -406,7 +406,7 @@ export class Resolver implements EnsResolver {
     }
 
     async getAvatar(): Promise<null | Avatar> {
-        const linkage: Array<{ type: string, content: string }> = [ ];
+        const linkage: Array<{ type: string, content: string }> = [];
         try {
             const avatar = await this.getText("avatar");
             if (avatar == null) { return null; }
@@ -426,12 +426,12 @@ export class Resolver implements EnsResolver {
 
                     case "ipfs":
                         linkage.push({ type: "ipfs", content: avatar });
-                        return { linkage, url: `https:/\/gateway.ipfs.io/ipfs/${ avatar.substring(7) }` }
+                        return { linkage, url: `https:/\/gateway.ipfs.io/ipfs/${avatar.substring(7)}` }
 
                     case "erc721":
                     case "erc1155": {
                         // Depending on the ERC type, use tokenURI(uint256) or url(uint256)
-                        const selector = (match[1] === "erc721") ? "0xc87b56dd": "0x0e89341c";
+                        const selector = (match[1] === "erc721") ? "0xc87b56dd" : "0x0e89341c";
                         linkage.push({ type: match[1], content: avatar });
 
                         // The owner of this name
@@ -447,7 +447,7 @@ export class Resolver implements EnsResolver {
                         if (match[1] === "erc721") {
                             // ownerOf(uint256 tokenId)
                             const tokenOwner = this.provider.formatter.callAddress(await this.provider.call({
-                                to: addr, data: hexConcat([ "0x6352211e", tokenId ])
+                                to: addr, data: hexConcat(["0x6352211e", tokenId])
                             }));
                             if (owner !== tokenOwner) { return null; }
                             linkage.push({ type: "owner", content: tokenOwner });
@@ -455,7 +455,7 @@ export class Resolver implements EnsResolver {
                         } else if (match[1] === "erc1155") {
                             // balanceOf(address owner, uint256 tokenId)
                             const balance = BigNumber.from(await this.provider.call({
-                                to: addr, data: hexConcat([ "0x00fdd58e", hexZeroPad(owner, 32), tokenId ])
+                                to: addr, data: hexConcat(["0x00fdd58e", hexZeroPad(owner, 32), tokenId])
                             }));
                             if (balance.isZero()) { return null; }
                             linkage.push({ type: "balance", content: balance.toString() });
@@ -464,7 +464,7 @@ export class Resolver implements EnsResolver {
                         // Call the token contract for the metadata URL
                         const tx = {
                             to: this.provider.formatter.address(comps[0]),
-                            data: hexConcat([ selector, tokenId ])
+                            data: hexConcat([selector, tokenId])
                         };
                         let metadataUrl = _parseString(await this.provider.call(tx))
                         if (metadataUrl == null) { return null; }
@@ -479,7 +479,7 @@ export class Resolver implements EnsResolver {
                         const metadata = await fetchJson(metadataUrl);
 
                         // Pull the image URL out
-                        if (!metadata || typeof(metadata.image) !== "string" || !metadata.image.match(/^https:\/\//i)) {
+                        if (!metadata || typeof (metadata.image) !== "string" || !metadata.image.match(/^https:\/\//i)) {
                             return null;
                         }
                         linkage.push({ type: "metadata", content: JSON.stringify(metadata) });
@@ -532,11 +532,11 @@ export class Resolver implements EnsResolver {
 
         // The nodehash consumes the first slot, so the string pointer targets
         // offset 64, with the length at offset 64 and data starting at offset 96
-        keyBytes = concat([ bytes32ify(64), bytes32ify(keyBytes.length), keyBytes ]);
+        keyBytes = concat([bytes32ify(64), bytes32ify(keyBytes.length), keyBytes]);
 
         // Pad to word-size (32 bytes)
         if ((keyBytes.length % 32) !== 0) {
-            keyBytes = concat([ keyBytes, hexZeroPad("0x", 32 - (key.length % 32)) ])
+            keyBytes = concat([keyBytes, hexZeroPad("0x", 32 - (key.length % 32))])
         }
 
         const hexBytes = await this._fetchBytes("0x59d1d43c", hexlify(keyBytes));
@@ -568,7 +568,7 @@ export class BaseProvider extends Provider implements EnsProvider {
     //   - t:{hash}    - Transaction hash
     //   - b:{hash}    - BlockHash
     //   - block       - The most recent emitted block
-    _emitted: { [ eventName: string ]: number | "pending" };
+    _emitted: { [eventName: string]: number | "pending" };
 
     _pollingInterval: number;
     _poller: NodeJS.Timer;
@@ -662,7 +662,7 @@ export class BaseProvider extends Provider implements EnsProvider {
             // This should never happen; every Provider sub-class should have
             // suggested a network by here (or have thrown).
             if (!network) {
-                logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
+                logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, {});
             }
 
             // Possible this call stacked so do not call defineReadOnly again
@@ -707,7 +707,7 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     // @TODO: Remove this and just use getNetwork
     static getNetwork(network: Networkish): Network {
-        return getNetwork((network == null) ? "mainnet": network);
+        return getNetwork((network == null) ? "mainnet" : network);
     }
 
 
@@ -741,7 +741,7 @@ export class BaseProvider extends Provider implements EnsProvider {
         }
 
         if (Math.abs((<number>(this._emitted.block)) - blockNumber) > 1000) {
-            logger.warn(`network block skew detected; skipping block events (emitted=${ this._emitted.block } blockNumber${ blockNumber })`);
+            logger.warn(`network block skew detected; skipping block events (emitted=${this._emitted.block} blockNumber${blockNumber})`);
             this.emit("error", logger.makeError("network block skew detected", Logger.errors.NETWORK_ERROR, {
                 blockNumber: blockNumber,
                 event: "blockSkew",
@@ -932,7 +932,7 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     set pollingInterval(value: number) {
-        if (typeof(value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
+        if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
             throw new Error("invalid polling interval");
         }
 
@@ -948,68 +948,56 @@ export class BaseProvider extends Provider implements EnsProvider {
         return this._waitForTransaction(transactionHash, timeout || 0);
     }
 
-    // async _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: { data: string, from: string, nonce: number, to: string, value: BigNumber, startBlock: number }): Promise<TransactionReceipt> {
-    //     return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-    // }
-
-    async _waitForTransaction2(transactionId: string, timeout: number): Promise<TransactionReceipt> {
-        
-        // Poll until the receipt is good...
-        return new Promise((resolve, reject) => {
-            // const cancelFuncs: Array<() => void> = [];
-
-            // let done = false;
-            // const alreadyDone = function() {
-            //     if (done) { return true; }
-            //     done = true;
-            //     cancelFuncs.forEach((func) => { func(); });
-            //     return false;
-            // };
-
-            // const minedHandler = (receipt: TransactionReceipt) => {
-            //     // if (receipt.confirmations < confirmations) { return; }
-            //     if (alreadyDone()) { return; }
-            //     resolve(receipt);
-            // }
-            // this.on(transactionHash, minedHandler);
-            // cancelFuncs.push(() => { this.removeListener(transactionHash, minedHandler); });
-            
-            console.log("_waitForTransaction receipt.. ");
-            resolve(this.getTransactionReceipt(transactionId)); //poll node every x sec's
-            
-            //simple poll with timeout
-            if (typeof(timeout) === "number" && timeout > 0) {
-                const timer = setTimeout(() => {
-                    // if (alreadyDone()) { return; }
-                    reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
-                }, timeout);
-                if (timer.unref) { timer.unref(); }
-
-            //     cancelFuncs.push(() => { clearTimeout(timer); });
-            }
-        });
-    }
-
-
     async _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt> {
 
-        const promiseTimeout = function(ms: number, promise: any){
-        let timeout = new Promise((resolve, reject) => {
-            let id = setTimeout(() => {
-              clearTimeout(id);
-              reject('Timed out in '+ ms + 'ms.')
-            }, ms)
+        //timeoutMs -> max limit to wait
+        //loop every 1sec until limit reached, or resolved
+        // let finalResult;
+        // let limit = timeoutMs; 
+        // const tick = 1000;
+        // const interval = setInterval(async ()=>{
+        //     if(limit == 0) {
+        //         clearInterval(interval);
+        //     }
+        //     const txResponse = await this.getTransaction(parseTransactionId(transactionId));
+        //     //if response ok: clearInterval, return tx | continue...
+        //     if(txResponse != null) {
+        //         finalResult = txResponse;
+        //         clearInterval(interval); 
+        //     }
+        //     limit -= tick;
+            
+        // }, tick);
+        
+        // //    return promiseTimeout(timeoutMs, this.getTransactionReceipt(transactionId)); 
+        // console.log("finalResult", finalResult);
+        // return finalResult;
+
+        if (timeoutMs == null) {
+            return await this.waitOrReturn(transactionId);
+        }
+        if (timeoutMs <= 0) { 
+            return Promise.reject('Timed out in ' + timeoutMs + 'ms.') 
+        }      
+        return await this.waitOrReturn(transactionId, timeoutMs - 1000);
+    }
+
+    async waitOrReturn(transactionId: string, timeoutMs?: number): Promise<TransactionReceipt> {
+        const txResponse = await this.getTransaction(parseTransactionId(transactionId));
+        if (txResponse != null) {
+            return this.formatter.txRecordToTxReceipt(txResponse);
+        } else {
+            console.log('waiting 1000 ms..');
+            await this.sleep(1000);
+            return this._waitForTransaction(transactionId, timeoutMs);
+        }
+    }
+
+    async sleep(ms: number): Promise<void> {
+        return new Promise((resolve) => {
+            setTimeout(resolve, ms);
         });
-
-        return Promise.race([
-            promise,
-            timeout
-        ]);
-       }
-
-       return promiseTimeout(timeoutMs, this.getTransactionReceipt(transactionId)); 
-    }    
-
+    }
 
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
@@ -1032,7 +1020,7 @@ export class BaseProvider extends Provider implements EnsProvider {
         } catch (error) {
             return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                 method: "AccountBalanceQuery",
-                params: {address: addressOrName},
+                params: { address: addressOrName },
                 error
             });
         }
@@ -1057,7 +1045,6 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     // This should be called by any subclass wrapping a TransactionResponse
     _wrapTransaction(tx: Transaction, receipt?: HederaTransactionReceipt): TransactionResponse {
-        
         const result = <TransactionResponse>tx;
 
         if (!result.customData) {
@@ -1071,14 +1058,8 @@ export class BaseProvider extends Provider implements EnsProvider {
         }
 
         result.wait = async (timeout?: number) => {
-            if (timeout == null) { timeout = 0; }
-
             // query for txRecord (txId) 
             const txReceipt = await this._waitForTransaction(tx.transactionId, timeout);
-            
-            // if (txReceipt == null) { 
-            //     return null; 
-            // }
 
             // if (receipt.status === 0) {
             //     logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
@@ -1099,15 +1080,12 @@ export class BaseProvider extends Provider implements EnsProvider {
 
         const txBytes = arrayify(signedTransaction);
         const hederaTx = HederaTransaction.fromBytes(txBytes);
-        console.log("hederaTx-Id",hederaTx.transactionId);
+        console.log("hederaTx-Id", hederaTx.transactionId);
         const ethersTx = await this.formatter.transaction(signedTransaction); //
         const txHash = hexlify(await hederaTx.getTransactionHash());
         try {
             // TODO once we have fallback provider use `provider.perform("sendTransaction")`
             // TODO Before submission verify that the nodeId is the one that the provider is connected to
-            // await hederaTx.execute(this.hederaClient);
-            // return this._wrapTransaction(ethersTx);
-
             const resp = await hederaTx.execute(this.hederaClient);
             const receipt = await resp.getReceipt(this.hederaClient);
             return this._wrapTransaction(ethersTx, receipt);
@@ -1115,28 +1093,28 @@ export class BaseProvider extends Provider implements EnsProvider {
             const err = logger.makeError(error.message, error.status?.toString());
             (<any>err).transaction = ethersTx;
             (<any>err).transactionHash = txHash;
-            throw  err;
+            throw err;
         }
     }
 
     async _getTransactionRequest(transaction: Deferrable<TransactionRequest>): Promise<Transaction> {
         const values: any = await transaction;
 
-        const tx: any = { };
+        const tx: any = {};
 
         ["from", "to"].forEach((key) => {
             if (values[key] == null) { return; }
-            tx[key] = Promise.resolve(values[key]).then((v) => (v ? this._getAddress(v): null))
+            tx[key] = Promise.resolve(values[key]).then((v) => (v ? this._getAddress(v) : null))
         });
 
         ["gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "value"].forEach((key) => {
             if (values[key] == null) { return; }
-            tx[key] = Promise.resolve(values[key]).then((v) => (v ? BigNumber.from(v): null));
+            tx[key] = Promise.resolve(values[key]).then((v) => (v ? BigNumber.from(v) : null));
         });
 
         ["type"].forEach((key) => {
             if (values[key] == null) { return; }
-            tx[key] = Promise.resolve(values[key]).then((v) => ((v != null) ? v: null));
+            tx[key] = Promise.resolve(values[key]).then((v) => ((v != null) ? v : null));
         });
 
         if (values.accessList) {
@@ -1145,7 +1123,7 @@ export class BaseProvider extends Provider implements EnsProvider {
 
         ["data"].forEach((key) => {
             if (values[key] == null) { return; }
-            tx[key] = Promise.resolve(values[key]).then((v) => (v ? hexlify(v): null));
+            tx[key] = Promise.resolve(values[key]).then((v) => (v ? hexlify(v) : null));
         });
 
         return this.formatter.transactionRequest(await resolveProperties(tx));
@@ -1154,7 +1132,7 @@ export class BaseProvider extends Provider implements EnsProvider {
     async _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash> {
         filter = await filter;
 
-        const result: any = { };
+        const result: any = {};
 
         if (filter.address != null) {
             result.address = this._getAddress(filter.address);
@@ -1208,14 +1186,14 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     async _getAddress(addressOrName: string | Promise<string>): Promise<string> {
         addressOrName = await addressOrName;
-        if (typeof(addressOrName) !== "string") {
+        if (typeof (addressOrName) !== "string") {
             logger.throwArgumentError("invalid address or ENS name", "name", addressOrName);
         }
 
         const address = await this.resolveName(addressOrName);
         if (address == null) {
             logger.throwError("ENS name not configured", Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `resolveName(${ JSON.stringify(addressOrName) })`
+                operation: `resolveName(${JSON.stringify(addressOrName)})`
             });
         }
         return address;
@@ -1229,59 +1207,41 @@ export class BaseProvider extends Provider implements EnsProvider {
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
         await this.getNetwork();
         transactionId = await transactionId;
-        const ep = '/api/v1/transactions/'+transactionId;
+        const ep = '/api/v1/transactions/' + transactionId;
         //check url, see checkProvider -> signer
-
-        if (!this.mirrorNodeUrl) { logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION); }
+        if (!this.mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
 
         try {
             let { data } = await axios.get(this.mirrorNodeUrl + ep);
             const filtered = data.transactions
-            .filter((e: { result: string; }) => e.result != "DUPLICATE_TRANSACTION"); // filter all != duplicated
-            const response = filtered.length > 0 ? filtered[0] : null;
+                .filter((e: { result: string; }) => e.result != "DUPLICATE_TRANSACTION"); // filter all != duplicated
+            const response = filtered.length > 0 ? filtered[0] : null;         
             //fill the TransactionResponse obj from response -> wait(): just fill receipt obj form resp and resolve
             return this.formatter.txRecordToTxResponse(response); //parse to ethers format
             //see in eth, response of not mined tx ->404 => null
             //if not success, e.g. reverted -> receipt.status=0
         } catch (error) {
-            if (error.response.status != 404) {            
+            if (error.response.status != 404) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "TransactionResponseQuery",
                     error
                 });
-            } 
-            return  null;
+            }
+            return null;
         }
     }
-
-    async sleep(ms:number): Promise<void> {
-        return new Promise((resolve) => {
-          setTimeout(resolve, ms);
-        });
-    } 
 
     //query for receipt by txId
     async getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt> {
         await this.getNetwork();
         transactionId = await transactionId;
-
-        const accountId = transactionId.split('@');
-        const txValidStart = accountId[1].split('.');
-        const result = accountId[0]+'-'+txValidStart.join('-');
-        console.log(result);
-        console.log("start sleep");
-        await this.sleep(5000);
-        console.log("end sleep");
-        const txRecord = await this.getTransaction(result);
-        console.log("getTransactionRecord: ", txRecord);
-
         try {
             let receipt = await new TransactionReceiptQuery()
-            .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
-            .execute(this.hederaClient);
+                .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
+                .execute(this.hederaClient);
             console.log("getTransactionReceipt: ", receipt);
-            // return this.formatter.receipt(receipt); //parse to ethers format
-            // return this.formatter.txRecordToTxReceipt(txRecord); //parse to ethers format
+            //TODO parse to ethers format
+            // return this.formatter.txRecordToTxReceipt(txRecord); 
             return null;
         } catch (error) {
             return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
@@ -1289,18 +1249,6 @@ export class BaseProvider extends Provider implements EnsProvider {
                 error
             });
         }
-
-        // return poll(async () => {
-        //     const result = await this.perform("getTransactionReceipt", params);
-
-        //     if (result == null) {
-        //         return undefined;
-        //     }
-
-        //     const receipt = this.formatter.receipt(result); //parse to ethers format
-
-        //     return receipt;
-        // }, { oncePoll: this });
     }
 
     async getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>> {
@@ -1366,7 +1314,7 @@ export class BaseProvider extends Provider implements EnsProvider {
             if (isHexString(name)) { throw error; }
         }
 
-        if (typeof(name) !== "string") {
+        if (typeof (name) !== "string") {
             logger.throwArgumentError("invalid ENS name", "name", name);
         }
 
@@ -1471,7 +1419,7 @@ export class BaseProvider extends Provider implements EnsProvider {
     emit(eventName: EventType, ...args: Array<any>): boolean {
         let result = false;
 
-        let stopped: Array<Event> = [ ];
+        let stopped: Array<Event> = [];
 
         let eventTag = getEventTag(eventName);
         this._events = this._events.filter((event) => {
@@ -1521,7 +1469,7 @@ export class BaseProvider extends Provider implements EnsProvider {
             return this.removeAllListeners(eventName);
         }
 
-        const stopped: Array<Event> = [ ];
+        const stopped: Array<Event> = [];
 
         let found = false;
 
@@ -1540,11 +1488,11 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     removeAllListeners(eventName?: EventType): this {
-        let stopped: Array<Event> = [ ];
+        let stopped: Array<Event> = [];
         if (eventName == null) {
             stopped = this._events;
 
-            this._events = [ ];
+            this._events = [];
         } else {
             const eventTag = getEventTag(eventName);
             this._events = this._events.filter((event) => {

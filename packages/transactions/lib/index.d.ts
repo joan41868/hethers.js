@@ -42,6 +42,7 @@ export interface Transaction {
     maxPriorityFeePerGas?: BigNumber;
     maxFeePerGas?: BigNumber;
 }
+export declare function parseTransactionId(transactionId: string): string;
 export declare function computeAddress(key: BytesLike | string): string;
 export declare function computeAlias(key: BytesLike | string): string;
 export declare function computeAliasFromPubKey(pubKey: string): string;

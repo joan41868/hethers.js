@@ -1,10 +1,5 @@
-// const hethers = require("ethers");
-// const {PrivateKey} = require('@hashgraph/cryptography');
-// const {AccountId, ContractExecuteTransaction, TransactionId} = require('@hashgraph/sdk');
-
 import {ethers} from 'ethers';
-// import {PrivateKey} from '@hashgraph/cryptography';
-import {AccountId, ContractExecuteTransaction, TransactionId, PrivateKey, Client} from '@hashgraph/sdk';
+import {AccountId, ContractExecuteTransaction, TransactionId, PrivateKey} from '@hashgraph/sdk';
 
 (async () => {
     const operatorId = AccountId.fromString("0.0.1546615");
@@ -26,9 +21,6 @@ import {AccountId, ContractExecuteTransaction, TransactionId, PrivateKey, Client
 
 	const txResponse = await provider.sendTransaction(signedTx);
     console.log("sendTransaction response: ", txResponse);
-    const minedResult = await txResponse.wait(7000); //block confirmations, not relevant
-    console.log("result.wait(): ", minedResult);
-	
-	// const response = await tx.execute(Client.forTestnet());
-	// console.log(response);
+    const minedResult = await txResponse.wait();
+	console.log("result.wait(): ", minedResult);
 })();

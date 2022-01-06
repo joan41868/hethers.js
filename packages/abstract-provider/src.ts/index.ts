@@ -43,7 +43,7 @@ export type HederaTransactionResponse = {
     memo_base64: string,
     name: string,
     node: string,
-    nonce: number,
+    // nonce: number,
     result: string,
     scheduled: false,
     bytes: BytesLike,
@@ -73,7 +73,7 @@ export interface TransactionResponse extends Transaction {
     raw?: string, // equivalent of signed transaction
 
     // This function waits until the transaction has been mined
-    wait: (confirmations?: number) => Promise<TransactionReceipt>, // Should poll the mirror node
+    wait: (timeout?: number) => Promise<TransactionReceipt>, // Should poll the mirror node
     customData?: {
         [key: string]:any;
     }

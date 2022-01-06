@@ -97,8 +97,9 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     get pollingInterval(): number;
     set pollingInterval(value: number);
     waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
-    _waitForTransaction2(transactionId: string, timeout: number): Promise<TransactionReceipt>;
     _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt>;
+    waitOrReturn(transactionId: string, timeoutMs?: number): Promise<TransactionReceipt>;
+    sleep(ms: number): Promise<void>;
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
@@ -120,7 +121,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      * @param txId - id of the transaction to search for
      */
     getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse>;
-    sleep(ms: number): Promise<void>;
     getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;

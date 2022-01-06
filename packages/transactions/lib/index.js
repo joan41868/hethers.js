@@ -66,7 +66,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parse = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
+exports.parse = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.parseTransactionId = exports.TransactionTypes = void 0;
 var address_1 = require("@ethersproject/address");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
@@ -86,6 +86,14 @@ var TransactionTypes;
     TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes = exports.TransactionTypes || (exports.TransactionTypes = {}));
+//TODO handle possible exception
+function parseTransactionId(transactionId) {
+    var accountId = transactionId.split('@');
+    var txValidStart = accountId[1].split('.');
+    var result = accountId[0] + '-' + txValidStart.join('-');
+    return result;
+}
+exports.parseTransactionId = parseTransactionId;
 ///////////////////////////////
 //
 // function handleAddress(value: string): string {
@@ -489,9 +497,7 @@ function parse(rawTransaction) {
                     _b = bytes_1.hexlify;
                     return [4 /*yield*/, parsed.getTransactionHash()];
                 case 1:
-                    contents = (
-                    // transactionId: parseHederaTransactionId(parsed.transactionId),
-                    _c.hash = _b.apply(void 0, [_d.sent()]),
+                    contents = (_c.hash = _b.apply(void 0, [_d.sent()]),
                         _c.from = (0, utils_1.getAddressFromAccount)(parsed.transactionId.accountId.toString()),
                         _c);
                     if (parsed instanceof sdk_1.ContractExecuteTransaction) {

@@ -26,7 +26,6 @@ export declare type HederaTransactionResponse = {
     memo_base64: string;
     name: string;
     node: string;
-    nonce: number;
     result: string;
     scheduled: false;
     bytes: BytesLike;
@@ -44,7 +43,7 @@ export interface TransactionResponse extends Transaction {
     confirmations: number;
     from: string;
     raw?: string;
-    wait: (confirmations?: number) => Promise<TransactionReceipt>;
+    wait: (timeout?: number) => Promise<TransactionReceipt>;
     customData?: {
         [key: string]: any;
     };

@@ -361,27 +361,9 @@ var Formatter = /** @class */ (function () {
     };
     //add txRecordToTxReceipt method
     //add model TxRecord in abstract-provider index.ts
+    //TODO fix model mapping
     Formatter.prototype.txRecordToTxResponse = function (txRecord) {
         //add txHash?
-        // return {
-        //     to: '',
-        //     from: txRecord.from,
-        //     contractAddress: '',
-        //     transactionIndex: 0,
-        //     // root?: string,
-        //     gasUsed: null,
-        //     logsBloom: '',
-        //     blockHash: '',
-        //     transactionHash: txRecord.hash,
-        //     logs: null,
-        //     blockNumber: 0,
-        //     confirmations: 0,
-        //     cumulativeGasUsed: null,
-        //     effectiveGasPrice: null,
-        //     byzantium: false,
-        //     type: 0,
-        //     status: txReceipt.status._code
-        // }
         return {
             accessList: null,
             blockHash: null,
@@ -406,25 +388,27 @@ var Formatter = /** @class */ (function () {
             wait: null
         };
     };
+    //TODO fix model mapping
     Formatter.prototype.txRecordToTxReceipt = function (txRecord) {
         return {
-            to: '',
-            from: '',
+            to: txRecord.to,
+            from: txRecord.from,
             contractAddress: '',
             transactionIndex: 0,
             // root?: string,
             gasUsed: null,
             logsBloom: '',
             blockHash: '',
-            transactionHash: txRecord.transaction_hash,
+            transactionHash: txRecord.hash,
             logs: null,
             blockNumber: 0,
             confirmations: 0,
             cumulativeGasUsed: null,
             effectiveGasPrice: null,
             byzantium: false,
-            type: 0,
-            status: txRecord.result === "SUCCESS" ? 1 : 0
+            type: txRecord.type,
+            status: 1
+            // status: txRecord.result === "SUCCESS" ? 1 : 0
         };
     };
     Formatter.prototype.topics = function (value) {
