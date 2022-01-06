@@ -25,7 +25,7 @@ import {computePublicKey, recoverPublicKey} from "@ethersproject/signing-key";
 import {Logger} from "@ethersproject/logger";
 import {version} from "./_version";
 import {base64, getAddressFromAccount} from "ethers/lib/utils";
-import {ContractCreateTransaction, ContractExecuteTransaction, Transaction as HederaTransaction} from "@hashgraph/sdk";
+import {ContractCreateTransaction, ContractExecuteTransaction, Transaction as HederaTransaction, TransactionId} from "@hashgraph/sdk";
 
 const logger = new Logger(version);
 
@@ -68,6 +68,7 @@ export type UnsignedTransaction = {
 }
 
 export interface Transaction {
+    transactionId: string;
     hash?: string;
 
     to?: string;
@@ -97,6 +98,7 @@ export interface Transaction {
 }
 
 type HederaTransactionContents = {
+    // transactionId: any,
     hash: string,
     to?: string,
     from: string,
@@ -512,6 +514,11 @@ export function serialize(transaction: UnsignedTransaction, signature?: Signatur
 //     return tx;
 // }
 
+function parseHederaTransactionId(obj: TransactionId): string {
+    //TODO cleaner implementation
+    const parsedString = obj.accountId.realm+'.'+obj.accountId.shard+'.'+obj.accountId.num+'@'+obj.validStart.seconds+'.'+obj.validStart.nanos;
+    return parsedString;
+}
 
 export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     const payload = arrayify(rawTransaction);
@@ -524,6 +531,7 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     }
 
     let contents = {
+        // transactionId: parseHederaTransactionId(parsed.transactionId),
         hash: hexlify(await parsed.getTransactionHash()),
         from: getAddressFromAccount(parsed.transactionId.accountId.toString()),
     } as HederaTransactionContents;
@@ -549,6 +557,7 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     // TODO populate r, s ,v
 
     return {
+        transactionId: parseHederaTransactionId(parsed.transactionId),
         ...contents,
         nonce: 0,
         gasPrice: handleNumber('0'),

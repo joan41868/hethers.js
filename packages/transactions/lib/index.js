@@ -465,6 +465,11 @@ exports.serialize = serialize;
 //
 //     return tx;
 // }
+function parseHederaTransactionId(obj) {
+    //TODO cleaner implementation
+    var parsedString = obj.accountId.realm + '.' + obj.accountId.shard + '.' + obj.accountId.num + '@' + obj.validStart.seconds + '.' + obj.validStart.nanos;
+    return parsedString;
+}
 function parse(rawTransaction) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
@@ -484,7 +489,9 @@ function parse(rawTransaction) {
                     _b = bytes_1.hexlify;
                     return [4 /*yield*/, parsed.getTransactionHash()];
                 case 1:
-                    contents = (_c.hash = _b.apply(void 0, [_d.sent()]),
+                    contents = (
+                    // transactionId: parseHederaTransactionId(parsed.transactionId),
+                    _c.hash = _b.apply(void 0, [_d.sent()]),
                         _c.from = (0, utils_1.getAddressFromAccount)(parsed.transactionId.accountId.toString()),
                         _c);
                     if (parsed instanceof sdk_1.ContractExecuteTransaction) {
@@ -507,7 +514,7 @@ function parse(rawTransaction) {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];
                     }
                     // TODO populate r, s ,v
-                    return [2 /*return*/, __assign(__assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null })];
+                    return [2 /*return*/, __assign(__assign({ transactionId: parseHederaTransactionId(parsed.transactionId) }, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null })];
             }
         });
     });

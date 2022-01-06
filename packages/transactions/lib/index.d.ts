@@ -24,6 +24,7 @@ export declare type UnsignedTransaction = {
     maxFeePerGas?: BigNumberish;
 };
 export interface Transaction {
+    transactionId: string;
     hash?: string;
     to?: string;
     from?: string;
