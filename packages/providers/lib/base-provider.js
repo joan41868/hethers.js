@@ -1051,7 +1051,7 @@ var BaseProvider = /** @class */ (function (_super) {
     // This should be called by any subclass wrapping a TransactionResponse
     BaseProvider.prototype._wrapTransaction = function (tx, hash, startBlock) {
         var _this = this;
-        if (hash != null && (0, bytes_1.hexDataLength)(hash) !== 32) {
+        if (hash != null && (0, bytes_1.hexDataLength)(hash) !== 48) {
             throw new Error("invalid response - sendTransaction");
         }
         var result = tx;
@@ -1102,11 +1102,46 @@ var BaseProvider = /** @class */ (function (_super) {
         }); };
         return result;
     };
-    // FIXME:
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, null];
+            var txBytes, hederaTx, ethersTx, txHash, _b, error_6, err;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 1:
+                        _c.sent();
+                        return [4 /*yield*/, signedTransaction];
+                    case 2:
+                        signedTransaction = _c.sent();
+                        txBytes = (0, bytes_1.arrayify)(signedTransaction);
+                        hederaTx = sdk_1.Transaction.fromBytes(txBytes);
+                        return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
+                    case 3:
+                        ethersTx = _c.sent();
+                        _b = bytes_1.hexlify;
+                        return [4 /*yield*/, hederaTx.getTransactionHash()];
+                    case 4:
+                        txHash = _b.apply(void 0, [_c.sent()]);
+                        _c.label = 5;
+                    case 5:
+                        _c.trys.push([5, 7, , 8]);
+                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
+                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
+                        return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
+                    case 6:
+                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
+                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
+                        _c.sent();
+                        return [2 /*return*/, this._wrapTransaction(ethersTx, txHash)];
+                    case 7:
+                        error_6 = _c.sent();
+                        err = logger.makeError(error_6.message, (_a = error_6.status) === null || _a === void 0 ? void 0 : _a.toString());
+                        err.transaction = ethersTx;
+                        err.transactionHash = txHash;
+                        throw err;
+                    case 8: return [2 /*return*/];
+                }
             });
         });
     };
@@ -1382,7 +1417,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_6;
+            var address, error_7;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1395,8 +1430,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_6 = _a.sent();
-                        if (error_6.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_7 = _a.sent();
+                        if (error_7.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];
@@ -1407,7 +1442,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var network, transaction, _a, _b, error_7;
+            var network, transaction, _a, _b, error_8;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1428,11 +1463,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.call(transaction)];
                     case 3: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                     case 4:
-                        error_7 = _c.sent();
-                        if (error_7.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_8 = _c.sent();
+                        if (error_8.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
-                        throw error_7;
+                        throw error_8;
                     case 5: return [2 /*return*/];
                 }
             });
