@@ -11,6 +11,7 @@ var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
+var utils_1 = require("ethers/lib/utils");
 var Formatter = /** @class */ (function () {
     function Formatter() {
         var _newTarget = this.constructor;
@@ -317,9 +318,9 @@ var Formatter = /** @class */ (function () {
             result.chainId = chainId;
         }
         // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
+        // if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
+        //     result.blockHash = null;
+        // }
         return result;
     };
     Formatter.prototype.transaction = function (value) {
@@ -333,80 +334,80 @@ var Formatter = /** @class */ (function () {
     Formatter.prototype.receipt = function (value) {
         var result = Formatter.check(this.formats.receipt, value);
         // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                var value_1 = bignumber_1.BigNumber.from(result.root).toNumber();
-                if (value_1 === 0 || value_1 === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value_1)) {
-                        logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value_1;
-                    delete result.root;
-                }
-                else {
-                    logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            }
-            else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
+        // if (result.root != null) {
+        //     if (result.root.length <= 4) {
+        //         // Could be 0x00, 0x0, 0x01 or 0x1
+        //         const value = BigNumber.from(result.root).toNumber();
+        //         if (value === 0 || value === 1) {
+        //             // Make sure if both are specified, they match
+        //             if (result.status != null && (result.status !== value)) {
+        //                 logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
+        //             }
+        //             result.status = value;
+        //             delete result.root;
+        //         } else {
+        //             logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
+        //         }
+        //     } else if (result.root.length !== 66) {
+        //         // Must be a valid bytes32
+        //         logger.throwArgumentError("invalid root hash", "value.root", result.root);
+        //     }
+        // }
         if (result.status != null) {
             result.byzantium = true;
         }
         return result;
     };
-    //add txRecordToTxReceipt method
-    //add model TxRecord in abstract-provider index.ts
     //TODO fix model mapping
     Formatter.prototype.txRecordToTxResponse = function (txRecord) {
-        //add txHash?
+        console.log("txRecordToTxResponse", txRecord);
+        var senderAccount = txRecord.transaction_id.split('-');
+        // const hashHex = '0x' + Buffer.from(txRecord.transaction_hash, 'base64').toString('hex')
         return {
             accessList: null,
-            blockHash: null,
-            blockNumber: 0,
+            // blockHash: null,
+            // blockNumber: 0,
             chainId: 1,
-            confirmations: 0,
+            // confirmations: 0,
             // creates: null,
-            data: null,
-            from: null,
+            data: '',
+            from: (0, utils_1.getAddressFromAccount)(senderAccount[0]),
+            // from: '',
             gasLimit: null,
-            gasPrice: null,
+            // gasPrice: null,
             hash: txRecord.transaction_hash,
             transactionId: txRecord.transaction_id,
-            nonce: 0,
+            // nonce: 0,
             r: '',
             s: '',
-            to: null,
+            to: (0, utils_1.getAddressFromAccount)(txRecord.entity_id),
             // transactionIndex: 0,
-            type: 0,
+            // type: 0,
             v: 0,
             value: null,
             wait: null
         };
     };
-    //TODO fix model mapping
+    //TODO fix model mapping form HederaTransactionResponse, handle status
     Formatter.prototype.txRecordToTxReceipt = function (txRecord) {
+        console.log("txRecordToTxReceipt", txRecord);
         return {
             to: txRecord.to,
             from: txRecord.from,
             contractAddress: '',
-            transactionIndex: 0,
-            // root?: string,
+            // transactionIndex: 0,
+            // root: '',
             gasUsed: null,
             logsBloom: '',
-            blockHash: '',
+            // blockHash: '',
             transactionHash: txRecord.hash,
             logs: null,
-            blockNumber: 0,
-            confirmations: 0,
+            // blockNumber: 0,
+            // confirmations: 0,
             cumulativeGasUsed: null,
-            effectiveGasPrice: null,
+            // effectiveGasPrice: null,
             byzantium: false,
-            type: txRecord.type,
+            // type: txRecord.type,
             status: 1
             // status: txRecord.result === "SUCCESS" ? 1 : 0
         };

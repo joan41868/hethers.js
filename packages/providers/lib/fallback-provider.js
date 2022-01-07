@@ -291,7 +291,7 @@ function getProcessFunc(provider, method, params) {
                     block = (0, properties_1.shallowCopy)(block);
                     block.transactions = block.transactions.map(function (tx) {
                         tx = (0, properties_1.shallowCopy)(tx);
-                        tx.confirmations = -1;
+                        // tx.confirmations = -1;
                         return tx;
                     });
                     return serialize(block);

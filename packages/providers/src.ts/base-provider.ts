@@ -791,8 +791,8 @@ export class BaseProvider extends Provider implements EnsProvider {
                 case "tx": {
                     const hash = event.hash;
                     let runner = this.getTransactionReceipt(hash).then((receipt) => {
-                        if (!receipt || receipt.blockNumber == null) { return null; }
-                        this._emitted["t:" + hash] = receipt.blockNumber;
+                        if (!receipt) { return null; }
+                        // this._emitted["t:" + hash] = receipt.blockNumber;
                         this.emit(hash, receipt);
                         return null;
                     }).catch((error: Error) => { this.emit("error", error); });
@@ -949,30 +949,8 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     async _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt> {
-
         //timeoutMs -> max limit to wait
         //loop every 1sec until limit reached, or resolved
-        // let finalResult;
-        // let limit = timeoutMs; 
-        // const tick = 1000;
-        // const interval = setInterval(async ()=>{
-        //     if(limit == 0) {
-        //         clearInterval(interval);
-        //     }
-        //     const txResponse = await this.getTransaction(parseTransactionId(transactionId));
-        //     //if response ok: clearInterval, return tx | continue...
-        //     if(txResponse != null) {
-        //         finalResult = txResponse;
-        //         clearInterval(interval); 
-        //     }
-        //     limit -= tick;
-            
-        // }, tick);
-        
-        // //    return promiseTimeout(timeoutMs, this.getTransactionReceipt(transactionId)); 
-        // console.log("finalResult", finalResult);
-        // return finalResult;
-
         if (timeoutMs == null) {
             return await this.waitOrReturn(transactionId);
         }
@@ -1046,7 +1024,7 @@ export class BaseProvider extends Provider implements EnsProvider {
     // This should be called by any subclass wrapping a TransactionResponse
     _wrapTransaction(tx: Transaction, receipt?: HederaTransactionReceipt): TransactionResponse {
         const result = <TransactionResponse>tx;
-
+        console.log("HederaTransactionReceipt", receipt);
         if (!result.customData) {
             result.customData = {};
         }
@@ -1080,7 +1058,7 @@ export class BaseProvider extends Provider implements EnsProvider {
 
         const txBytes = arrayify(signedTransaction);
         const hederaTx = HederaTransaction.fromBytes(txBytes);
-        console.log("hederaTx-Id", hederaTx.transactionId);
+        // console.log("hederaTx-Id", hederaTx.transactionId);
         const ethersTx = await this.formatter.transaction(signedTransaction); //
         const txHash = hexlify(await hederaTx.getTransactionHash());
         try {
@@ -1208,18 +1186,15 @@ export class BaseProvider extends Provider implements EnsProvider {
         await this.getNetwork();
         transactionId = await transactionId;
         const ep = '/api/v1/transactions/' + transactionId;
-        //check url, see checkProvider -> signer
         if (!this.mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
-
         try {
             let { data } = await axios.get(this.mirrorNodeUrl + ep);
             const filtered = data.transactions
-                .filter((e: { result: string; }) => e.result != "DUPLICATE_TRANSACTION"); // filter all != duplicated
+                .filter((e: { result: string; }) => e.result != "DUPLICATE_TRANSACTION");
+            
+            console.log("Hedera filtered transactions", filtered);
             const response = filtered.length > 0 ? filtered[0] : null;         
-            //fill the TransactionResponse obj from response -> wait(): just fill receipt obj form resp and resolve
-            return this.formatter.txRecordToTxResponse(response); //parse to ethers format
-            //see in eth, response of not mined tx ->404 => null
-            //if not success, e.g. reverted -> receipt.status=0
+            return this.formatter.txRecordToTxResponse(response);
         } catch (error) {
             if (error.response.status != 404) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
@@ -1231,7 +1206,6 @@ export class BaseProvider extends Provider implements EnsProvider {
         }
     }
 
-    //query for receipt by txId
     async getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt> {
         await this.getNetwork();
         transactionId = await transactionId;

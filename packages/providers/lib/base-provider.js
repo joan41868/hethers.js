@@ -804,10 +804,10 @@ var BaseProvider = /** @class */ (function (_super) {
                         case "tx": {
                             var hash_2 = event.hash;
                             var runner = _this.getTransactionReceipt(hash_2).then(function (receipt) {
-                                if (!receipt || receipt.blockNumber == null) {
+                                if (!receipt) {
                                     return null;
                                 }
-                                _this._emitted["t:" + hash_2] = receipt.blockNumber;
+                                // this._emitted["t:" + hash] = receipt.blockNumber;
                                 _this.emit(hash_2, receipt);
                                 return null;
                             }).catch(function (error) { _this.emit("error", error); });
@@ -1094,6 +1094,7 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype._wrapTransaction = function (tx, receipt) {
         var _this = this;
         var result = tx;
+        console.log("HederaTransactionReceipt", receipt);
         if (!result.customData) {
             result.customData = {};
         }
@@ -1137,7 +1138,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         signedTransaction = _c.sent();
                         txBytes = (0, bytes_1.arrayify)(signedTransaction);
                         hederaTx = sdk_1.Transaction.fromBytes(txBytes);
-                        console.log("hederaTx-Id", hederaTx.transactionId);
                         return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
                     case 3:
                         ethersTx = _c.sent();
@@ -1345,7 +1345,6 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 2:
                         transactionId = _a.sent();
                         ep = '/api/v1/transactions/' + transactionId;
-                        //check url, see checkProvider -> signer
                         if (!this.mirrorNodeUrl)
                             logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
                         _a.label = 3;
@@ -1356,9 +1355,9 @@ var BaseProvider = /** @class */ (function (_super) {
                         data = (_a.sent()).data;
                         filtered = data.transactions
                             .filter(function (e) { return e.result != "DUPLICATE_TRANSACTION"; });
+                        console.log("Hedera filtered transactions", filtered);
                         response = filtered.length > 0 ? filtered[0] : null;
-                        //fill the TransactionResponse obj from response -> wait(): just fill receipt obj form resp and resolve
-                        return [2 /*return*/, this.formatter.txRecordToTxResponse(response)]; //parse to ethers format
+                        return [2 /*return*/, this.formatter.txRecordToTxResponse(response)];
                     case 5:
                         error_7 = _a.sent();
                         if (error_7.response.status != 404) {
@@ -1373,7 +1372,6 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    //query for receipt by txId
     BaseProvider.prototype.getTransactionReceipt = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
             var receipt, error_8;

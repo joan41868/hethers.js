@@ -26,6 +26,7 @@ export declare type HederaTransactionResponse = {
     memo_base64: string;
     name: string;
     node: string;
+    nonce: number;
     result: string;
     scheduled: false;
     bytes: BytesLike;
@@ -37,10 +38,7 @@ export declare type HederaTransactionResponse = {
 };
 export interface TransactionResponse extends Transaction {
     hash: string;
-    blockNumber?: number;
-    blockHash?: string;
     timestamp?: number;
-    confirmations: number;
     from: string;
     raw?: string;
     wait: (timeout?: number) => Promise<TransactionReceipt>;
@@ -84,19 +82,12 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string;
-    transactionIndex: number;
-    root?: string;
     gasUsed: BigNumber;
     logsBloom: string;
-    blockHash: string;
     transactionHash: string;
     logs: Array<Log>;
-    blockNumber: number;
-    confirmations: number;
     cumulativeGasUsed: BigNumber;
-    effectiveGasPrice: BigNumber;
     byzantium: boolean;
-    type: number;
     status?: number;
 }
 export interface FeeData {

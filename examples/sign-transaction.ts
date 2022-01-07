@@ -17,10 +17,10 @@ import {AccountId, ContractExecuteTransaction, TransactionId, PrivateKey} from '
 		.sign(privateKey)
 	const txBytes = tx.toBytes();
 	const signedTx = ethers.utils.hexlify(txBytes);
-	console.log(signedTx);
+	// console.log(signedTx);
 
 	const txResponse = await provider.sendTransaction(signedTx);
-    console.log("sendTransaction response: ", txResponse);
+    console.log("sendTransaction submitted txResponse: ", txResponse);
     const minedResult = await txResponse.wait();
-	console.log("result.wait(): ", minedResult);
+	console.log("txResponse.wait() mined receipt: ", minedResult);
 })();
