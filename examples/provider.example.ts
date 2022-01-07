@@ -6,27 +6,29 @@ const hethers = require("ethers");
     const provider = hethers.providers.getDefaultProvider("testnet");
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
     const solAddr = hethers.utils.getAddressFromAccount(accountConfig);
-    console.log(`Using account with num ${accountNum} <->`, solAddr);
 
     /**
      * Example 1: Getting Balance for account
      */
     let balance = await provider.getBalance(hethers.utils.getAddressFromAccount(accountConfig));
-    console.log(balance);
-    console.log(balance.toNumber());
+    console.log(`Balance of 98 account: ${balance}`);
 
     // ensure it works with solidity addresses as well
     balance = await provider.getBalance(solAddr);
-    console.log(balance);
-    console.log(balance.toNumber());
+    console.log(`Balance of 98 account: ${balance}`);
 
     /**
      * Example 2: Getting Transaction Record
      */
     const txId = `0.0.15680048-1638189529-145876922`;
     const record = await provider.getTransaction(txId);
+    console.log(`Transaction Record:`);
     console.log(record);
 
+    /**
+     * Example 3: Connecting to custom consensus and mirror node URLs via HederaProvider
+     * - Includes getting balance and tx record
+     */
     const testnetOperator = {
         "operator": {
             "accountId": "0.0.19041642",
@@ -48,8 +50,7 @@ const hethers = require("ethers");
     const balance2 = await provider2.getBalance(solAddr);
     console.log(balance2);
 
-    const txId2 = '0.0.15680048-1638189529-145876922';
-    const record2 = await provider2.getTransaction(txId2);
+    const record2 = await provider2.getTransaction(txId);
     console.log(record2);
 })();
 
