@@ -1288,15 +1288,12 @@ var BaseProvider = /** @class */ (function (_super) {
             var ep, data, filtered;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 0: return [4 /*yield*/, txId];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, txId];
-                    case 2:
                         txId = _a.sent();
                         ep = '/api/v1/transactions/' + txId;
                         return [4 /*yield*/, axios_1.default.get(this.getMirrorNodeUrl() + ep)];
-                    case 3:
+                    case 2:
                         data = (_a.sent()).data;
                         filtered = data.transactions
                             .filter(function (e) { return e.result === "SUCCESS"; });

@@ -1160,7 +1160,6 @@ export class BaseProvider extends Provider implements EnsProvider {
      * @param txId - id of the transaction to search for
      */
     async getTransaction(txId: string | Promise<string>): Promise<TransactionResponse> {
-        await this.getNetwork();
         txId = await txId;
         const ep = '/api/v1/transactions/'+txId;
         let { data } = await axios.get(this.getMirrorNodeUrl() + ep);

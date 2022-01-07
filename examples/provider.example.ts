@@ -8,6 +8,9 @@ const hethers = require("ethers");
     const solAddr = hethers.utils.getAddressFromAccount(accountConfig);
     console.log(`Using account with num ${accountNum} <->`, solAddr);
 
+    /**
+     * Example 1: Getting Balance for account
+     */
     let balance = await provider.getBalance(hethers.utils.getAddressFromAccount(accountConfig));
     console.log(balance);
     console.log(balance.toNumber());
@@ -17,26 +20,36 @@ const hethers = require("ethers");
     console.log(balance);
     console.log(balance.toNumber());
 
+    /**
+     * Example 2: Getting Transaction Record
+     */
     const txId = `0.0.15680048-1638189529-145876922`;
     const record = await provider.getTransaction(txId);
     console.log(record);
 
-    const genesis = {
-        operator: {
-            // genesis is the operator
-            accountId: "0.0.2",
-                privateKey: "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137",
-                publicKey: "302a300506032b65700321000aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"
+    const testnetOperator = {
+        "operator": {
+            "accountId": "0.0.19041642",
+            "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
+            "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
         },
-        network: {
-            "127.0.0.1:50211": "0.0.3",
-                "127.0.0.1:50212": "0.0.4",
-                "127.0.0.1:50213": "0.0.5"
+        "network": {
+            "0.testnet.hedera.com:50211": "0.0.3",
+            "1.testnet.hedera.com:50211": "0.0.4",
+            "2.testnet.hedera.com:50211": "0.0.5",
+            "3.testnet.hedera.com:50211": "0.0.6"
         }
     };
-    /* Connected to the local network as the GENESIS account*/
-    const provider2 = new hethers.providers.HederaProvider(genesis.network["127.0.0.1:50211"], "127.0.0.1:50211", "");
+    const provider2 = new hethers.providers.HederaProvider(
+        testnetOperator.network["0.testnet.hedera.com:50211"],
+        "0.testnet.hedera.com:50211",
+        "https://testnet.mirrornode.hedera.com");
+
     const balance2 = await provider2.getBalance(solAddr);
     console.log(balance2);
+
+    const txId2 = '0.0.15680048-1638189529-145876922';
+    const record2 = await provider2.getTransaction(txId2);
+    console.log(record2);
 })();
 

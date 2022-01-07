@@ -16,17 +16,21 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var base_provider_1 = require("./base-provider");
+/**
+ * Provides support for connecting to custom network by specifying consensus and mirror node url.
+ */
 var HederaProvider = /** @class */ (function (_super) {
     __extends(HederaProvider, _super);
-    function HederaProvider(accId, consensusNodeUrl, mirrorNodeUrl) {
+    function HederaProvider(nodeId, consensusNodeUrl, mirrorNodeUrl) {
         var _this = this;
         var props = {
             network: {}
         };
-        props.network[consensusNodeUrl] = accId.toString();
+        props.network[consensusNodeUrl] = nodeId.toString();
         _this = _super.call(this, {
             network: props.network
         }) || this;
+        _this.mirrorNodeUrl = mirrorNodeUrl;
         return _this;
     }
     return HederaProvider;

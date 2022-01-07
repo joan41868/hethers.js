@@ -1013,7 +1013,6 @@ export class BaseProvider extends Provider {
      */
     getTransaction(txId) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
             txId = yield txId;
             const ep = '/api/v1/transactions/' + txId;
             let { data } = yield axios.get(this.getMirrorNodeUrl() + ep);
