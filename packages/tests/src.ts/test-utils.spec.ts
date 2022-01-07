@@ -474,8 +474,7 @@ describe("Test Typed Transactions", function() {
         assert(tx.gasLimit.toNumber() === 1000, "Invalid gas limit");
         assert(tx.data == hexlify(cc.constructorParameters));
         assert(tx.from === getAddressFromAccount(sendingAccount), "Invalid sending account");
-        assert(hexlify(tx.hash) === hexlify(await cc.getTransactionHash()), "Hash mismatch");
-        // FIXME: bug
+        assert(tx.hash === hexlify(await cc.getTransactionHash()), "Hash mismatch");
         assert(tx.value.toString() === "1",
             `Invalid initial balance tx.value(${tx.value.toString()}) != ce.initialBalance(1)`);
     });
@@ -496,7 +495,7 @@ describe("Test Typed Transactions", function() {
         // remove 0x prefix
         assert(tx.to.slice(2) === ce.contractId.toSolidityAddress(), "Invalid tx.to");
         assert(tx.data == hexlify(ce.functionParameters));
-        assert(hexlify(tx.hash) === hexlify(await ce.getTransactionHash()), "Hash mismatch");
+        assert(tx.hash === hexlify(await ce.getTransactionHash()), "Hash mismatch");
         assert(tx.value.toString() === "1",
             `Invalid initial balance tx.value(${tx.value.toString()}) != ce.payableAmount(1); Tinybar value ${ce.payableAmount.toTinybars().toNumber()}`);
     });
