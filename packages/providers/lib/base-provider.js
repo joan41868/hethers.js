@@ -1051,7 +1051,7 @@ var BaseProvider = /** @class */ (function (_super) {
     // This should be called by any subclass wrapping a TransactionResponse
     BaseProvider.prototype._wrapTransaction = function (tx, hash, startBlock) {
         var _this = this;
-        if (hash != null && (0, bytes_1.hexDataLength)(hash) !== 32) {
+        if (hash != null && (0, bytes_1.hexDataLength)(hash) !== 48) {
             throw new Error("invalid response - sendTransaction");
         }
         var result = tx;

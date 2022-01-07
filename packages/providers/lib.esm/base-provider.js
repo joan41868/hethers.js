@@ -842,7 +842,7 @@ export class BaseProvider extends Provider {
     }
     // This should be called by any subclass wrapping a TransactionResponse
     _wrapTransaction(tx, hash, startBlock) {
-        if (hash != null && hexDataLength(hash) !== 32) {
+        if (hash != null && hexDataLength(hash) !== 48) {
             throw new Error("invalid response - sendTransaction");
         }
         const result = tx;

@@ -30,11 +30,6 @@ export var TransactionTypes;
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes || (TransactionTypes = {}));
 ///////////////////////////////
-//
-// function handleAddress(value: string): string {
-//     if (value === "0x") { return null; }
-//     return getAddress(value);
-// }
 function handleNumber(value) {
     if (value === "0x") {
         return Zero;
@@ -271,67 +266,6 @@ export function serialize(transaction, signature) {
 //         console.log(error);
 //     }
 // }
-// function _parseEip1559(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
-//
-//     if (transaction.length !== 9 && transaction.length !== 12) {
-//         logger.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
-//     }
-//
-//     const maxPriorityFeePerGas = handleNumber(transaction[2]);
-//     const maxFeePerGas = handleNumber(transaction[3]);
-//     const tx: Transaction = {
-//         type:                  2,
-//         chainId:               handleNumber(transaction[0]).toNumber(),
-//         nonce:                 handleNumber(transaction[1]).toNumber(),
-//         maxPriorityFeePerGas:  maxPriorityFeePerGas,
-//         maxFeePerGas:          maxFeePerGas,
-//         gasPrice:              null,
-//         gasLimit:              handleNumber(transaction[4]),
-//         to:                    handleAddress(transaction[5]),
-//         value:                 handleNumber(transaction[6]),
-//         data:                  transaction[7],
-//         accessList:            accessListify(transaction[8]),
-//     };
-//
-//     // Unsigned EIP-1559 Transaction
-//     if (transaction.length === 9) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
-//
-//     return tx;
-// }
-//
-// function _parseEip2930(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
-//
-//     if (transaction.length !== 8 && transaction.length !== 11) {
-//         logger.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
-//     }
-//
-//     const tx: Transaction = {
-//         type:       1,
-//         chainId:    handleNumber(transaction[0]).toNumber(),
-//         nonce:      handleNumber(transaction[1]).toNumber(),
-//         gasPrice:   handleNumber(transaction[2]),
-//         gasLimit:   handleNumber(transaction[3]),
-//         to:         handleAddress(transaction[4]),
-//         value:      handleNumber(transaction[5]),
-//         data:       transaction[6],
-//         accessList: accessListify(transaction[7])
-//     };
-//
-//     // Unsigned EIP-2930 Transaction
-//     if (transaction.length === 8) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
-//
-//     return tx;
-// }
 //
 // // Legacy Transactions and EIP-155
 // function _parse(rawTransaction: Uint8Array): Transaction {
@@ -421,14 +355,14 @@ export function parse(rawTransaction) {
             contents.to = getAddressFromAccount((_a = parsed.contractId) === null || _a === void 0 ? void 0 : _a.toString());
             contents.gasLimit = handleNumber(parsed.gas.toString());
             contents.value = parsed.payableAmount ?
-                handleNumber(parsed.payableAmount.toTinybars().toString()) : handleNumber('0');
+                handleNumber(parsed.payableAmount.toBigNumber().toString()) : handleNumber('0');
             contents.data = parsed.functionParameters ? hexlify(parsed.functionParameters) : '0x';
         }
         else if (parsed instanceof ContractCreateTransaction) {
             parsed = parsed;
             contents.gasLimit = handleNumber(parsed.gas.toString());
             contents.value = parsed.initialBalance ?
-                handleNumber(parsed.initialBalance.toTinybars().toString()) : handleNumber('0');
+                handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
             // TODO IMPORTANT! We are setting only the constructor arguments and not the whole bytecode + constructor args
             contents.data = parsed.constructorParameters ? hexlify(parsed.constructorParameters) : '0x';
         }

@@ -6,7 +6,6 @@ import { ethers } from "ethers";
 import { loadTests, TestCase } from "@ethersproject/testcases";
 import * as utils from './utils';
 
-
 describe('Test JSON Wallets', function() {
 
     let tests: Array<TestCase.Wallet> = loadTests('wallets');
@@ -91,6 +90,9 @@ describe('Test JSON Wallets', function() {
 
 describe('Test Transaction Signing and Parsing', function() {
     // FIXME
+    //  unit tests for this functionality is present
+    //  at branches `feat/signing-and-sending-transactions` and/or `contract-interaction`
+
     // function checkTransaction(parsedTransaction: any, test: TestCase.SignedTransaction): any {
     //     let transaction: any = { };
     //
@@ -134,7 +136,7 @@ describe('Test Transaction Signing and Parsing', function() {
     // }
 
 
-    // FIXME
+    // FIXME - separate tests with `it`
     let tests: Array<TestCase.SignedTransaction> = loadTests('transactions');
     tests.forEach((test) => {
         // it(('parses and signs transaction - ' + test.name), function() {
