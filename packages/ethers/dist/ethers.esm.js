@@ -9303,9 +9303,7 @@ class Signer {
     // Populates "from" if unspecified, and calls with the transaction
     call(transaction, blockTag) {
         return __awaiter$2(this, void 0, void 0, function* () {
-            this._checkProvider("call");
-            const tx = yield resolveProperties(this.checkTransaction(transaction));
-            return yield this.provider.call(tx, blockTag);
+            return Promise.resolve("");
         });
     }
     // Populates all fields in a transaction, signs it and sends it to the network
@@ -86131,7 +86129,7 @@ function addContractWait(contract, tx) {
     };
 }
 function buildCall(contract, fragment, collapseSimple) {
-    const signerOrProvider = (contract.signer || contract.provider);
+    // const signerOrProvider = (contract.signer || contract.provider);
     return function (...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
             // Extract the "blockTag" override if present
@@ -86150,7 +86148,7 @@ function buildCall(contract, fragment, collapseSimple) {
             }
             // Call a node and get the result
             const tx = yield populateTransaction(contract, fragment, args);
-            const result = yield signerOrProvider.call(tx, blockTag);
+            const result = ""; //await signerOrProvider.call(tx, blockTag);
             try {
                 let value = contract.interface.decodeFunctionResult(fragment, result);
                 if (collapseSimple && fragment.outputs.length === 1) {
@@ -91391,38 +91389,6 @@ var __awaiter$9 = (window && window.__awaiter) || function (thisArg, _arguments,
 const logger$v = new Logger(version$p);
 //////////////////////////////
 // Event Serializeing
-function checkTopic(topic) {
-    if (topic == null) {
-        return "null";
-    }
-    if (hexDataLength(topic) !== 32) {
-        logger$v.throwArgumentError("invalid topic", "topic", topic);
-    }
-    return topic.toLowerCase();
-}
-function serializeTopics(topics) {
-    // Remove trailing null AND-topics; they are redundant
-    topics = topics.slice();
-    while (topics.length > 0 && topics[topics.length - 1] == null) {
-        topics.pop();
-    }
-    return topics.map((topic) => {
-        if (Array.isArray(topic)) {
-            // Only track unique OR-topics
-            const unique = {};
-            topic.forEach((topic) => {
-                unique[checkTopic(topic)] = true;
-            });
-            // The order of OR-topics does not matter
-            const sorted = Object.keys(unique);
-            sorted.sort();
-            return sorted.join("|");
-        }
-        else {
-            return checkTopic(topic);
-        }
-    }).join("&");
-}
 function deserializeTopics(data) {
     if (data === "") {
         return [];
@@ -91436,28 +91402,6 @@ function deserializeTopics(data) {
         });
         return ((comps.length === 1) ? comps[0] : comps);
     });
-}
-function getEventTag$1(eventName) {
-    if (typeof (eventName) === "string") {
-        eventName = eventName.toLowerCase();
-        if (hexDataLength(eventName) === 32) {
-            return "tx:" + eventName;
-        }
-        if (eventName.indexOf(":") === -1) {
-            return eventName;
-        }
-    }
-    else if (Array.isArray(eventName)) {
-        return "filter:*:" + serializeTopics(eventName);
-    }
-    else if (ForkEvent.isForkEvent(eventName)) {
-        logger$v.warn("not implemented");
-        throw new Error("not implemented");
-    }
-    else if (eventName && typeof (eventName) === "object") {
-        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
-    }
-    throw new Error("invalid event - " + eventName);
 }
 //////////////////////////////
 // Helper Object
@@ -91543,27 +91487,6 @@ function bytes32ify(value) {
 function base58Encode(data) {
     return Base58.encode(concat([data, hexDataSlice(sha256$1(sha256$1(data)), 0, 4)]));
 }
-const matchers = [
-    new RegExp("^(https):/\/(.*)$", "i"),
-    new RegExp("^(data):(.*)$", "i"),
-    new RegExp("^(ipfs):/\/(.*)$", "i"),
-    new RegExp("^eip155:[0-9]+/(erc[0-9]+):(.*)$", "i"),
-];
-function _parseString(result) {
-    try {
-        return toUtf8String(_parseBytes(result));
-    }
-    catch (error) { }
-    return null;
-}
-function _parseBytes(result) {
-    if (result === "0x") {
-        return null;
-    }
-    const offset = BigNumber.from(hexDataSlice(result, 0, 32)).toNumber();
-    const length = BigNumber.from(hexDataSlice(result, offset, offset + 32)).toNumber();
-    return hexDataSlice(result, offset + 32, offset + 32 + length);
-}
 class Resolver {
     // The resolvedAddress is only for creating a ReverseLookup resolver
     constructor(provider, address, name, resolvedAddress) {
@@ -91575,12 +91498,13 @@ class Resolver {
     _fetchBytes(selector, parameters) {
         return __awaiter$9(this, void 0, void 0, function* () {
             // e.g. keccak256("addr(bytes32,uint256)")
-            const tx = {
-                to: this.address,
-                data: hexConcat([selector, namehash(this.name), (parameters || "0x")])
-            };
+            // const tx = {
+            //     to: this.address,
+            //     data: hexConcat([ selector, namehash(this.name), (parameters || "0x") ])
+            // };
             try {
-                return _parseBytes(yield this.provider.call(tx));
+                // return _parseBytes(await this.provider.call(tx));
+                return null;
             }
             catch (error) {
                 if (error.code === Logger.errors.CALL_EXCEPTION) {
@@ -91650,17 +91574,7 @@ class Resolver {
             // If Ethereum, use the standard `addr(bytes32)`
             if (coinType === 60) {
                 try {
-                    // keccak256("addr(bytes32)")
-                    const transaction = {
-                        to: this.address,
-                        data: ("0x3b3b57de" + namehash(this.name).substring(2))
-                    };
-                    const hexBytes = yield this.provider.call(transaction);
-                    // No address
-                    if (hexBytes === "0x" || hexBytes === HashZero) {
-                        return null;
-                    }
-                    return this.provider.formatter.callAddress(hexBytes);
+                    return null;
                 }
                 catch (error) {
                     if (error.code === Logger.errors.CALL_EXCEPTION) {
@@ -91685,94 +91599,6 @@ class Resolver {
                 });
             }
             return address;
-        });
-    }
-    getAvatar() {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            const linkage = [];
-            try {
-                const avatar = yield this.getText("avatar");
-                if (avatar == null) {
-                    return null;
-                }
-                for (let i = 0; i < matchers.length; i++) {
-                    const match = avatar.match(matchers[i]);
-                    if (match == null) {
-                        continue;
-                    }
-                    switch (match[1]) {
-                        case "https":
-                            linkage.push({ type: "url", content: avatar });
-                            return { linkage, url: avatar };
-                        case "data":
-                            linkage.push({ type: "data", content: avatar });
-                            return { linkage, url: avatar };
-                        case "ipfs":
-                            linkage.push({ type: "ipfs", content: avatar });
-                            return { linkage, url: `https:/\/gateway.ipfs.io/ipfs/${avatar.substring(7)}` };
-                        case "erc721":
-                        case "erc1155": {
-                            // Depending on the ERC type, use tokenURI(uint256) or url(uint256)
-                            const selector = (match[1] === "erc721") ? "0xc87b56dd" : "0x0e89341c";
-                            linkage.push({ type: match[1], content: avatar });
-                            // The owner of this name
-                            const owner = (this._resolvedAddress || (yield this.getAddress()));
-                            const comps = (match[2] || "").split("/");
-                            if (comps.length !== 2) {
-                                return null;
-                            }
-                            const addr = yield this.provider.formatter.address(comps[0]);
-                            const tokenId = hexZeroPad(BigNumber.from(comps[1]).toHexString(), 32);
-                            // Check that this account owns the token
-                            if (match[1] === "erc721") {
-                                // ownerOf(uint256 tokenId)
-                                const tokenOwner = this.provider.formatter.callAddress(yield this.provider.call({
-                                    to: addr, data: hexConcat(["0x6352211e", tokenId])
-                                }));
-                                if (owner !== tokenOwner) {
-                                    return null;
-                                }
-                                linkage.push({ type: "owner", content: tokenOwner });
-                            }
-                            else if (match[1] === "erc1155") {
-                                // balanceOf(address owner, uint256 tokenId)
-                                const balance = BigNumber.from(yield this.provider.call({
-                                    to: addr, data: hexConcat(["0x00fdd58e", hexZeroPad(owner, 32), tokenId])
-                                }));
-                                if (balance.isZero()) {
-                                    return null;
-                                }
-                                linkage.push({ type: "balance", content: balance.toString() });
-                            }
-                            // Call the token contract for the metadata URL
-                            const tx = {
-                                to: this.provider.formatter.address(comps[0]),
-                                data: hexConcat([selector, tokenId])
-                            };
-                            let metadataUrl = _parseString(yield this.provider.call(tx));
-                            if (metadataUrl == null) {
-                                return null;
-                            }
-                            linkage.push({ type: "metadata-url", content: metadataUrl });
-                            // ERC-1155 allows a generic {id} in the URL
-                            if (match[1] === "erc1155") {
-                                metadataUrl = metadataUrl.replace("{id}", tokenId.substring(2));
-                            }
-                            // Get the token metadata
-                            const metadata = yield fetchJson(metadataUrl);
-                            // Pull the image URL out
-                            if (!metadata || typeof (metadata.image) !== "string" || !metadata.image.match(/^https:\/\//i)) {
-                                return null;
-                            }
-                            linkage.push({ type: "metadata", content: JSON.stringify(metadata) });
-                            linkage.push({ type: "url", content: metadata.image });
-                            return { linkage, url: metadata.image };
-                        }
-                    }
-                }
-            }
-            catch (error) { }
-            return null;
         });
     }
     getContentHash() {
@@ -91824,7 +91650,6 @@ class Resolver {
     }
 }
 let defaultFormatter = null;
-let nextPollId = 1;
 class BaseProvider extends Provider {
     /**
      *  ready
@@ -91838,8 +91663,6 @@ class BaseProvider extends Provider {
     constructor(network) {
         logger$v.checkNew(new.target, Provider);
         super();
-        this._events = [];
-        this._emitted = { block: -2 };
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -91868,10 +91691,6 @@ class BaseProvider extends Provider {
                 logger$v.throwArgumentError("invalid network", "network", network);
             }
         }
-        this._maxInternalBlockNumber = -1024;
-        this._lastBlockNumber = -2;
-        this._pollingInterval = 4000;
-        this._fastQueryDate = 0;
         this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
         this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(network));
     }
@@ -91909,22 +91728,6 @@ class BaseProvider extends Provider {
             return this._network;
         });
     }
-    // This will always return the most recently established network.
-    // For "any", this can change (a "network" event is emitted before
-    // any change is reflected); otherwise this cannot change
-    get ready() {
-        return poll(() => {
-            return this._ready().then((network) => {
-                return network;
-            }, (error) => {
-                // If the network isn't running yet, we will wait
-                if (error.code === Logger.errors.NETWORK_ERROR && error.event === "noNetwork") {
-                    return undefined;
-                }
-                throw error;
-            });
-        });
-    }
     // @TODO: Remove this and just create a singleton formatter
     static getFormatter() {
         if (defaultFormatter == null) {
@@ -91937,121 +91740,10 @@ class BaseProvider extends Provider {
         return getNetwork((network == null) ? "mainnet" : network);
     }
     poll() {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            const pollId = nextPollId++;
-            // Track all running promises, so we can trigger a post-poll once they are complete
-            const runners = [];
-            let blockNumber = null;
-            try {
-                // blockNumber = await this._getInternalBlockNumber(100 + this.pollingInterval / 2);
-            }
-            catch (error) {
-                this.emit("error", error);
-                return;
-            }
-            // this._setFastBlockNumber(blockNumber);
-            // Emit a poll event after we have the latest (fast) block number
-            this.emit("poll", pollId, blockNumber);
-            // If the block has not changed, meh.
-            if (blockNumber === this._lastBlockNumber) {
-                this.emit("didPoll", pollId);
-                return;
-            }
-            // First polling cycle, trigger a "block" events
-            if (this._emitted.block === -2) {
-                this._emitted.block = blockNumber - 1;
-            }
-            if (Math.abs((this._emitted.block) - blockNumber) > 1000) {
-                logger$v.warn(`network block skew detected; skipping block events (emitted=${this._emitted.block} blockNumber${blockNumber})`);
-                this.emit("error", logger$v.makeError("network block skew detected", Logger.errors.NETWORK_ERROR, {
-                    blockNumber: blockNumber,
-                    event: "blockSkew",
-                    previousBlockNumber: this._emitted.block
-                }));
-                this.emit("block", blockNumber);
-            }
-            else {
-                // Notify all listener for each block that has passed
-                for (let i = this._emitted.block + 1; i <= blockNumber; i++) {
-                    this.emit("block", i);
-                }
-            }
-            // The emitted block was updated, check for obsolete events
-            if (this._emitted.block !== blockNumber) {
-                this._emitted.block = blockNumber;
-                Object.keys(this._emitted).forEach((key) => {
-                    // The block event does not expire
-                    if (key === "block") {
-                        return;
-                    }
-                    // The block we were at when we emitted this event
-                    const eventBlockNumber = this._emitted[key];
-                    // We cannot garbage collect pending transactions or blocks here
-                    // They should be garbage collected by the Provider when setting
-                    // "pending" events
-                    if (eventBlockNumber === "pending") {
-                        return;
-                    }
-                    // Evict any transaction hashes or block hashes over 12 blocks
-                    // old, since they should not return null anyways
-                    if (blockNumber - eventBlockNumber > 12) {
-                        delete this._emitted[key];
-                    }
-                });
-            }
-            // First polling cycle
-            if (this._lastBlockNumber === -2) {
-                this._lastBlockNumber = blockNumber - 1;
-            }
-            // Find all transaction hashes we are waiting on
-            this._events.forEach((event) => {
-                switch (event.type) {
-                    case "tx": {
-                        const hash = event.hash;
-                        let runner = this.getTransactionReceipt(hash).then((receipt) => {
-                            if (!receipt || receipt.blockNumber == null) {
-                                return null;
-                            }
-                            this._emitted["t:" + hash] = receipt.blockNumber;
-                            this.emit(hash, receipt);
-                            return null;
-                        }).catch((error) => { this.emit("error", error); });
-                        runners.push(runner);
-                        break;
-                    }
-                    case "filter": {
-                        const filter = event.filter;
-                        filter.fromBlock = this._lastBlockNumber + 1;
-                        filter.toBlock = blockNumber;
-                        const runner = this.getLogs(filter).then((logs) => {
-                            if (logs.length === 0) {
-                                return;
-                            }
-                            logs.forEach((log) => {
-                                this._emitted["b:" + log.blockHash] = log.blockNumber;
-                                this._emitted["t:" + log.transactionHash] = log.blockNumber;
-                                this.emit(filter, log);
-                            });
-                        }).catch((error) => { this.emit("error", error); });
-                        runners.push(runner);
-                        break;
-                    }
-                }
-            });
-            this._lastBlockNumber = blockNumber;
-            // Once all events for this loop have been processed, emit "didPoll"
-            Promise.all(runners).then(() => {
-                this.emit("didPoll", pollId);
-            }).catch((error) => { this.emit("error", error); });
-            return;
-        });
+        return __awaiter$9(this, void 0, void 0, function* () { });
     }
     // Deprecated; do not use this
     resetEventsBlock(blockNumber) {
-        this._lastBlockNumber = blockNumber - 1;
-        if (this.polling) {
-            this.poll();
-        }
     }
     get network() {
         return this._network;
@@ -92078,14 +91770,6 @@ class BaseProvider extends Provider {
                 // make sure you know what you are doing if you use "any"
                 if (this.anyNetwork) {
                     this._network = currentNetwork;
-                    // Reset all internal block number guards and caches
-                    this._lastBlockNumber = -2;
-                    this._fastBlockNumber = null;
-                    this._fastBlockNumberPromise = null;
-                    this._fastQueryDate = 0;
-                    this._emitted.block = -2;
-                    this._maxInternalBlockNumber = -1024;
-                    this._internalBlockNumber = null;
                     // The "network" event MUST happen before this method resolves
                     // so any events have a chance to unregister, so we stall an
                     // additional event loop before returning from /this/ call
@@ -92103,47 +91787,6 @@ class BaseProvider extends Provider {
             }
             return network;
         });
-    }
-    get polling() {
-        return (this._poller != null);
-    }
-    set polling(value) {
-        if (value && !this._poller) {
-            this._poller = setInterval(() => { this.poll(); }, this.pollingInterval);
-            if (!this._bootstrapPoll) {
-                this._bootstrapPoll = setTimeout(() => {
-                    this.poll();
-                    // We block additional polls until the polling interval
-                    // is done, to prevent overwhelming the poll function
-                    this._bootstrapPoll = setTimeout(() => {
-                        // If polling was disabled, something may require a poke
-                        // since starting the bootstrap poll and it was disabled
-                        if (!this._poller) {
-                            this.poll();
-                        }
-                        // Clear out the bootstrap so we can do another
-                        this._bootstrapPoll = null;
-                    }, this.pollingInterval);
-                }, 0);
-            }
-        }
-        else if (!value && this._poller) {
-            clearInterval(this._poller);
-            this._poller = null;
-        }
-    }
-    get pollingInterval() {
-        return this._pollingInterval;
-    }
-    set pollingInterval(value) {
-        if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
-            throw new Error("invalid polling interval");
-        }
-        this._pollingInterval = value;
-        if (this._poller) {
-            clearInterval(this._poller);
-            this._poller = setInterval(() => { this.poll(); }, this._pollingInterval);
-        }
     }
     waitForTransaction(transactionHash, confirmations, timeout) {
         return __awaiter$9(this, void 0, void 0, function* () {
@@ -92235,8 +91878,6 @@ class BaseProvider extends Provider {
             if (receipt == null && confirms === 0) {
                 return null;
             }
-            // No longer pending, allow the polling loop to garbage collect this
-            this._emitted["t:" + tx.hash] = receipt.blockNumber;
             if (receipt.status === 0) {
                 logger$v.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
@@ -92326,40 +91967,9 @@ class BaseProvider extends Provider {
             return this.formatter.filter(yield resolveProperties(result));
         });
     }
-    call(transaction, blockTag) {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                transaction: this._getTransactionRequest(transaction),
-            });
-            const result = yield this.perform("call", params);
-            try {
-                return hexlify(result);
-            }
-            catch (error) {
-                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "call",
-                    params, result, error
-                });
-            }
-        });
-    }
     estimateGas(transaction) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                transaction: this._getTransactionRequest(transaction)
-            });
-            const result = yield this.perform("estimateGas", params);
-            try {
-                return BigNumber.from(result);
-            }
-            catch (error) {
-                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "estimateGas",
-                    params, result, error
-                });
-            }
+            return Promise.resolve(BigNumber.from(0));
         });
     }
     _getAddress(addressOrName) {
@@ -92401,28 +92011,13 @@ class BaseProvider extends Provider {
             return poll(() => __awaiter$9(this, void 0, void 0, function* () {
                 const result = yield this.perform("getTransactionReceipt", params);
                 if (result == null) {
-                    if (this._emitted["t:" + transactionHash] == null) {
-                        return null;
-                    }
                     return undefined;
                 }
                 // "geth-etc" returns receipts before they are ready
                 if (result.blockHash == null) {
                     return undefined;
                 }
-                const receipt = this.formatter.receipt(result);
-                if (receipt.blockNumber == null) {
-                    receipt.confirmations = 0;
-                }
-                else if (receipt.confirmations == null) {
-                    // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                    //
-                    // Add the confirmations using the fast block number (pessimistic)
-                    // let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                    // if (confirmations <= 0) { confirmations = 1; }
-                    // receipt.confirmations = confirmations;
-                }
-                return receipt;
+                return this.formatter.receipt(result);
             }), { oncePoll: this });
         });
     }
@@ -92470,12 +92065,13 @@ class BaseProvider extends Provider {
                 logger$v.throwError("network does not support ENS", Logger.errors.UNSUPPORTED_OPERATION, { operation: "ENS", network: network.name });
             }
             // keccak256("resolver(bytes32)")
-            const transaction = {
-                to: network.ensAddress,
-                data: ("0x0178b8bf" + namehash(name).substring(2))
-            };
+            // const transaction = {
+            //     to: network.ensAddress,
+            //     data: ("0x0178b8bf" + namehash(name).substring(2))
+            // };
             try {
-                return this.formatter.callAddress(yield this.call(transaction));
+                return null;
+                // return this.formatter.callAddress(await this.call(transaction));
             }
             catch (error) {
                 if (error.code === Logger.errors.CALL_EXCEPTION) {
@@ -92513,78 +92109,13 @@ class BaseProvider extends Provider {
         return __awaiter$9(this, void 0, void 0, function* () {
             address = yield address;
             address = this.formatter.address(address);
-            const reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-            const resolverAddress = yield this._getResolver(reverseName);
-            if (!resolverAddress) {
-                return null;
-            }
-            // keccak("name(bytes32)")
-            let bytes = arrayify(yield this.call({
-                to: resolverAddress,
-                data: ("0x691f3431" + namehash(reverseName).substring(2))
-            }));
-            // Strip off the dynamic string pointer (0x20)
-            if (bytes.length < 32 || !BigNumber.from(bytes.slice(0, 32)).eq(32)) {
-                return null;
-            }
-            bytes = bytes.slice(32);
-            // Not a length-prefixed string
-            if (bytes.length < 32) {
-                return null;
-            }
-            // Get the length of the string (from the length-prefix)
-            const length = BigNumber.from(bytes.slice(0, 32)).toNumber();
-            bytes = bytes.slice(32);
-            // Length longer than available data
-            if (length > bytes.length) {
-                return null;
-            }
-            const name = toUtf8String(bytes.slice(0, length));
-            // Make sure the reverse record matches the foward record
-            const addr = yield this.resolveName(name);
-            if (addr != address) {
-                return null;
-            }
-            return name;
-        });
-    }
-    getAvatar(nameOrAddress) {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            let resolver = null;
-            if (isHexString(nameOrAddress)) {
-                // Address; reverse lookup
-                const address = this.formatter.address(nameOrAddress);
-                const reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-                const resolverAddress = yield this._getResolver(reverseName);
-                if (!resolverAddress) {
-                    return null;
-                }
-                resolver = new Resolver(this, resolverAddress, "_", address);
-            }
-            else {
-                // ENS name; forward lookup
-                resolver = yield this.getResolver(nameOrAddress);
-            }
-            const avatar = yield resolver.getAvatar();
-            if (avatar == null) {
-                return null;
-            }
-            return avatar.url;
+            return null;
         });
     }
     perform(method, params) {
         return logger$v.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
     }
-    _startEvent(event) {
-        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
-    }
-    _stopEvent(event) {
-        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
-    }
     _addEventListener(eventName, listener, once) {
-        const event = new Event(getEventTag$1(eventName), listener, once);
-        this._events.push(event);
-        this._startEvent(event);
         return this;
     }
     on(eventName, listener) {
@@ -92594,82 +92125,18 @@ class BaseProvider extends Provider {
         return this._addEventListener(eventName, listener, true);
     }
     emit(eventName, ...args) {
-        let result = false;
-        let stopped = [];
-        let eventTag = getEventTag$1(eventName);
-        this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag) {
-                return true;
-            }
-            setTimeout(() => {
-                event.listener.apply(this, args);
-            }, 0);
-            result = true;
-            if (event.once) {
-                stopped.push(event);
-                return false;
-            }
-            return true;
-        });
-        stopped.forEach((event) => { this._stopEvent(event); });
-        return result;
+        return false;
     }
     listenerCount(eventName) {
-        if (!eventName) {
-            return this._events.length;
-        }
-        let eventTag = getEventTag$1(eventName);
-        return this._events.filter((event) => {
-            return (event.tag === eventTag);
-        }).length;
+        return 0;
     }
     listeners(eventName) {
-        if (eventName == null) {
-            return this._events.map((event) => event.listener);
-        }
-        let eventTag = getEventTag$1(eventName);
-        return this._events
-            .filter((event) => (event.tag === eventTag))
-            .map((event) => event.listener);
+        return null;
     }
     off(eventName, listener) {
-        if (listener == null) {
-            return this.removeAllListeners(eventName);
-        }
-        const stopped = [];
-        let found = false;
-        let eventTag = getEventTag$1(eventName);
-        this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag || event.listener != listener) {
-                return true;
-            }
-            if (found) {
-                return true;
-            }
-            found = true;
-            stopped.push(event);
-            return false;
-        });
-        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
     }
     removeAllListeners(eventName) {
-        let stopped = [];
-        if (eventName == null) {
-            stopped = this._events;
-            this._events = [];
-        }
-        else {
-            const eventTag = getEventTag$1(eventName);
-            this._events = this._events.filter((event) => {
-                if (event.tag !== eventTag) {
-                    return true;
-                }
-                stopped.push(event);
-                return false;
-            });
-        }
-        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
     }
 }

@@ -26,7 +26,7 @@ type TestCases = {
 
 const hederaPreviewnetOperableAccount = {
     "operator": {
-        "accountId": "0.0.1340",
+        "accountId": "0.0.1356",
         "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
     },
 };
