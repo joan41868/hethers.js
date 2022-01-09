@@ -114,9 +114,7 @@ export abstract class Signer {
 
     // Populates "from" if unspecified, and calls with the transaction
     async call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string> {
-        this._checkProvider("call");
-        const tx = await resolveProperties(this.checkTransaction(transaction));
-        return await this.provider.call(tx, blockTag);
+        return Promise.resolve("");
     }
 
     // Populates all fields in a transaction, signs it and sends it to the network

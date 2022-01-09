@@ -265,7 +265,7 @@ function addContractWait(contract, tx) {
     };
 }
 function buildCall(contract, fragment, collapseSimple) {
-    const signerOrProvider = (contract.signer || contract.provider);
+    // const signerOrProvider = (contract.signer || contract.provider);
     return function (...args) {
         return __awaiter(this, void 0, void 0, function* () {
             // Extract the "blockTag" override if present
@@ -284,7 +284,7 @@ function buildCall(contract, fragment, collapseSimple) {
             }
             // Call a node and get the result
             const tx = yield populateTransaction(contract, fragment, args);
-            const result = yield signerOrProvider.call(tx, blockTag);
+            const result = ""; //await signerOrProvider.call(tx, blockTag);
             try {
                 let value = contract.interface.decodeFunctionResult(fragment, result);
                 if (collapseSimple && fragment.outputs.length === 1) {

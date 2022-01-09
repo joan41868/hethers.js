@@ -352,7 +352,7 @@ function addContractWait(contract, tx) {
     };
 }
 function buildCall(contract, fragment, collapseSimple) {
-    var signerOrProvider = (contract.signer || contract.provider);
+    // const signerOrProvider = (contract.signer || contract.provider);
     return function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -384,9 +384,7 @@ function buildCall(contract, fragment, collapseSimple) {
                     case 5: return [4 /*yield*/, populateTransaction(contract, fragment, args)];
                     case 6:
                         tx = _a.sent();
-                        return [4 /*yield*/, signerOrProvider.call(tx, blockTag)];
-                    case 7:
-                        result = _a.sent();
+                        result = "";
                         try {
                             value = contract.interface.decodeFunctionResult(fragment, result);
                             if (collapseSimple && fragment.outputs.length === 1) {

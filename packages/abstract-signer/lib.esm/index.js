@@ -54,9 +54,7 @@ export class Signer {
     // Populates "from" if unspecified, and calls with the transaction
     call(transaction, blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
-            this._checkProvider("call");
-            const tx = yield resolveProperties(this.checkTransaction(transaction));
-            return yield this.provider.call(tx, blockTag);
+            return Promise.resolve("");
         });
     }
     // Populates all fields in a transaction, signs it and sends it to the network

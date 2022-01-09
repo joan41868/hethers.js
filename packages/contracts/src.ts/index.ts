@@ -366,7 +366,7 @@ function addContractWait(contract: Contract, tx: TransactionResponse) {
 }
 
 function buildCall(contract: Contract, fragment: FunctionFragment, collapseSimple: boolean): ContractFunction {
-    const signerOrProvider = (contract.signer || contract.provider);
+    // const signerOrProvider = (contract.signer || contract.provider);
 
     return async function(...args: Array<any>): Promise<any> {
         // Extract the "blockTag" override if present
@@ -387,7 +387,7 @@ function buildCall(contract: Contract, fragment: FunctionFragment, collapseSimpl
 
         // Call a node and get the result
         const tx = await populateTransaction(contract, fragment, args);
-        const result = await signerOrProvider.call(tx, blockTag);
+        const result = ""; //await signerOrProvider.call(tx, blockTag);
 
         try {
             let value = contract.interface.decodeFunctionResult(fragment, result);

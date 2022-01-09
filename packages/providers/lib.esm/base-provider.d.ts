@@ -1,4 +1,3 @@
-/// <reference types="node" />
 import { BlockTag, EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish } from "@ethersproject/networks";
@@ -44,7 +43,6 @@ export declare class Resolver implements EnsResolver {
     _fetchBytes(selector: string, parameters?: string): Promise<null | string>;
     _getAddress(coinType: number, hexBytes: string): string;
     getAddress(coinType?: number): Promise<string>;
-    getAvatar(): Promise<null | Avatar>;
     getContentHash(): Promise<string>;
     getText(key: string): Promise<string>;
 }
@@ -53,22 +51,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     _network: Network;
     _events: Array<Event>;
     formatter: Formatter;
-    _emitted: {
-        [eventName: string]: number | "pending";
-    };
-    _pollingInterval: number;
-    _poller: NodeJS.Timer;
-    _bootstrapPoll: NodeJS.Timer;
-    _lastBlockNumber: number;
-    _fastBlockNumber: number;
-    _fastBlockNumberPromise: Promise<number>;
-    _fastQueryDate: number;
-    _maxInternalBlockNumber: number;
-    _internalBlockNumber: Promise<{
-        blockNumber: number;
-        reqTime: number;
-        respTime: number;
-    }>;
     readonly anyNetwork: boolean;
     private readonly hederaClient;
     private readonly mirrorNodeUrl;
@@ -83,7 +65,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      */
     constructor(network: Networkish | Promise<Network>);
     _ready(): Promise<Network>;
-    get ready(): Promise<Network>;
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
     poll(): Promise<void>;
@@ -91,10 +72,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     get network(): Network;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
-    get polling(): boolean;
-    set polling(value: boolean);
-    get pollingInterval(): number;
-    set pollingInterval(value: number);
     waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
     _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: {
         data: string;
@@ -116,7 +93,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     _getTransactionRequest(transaction: Deferrable<TransactionRequest>): Promise<Transaction>;
     _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;
-    call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     _getAddress(addressOrName: string | Promise<string>): Promise<string>;
     /**
@@ -132,10 +108,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     _getResolver(name: string): Promise<string>;
     resolveName(name: string | Promise<string>): Promise<null | string>;
     lookupAddress(address: string | Promise<string>): Promise<null | string>;
-    getAvatar(nameOrAddress: string): Promise<null | string>;
     perform(method: string, params: any): Promise<any>;
-    _startEvent(event: Event): void;
-    _stopEvent(event: Event): void;
     _addEventListener(eventName: EventType, listener: Listener, once: boolean): this;
     on(eventName: EventType, listener: Listener): this;
     once(eventName: EventType, listener: Listener): this;

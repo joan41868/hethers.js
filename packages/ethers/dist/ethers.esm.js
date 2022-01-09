@@ -9303,9 +9303,7 @@ class Signer {
     // Populates "from" if unspecified, and calls with the transaction
     call(transaction, blockTag) {
         return __awaiter$2(this, void 0, void 0, function* () {
-            this._checkProvider("call");
-            const tx = yield resolveProperties(this.checkTransaction(transaction));
-            return yield this.provider.call(tx, blockTag);
+            return Promise.resolve("");
         });
     }
     // Populates all fields in a transaction, signs it and sends it to the network
@@ -17550,7 +17548,7 @@ function addContractWait(contract, tx) {
     };
 }
 function buildCall(contract, fragment, collapseSimple) {
-    const signerOrProvider = (contract.signer || contract.provider);
+    // const signerOrProvider = (contract.signer || contract.provider);
     return function (...args) {
         return __awaiter$7(this, void 0, void 0, function* () {
             // Extract the "blockTag" override if present
@@ -17569,7 +17567,7 @@ function buildCall(contract, fragment, collapseSimple) {
             }
             // Call a node and get the result
             const tx = yield populateTransaction(contract, fragment, args);
-            const result = yield signerOrProvider.call(tx, blockTag);
+            const result = ""; //await signerOrProvider.call(tx, blockTag);
             try {
                 let value = contract.interface.decodeFunctionResult(fragment, result);
                 if (collapseSimple && fragment.outputs.length === 1) {
@@ -33226,6 +33224,8 @@ class Status {
                 return "UPDATE_FILE_ID_DOES_NOT_MATCH_PREPARED";
             case Status.UpdateFileHashDoesNotMatchPrepared:
                 return "UPDATE_FILE_HASH_DOES_NOT_MATCH_PREPARED";
+            case Status.ConsensusGasExhausted:
+                return "CONSENSUS_GAS_EXHAUSTED";
             default:
                 return `UNKNOWN (${this._code})`;
         }
@@ -33712,6 +33712,8 @@ class Status {
                 return Status.UpdateFileIdDoesNotMatchPrepared;
             case 278:
                 return Status.UpdateFileHashDoesNotMatchPrepared;
+            case 279:
+                return Status.ConsensusGasExhausted;
             default:
                 throw new Error(
                     `(BUG) Status.fromCode() does not handle code: ${code}`
@@ -34952,6 +34954,12 @@ Status.UpdateFileIdDoesNotMatchPrepared = new Status(277);
  * confirm the hash of the file to be used in the upgrade.
  */
 Status.UpdateFileHashDoesNotMatchPrepared = new Status(278);
+
+/**
+ * Consensus throttle did not allow execution of this transaction. System is throttled at
+ * consensus level.
+ */
+Status.ConsensusGasExhausted = new Status(279);
 
 var long_1 = Long;
 
@@ -36446,13 +36454,14 @@ function isStringOrUint8Array(variable) {
 /**
  * Takes any param and throws custom error if null or undefined.
  *
- * @param {object} variable
+ * @param {any} variable
  * @returns {object}
  */
 function requireNonNull(variable) {
     if (!isNonNull(variable)) {
         throw new Error(REQUIRE_NON_NULL_ERROR);
     } else {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         return variable;
     }
 }
@@ -36690,6 +36699,25 @@ function constructor(props, realm, num) {
 }
 
 /**
+ * @param {[Long, Long, Long]} a
+ * @param {[Long, Long, Long]} b
+ * @returns {number}
+ */
+function compare$1(a, b) {
+    let comparison = a[0].compare(b[0]);
+    if (comparison != 0) {
+        return comparison;
+    }
+
+    comparison = a[1].compare(b[1]);
+    if (comparison != 0) {
+        return comparison;
+    }
+
+    return a[2].compare(b[2]);
+}
+
+/**
  * @typedef {object} ParseAddressResult
  * @property {number} status
  * @property {Long} [num1]
@@ -36855,7 +36883,7 @@ function _checksum(ledgerId, addr) {
     let id = ledgerId + "000000000000";
     let h = [];
     for (var i = 0; i < id.length; i += 2) {
-        h.push(parseInt(id.substr(i, 2), 16));
+        h.push(parseInt(id.substring(i, i + 2), 16));
     }
     for (let i = 0; i < addr.length; i++) {
         d.push(addr[i] === "." ? 10 : parseInt(addr[i], 10));
@@ -39751,6 +39779,17 @@ class AccountId {
         id._checksum = this._checksum;
         return id;
     }
+
+    /**
+     * @param {AccountId} other
+     * @returns {number}
+     */
+    compare(other) {
+        return compare$1(
+            [this.shard, this.realm, this.num],
+            [other.shard, other.realm, other.num]
+        );
+    }
 }
 
 /**
@@ -40471,7 +40510,7 @@ class Executable {
 
         for (let attempt = 1 /* loop forever */; ; attempt += 1) {
             const nodeAccountId = this._getNodeAccountId();
-            const node = client._network._network.get(nodeAccountId.toString());
+            const node = client._network.getNode(nodeAccountId);
 
             if (node == null) {
                 throw new Error(
@@ -40672,6 +40711,20 @@ class Timestamp {
     toString() {
         return `${this.seconds.toString()}.${this.nanos.toString()}`;
     }
+
+    /**
+     * @param {Timestamp} other
+     * @returns {number}
+     */
+    compare(other) {
+        const comparison = this.seconds.compare(other.seconds);
+
+        if (comparison != 0) {
+            return comparison;
+        }
+
+        return this.nanos.compare(other.nanos);
+    }
 }
 
 /**
@@ -40839,6 +40892,24 @@ class TransactionId {
             this.accountId,
             this.validStart,
             this.scheduled
+        );
+    }
+
+    /**
+     * @param {TransactionId} other
+     * @returns {number}
+     */
+    compare(other) {
+        const comparison = /** @type {AccountId} */ (this.accountId).compare(
+            /** @type {AccountId} */ (other.accountId)
+        );
+
+        if (comparison != 0) {
+            return comparison;
+        }
+
+        return /** @type {Timestamp} */ (this.validStart).compare(
+            /** @type {Timestamp} */ (other.validStart)
         );
     }
 }
@@ -41537,6 +41608,17 @@ class ContractId extends Key {
         id._checksum = this._checksum;
         return id;
     }
+
+    /**
+     * @param {ContractId} other
+     * @returns {number}
+     */
+    compare(other) {
+        return compare$1(
+            [this.shard, this.realm, this.num],
+            [other.shard, other.realm, other.num]
+        );
+    }
 }
 
 /**
@@ -41685,6 +41767,17 @@ class TokenId {
         const id = new TokenId(this);
         id._checksum = this._checksum;
         return id;
+    }
+
+    /**
+     * @param {TokenId} other
+     * @returns {number}
+     */
+    compare(other) {
+        return compare$1(
+            [this.shard, this.realm, this.num],
+            [other.shard, other.realm, other.num]
+        );
     }
 }
 
@@ -42333,6 +42426,17 @@ class FileId {
         id._checksum = this._checksum;
         return id;
     }
+
+    /**
+     * @param {FileId} other
+     * @returns {number}
+     */
+    compare(other) {
+        return compare$1(
+            [this.shard, this.realm, this.num],
+            [other.shard, other.realm, other.num]
+        );
+    }
 }
 
 /**
@@ -42470,6 +42574,17 @@ class TopicId {
         const id = new TopicId(this);
         id._checksum = this._checksum;
         return id;
+    }
+
+    /**
+     * @param {TopicId} other
+     * @returns {number}
+     */
+    compare(other) {
+        return compare$1(
+            [this.shard, this.realm, this.num],
+            [other.shard, other.realm, other.num]
+        );
     }
 }
 
@@ -42621,6 +42736,17 @@ class ScheduleId {
         const id = new ScheduleId(this);
         id._checksum = this._checksum;
         return id;
+    }
+
+    /**
+     * @param {ScheduleId} other
+     * @returns {number}
+     */
+    compare(other) {
+        return compare$1(
+            [this.shard, this.realm, this.num],
+            [other.shard, other.realm, other.num]
+        );
     }
 }
 
@@ -43404,6 +43530,7 @@ class ContractFunctionResult {
      * @param {Uint8Array} result.bloom
      * @param {Long} result.gasUsed
      * @param {ContractLogInfo[]} result.logs
+     * @param {ContractId[]} result.createdContractIds
      * @param {Uint8Array} result.bytes
      */
     constructor(result) {
@@ -43433,6 +43560,8 @@ class ContractFunctionResult {
          * The log info for events returned by the function.
          */
         this.logs = result.logs;
+
+        this.createdContractIds = result.createdContractIds;
     }
 
     /**
@@ -43458,6 +43587,10 @@ class ContractFunctionResult {
             logs: (result.logInfo != null ? result.logInfo : []).map((info) =>
                 ContractLogInfo._fromProtobuf(info)
             ),
+            createdContractIds: (result.createdContractIDs != null
+                ? result.createdContractIDs
+                : []
+            ).map((contractId) => ContractId._fromProtobuf(contractId)),
         });
     }
 
@@ -56871,16 +57004,19 @@ class NftId {
      * @returns {NftId}
      */
     static fromString(text) {
-        const strings = text.split("@");
+        const strings =
+            text.split("/").length > 1 ? text.split("/") : text.split("@");
 
         for (const string of strings) {
             if (string === "") {
-                throw new Error("invalid format for NftId");
+                throw new Error(
+                    "invalid format for NftId: use [token]/[serial] or [token]@[serial]"
+                );
             }
         }
 
-        const serial = long_1.fromString(strings[0]);
-        const token = TokenId.fromString(strings[1]);
+        const token = TokenId.fromString(strings[0]);
+        const serial = long_1.fromString(strings[1]);
 
         return new NftId(token, serial);
     }
@@ -64622,14 +64758,54 @@ class TransferTransaction extends Transaction {
 
     /**
      * @internal
-     * @param {TokenId | string} tokenId
-     * @param {Long | number} serial
-     * @param {AccountId | string} sender
-     * @param {AccountId | string} recipient
+     * @param {NftId | TokenId | string} tokenIdOrNftId
+     * @param {AccountId | string | Long | number} senderAccountIdOrSerialNumber
+     * @param {AccountId | string} recipientAccountIdOrSenderAccountId
+     * @param {(AccountId | string)=} recipient
      * @returns {TransferTransaction}
      */
-    addNftTransfer(tokenId, serial, sender, recipient) {
+    addNftTransfer(
+        tokenIdOrNftId,
+        senderAccountIdOrSerialNumber,
+        recipientAccountIdOrSenderAccountId,
+        recipient
+    ) {
         this._requireNotFrozen();
+
+        let tokenId;
+        let serial;
+        let senderId;
+        let recipientId;
+
+        if (typeof tokenIdOrNftId === "string") {
+            if (tokenIdOrNftId.includes("/") || tokenIdOrNftId.includes("@")) {
+                tokenIdOrNftId = NftId.fromString(tokenIdOrNftId);
+            } else {
+                tokenIdOrNftId = TokenId.fromString(tokenIdOrNftId);
+            }
+        }
+
+        if (tokenIdOrNftId instanceof NftId) {
+            tokenId = tokenIdOrNftId.tokenId;
+            serial = tokenIdOrNftId.serial;
+            senderId = /** @type {AccountId | string} */ (
+                senderAccountIdOrSerialNumber
+            );
+            recipientId = /** @type {AccountId | string} */ (
+                recipientAccountIdOrSenderAccountId
+            );
+        } else if (tokenIdOrNftId instanceof TokenId) {
+            tokenId = /** @type {TokenId} */ (tokenIdOrNftId);
+            serial = /** @type {Long|number} */ (senderAccountIdOrSerialNumber);
+            senderId = /** @type {AccountId | string} */ (
+                recipientAccountIdOrSenderAccountId
+            );
+            requireNonNull(recipient);
+            recipientId = /** @type {AccountId | string} */ (recipient);
+        } else {
+            throw new Error("unintended type for tokenIdOrNftId");
+        }
+
         this._nftTransfers.__set(
             typeof tokenId === "string" ? TokenId.fromString(tokenId) : tokenId,
             {
@@ -64638,13 +64814,14 @@ class TransferTransaction extends Transaction {
                         ? long_1.fromNumber(serial)
                         : serial,
                 sender:
-                    typeof sender === "string"
-                        ? AccountId.fromString(sender)
-                        : sender,
+                    typeof senderId === "string"
+                        ? AccountId.fromString(senderId)
+                        : senderId,
+
                 recipient:
-                    typeof recipient === "string"
-                        ? AccountId.fromString(recipient)
-                        : recipient,
+                    typeof recipientId === "string"
+                        ? AccountId.fromString(recipientId)
+                        : recipientId,
             }
         );
 
@@ -64677,61 +64854,138 @@ class TransferTransaction extends Transaction {
      * @returns {proto.ICryptoTransferTransactionBody}
      */
     _makeTransactionData() {
-        /** @type {proto.ITokenTransferList[]} */
-        const tokenTransfers = [];
-        const hbarTransfers = [];
+        /** @type {Set<string>} */
+        const tokenIds = new Set();
 
-        for (const [tokenId, value] of this._tokenTransfers) {
-            const transfers = [];
-            for (const [accountId, amount] of value) {
-                transfers.push({
-                    accountID: accountId._toProtobuf(),
-                    amount: amount,
+        for (const tokenId of this._tokenTransfers.keys()) {
+            tokenIds.add(tokenId.toString());
+        }
+
+        for (const tokenId of this._nftTransfers.keys()) {
+            tokenIds.add(tokenId.toString());
+        }
+
+        const tokenTransfers = Array.from(tokenIds, (tokenId) => {
+            const thisTokenTransfers = this._tokenTransfers.get(tokenId);
+            const thisNftTransfers = this._nftTransfers.get(tokenId);
+
+            let transfers;
+            let nftTransfers;
+
+            if (thisTokenTransfers != null) {
+                transfers = Array.from(
+                    thisTokenTransfers,
+                    ([accountId, amount]) => {
+                        return {
+                            accountId,
+                            amount,
+                        };
+                    }
+                );
+
+                transfers.sort((a, b) => {
+                    const accountIdComparison = a.accountId.compare(
+                        b.accountId
+                    );
+                    if (accountIdComparison != 0) {
+                        return accountIdComparison;
+                    }
+
+                    return a.amount.compare(b.amount);
                 });
             }
 
-            tokenTransfers.push({
-                token: tokenId._toProtobuf(),
-                transfers,
-            });
-        }
+            if (thisNftTransfers != null) {
+                // eslint-disable-next-line ie11/no-loop-func
+                nftTransfers = thisNftTransfers.map((transfer) => {
+                    return {
+                        sender: transfer.sender,
+                        recipient: transfer.recipient,
+                        serialNumber: transfer.serial,
+                    };
+                });
 
-        for (const [tokenId, value] of this._nftTransfers) {
-            // eslint-disable-next-line ie11/no-loop-func
-            const nftTransfers = value.map((transfer) => {
-                return {
-                    senderAccountID: transfer.sender._toProtobuf(),
-                    receiverAccountID: transfer.recipient._toProtobuf(),
-                    serialNumber: transfer.serial,
-                };
-            });
+                nftTransfers.sort((a, b) => {
+                    const senderComparision = a.sender.compare(b.sender);
+                    if (senderComparision != 0) {
+                        return senderComparision;
+                    }
 
-            for (const tokenTransfer of tokenTransfers) {
-                if (
-                    tokenTransfer.token != null &&
-                    tokenTransfer.token.shardNum === tokenId.shard &&
-                    tokenTransfer.token.realmNum === tokenId.realm &&
-                    tokenTransfer.token.tokenNum === tokenId.num
-                ) {
-                    tokenTransfer.nftTransfers = nftTransfers;
-                }
+                    const recipientComparision = a.recipient.compare(
+                        b.recipient
+                    );
+                    if (recipientComparision != 0) {
+                        return recipientComparision;
+                    }
+
+                    return a.serialNumber.compare(b.serialNumber);
+                });
             }
 
-            tokenTransfers.push({ token: tokenId._toProtobuf(), nftTransfers });
-        }
+            return {
+                token: TokenId.fromString(tokenId),
+                transfers,
+                nftTransfers,
+            };
+        });
 
-        for (const [accountId, value] of this._hbarTransfers) {
-            hbarTransfers.push({
-                accountID: accountId._toProtobuf(),
-                amount: value.toTinybars(),
-            });
-        }
+        const hbarTransfers = Array.from(
+            this._hbarTransfers,
+            ([accountId, amount]) => {
+                return {
+                    accountId,
+                    amount,
+                };
+            }
+        );
+
+        tokenTransfers.sort((a, b) => {
+            return a.token.compare(b.token);
+        });
+
+        hbarTransfers.sort((a, b) => {
+            const accountIdComparison = a.accountId.compare(b.accountId);
+            if (accountIdComparison != 0) {
+                return accountIdComparison;
+            }
+
+            return a.amount.toTinybars().compare(b.amount.toTinybars());
+        });
 
         return {
             transfers: {
-                accountAmounts: hbarTransfers,
+                accountAmounts: hbarTransfers.map((transfer) => {
+                    return {
+                        accountID: transfer.accountId._toProtobuf(),
+                        amount: transfer.amount.toTinybars(),
+                    };
+                }),
             },
-            tokenTransfers,
+            tokenTransfers: tokenTransfers.map((tokenTransfer) => {
+                return {
+                    token: tokenTransfer.token._toProtobuf(),
+                    transfers: (tokenTransfer.transfers != null
+                        ? tokenTransfer.transfers
+                        : []
+                    ).map((transfer) => {
+                        return {
+                            accountID: transfer.accountId._toProtobuf(),
+                            amount: transfer.amount,
+                        };
+                    }),
+                    nftTransfers: (tokenTransfer.nftTransfers != null
+                        ? tokenTransfer.nftTransfers
+                        : []
+                    ).map((nftTransfer) => {
+                        return {
+                            senderAccountID: nftTransfer.sender._toProtobuf(),
+                            receiverAccountID:
+                                nftTransfer.recipient._toProtobuf(),
+                            serialNumber: nftTransfer.serialNumber,
+                        };
+                    }),
+                };
+            }),
         };
     }
 }
@@ -66634,7 +66888,7 @@ class MangedNetwork {
          * to the node URL.
          *
          * @internal
-         * @type {Map<string, NetworkNodeT>}
+         * @type {Map<string, NetworkNodeT[]>}
          */
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         this._network = new Map();
@@ -66691,7 +66945,15 @@ class MangedNetwork {
                         : node.toInsecure()
                 );
                 this._nodes[i] = node;
-                this._network.set(node.getKey(), node);
+
+                const nodes =
+                    this._network.get(node.getKey()) != null
+                        ? /** @type {NetworkNodeT[]} */ (
+                              this._network.get(node.getKey())
+                          )
+                        : [];
+                nodes.push(node);
+                this._network.set(node.getKey(), nodes);
             }
         }
 
@@ -66742,12 +67004,11 @@ class MangedNetwork {
             for (let i = this._nodes.length - 1; i >= 0; i--) {
                 const node = this._nodes[i];
 
-                if (node.attempts >= this._maxNodeAttempts) {
-                    node.close();
-
-                    this._network.delete(node.getKey());
-                    this._nodes.splice(i, 1);
+                if (node._attempts < this._maxNodeAttempts) {
+                    continue;
                 }
+
+                this._closeNode(i);
             }
         }
     }
@@ -66758,16 +67019,59 @@ class MangedNetwork {
      */
     _getNumberOfMostHealthyNodes(count) {
         this._removeDeadNodes();
-        this._nodes.sort();
+        this._nodes.sort((a, b) => a.compare(b));
+
+        for (const [, value] of this._network) {
+            // eslint-disable-next-line ie11/no-loop-func
+            value.sort((a, b) => a.compare(b));
+        }
 
         /** @type {NetworkNodeT[]} */
         const nodes = [];
+        const keys = new Set();
 
-        for (let i = 0; i < count; i++) {
-            nodes.push(this._nodes[i]);
+        for (const node of this._nodes) {
+            if (keys.size >= count) {
+                break;
+            }
+
+            if (!keys.has(node.getKey())) {
+                nodes.push(node);
+            }
         }
 
         return nodes;
+    }
+
+    /**
+     * @param {number} i
+     */
+    _closeNode(i) {
+        const node = this._nodes[i];
+
+        node.close();
+        this._removeNodeFromNetwork(node);
+        this._nodes.splice(i, 1);
+    }
+
+    /**
+     * @param {NetworkNodeT} node
+     */
+    _removeNodeFromNetwork(node) {
+        const network = /** @type {NetworkNodeT[]} */ (
+            this._network.get(node.getKey())
+        );
+
+        for (let j = 0; j < network.length; j++) {
+            if (network[j] === node) {
+                network.splice(j, 1);
+                break;
+            }
+        }
+
+        if (network.length === 0) {
+            this._network.delete(node.getKey());
+        }
     }
 
     /**
@@ -66777,22 +67081,29 @@ class MangedNetwork {
     _setNetwork(network) {
         // Remove nodes that are not in the new network
         for (const i of this._getNodesToRemove(network)) {
-            const node = this._nodes[i];
-            node.close();
-            this._network.delete(node.getKey());
-            this._nodes.splice(i, 1);
+            this._closeNode(i);
         }
 
         // Add new nodes
         for (const [key, value] of network) {
-            if (!this._network.has(value.toString())) {
-                const node = this._createNodeFromNetworkEntry([key, value]);
-                this._network.set(node.getKey(), node);
-                this._nodes.push(node);
-            }
+            const node = this._createNodeFromNetworkEntry([key, value]);
+
+            this._nodes.push(node);
+
+            const network = this._network.has(node.getKey())
+                ? /** @type {NetworkNodeT[]} */ (
+                      this._network.get(node.getKey())
+                  )
+                : [];
+            network.push(node);
+            this._network.set(node.getKey(), network);
         }
 
         shuffle(this._nodes);
+        for (const [, value] of this._network) {
+            shuffle(value);
+        }
+
         this._ledgerId = null;
         return this;
     }
@@ -66830,6 +67141,16 @@ class MangedNetwork {
             node.setMinBackoff(minBackoff);
         }
         return this;
+    }
+
+    /**
+     * @param {KeyT} key
+     * @returns {NetworkNodeT}
+     */
+    getNode(key) {
+        return /** @type {NetworkNodeT[]} */ (
+            this._network.get(key.toString())
+        )[0];
     }
 
     close() {
@@ -67100,28 +67421,9 @@ class Network extends MangedNetwork {
      * @returns {AccountId[]}
      */
     getNodeAccountIdsForExecute() {
-        if (this._maxNodeAttempts > 0) {
-            for (let i = 0; i < this._nodes.length; i++) {
-                const node = this._nodes[i];
-
-                if (node._attempts < this._maxNodeAttempts) {
-                    continue;
-                }
-
-                node.close();
-                delete this.network[node.address.toString()];
-                this._network.delete(node.accountId.toString());
-
-                this._nodes.splice(i, 1);
-                i--;
-            }
-        }
-
-        this._nodes.sort((a, b) => a.compare(b));
-
-        return this._nodes
-            .slice(0, this.getNumberOfNodesForTransaction())
-            .map((node) => node.accountId);
+        return this._getNumberOfMostHealthyNodes(
+            this.getNumberOfNodesForTransaction()
+        ).map((node) => node.accountId);
     }
 }
 
@@ -68507,12 +68809,30 @@ class InterceptingListenerImpl {
     constructor(listener, nextListener) {
         this.listener = listener;
         this.nextListener = nextListener;
+        this.processingMetadata = false;
+        this.hasPendingMessage = false;
         this.processingMessage = false;
         this.pendingStatus = null;
     }
+    processPendingMessage() {
+        if (this.hasPendingMessage) {
+            this.nextListener.onReceiveMessage(this.pendingMessage);
+            this.pendingMessage = null;
+            this.hasPendingMessage = false;
+        }
+    }
+    processPendingStatus() {
+        if (this.pendingStatus) {
+            this.nextListener.onReceiveStatus(this.pendingStatus);
+        }
+    }
     onReceiveMetadata(metadata) {
+        this.processingMetadata = true;
         this.listener.onReceiveMetadata(metadata, (metadata) => {
+            this.processingMetadata = false;
             this.nextListener.onReceiveMetadata(metadata);
+            this.processPendingMessage();
+            this.processPendingStatus();
         });
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68522,15 +68842,19 @@ class InterceptingListenerImpl {
         this.processingMessage = true;
         this.listener.onReceiveMessage(message, (msg) => {
             this.processingMessage = false;
-            this.nextListener.onReceiveMessage(msg);
-            if (this.pendingStatus) {
-                this.nextListener.onReceiveStatus(this.pendingStatus);
+            if (this.processingMetadata) {
+                this.pendingMessage = msg;
+                this.hasPendingMessage = true;
+            }
+            else {
+                this.nextListener.onReceiveMessage(msg);
+                this.processPendingStatus();
             }
         });
     }
     onReceiveStatus(status) {
         this.listener.onReceiveStatus(status, (processedStatus) => {
-            if (this.processingMessage) {
+            if (this.processingMetadata || this.processingMessage) {
                 this.pendingStatus = processedStatus;
             }
             else {
@@ -68593,7 +68917,7 @@ class Http2CallStream {
     }
     outputStatus() {
         /* Precondition: this.finalStatus !== null */
-        if (!this.statusOutput) {
+        if (this.listener && !this.statusOutput) {
             this.statusOutput = true;
             const filteredStatus = this.filterStack.receiveTrailers(this.finalStatus);
             this.statusWatchers.forEach(watcher => watcher(filteredStatus));
@@ -68969,6 +69293,7 @@ class Http2CallStream {
         this.trace('Sending metadata');
         this.listener = listener;
         this.channel._startCallStream(this, metadata);
+        this.maybeOutputStatus();
     }
     destroyHttp2Stream() {
         var _a;
@@ -70504,6 +70829,10 @@ class ResolvingLoadBalancer {
                 this.handleResolutionFailure(error);
             },
         }, channelOptions);
+        const backoffOptions = {
+            initialDelay: channelOptions['grpc.initial_reconnect_backoff_ms'],
+            maxDelay: channelOptions['grpc.max_reconnect_backoff_ms'],
+        };
         this.backoffTimeout = new backoffTimeout.BackoffTimeout(() => {
             if (this.continueResolving) {
                 this.updateResolution();
@@ -70512,7 +70841,7 @@ class ResolvingLoadBalancer {
             else {
                 this.updateState(this.latestChildState, this.latestChildPicker);
             }
-        });
+        }, backoffOptions);
         this.backoffTimeout.unref();
     }
     updateResolution() {
@@ -71268,8 +71597,17 @@ class InterceptingCall {
         var _a, _b, _c, _d;
         this.nextCall = nextCall;
         /**
-         * Indicates that a message has been passed to the listener's onReceiveMessage
-         * method it has not been passed to the corresponding next callback
+         * Indicates that metadata has been passed to the requester's start
+         * method but it has not been passed to the corresponding next callback
+         */
+        this.processingMetadata = false;
+        /**
+         * Message context for a pending message that is waiting for
+         */
+        this.pendingMessageContext = null;
+        /**
+         * Indicates that a message has been passed to the requester's sendMessage
+         * method but it has not been passed to the corresponding next callback
          */
         this.processingMessage = false;
         /**
@@ -71297,6 +71635,18 @@ class InterceptingCall {
     getPeer() {
         return this.nextCall.getPeer();
     }
+    processPendingMessage() {
+        if (this.pendingMessageContext) {
+            this.nextCall.sendMessageWithContext(this.pendingMessageContext, this.pendingMessage);
+            this.pendingMessageContext = null;
+            this.pendingMessage = null;
+        }
+    }
+    processPendingHalfClose() {
+        if (this.pendingHalfClose) {
+            this.nextCall.halfClose();
+        }
+    }
     start(metadata, interceptingListener) {
         var _a, _b, _c, _d, _e, _f;
         const fullInterceptingListener = {
@@ -71304,8 +71654,10 @@ class InterceptingCall {
             onReceiveMessage: (_d = (_c = interceptingListener === null || interceptingListener === void 0 ? void 0 : interceptingListener.onReceiveMessage) === null || _c === void 0 ? void 0 : _c.bind(interceptingListener)) !== null && _d !== void 0 ? _d : ((message) => { }),
             onReceiveStatus: (_f = (_e = interceptingListener === null || interceptingListener === void 0 ? void 0 : interceptingListener.onReceiveStatus) === null || _e === void 0 ? void 0 : _e.bind(interceptingListener)) !== null && _f !== void 0 ? _f : ((status) => { }),
         };
+        this.processingMetadata = true;
         this.requester.start(metadata, fullInterceptingListener, (md, listener) => {
             var _a, _b, _c;
+            this.processingMetadata = false;
             let finalInterceptingListener;
             if (callStream.isInterceptingListener(listener)) {
                 finalInterceptingListener = listener;
@@ -71319,6 +71671,8 @@ class InterceptingCall {
                 finalInterceptingListener = new callStream.InterceptingListenerImpl(fullListener, fullInterceptingListener);
             }
             this.nextCall.start(md, finalInterceptingListener);
+            this.processPendingMessage();
+            this.processPendingHalfClose();
         });
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71326,9 +71680,13 @@ class InterceptingCall {
         this.processingMessage = true;
         this.requester.sendMessage(message, (finalMessage) => {
             this.processingMessage = false;
-            this.nextCall.sendMessageWithContext(context, finalMessage);
-            if (this.pendingHalfClose) {
-                this.nextCall.halfClose();
+            if (this.processingMetadata) {
+                this.pendingMessageContext = context;
+                this.pendingMessage = message;
+            }
+            else {
+                this.nextCall.sendMessageWithContext(context, finalMessage);
+                this.processPendingHalfClose();
             }
         });
     }
@@ -71341,7 +71699,7 @@ class InterceptingCall {
     }
     halfClose() {
         this.requester.halfClose(() => {
-            if (this.processingMessage) {
+            if (this.processingMetadata || this.processingMessage) {
                 this.pendingHalfClose = true;
             }
             else {
@@ -81951,7 +82309,7 @@ exports.setup = setup;
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
 var name = "@grpc/grpc-js";
-var version$p = "1.4.4";
+var version$p = "1.4.6";
 var description = "gRPC Library for Node - pure JS implementation";
 var homepage = "https://grpc.io/";
 var repository = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
@@ -82026,9 +82384,9 @@ var files = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.4.tgz";
-var _integrity = "sha512-a6222b7Dl6fIlMgzVl7e+NiRoLiZFbpcwvBH2Oli56Bn7W4/3Ld+86hK4ffPn5rx2DlDidmIcvIJiOQXyhv9gA==";
-var _from = "@grpc/grpc-js@1.4.4";
+var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.6.tgz";
+var _integrity = "sha512-Byau4xiXfIixb1PnW30V/P9mkrZ05lknyNqiK+cVY9J5hj3gecxd/anwaUbAM8j834zg1x78NvAbwGnMfWEu7A==";
+var _from = "@grpc/grpc-js@1.4.6";
 var require$$0$2 = {
 	name: name,
 	version: version$p,
@@ -84279,7 +84637,7 @@ class ServerWritableStreamImpl extends stream_1.Writable {
         if (metadata) {
             this.trailingMetadata = metadata;
         }
-        super.end();
+        return super.end();
     }
 }
 exports.ServerWritableStreamImpl = ServerWritableStreamImpl;
@@ -84313,7 +84671,7 @@ class ServerDuplexStreamImpl extends stream_1.Duplex {
         if (metadata) {
             this.trailingMetadata = metadata;
         }
-        super.end();
+        return super.end();
     }
 }
 exports.ServerDuplexStreamImpl = ServerDuplexStreamImpl;
@@ -84323,7 +84681,6 @@ ServerDuplexStreamImpl.prototype._write =
     ServerWritableStreamImpl.prototype._write;
 ServerDuplexStreamImpl.prototype._final =
     ServerWritableStreamImpl.prototype._final;
-ServerDuplexStreamImpl.prototype.end = ServerWritableStreamImpl.prototype.end;
 // Internal class that wraps the HTTP2 request.
 class Http2ServerCallStream extends events_1.EventEmitter {
     constructor(stream, handler, options) {
@@ -91056,38 +91413,6 @@ var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments,
 const logger$v = new Logger(version$o);
 //////////////////////////////
 // Event Serializeing
-function checkTopic(topic) {
-    if (topic == null) {
-        return "null";
-    }
-    if (hexDataLength(topic) !== 32) {
-        logger$v.throwArgumentError("invalid topic", "topic", topic);
-    }
-    return topic.toLowerCase();
-}
-function serializeTopics(topics) {
-    // Remove trailing null AND-topics; they are redundant
-    topics = topics.slice();
-    while (topics.length > 0 && topics[topics.length - 1] == null) {
-        topics.pop();
-    }
-    return topics.map((topic) => {
-        if (Array.isArray(topic)) {
-            // Only track unique OR-topics
-            const unique = {};
-            topic.forEach((topic) => {
-                unique[checkTopic(topic)] = true;
-            });
-            // The order of OR-topics does not matter
-            const sorted = Object.keys(unique);
-            sorted.sort();
-            return sorted.join("|");
-        }
-        else {
-            return checkTopic(topic);
-        }
-    }).join("&");
-}
 function deserializeTopics(data) {
     if (data === "") {
         return [];
@@ -91101,28 +91426,6 @@ function deserializeTopics(data) {
         });
         return ((comps.length === 1) ? comps[0] : comps);
     });
-}
-function getEventTag$1(eventName) {
-    if (typeof (eventName) === "string") {
-        eventName = eventName.toLowerCase();
-        if (hexDataLength(eventName) === 32) {
-            return "tx:" + eventName;
-        }
-        if (eventName.indexOf(":") === -1) {
-            return eventName;
-        }
-    }
-    else if (Array.isArray(eventName)) {
-        return "filter:*:" + serializeTopics(eventName);
-    }
-    else if (ForkEvent.isForkEvent(eventName)) {
-        logger$v.warn("not implemented");
-        throw new Error("not implemented");
-    }
-    else if (eventName && typeof (eventName) === "object") {
-        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
-    }
-    throw new Error("invalid event - " + eventName);
 }
 //////////////////////////////
 // Helper Object
@@ -91208,27 +91511,6 @@ function bytes32ify(value) {
 function base58Encode(data) {
     return Base58.encode(concat([data, hexDataSlice(sha256$1(sha256$1(data)), 0, 4)]));
 }
-const matchers = [
-    new RegExp("^(https):/\/(.*)$", "i"),
-    new RegExp("^(data):(.*)$", "i"),
-    new RegExp("^(ipfs):/\/(.*)$", "i"),
-    new RegExp("^eip155:[0-9]+/(erc[0-9]+):(.*)$", "i"),
-];
-function _parseString(result) {
-    try {
-        return toUtf8String(_parseBytes(result));
-    }
-    catch (error) { }
-    return null;
-}
-function _parseBytes(result) {
-    if (result === "0x") {
-        return null;
-    }
-    const offset = BigNumber.from(hexDataSlice(result, 0, 32)).toNumber();
-    const length = BigNumber.from(hexDataSlice(result, offset, offset + 32)).toNumber();
-    return hexDataSlice(result, offset + 32, offset + 32 + length);
-}
 class Resolver {
     // The resolvedAddress is only for creating a ReverseLookup resolver
     constructor(provider, address, name, resolvedAddress) {
@@ -91240,12 +91522,13 @@ class Resolver {
     _fetchBytes(selector, parameters) {
         return __awaiter$8(this, void 0, void 0, function* () {
             // e.g. keccak256("addr(bytes32,uint256)")
-            const tx = {
-                to: this.address,
-                data: hexConcat([selector, namehash(this.name), (parameters || "0x")])
-            };
+            // const tx = {
+            //     to: this.address,
+            //     data: hexConcat([ selector, namehash(this.name), (parameters || "0x") ])
+            // };
             try {
-                return _parseBytes(yield this.provider.call(tx));
+                // return _parseBytes(await this.provider.call(tx));
+                return null;
             }
             catch (error) {
                 if (error.code === Logger.errors.CALL_EXCEPTION) {
@@ -91315,17 +91598,7 @@ class Resolver {
             // If Ethereum, use the standard `addr(bytes32)`
             if (coinType === 60) {
                 try {
-                    // keccak256("addr(bytes32)")
-                    const transaction = {
-                        to: this.address,
-                        data: ("0x3b3b57de" + namehash(this.name).substring(2))
-                    };
-                    const hexBytes = yield this.provider.call(transaction);
-                    // No address
-                    if (hexBytes === "0x" || hexBytes === HashZero) {
-                        return null;
-                    }
-                    return this.provider.formatter.callAddress(hexBytes);
+                    return null;
                 }
                 catch (error) {
                     if (error.code === Logger.errors.CALL_EXCEPTION) {
@@ -91350,94 +91623,6 @@ class Resolver {
                 });
             }
             return address;
-        });
-    }
-    getAvatar() {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            const linkage = [];
-            try {
-                const avatar = yield this.getText("avatar");
-                if (avatar == null) {
-                    return null;
-                }
-                for (let i = 0; i < matchers.length; i++) {
-                    const match = avatar.match(matchers[i]);
-                    if (match == null) {
-                        continue;
-                    }
-                    switch (match[1]) {
-                        case "https":
-                            linkage.push({ type: "url", content: avatar });
-                            return { linkage, url: avatar };
-                        case "data":
-                            linkage.push({ type: "data", content: avatar });
-                            return { linkage, url: avatar };
-                        case "ipfs":
-                            linkage.push({ type: "ipfs", content: avatar });
-                            return { linkage, url: `https:/\/gateway.ipfs.io/ipfs/${avatar.substring(7)}` };
-                        case "erc721":
-                        case "erc1155": {
-                            // Depending on the ERC type, use tokenURI(uint256) or url(uint256)
-                            const selector = (match[1] === "erc721") ? "0xc87b56dd" : "0x0e89341c";
-                            linkage.push({ type: match[1], content: avatar });
-                            // The owner of this name
-                            const owner = (this._resolvedAddress || (yield this.getAddress()));
-                            const comps = (match[2] || "").split("/");
-                            if (comps.length !== 2) {
-                                return null;
-                            }
-                            const addr = yield this.provider.formatter.address(comps[0]);
-                            const tokenId = hexZeroPad(BigNumber.from(comps[1]).toHexString(), 32);
-                            // Check that this account owns the token
-                            if (match[1] === "erc721") {
-                                // ownerOf(uint256 tokenId)
-                                const tokenOwner = this.provider.formatter.callAddress(yield this.provider.call({
-                                    to: addr, data: hexConcat(["0x6352211e", tokenId])
-                                }));
-                                if (owner !== tokenOwner) {
-                                    return null;
-                                }
-                                linkage.push({ type: "owner", content: tokenOwner });
-                            }
-                            else if (match[1] === "erc1155") {
-                                // balanceOf(address owner, uint256 tokenId)
-                                const balance = BigNumber.from(yield this.provider.call({
-                                    to: addr, data: hexConcat(["0x00fdd58e", hexZeroPad(owner, 32), tokenId])
-                                }));
-                                if (balance.isZero()) {
-                                    return null;
-                                }
-                                linkage.push({ type: "balance", content: balance.toString() });
-                            }
-                            // Call the token contract for the metadata URL
-                            const tx = {
-                                to: this.provider.formatter.address(comps[0]),
-                                data: hexConcat([selector, tokenId])
-                            };
-                            let metadataUrl = _parseString(yield this.provider.call(tx));
-                            if (metadataUrl == null) {
-                                return null;
-                            }
-                            linkage.push({ type: "metadata-url", content: metadataUrl });
-                            // ERC-1155 allows a generic {id} in the URL
-                            if (match[1] === "erc1155") {
-                                metadataUrl = metadataUrl.replace("{id}", tokenId.substring(2));
-                            }
-                            // Get the token metadata
-                            const metadata = yield fetchJson(metadataUrl);
-                            // Pull the image URL out
-                            if (!metadata || typeof (metadata.image) !== "string" || !metadata.image.match(/^https:\/\//i)) {
-                                return null;
-                            }
-                            linkage.push({ type: "metadata", content: JSON.stringify(metadata) });
-                            linkage.push({ type: "url", content: metadata.image });
-                            return { linkage, url: metadata.image };
-                        }
-                    }
-                }
-            }
-            catch (error) { }
-            return null;
         });
     }
     getContentHash() {
@@ -91489,7 +91674,6 @@ class Resolver {
     }
 }
 let defaultFormatter = null;
-let nextPollId = 1;
 class BaseProvider extends Provider {
     /**
      *  ready
@@ -91503,8 +91687,6 @@ class BaseProvider extends Provider {
     constructor(network) {
         logger$v.checkNew(new.target, Provider);
         super();
-        this._events = [];
-        this._emitted = { block: -2 };
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -91533,10 +91715,6 @@ class BaseProvider extends Provider {
                 logger$v.throwArgumentError("invalid network", "network", network);
             }
         }
-        this._maxInternalBlockNumber = -1024;
-        this._lastBlockNumber = -2;
-        this._pollingInterval = 4000;
-        this._fastQueryDate = 0;
         this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
         this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(network));
     }
@@ -91574,22 +91752,6 @@ class BaseProvider extends Provider {
             return this._network;
         });
     }
-    // This will always return the most recently established network.
-    // For "any", this can change (a "network" event is emitted before
-    // any change is reflected); otherwise this cannot change
-    get ready() {
-        return poll(() => {
-            return this._ready().then((network) => {
-                return network;
-            }, (error) => {
-                // If the network isn't running yet, we will wait
-                if (error.code === Logger.errors.NETWORK_ERROR && error.event === "noNetwork") {
-                    return undefined;
-                }
-                throw error;
-            });
-        });
-    }
     // @TODO: Remove this and just create a singleton formatter
     static getFormatter() {
         if (defaultFormatter == null) {
@@ -91602,121 +91764,10 @@ class BaseProvider extends Provider {
         return getNetwork((network == null) ? "mainnet" : network);
     }
     poll() {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            const pollId = nextPollId++;
-            // Track all running promises, so we can trigger a post-poll once they are complete
-            const runners = [];
-            let blockNumber = null;
-            try {
-                // blockNumber = await this._getInternalBlockNumber(100 + this.pollingInterval / 2);
-            }
-            catch (error) {
-                this.emit("error", error);
-                return;
-            }
-            // this._setFastBlockNumber(blockNumber);
-            // Emit a poll event after we have the latest (fast) block number
-            this.emit("poll", pollId, blockNumber);
-            // If the block has not changed, meh.
-            if (blockNumber === this._lastBlockNumber) {
-                this.emit("didPoll", pollId);
-                return;
-            }
-            // First polling cycle, trigger a "block" events
-            if (this._emitted.block === -2) {
-                this._emitted.block = blockNumber - 1;
-            }
-            if (Math.abs((this._emitted.block) - blockNumber) > 1000) {
-                logger$v.warn(`network block skew detected; skipping block events (emitted=${this._emitted.block} blockNumber${blockNumber})`);
-                this.emit("error", logger$v.makeError("network block skew detected", Logger.errors.NETWORK_ERROR, {
-                    blockNumber: blockNumber,
-                    event: "blockSkew",
-                    previousBlockNumber: this._emitted.block
-                }));
-                this.emit("block", blockNumber);
-            }
-            else {
-                // Notify all listener for each block that has passed
-                for (let i = this._emitted.block + 1; i <= blockNumber; i++) {
-                    this.emit("block", i);
-                }
-            }
-            // The emitted block was updated, check for obsolete events
-            if (this._emitted.block !== blockNumber) {
-                this._emitted.block = blockNumber;
-                Object.keys(this._emitted).forEach((key) => {
-                    // The block event does not expire
-                    if (key === "block") {
-                        return;
-                    }
-                    // The block we were at when we emitted this event
-                    const eventBlockNumber = this._emitted[key];
-                    // We cannot garbage collect pending transactions or blocks here
-                    // They should be garbage collected by the Provider when setting
-                    // "pending" events
-                    if (eventBlockNumber === "pending") {
-                        return;
-                    }
-                    // Evict any transaction hashes or block hashes over 12 blocks
-                    // old, since they should not return null anyways
-                    if (blockNumber - eventBlockNumber > 12) {
-                        delete this._emitted[key];
-                    }
-                });
-            }
-            // First polling cycle
-            if (this._lastBlockNumber === -2) {
-                this._lastBlockNumber = blockNumber - 1;
-            }
-            // Find all transaction hashes we are waiting on
-            this._events.forEach((event) => {
-                switch (event.type) {
-                    case "tx": {
-                        const hash = event.hash;
-                        let runner = this.getTransactionReceipt(hash).then((receipt) => {
-                            if (!receipt || receipt.blockNumber == null) {
-                                return null;
-                            }
-                            this._emitted["t:" + hash] = receipt.blockNumber;
-                            this.emit(hash, receipt);
-                            return null;
-                        }).catch((error) => { this.emit("error", error); });
-                        runners.push(runner);
-                        break;
-                    }
-                    case "filter": {
-                        const filter = event.filter;
-                        filter.fromBlock = this._lastBlockNumber + 1;
-                        filter.toBlock = blockNumber;
-                        const runner = this.getLogs(filter).then((logs) => {
-                            if (logs.length === 0) {
-                                return;
-                            }
-                            logs.forEach((log) => {
-                                this._emitted["b:" + log.blockHash] = log.blockNumber;
-                                this._emitted["t:" + log.transactionHash] = log.blockNumber;
-                                this.emit(filter, log);
-                            });
-                        }).catch((error) => { this.emit("error", error); });
-                        runners.push(runner);
-                        break;
-                    }
-                }
-            });
-            this._lastBlockNumber = blockNumber;
-            // Once all events for this loop have been processed, emit "didPoll"
-            Promise.all(runners).then(() => {
-                this.emit("didPoll", pollId);
-            }).catch((error) => { this.emit("error", error); });
-            return;
-        });
+        return __awaiter$8(this, void 0, void 0, function* () { });
     }
     // Deprecated; do not use this
     resetEventsBlock(blockNumber) {
-        this._lastBlockNumber = blockNumber - 1;
-        if (this.polling) {
-            this.poll();
-        }
     }
     get network() {
         return this._network;
@@ -91743,14 +91794,6 @@ class BaseProvider extends Provider {
                 // make sure you know what you are doing if you use "any"
                 if (this.anyNetwork) {
                     this._network = currentNetwork;
-                    // Reset all internal block number guards and caches
-                    this._lastBlockNumber = -2;
-                    this._fastBlockNumber = null;
-                    this._fastBlockNumberPromise = null;
-                    this._fastQueryDate = 0;
-                    this._emitted.block = -2;
-                    this._maxInternalBlockNumber = -1024;
-                    this._internalBlockNumber = null;
                     // The "network" event MUST happen before this method resolves
                     // so any events have a chance to unregister, so we stall an
                     // additional event loop before returning from /this/ call
@@ -91768,47 +91811,6 @@ class BaseProvider extends Provider {
             }
             return network;
         });
-    }
-    get polling() {
-        return (this._poller != null);
-    }
-    set polling(value) {
-        if (value && !this._poller) {
-            this._poller = setInterval(() => { this.poll(); }, this.pollingInterval);
-            if (!this._bootstrapPoll) {
-                this._bootstrapPoll = setTimeout(() => {
-                    this.poll();
-                    // We block additional polls until the polling interval
-                    // is done, to prevent overwhelming the poll function
-                    this._bootstrapPoll = setTimeout(() => {
-                        // If polling was disabled, something may require a poke
-                        // since starting the bootstrap poll and it was disabled
-                        if (!this._poller) {
-                            this.poll();
-                        }
-                        // Clear out the bootstrap so we can do another
-                        this._bootstrapPoll = null;
-                    }, this.pollingInterval);
-                }, 0);
-            }
-        }
-        else if (!value && this._poller) {
-            clearInterval(this._poller);
-            this._poller = null;
-        }
-    }
-    get pollingInterval() {
-        return this._pollingInterval;
-    }
-    set pollingInterval(value) {
-        if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
-            throw new Error("invalid polling interval");
-        }
-        this._pollingInterval = value;
-        if (this._poller) {
-            clearInterval(this._poller);
-            this._poller = setInterval(() => { this.poll(); }, this._pollingInterval);
-        }
     }
     waitForTransaction(transactionHash, confirmations, timeout) {
         return __awaiter$8(this, void 0, void 0, function* () {
@@ -91900,8 +91902,6 @@ class BaseProvider extends Provider {
             if (receipt == null && confirms === 0) {
                 return null;
             }
-            // No longer pending, allow the polling loop to garbage collect this
-            this._emitted["t:" + tx.hash] = receipt.blockNumber;
             if (receipt.status === 0) {
                 logger$v.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
@@ -91974,40 +91974,9 @@ class BaseProvider extends Provider {
             return this.formatter.filter(yield resolveProperties(result));
         });
     }
-    call(transaction, blockTag) {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                transaction: this._getTransactionRequest(transaction),
-            });
-            const result = yield this.perform("call", params);
-            try {
-                return hexlify(result);
-            }
-            catch (error) {
-                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "call",
-                    params, result, error
-                });
-            }
-        });
-    }
     estimateGas(transaction) {
         return __awaiter$8(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                transaction: this._getTransactionRequest(transaction)
-            });
-            const result = yield this.perform("estimateGas", params);
-            try {
-                return BigNumber.from(result);
-            }
-            catch (error) {
-                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "estimateGas",
-                    params, result, error
-                });
-            }
+            return Promise.resolve(BigNumber.from(0));
         });
     }
     _getAddress(addressOrName) {
@@ -92049,28 +92018,13 @@ class BaseProvider extends Provider {
             return poll(() => __awaiter$8(this, void 0, void 0, function* () {
                 const result = yield this.perform("getTransactionReceipt", params);
                 if (result == null) {
-                    if (this._emitted["t:" + transactionHash] == null) {
-                        return null;
-                    }
                     return undefined;
                 }
                 // "geth-etc" returns receipts before they are ready
                 if (result.blockHash == null) {
                     return undefined;
                 }
-                const receipt = this.formatter.receipt(result);
-                if (receipt.blockNumber == null) {
-                    receipt.confirmations = 0;
-                }
-                else if (receipt.confirmations == null) {
-                    // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                    //
-                    // Add the confirmations using the fast block number (pessimistic)
-                    // let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                    // if (confirmations <= 0) { confirmations = 1; }
-                    // receipt.confirmations = confirmations;
-                }
-                return receipt;
+                return this.formatter.receipt(result);
             }), { oncePoll: this });
         });
     }
@@ -92118,12 +92072,13 @@ class BaseProvider extends Provider {
                 logger$v.throwError("network does not support ENS", Logger.errors.UNSUPPORTED_OPERATION, { operation: "ENS", network: network.name });
             }
             // keccak256("resolver(bytes32)")
-            const transaction = {
-                to: network.ensAddress,
-                data: ("0x0178b8bf" + namehash(name).substring(2))
-            };
+            // const transaction = {
+            //     to: network.ensAddress,
+            //     data: ("0x0178b8bf" + namehash(name).substring(2))
+            // };
             try {
-                return this.formatter.callAddress(yield this.call(transaction));
+                return null;
+                // return this.formatter.callAddress(await this.call(transaction));
             }
             catch (error) {
                 if (error.code === Logger.errors.CALL_EXCEPTION) {
@@ -92161,78 +92116,13 @@ class BaseProvider extends Provider {
         return __awaiter$8(this, void 0, void 0, function* () {
             address = yield address;
             address = this.formatter.address(address);
-            const reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-            const resolverAddress = yield this._getResolver(reverseName);
-            if (!resolverAddress) {
-                return null;
-            }
-            // keccak("name(bytes32)")
-            let bytes = arrayify(yield this.call({
-                to: resolverAddress,
-                data: ("0x691f3431" + namehash(reverseName).substring(2))
-            }));
-            // Strip off the dynamic string pointer (0x20)
-            if (bytes.length < 32 || !BigNumber.from(bytes.slice(0, 32)).eq(32)) {
-                return null;
-            }
-            bytes = bytes.slice(32);
-            // Not a length-prefixed string
-            if (bytes.length < 32) {
-                return null;
-            }
-            // Get the length of the string (from the length-prefix)
-            const length = BigNumber.from(bytes.slice(0, 32)).toNumber();
-            bytes = bytes.slice(32);
-            // Length longer than available data
-            if (length > bytes.length) {
-                return null;
-            }
-            const name = toUtf8String(bytes.slice(0, length));
-            // Make sure the reverse record matches the foward record
-            const addr = yield this.resolveName(name);
-            if (addr != address) {
-                return null;
-            }
-            return name;
-        });
-    }
-    getAvatar(nameOrAddress) {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            let resolver = null;
-            if (isHexString(nameOrAddress)) {
-                // Address; reverse lookup
-                const address = this.formatter.address(nameOrAddress);
-                const reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-                const resolverAddress = yield this._getResolver(reverseName);
-                if (!resolverAddress) {
-                    return null;
-                }
-                resolver = new Resolver(this, resolverAddress, "_", address);
-            }
-            else {
-                // ENS name; forward lookup
-                resolver = yield this.getResolver(nameOrAddress);
-            }
-            const avatar = yield resolver.getAvatar();
-            if (avatar == null) {
-                return null;
-            }
-            return avatar.url;
+            return null;
         });
     }
     perform(method, params) {
         return logger$v.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
     }
-    _startEvent(event) {
-        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
-    }
-    _stopEvent(event) {
-        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
-    }
     _addEventListener(eventName, listener, once) {
-        const event = new Event(getEventTag$1(eventName), listener, once);
-        this._events.push(event);
-        this._startEvent(event);
         return this;
     }
     on(eventName, listener) {
@@ -92242,82 +92132,18 @@ class BaseProvider extends Provider {
         return this._addEventListener(eventName, listener, true);
     }
     emit(eventName, ...args) {
-        let result = false;
-        let stopped = [];
-        let eventTag = getEventTag$1(eventName);
-        this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag) {
-                return true;
-            }
-            setTimeout(() => {
-                event.listener.apply(this, args);
-            }, 0);
-            result = true;
-            if (event.once) {
-                stopped.push(event);
-                return false;
-            }
-            return true;
-        });
-        stopped.forEach((event) => { this._stopEvent(event); });
-        return result;
+        return false;
     }
     listenerCount(eventName) {
-        if (!eventName) {
-            return this._events.length;
-        }
-        let eventTag = getEventTag$1(eventName);
-        return this._events.filter((event) => {
-            return (event.tag === eventTag);
-        }).length;
+        return 0;
     }
     listeners(eventName) {
-        if (eventName == null) {
-            return this._events.map((event) => event.listener);
-        }
-        let eventTag = getEventTag$1(eventName);
-        return this._events
-            .filter((event) => (event.tag === eventTag))
-            .map((event) => event.listener);
+        return null;
     }
     off(eventName, listener) {
-        if (listener == null) {
-            return this.removeAllListeners(eventName);
-        }
-        const stopped = [];
-        let found = false;
-        let eventTag = getEventTag$1(eventName);
-        this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag || event.listener != listener) {
-                return true;
-            }
-            if (found) {
-                return true;
-            }
-            found = true;
-            stopped.push(event);
-            return false;
-        });
-        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
     }
     removeAllListeners(eventName) {
-        let stopped = [];
-        if (eventName == null) {
-            stopped = this._events;
-            this._events = [];
-        }
-        else {
-            const eventTag = getEventTag$1(eventName);
-            this._events = this._events.filter((event) => {
-                if (event.tag !== eventTag) {
-                    return true;
-                }
-                stopped.push(event);
-                return false;
-            });
-        }
-        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
     }
 }
