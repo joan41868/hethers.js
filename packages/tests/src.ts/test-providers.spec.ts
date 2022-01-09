@@ -8,6 +8,12 @@ import { ethers } from "ethers";
 import { DefaultHederaProvider } from "@ethersproject/providers";
 import { getAddressFromAccount } from "ethers/lib/utils";
 import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-provider";
+import {
+    AccountId,
+    ContractCreateTransaction, ContractFunctionParameters,
+    PrivateKey,
+    TransactionId,
+} from "@hashgraph/sdk";
 
 const bnify = ethers.BigNumber.from;
 
@@ -16,6 +22,13 @@ type TestCases = {
     blocks: Array<any>;
     transactions: Array<any>;
     transactionReceipts: Array<any>;
+};
+
+const hederaPreviewnetOperableAccount = {
+    "operator": {
+        "accountId": "0.0.1340",
+        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
+    },
 };
 
 const blockchainData: { [ network: string ]: TestCases } = {
@@ -1014,6 +1027,78 @@ describe("Test Basic Authentication", function() {
     })
 });
 
+// describe("Test API Key Formatting", function() {
+//     xit("Infura API Key", function() {
+//         const projectId = "someProjectId";
+//         const projectSecret = "someSecretKey";
+//
+//         // Test simple projectId
+//         const apiKeyString = ethers.providers.InfuraProvider.getApiKey(projectId);
+//         assert.equal(apiKeyString.apiKey, projectId);
+//         assert.equal(apiKeyString.projectId, projectId);
+//         assert.ok(apiKeyString.secretKey == null);
+//
+//         // Test complex API key with projectId
+//         const apiKeyObject = ethers.providers.InfuraProvider.getApiKey({
+//             projectId
+//         });
+//         assert.equal(apiKeyObject.apiKey, projectId);
+//         assert.equal(apiKeyObject.projectId, projectId);
+//         assert.ok(apiKeyObject.projectSecret == null);
+//
+//         // Test complex API key with projectId and projectSecret
+//         const apiKeyObject2 = ethers.providers.InfuraProvider.getApiKey({
+//             projectId: projectId,
+//             projectSecret: projectSecret
+//         });
+//         assert.equal(apiKeyObject2.apiKey, projectId);
+//         assert.equal(apiKeyObject2.projectId, projectId);
+//         assert.equal(apiKeyObject2.projectSecret, projectSecret);
+//
+//         // Fails on invalid projectId type
+//         assert.throws(() => {
+//             const apiKey = ethers.providers.InfuraProvider.getApiKey({
+//                 projectId: 1234,
+//                 projectSecret: projectSecret
+//             });
+//             console.log(apiKey);
+//         }, (error: any) => {
+//             return (error.argument === "projectId" && error.reason === "projectSecret requires a projectId");
+//         });
+//
+//         // Fails on invalid projectSecret type
+//         assert.throws(() => {
+//             const apiKey = ethers.providers.InfuraProvider.getApiKey({
+//                 projectId: projectId,
+//                 projectSecret: 1234
+//             });
+//             console.log(apiKey);
+//         }, (error: any) => {
+//             return (error.argument === "projectSecret" && error.reason === "invalid projectSecret");
+//         });
+//
+//         {
+//             const provider = new ethers.providers.InfuraProvider("homestead", {
+//                 projectId: projectId,
+//                 projectSecret: projectSecret
+//             });
+//             assert.equal(provider.network.name, "homestead");
+//             assert.equal(provider.apiKey, projectId);
+//             assert.equal(provider.projectId, projectId);
+//             assert.equal(provider.projectSecret, projectSecret);
+//         }
+//
+//         // Attempt an unsupported network
+//         assert.throws(() => {
+//             const provider = new ethers.providers.InfuraProvider("imaginary");
+//             console.log(provider);
+//         }, (error: any) => {
+//             return (error.argument === "network" && error.reason === "unsupported network");
+//         });
+//
+//     });
+// });
+
 // describe("Test Events", function() {
 //     this.retries(3);
 //
@@ -1048,6 +1133,7 @@ describe("Test Hedera Provider", function () {
     const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
     const solAddr = getAddressFromAccount(accountConfig);
     const timeout = 15000;
+
     it('Gets the balance', async function () {
         const balance = await provider.getBalance(solAddr);
         // the balance of 0.0.98 cannot be negative
@@ -1086,4 +1172,27 @@ describe("Test Hedera Provider", function () {
         const balance = await defaultMainnetProvider.getBalance(solAddr);
         assert.strictEqual(true, balance.gte(0));
     }).timeout(timeout * 4);
+
+    it('should submit signed transaction', async function() {
+        const privateKey = PrivateKey.fromString(hederaPreviewnetOperableAccount.operator.privateKey);
+        // 1. Sign TX -> `sign-transaction.ts`
+        const tx = await new ContractCreateTransaction()
+            .setContractMemo("memo")
+            .setGas(1000)
+            .setInitialBalance(1000)
+            .setBytecodeFileId("0.0.111111")
+            .setNodeAccountIds([new AccountId(0,0,3)])
+            .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
+            .setTransactionId(TransactionId.generate(hederaPreviewnetOperableAccount.operator.accountId))
+            .freeze()
+            .sign(privateKey);
+        const txBytes = tx.toBytes();
+        const signedTx = ethers.utils.hexlify(txBytes);
+        const provider = ethers.providers.getDefaultProvider('previewnet');
+        const txResponse = await provider.sendTransaction(signedTx);
+        assert.strictEqual(txResponse.gasLimit.toNumber(), 1000);
+        assert.strictEqual(txResponse.from, getAddressFromAccount(hederaPreviewnetOperableAccount.operator.accountId));
+        assert.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
+        assert.strictEqual(txResponse.value.toNumber(), 100000000000);
+    });
 });

@@ -22,7 +22,7 @@ const logger = new Logger(version);
 
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName } from "@hashgraph/sdk";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
 
 //////////////////////////////
@@ -578,7 +578,7 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     // This should be called by any subclass wrapping a TransactionResponse
     _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse {
-        if (hash != null && hexDataLength(hash) !== 32) { throw new Error("invalid response - sendTransaction"); }
+        if (hash != null && hexDataLength(hash) !== 48) { throw new Error("invalid response - sendTransaction"); }
 
         const result = <TransactionResponse>tx;
 
@@ -620,9 +620,25 @@ export class BaseProvider extends Provider implements EnsProvider {
         return result;
     }
 
-    // FIXME:
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
-        return null;
+        await this.getNetwork();
+        signedTransaction = await signedTransaction;
+
+        const txBytes = arrayify(signedTransaction);
+        const hederaTx = HederaTransaction.fromBytes(txBytes);
+        const ethersTx = await this.formatter.transaction(signedTransaction);
+        const txHash = hexlify(await hederaTx.getTransactionHash());
+        try {
+            // TODO once we have fallback provider use `provider.perform("sendTransaction")`
+            // TODO Before submission verify that the nodeId is the one that the provider is connected to
+            await hederaTx.execute(this.hederaClient);
+            return this._wrapTransaction(ethersTx, txHash);
+        } catch (error) {
+            const err = logger.makeError(error.message, error.status?.toString());
+            (<any>err).transaction = ethersTx;
+            (<any>err).transactionHash = txHash;
+            throw  err;
+        }
     }
 
     async _getTransactionRequest(transaction: Deferrable<TransactionRequest>): Promise<Transaction> {

@@ -1,17 +1,32 @@
 "use strict";
 
-import { getAddress } from "@ethersproject/address";
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { arrayify, BytesLike, DataOptions, hexConcat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isBytesLike, SignatureLike, splitSignature, stripZeros, } from "@ethersproject/bytes";
-import { Zero } from "@ethersproject/constants";
-import { keccak256 } from "@ethersproject/keccak256";
-import { checkProperties } from "@ethersproject/properties";
+import {getAddress} from "@ethersproject/address";
+import {BigNumber, BigNumberish} from "@ethersproject/bignumber";
+import {
+    arrayify,
+    BytesLike,
+    DataOptions,
+    hexConcat,
+    hexDataLength,
+    hexDataSlice,
+    hexlify,
+    // hexZeroPad,
+    isBytesLike,
+    SignatureLike,
+    splitSignature,
+    stripZeros,
+} from "@ethersproject/bytes";
+import {Zero} from "@ethersproject/constants";
+import {keccak256} from "@ethersproject/keccak256";
+import {checkProperties} from "@ethersproject/properties";
 import * as RLP from "@ethersproject/rlp";
-import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
+import {computePublicKey, recoverPublicKey} from "@ethersproject/signing-key";
 
-import { Logger } from "@ethersproject/logger";
-import { version } from "./_version";
-import {base64} from "ethers/lib/utils";
+import {Logger} from "@ethersproject/logger";
+import {version} from "./_version";
+import {base64, getAddressFromAccount} from "ethers/lib/utils";
+import {ContractCreateTransaction, ContractExecuteTransaction, Transaction as HederaTransaction} from "@hashgraph/sdk";
+
 const logger = new Logger(version);
 
 ///////////////////////////////
@@ -28,7 +43,7 @@ export enum TransactionTypes {
     legacy = 0,
     eip2930 = 1,
     eip1559 = 2,
-};
+}
 
 export type UnsignedTransaction = {
     to?: string;
@@ -57,10 +72,10 @@ export interface Transaction {
 
     to?: string;
     from?: string;
-    nonce: number;
+    nonce: number; // TODO remove
 
     gasLimit: BigNumber;
-    gasPrice?: BigNumber;
+    gasPrice?: BigNumber; // TODO remove
 
     data: string;
     value: BigNumber;
@@ -81,12 +96,16 @@ export interface Transaction {
     maxFeePerGas?: BigNumber;
 }
 
-///////////////////////////////
-
-function handleAddress(value: string): string {
-    if (value === "0x") { return null; }
-    return getAddress(value);
+type HederaTransactionContents = {
+    hash: string,
+    to?: string,
+    from: string,
+    gasLimit: BigNumber,
+    value: BigNumber,
+    data: string
 }
+
+///////////////////////////////
 
 function handleNumber(value: string): BigNumber {
     if (value === "0x") { return Zero; }
@@ -337,177 +356,142 @@ export function serialize(transaction: UnsignedTransaction, signature?: Signatur
     });
 }
 
-function _parseEipSignature(tx: Transaction, fields: Array<string>, serialize: (tx: UnsignedTransaction) => string): void {
-    try {
-        const recid = handleNumber(fields[0]).toNumber();
-        if (recid !== 0 && recid !== 1) { throw new Error("bad recid"); }
-        tx.v = recid;
-    } catch (error) {
-        logger.throwArgumentError("invalid v for transaction type: 1", "v", fields[0]);
-    }
+// function _parseEipSignature(tx: Transaction, fields: Array<string>, serialize: (tx: UnsignedTransaction) => string): void {
+//     try {
+//         const recid = handleNumber(fields[0]).toNumber();
+//         if (recid !== 0 && recid !== 1) { throw new Error("bad recid"); }
+//         tx.v = recid;
+//     } catch (error) {
+//         logger.throwArgumentError("invalid v for transaction type: 1", "v", fields[0]);
+//     }
+//
+//     tx.r = hexZeroPad(fields[1], 32);
+//     tx.s = hexZeroPad(fields[2], 32);
+//
+//     try {
+//         const digest = keccak256(serialize(tx));
+//         tx.from = recoverAddress(digest, { r: tx.r, s: tx.s, recoveryParam: tx.v });
+//     } catch (error) {
+//         console.log(error);
+//     }
+// }
 
-    tx.r = hexZeroPad(fields[1], 32);
-    tx.s = hexZeroPad(fields[2], 32);
+//
 
-    try {
-        const digest = keccak256(serialize(tx));
-        tx.from = recoverAddress(digest, { r: tx.r, s: tx.s, recoveryParam: tx.v });
-    } catch (error) {
-        console.log(error);
-    }
-}
-
-function _parseEip1559(payload: Uint8Array): Transaction {
-    const transaction = RLP.decode(payload.slice(1));
-
-    if (transaction.length !== 9 && transaction.length !== 12) {
-        logger.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
-    }
-
-    const maxPriorityFeePerGas = handleNumber(transaction[2]);
-    const maxFeePerGas = handleNumber(transaction[3]);
-    const tx: Transaction = {
-        type:                  2,
-        chainId:               handleNumber(transaction[0]).toNumber(),
-        nonce:                 handleNumber(transaction[1]).toNumber(),
-        maxPriorityFeePerGas:  maxPriorityFeePerGas,
-        maxFeePerGas:          maxFeePerGas,
-        gasPrice:              null,
-        gasLimit:              handleNumber(transaction[4]),
-        to:                    handleAddress(transaction[5]),
-        value:                 handleNumber(transaction[6]),
-        data:                  transaction[7],
-        accessList:            accessListify(transaction[8]),
-    };
-
-    // Unsigned EIP-1559 Transaction
-    if (transaction.length === 9) { return tx; }
-
-    tx.hash = keccak256(payload);
-
-    _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
-
-    return tx;
-}
-
-function _parseEip2930(payload: Uint8Array): Transaction {
-    const transaction = RLP.decode(payload.slice(1));
-
-    if (transaction.length !== 8 && transaction.length !== 11) {
-        logger.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
-    }
-
-    const tx: Transaction = {
-        type:       1,
-        chainId:    handleNumber(transaction[0]).toNumber(),
-        nonce:      handleNumber(transaction[1]).toNumber(),
-        gasPrice:   handleNumber(transaction[2]),
-        gasLimit:   handleNumber(transaction[3]),
-        to:         handleAddress(transaction[4]),
-        value:      handleNumber(transaction[5]),
-        data:       transaction[6],
-        accessList: accessListify(transaction[7])
-    };
-
-    // Unsigned EIP-2930 Transaction
-    if (transaction.length === 8) { return tx; }
-
-    tx.hash = keccak256(payload);
-
-    _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
-
-    return tx;
-}
-
-// Legacy Transactions and EIP-155
-function _parse(rawTransaction: Uint8Array): Transaction {
-    const transaction = RLP.decode(rawTransaction);
-
-    if (transaction.length !== 9 && transaction.length !== 6) {
-        logger.throwArgumentError("invalid raw transaction", "rawTransaction", rawTransaction);
-    }
-
-    const tx: Transaction = {
-        nonce:    handleNumber(transaction[0]).toNumber(),
-        gasPrice: handleNumber(transaction[1]),
-        gasLimit: handleNumber(transaction[2]),
-        to:       handleAddress(transaction[3]),
-        value:    handleNumber(transaction[4]),
-        data:     transaction[5],
-        chainId:  0
-    };
-
-    // Legacy unsigned transaction
-    if (transaction.length === 6) { return tx; }
-
-    try {
-        tx.v = BigNumber.from(transaction[6]).toNumber();
-
-    } catch (error) {
-        console.log(error);
-        return tx;
-    }
-
-    tx.r = hexZeroPad(transaction[7], 32);
-    tx.s = hexZeroPad(transaction[8], 32);
-
-    if (BigNumber.from(tx.r).isZero() && BigNumber.from(tx.s).isZero()) {
-        // EIP-155 unsigned transaction
-        tx.chainId = tx.v;
-        tx.v = 0;
-
-    } else {
-        // Signed Transaction
-
-        tx.chainId = Math.floor((tx.v - 35) / 2);
-        if (tx.chainId < 0) { tx.chainId = 0; }
-
-        let recoveryParam = tx.v - 27;
-
-        const raw = transaction.slice(0, 6);
-
-        if (tx.chainId !== 0) {
-            raw.push(hexlify(tx.chainId));
-            raw.push("0x");
-            raw.push("0x");
-            recoveryParam -= tx.chainId * 2 + 8;
-        }
-
-        const digest = keccak256(RLP.encode(raw));
-        try {
-            tx.from = recoverAddress(digest, { r: hexlify(tx.r), s: hexlify(tx.s), recoveryParam: recoveryParam });
-        } catch (error) {
-            console.log(error);
-        }
-
-        tx.hash = keccak256(rawTransaction);
-    }
-
-    tx.type = null;
-
-    return tx;
-}
+// // Legacy Transactions and EIP-155
+// function _parse(rawTransaction: Uint8Array): Transaction {
+//     const transaction = RLP.decode(rawTransaction);
+//
+//     if (transaction.length !== 9 && transaction.length !== 6) {
+//         logger.throwArgumentError("invalid raw transaction", "rawTransaction", rawTransaction);
+//     }
+//
+//     const tx: Transaction = {
+//         nonce:    handleNumber(transaction[0]).toNumber(),
+//         gasPrice: handleNumber(transaction[1]),
+//         gasLimit: handleNumber(transaction[2]),
+//         to:       handleAddress(transaction[3]),
+//         value:    handleNumber(transaction[4]),
+//         data:     transaction[5],
+//         chainId:  0
+//     };
+//
+//     // Legacy unsigned transaction
+//     if (transaction.length === 6) { return tx; }
+//
+//     try {
+//         tx.v = BigNumber.from(transaction[6]).toNumber();
+//
+//     } catch (error) {
+//         console.log(error);
+//         return tx;
+//     }
+//
+//     tx.r = hexZeroPad(transaction[7], 32);
+//     tx.s = hexZeroPad(transaction[8], 32);
+//
+//     if (BigNumber.from(tx.r).isZero() && BigNumber.from(tx.s).isZero()) {
+//         // EIP-155 unsigned transaction
+//         tx.chainId = tx.v;
+//         tx.v = 0;
+//
+//     } else {
+//         // Signed Transaction
+//
+//         tx.chainId = Math.floor((tx.v - 35) / 2);
+//         if (tx.chainId < 0) { tx.chainId = 0; }
+//
+//         let recoveryParam = tx.v - 27;
+//
+//         const raw = transaction.slice(0, 6);
+//
+//         if (tx.chainId !== 0) {
+//             raw.push(hexlify(tx.chainId));
+//             raw.push("0x");
+//             raw.push("0x");
+//             recoveryParam -= tx.chainId * 2 + 8;
+//         }
+//
+//         const digest = keccak256(RLP.encode(raw));
+//         try {
+//             tx.from = recoverAddress(digest, { r: hexlify(tx.r), s: hexlify(tx.s), recoveryParam: recoveryParam });
+//         } catch (error) {
+//             console.log(error);
+//         }
+//
+//         tx.hash = keccak256(rawTransaction);
+//     }
+//
+//     tx.type = null;
+//
+//     return tx;
+// }
 
 
-export function parse(rawTransaction: BytesLike): Transaction {
+export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     const payload = arrayify(rawTransaction);
 
-    // Legacy and EIP-155 Transactions
-    if (payload[0] > 0x7f) { return _parse(payload); }
-
-    // Typed Transaction (EIP-2718)
-    switch (payload[0]) {
-        case 1:
-            return _parseEip2930(payload);
-        case 2:
-            return _parseEip1559(payload);
-        default:
-            break;
+    let parsed;
+    try {
+        parsed = HederaTransaction.fromBytes(payload);
+    } catch (error) {
+        logger.throwArgumentError(error.message, "rawTransaction", rawTransaction);
     }
 
-    return logger.throwError(`unsupported transaction type: ${ payload[0] }`, Logger.errors.UNSUPPORTED_OPERATION, {
-        operation: "parseTransaction",
-        transactionType: payload[0]
-    });
+    let contents = {
+        hash: hexlify(await parsed.getTransactionHash()),
+        from: getAddressFromAccount(parsed.transactionId.accountId.toString()),
+    } as HederaTransactionContents;
+
+    if (parsed instanceof ContractExecuteTransaction) {
+        parsed = parsed as ContractExecuteTransaction;
+        contents.to = getAddressFromAccount(parsed.contractId?.toString());
+        contents.gasLimit = handleNumber(parsed.gas.toString());
+        contents.value = parsed.payableAmount ?
+            handleNumber(parsed.payableAmount.toBigNumber().toString()) : handleNumber('0');
+        contents.data = parsed.functionParameters ? hexlify(parsed.functionParameters) : '0x';
+    } else if (parsed instanceof ContractCreateTransaction) {
+        parsed = parsed as ContractCreateTransaction;
+        contents.gasLimit = handleNumber(parsed.gas.toString());
+        contents.value = parsed.initialBalance ?
+            handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
+        // TODO IMPORTANT! We are setting only the constructor arguments and not the whole bytecode + constructor args
+        contents.data = parsed.constructorParameters ? hexlify(parsed.constructorParameters) : '0x';
+    } else {
+        return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, {operation: "parse"});
+    }
+
+    // TODO populate r, s ,v
+
+    return {
+        ...contents,
+        nonce: 0,
+        gasPrice: handleNumber('0'),
+        chainId: 0,
+        r: '',
+        s: '',
+        v: 0,
+        type: null,
+    };
 }
 

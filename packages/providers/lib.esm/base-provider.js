@@ -23,7 +23,7 @@ import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName } from "@hashgraph/sdk";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
 //////////////////////////////
 // Event Serializeing
@@ -485,7 +485,7 @@ export class BaseProvider extends Provider {
     }
     // This should be called by any subclass wrapping a TransactionResponse
     _wrapTransaction(tx, hash, startBlock) {
-        if (hash != null && hexDataLength(hash) !== 32) {
+        if (hash != null && hexDataLength(hash) !== 48) {
             throw new Error("invalid response - sendTransaction");
         }
         const result = tx;
@@ -527,10 +527,27 @@ export class BaseProvider extends Provider {
         });
         return result;
     }
-    // FIXME:
     sendTransaction(signedTransaction) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            return null;
+            yield this.getNetwork();
+            signedTransaction = yield signedTransaction;
+            const txBytes = arrayify(signedTransaction);
+            const hederaTx = HederaTransaction.fromBytes(txBytes);
+            const ethersTx = yield this.formatter.transaction(signedTransaction);
+            const txHash = hexlify(yield hederaTx.getTransactionHash());
+            try {
+                // TODO once we have fallback provider use `provider.perform("sendTransaction")`
+                // TODO Before submission verify that the nodeId is the one that the provider is connected to
+                yield hederaTx.execute(this.hederaClient);
+                return this._wrapTransaction(ethersTx, txHash);
+            }
+            catch (error) {
+                const err = logger.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
+                err.transaction = ethersTx;
+                err.transactionHash = txHash;
+                throw err;
+            }
         });
     }
     _getTransactionRequest(transaction) {
