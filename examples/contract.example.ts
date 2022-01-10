@@ -31,7 +31,7 @@ const account = {
 	const client = Client.forNetwork(account.network);
 	const generatedWallet = hethers.Wallet.createRandom();
 	const provider = hethers.providers.getDefaultProvider('previewnet');
-	const key = PrivateKey.fromStringECDSA(generatedWallet._signingKey().privateKey); //HederaKey._fromProtobufKey(protoKey);
+	// const key = PrivateKey.fromStringECDSA(generatedWallet._signingKey().privateKey); //HederaKey._fromProtobufKey(protoKey);
 	const protoKey = Key.create({
 		ECDSASecp256k1: arrayify(generatedWallet._signingKey().compressedPublicKey)
 	});
@@ -39,7 +39,7 @@ const account = {
 	const accountCreate = await (await new AccountCreateTransaction()
 		.setKey(newAccountKey)
 		.setTransactionId(TransactionId.generate(account.operator.accountId))
-		.setInitialBalance(new Hbar(20))
+		.setInitialBalance(new Hbar(10))
 		.setNodeAccountIds([new AccountId(0,0,3)])
 		.freeze()
 		.sign(edPrivateKey))

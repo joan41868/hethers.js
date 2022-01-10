@@ -187,7 +187,7 @@ function _serializeEip1559(transaction, signature) {
         formatNumber(transaction.maxPriorityFeePerGas || 0, "maxPriorityFeePerGas"),
         formatNumber(transaction.maxFeePerGas || 0, "maxFeePerGas"),
         formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        ((transaction.to != null) ? (0, address_1.getAddress)(transaction.to) : "0x"),
+        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
         formatNumber(transaction.value || 0, "value"),
         (transaction.data || "0x"),
         (formatAccessList(transaction.accessList || []))
@@ -206,7 +206,7 @@ function _serializeEip2930(transaction, signature) {
         formatNumber(transaction.nonce || 0, "nonce"),
         formatNumber(transaction.gasPrice || 0, "gasPrice"),
         formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        ((transaction.to != null) ? (0, address_1.getAddress)(transaction.to) : "0x"),
+        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
         formatNumber(transaction.value || 0, "value"),
         (transaction.data || "0x"),
         (formatAccessList(transaction.accessList || []))
@@ -436,6 +436,14 @@ function parse(rawTransaction) {
                             handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
                         // TODO IMPORTANT! We are setting only the constructor arguments and not the whole bytecode + constructor args
                         contents.data = parsed.constructorParameters ? (0, bytes_1.hexlify)(parsed.constructorParameters) : '0x';
+                    }
+                    else if (parsed instanceof sdk_1.FileCreateTransaction) {
+                        parsed = parsed;
+                        contents.data = (0, bytes_1.hexlify)(Buffer.from(parsed.contents));
+                    }
+                    else if (parsed instanceof sdk_1.FileAppendTransaction) {
+                        parsed = parsed;
+                        contents.data = (0, bytes_1.hexlify)(Buffer.from(parsed.contents));
                     }
                     else {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];

@@ -994,14 +994,14 @@ export class BaseProvider extends Provider implements EnsProvider {
 
     // This should be called by any subclass wrapping a TransactionResponse
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse {
-        // if (hash != null && hexDataLength(hash) !== 32) { throw new Error("invalid response - sendTransaction"); }
+        if (hash != null && hexDataLength(hash) !== 48) { throw new Error("invalid response - sendTransaction"); }
 
         const result = <TransactionResponse>tx;
         if (!result.customData) result.customData = {};
-        if (receipt.fileId) {
+        if (receipt && receipt.fileId) {
             result.customData.fileId = receipt.fileId.toString();
         }
-        if (receipt.contractId) {
+        if (receipt && receipt.contractId) {
             result.customData.contractId = receipt.contractId.toSolidityAddress();
         }
         // Check the hash we expect is the same as the hash the server reported
@@ -1056,8 +1056,9 @@ export class BaseProvider extends Provider implements EnsProvider {
         try {
             // TODO once we have fallback provider use `provider.perform("sendTransaction")`
             // TODO Before submission verify that the nodeId is the one that the provider is connected to
-            await hederaTx.execute(this.hederaClient);
-            return this._wrapTransaction(ethersTx, txHash);
+            const resp = await hederaTx.execute(this.hederaClient);
+            const receipt = await resp.getReceipt(this.hederaClient);
+            return this._wrapTransaction(ethersTx, txHash, receipt);
         } catch (error) {
             const err = logger.makeError(error.message, error.status?.toString());
             (<any>err).transaction = ethersTx;

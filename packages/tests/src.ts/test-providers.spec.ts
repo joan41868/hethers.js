@@ -26,7 +26,7 @@ type TestCases = {
 
 const hederaPreviewnetOperableAccount = {
     "operator": {
-        "accountId": "0.0.1340",
+        "accountId": "0.0.1356",
         "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
     },
 };
@@ -1096,13 +1096,17 @@ describe("Test Hedera Provider", function () {
     }).timeout(timeout * 4);
 
     it('should submit signed transaction', async function() {
+        // TODO: this test may be flaky
+        // The initial balance part is commented out as of the current non-payable constructor.
+        // In the future, this test should be changed to use testnet and pre-deployed
+        // bytecode for contract with a payable constructor .
         const privateKey = PrivateKey.fromString(hederaPreviewnetOperableAccount.operator.privateKey);
         // 1. Sign TX -> `sign-transaction.ts`
         const tx = await new ContractCreateTransaction()
             .setContractMemo("memo")
-            .setGas(1000)
-            .setInitialBalance(1000)
-            .setBytecodeFileId("0.0.111111")
+            .setGas(100000)
+            // .setInitialBalance(1000)
+            .setBytecodeFileId("0.0.7564")
             .setNodeAccountIds([new AccountId(0,0,3)])
             .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
             .setTransactionId(TransactionId.generate(hederaPreviewnetOperableAccount.operator.accountId))
@@ -1112,9 +1116,9 @@ describe("Test Hedera Provider", function () {
         const signedTx = ethers.utils.hexlify(txBytes);
         const provider = ethers.providers.getDefaultProvider('previewnet');
         const txResponse = await provider.sendTransaction(signedTx);
-        assert.strictEqual(txResponse.gasLimit.toNumber(), 1000);
+        assert.strictEqual(txResponse.gasLimit.toNumber(), 100000);
         assert.strictEqual(txResponse.from, getAddressFromAccount(hederaPreviewnetOperableAccount.operator.accountId));
         assert.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
-        assert.strictEqual(txResponse.value.toNumber(), 100000000000);
+        // assert.strictEqual(txResponse.value.toNumber(), 100000000000);
     });
 });
