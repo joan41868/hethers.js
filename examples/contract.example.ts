@@ -23,7 +23,6 @@ const account = {
 		"3.testnet.hedera.com:50211": "0.0.6"
 	}
 };
-// feat/transaction-submission
 
 // main
 (async () => {
@@ -31,7 +30,6 @@ const account = {
 	const client = Client.forNetwork(account.network);
 	const generatedWallet = hethers.Wallet.createRandom();
 	const provider = hethers.providers.getDefaultProvider('testnet');
-	// const key = PrivateKey.fromStringECDSA(generatedWallet._signingKey().privateKey); //HederaKey._fromProtobufKey(protoKey);
 	const protoKey = Key.create({
 		ECDSASecp256k1: arrayify(generatedWallet._signingKey().compressedPublicKey)
 	});
