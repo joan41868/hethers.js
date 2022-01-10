@@ -96,7 +96,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     set polling(value: boolean);
     get pollingInterval(): number;
     set pollingInterval(value: number);
-    waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
+    waitForTransaction(transactionId: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
     _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt>;
     waitOrReturn(transactionId: string, timeoutMs?: number): Promise<TransactionReceipt>;
     sleep(ms: number): Promise<void>;

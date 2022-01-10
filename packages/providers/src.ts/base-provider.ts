@@ -944,8 +944,8 @@ export class BaseProvider extends Provider implements EnsProvider {
         }
     }
 
-    async waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt> {
-        return this._waitForTransaction(transactionHash, timeout || 0);
+    async waitForTransaction(transactionId: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt> {
+        return this._waitForTransaction(transactionId, timeout);
     }
 
     async _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt> {
@@ -955,7 +955,8 @@ export class BaseProvider extends Provider implements EnsProvider {
             return await this.waitOrReturn(transactionId);
         }
         if (timeoutMs <= 0) { 
-            return Promise.reject('Timed out in ' + timeoutMs + 'ms.') 
+            //TODO fix timeoutMs value is always 0!
+            logger.throwError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeoutMs });
         }      
         return await this.waitOrReturn(transactionId, timeoutMs - 1000);
     }
@@ -1039,13 +1040,13 @@ export class BaseProvider extends Provider implements EnsProvider {
             // query for txRecord (txId) 
             const txReceipt = await this._waitForTransaction(tx.transactionId, timeout);
 
-            // if (receipt.status === 0) {
-            //     logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
-            //         transactionHash: tx.hash,
-            //         transaction: tx,
-            //         receipt: receipt
-            //     });
-            // }
+            if (txReceipt.status === 0) {
+                logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
+                    transactionHash: tx.hash,
+                    transaction: tx,
+                    receipt: receipt
+                });
+            }
 
             return txReceipt;
         };
@@ -1058,7 +1059,6 @@ export class BaseProvider extends Provider implements EnsProvider {
 
         const txBytes = arrayify(signedTransaction);
         const hederaTx = HederaTransaction.fromBytes(txBytes);
-        // console.log("hederaTx-Id", hederaTx.transactionId);
         const ethersTx = await this.formatter.transaction(signedTransaction); //
         const txHash = hexlify(await hederaTx.getTransactionHash());
         try {
@@ -1192,9 +1192,9 @@ export class BaseProvider extends Provider implements EnsProvider {
             const filtered = data.transactions
                 .filter((e: { result: string; }) => e.result != "DUPLICATE_TRANSACTION");
             
-            console.log("Hedera filtered transactions", filtered);
-            const response = filtered.length > 0 ? filtered[0] : null;         
-            return this.formatter.txRecordToTxResponse(response);
+            console.log("Hedera filtered transactions", filtered);            
+            const response = filtered.length > 0 ? this.formatter.txRecordToTxResponse(filtered[0]) : null;
+            return response;
         } catch (error) {
             if (error.response.status != 404) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {

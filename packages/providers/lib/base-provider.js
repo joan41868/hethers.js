@@ -962,10 +962,10 @@ var BaseProvider = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
-    BaseProvider.prototype.waitForTransaction = function (transactionHash, confirmations, timeout) {
+    BaseProvider.prototype.waitForTransaction = function (transactionId, confirmations, timeout) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, this._waitForTransaction(transactionHash, timeout || 0)];
+                return [2 /*return*/, this._waitForTransaction(transactionId, timeout)];
             });
         });
     };
@@ -979,7 +979,8 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 1: return [2 /*return*/, _a.sent()];
                     case 2:
                         if (timeoutMs <= 0) {
-                            return [2 /*return*/, Promise.reject('Timed out in ' + timeoutMs + 'ms.')];
+                            //TODO fix timeoutMs value is always 0!
+                            logger.throwError("timeout exceeded", logger_1.Logger.errors.TIMEOUT, { timeout: timeoutMs });
                         }
                         return [4 /*yield*/, this.waitOrReturn(transactionId, timeoutMs - 1000)];
                     case 3: return [2 /*return*/, _a.sent()];
@@ -1111,13 +1112,13 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, this._waitForTransaction(tx.transactionId, timeout)];
                     case 1:
                         txReceipt = _a.sent();
-                        // if (receipt.status === 0) {
-                        //     logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
-                        //         transactionHash: tx.hash,
-                        //         transaction: tx,
-                        //         receipt: receipt
-                        //     });
-                        // }
+                        if (txReceipt.status === 0) {
+                            logger.throwError("transaction failed", logger_1.Logger.errors.CALL_EXCEPTION, {
+                                transactionHash: tx.hash,
+                                transaction: tx,
+                                receipt: receipt
+                            });
+                        }
                         return [2 /*return*/, txReceipt];
                 }
             });
@@ -1356,8 +1357,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         filtered = data.transactions
                             .filter(function (e) { return e.result != "DUPLICATE_TRANSACTION"; });
                         console.log("Hedera filtered transactions", filtered);
-                        response = filtered.length > 0 ? filtered[0] : null;
-                        return [2 /*return*/, this.formatter.txRecordToTxResponse(response)];
+                        response = filtered.length > 0 ? this.formatter.txRecordToTxResponse(filtered[0]) : null;
+                        return [2 /*return*/, response];
                     case 5:
                         error_7 = _a.sent();
                         if (error_7.response.status != 404) {
