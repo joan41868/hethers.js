@@ -2,12 +2,22 @@
 
 import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { Bytes, BytesLike } from "@ethersproject/bytes";
+import { arrayify, Bytes, BytesLike, hexlify } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import {Account} from "@ethersproject/address";
+import { Account, getAccountFromAddress } from "@ethersproject/address";
+import {
+    AccountId,
+    ContractCreateTransaction,
+    ContractExecuteTransaction,
+    ContractId,
+    FileAppendTransaction, FileCreateTransaction,
+    Transaction, TransactionId,
+    PrivateKey as HederaPrivKey, PublicKey as HederaPubKey
+} from "@hashgraph/sdk";
+import { SigningKey } from "@ethersproject/signing-key";
 const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
@@ -60,7 +70,7 @@ export interface TypedDataSigner {
 
 export abstract class Signer {
     readonly provider?: Provider;
-
+    readonly _signingKey: () => SigningKey;
     ///////////////////
     // Sub-classes MUST implement these
 
@@ -73,11 +83,73 @@ export abstract class Signer {
     // i.e. "0x1234" is a SIX (6) byte string, NOT 2 bytes of data
     abstract signMessage(message: Bytes | string): Promise<string>;
 
-    // Signs a transaction and returns the fully serialized, signed transaction.
-    // The EXACT transaction MUST be signed, and NO additional properties to be added.
-    // - This MAY throw if signing transactions is not supports, but if
-    //   it does, sentTransaction MUST be overridden.
-    abstract signTransaction(transaction: Deferrable<TransactionRequest>): Promise<string>;
+    /**
+     * Signs a transaction with the key given upon creation.
+     * The transaction can be:
+     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
+     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
+     * - ContractCreate - when there is a `bytecodeFileId` field
+     * - ContractCall - when there is a `to` field present. Ignores the other fields
+     *
+     * @param transaction - the transaction to be signed.
+     */
+    signTransaction(transaction: TransactionRequest): Promise<string>{
+        let tx: Transaction;
+        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
+        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
+        if (transaction.to) {
+            tx = new ContractExecuteTransaction()
+                .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
+                .setFunctionParameters(arrayifiedData)
+                .setGas(gas);
+            if (transaction.value) {
+                (tx as ContractExecuteTransaction).setPayableAmount(transaction.value?.toString())
+            }
+        } else {
+            if (transaction.customData.bytecodeFileId) {
+                tx = new ContractCreateTransaction()
+                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
+                    .setConstructorParameters(arrayifiedData)
+                    .setInitialBalance(transaction.value?.toString())
+                    .setGas(gas);
+            } else {
+                if (transaction.customData.fileChunk && transaction.customData.fileId) {
+                    tx = new FileAppendTransaction()
+                        .setContents(transaction.customData.fileChunk)
+                        .setFileId(transaction.customData.fileId)
+                } else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
+                    // only a chunk, thus the first one
+                    tx = new FileCreateTransaction()
+                        .setContents(transaction.customData.fileChunk)
+                        .setKeys([ transaction.customData.fileKey ?
+                            transaction.customData.fileKey :
+                            HederaPubKey.fromString(this._signingKey().compressedPublicKey) ])
+                } else {
+                    logger.throwArgumentError(
+                        "Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`",
+                        Logger.errors.INVALID_ARGUMENT,
+                        transaction);
+                }
+            }
+        }
+        return this.getAddress().then(address => {
+            const accountID = getAccountFromAddress(address);
+            tx.setTransactionId(TransactionId.generate(new AccountId({
+                    shard: numberify(accountID.shard),
+                    realm: numberify(accountID.realm),
+                    num: numberify(accountID.num)
+                })))
+                // FIXME - should be taken from the network/ wallet's provider
+                .setNodeAccountIds([ new AccountId(0, 0, 3) ])
+                .freeze();
+            const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
+            return new Promise<string>(async (resolve) => {
+                const signed = await tx.sign(pkey);
+                resolve(hexlify(signed.toBytes()));
+            });
+        });
+
+    }
 
     // Returns a new instance of the Signer, connected to provider.
     // This MAY throw if changing providers is not supported.
@@ -121,15 +193,47 @@ export abstract class Signer {
 
     // Populates all fields in a transaction, signs it and sends it to the network
     async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-        this._checkProvider("sendTransaction");
-        const tx = await this.populateTransaction(transaction);
-        // TODO: split tx here and check `to` field
+        const tx = await resolveProperties(transaction);
         // to - sign & send
         // no `to` - file create and appends and contract create;
         // create TransactionRequest objects and pass them down to the sign fn
         // sign & send on each tx
-        const signedTx = await this.signTransaction(tx);
-        return await this.provider.sendTransaction(signedTx);
+        // contract create would be the expected result of create + append + contract create
+
+        if (tx.to) {
+            const signed = await this.signTransaction(tx);
+            return await this.provider.sendTransaction(signed);
+        } else {
+            const contractByteCode = tx.data;
+            let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
+            const fileCreate = {
+                customData: {
+                    fileChunk: chunks[0],
+                    fileKey: HederaPubKey.fromString(this._signingKey().compressedPublicKey)
+                }
+            };
+            const signedFileCreate = await this.signTransaction(fileCreate);
+            const resp =  await this.provider.sendTransaction(signedFileCreate);
+            for (let chunk of chunks.slice(1)) {
+                const fileAppend = {
+                    customData: {
+                        fileId: resp.customData.fileId.toString(),
+                        fileChunk: chunk
+                    }
+                };
+                const signedFileAppend = await this.signTransaction(fileAppend);
+                await this.provider.sendTransaction(signedFileAppend);
+            }
+
+            const contractCreate = {
+                gasLimit: tx.gasLimit,
+                customData: {
+                    bytecodeFileId: resp.customData.fileId.toString()
+                }
+            }
+            const signedContractCreate = await this.signTransaction(contractCreate);
+            return await this.provider.sendTransaction(signedContractCreate);
+        }
     }
 
     async getChainId(): Promise<number> {
@@ -173,9 +277,9 @@ export abstract class Signer {
                 Promise.resolve(tx.from),
                 this.getAddress()
             ]).then((result) => {
-                // if (result[0].toLowerCase() !== result[1].toLowerCase()) {
-                //     logger.throwArgumentError("from address mismatch", "transaction", transaction);
-                // }
+                if (result[0].toString().toLowerCase() !== result[1].toLowerCase()) {
+                    logger.throwArgumentError("from address mismatch", "transaction", transaction);
+                }
                 return result[0];
             });
         }
@@ -373,3 +477,18 @@ export class VoidSigner extends Signer implements TypedDataSigner {
     }
 }
 
+
+function splitInChunks(data: string, chunkSize: number): string[] {
+    const chunks = [];
+    let num = 0;
+    while (num <= data.length) {
+        const slice = data.slice(num, chunkSize + num);
+        num += chunkSize;
+        chunks.push(slice);
+    }
+    return chunks;
+}
+
+function numberify(num: BigNumberish) {
+    return BigNumber.from(num).toNumber();
+}

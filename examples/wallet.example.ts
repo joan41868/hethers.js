@@ -1,13 +1,3 @@
-import {
-	AccountCreateTransaction,
-	AccountId,
-	ContractExecuteTransaction, Transaction,
-	TransactionId,
-	TransferTransaction
-} from "@hashgraph/sdk";
-import { AccessListish, AccountLike, arrayify, BytesLike, getAddressFromAccount, hexlify } from "ethers/lib/utils";
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-
 const hethers = require("ethers");
 
 (async () => {
@@ -99,14 +89,12 @@ const hethers = require("ethers");
 	const wallet = hethers.Wallet.createRandom();
 	const data = Buffer.from(`"abi":{},"values":{}`).toString('hex');
 	const tx = {
-		to: getAddressFromAccount("0.0.12999"),
+		to: hethers.utils.getAddressFromAccount("0.0.12999"),
 		from: wallet.address,
 		data: '0x'+data,
 		gasLimit: 100000
 
 	};
 	const signed = await wallet.signTransaction(tx);
-	const fromBytes = Transaction.fromBytes(arrayify(signed));
-	const cc = fromBytes as ContractExecuteTransaction;
-	console.log(cc); // Real contract create
+	console.log(signed);
 })()

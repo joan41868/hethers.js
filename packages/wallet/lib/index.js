@@ -66,8 +66,6 @@ var json_wallets_1 = require("@ethersproject/json-wallets");
 var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
-var sdk_1 = require("@hashgraph/sdk");
-var ethers_1 = require("ethers");
 var logger = new logger_1.Logger(_version_1.version);
 function isAccount(value) {
     return value != null && (0, bytes_1.isHexString)(value.privateKey, 32);
@@ -186,153 +184,6 @@ var Wallet = /** @class */ (function (_super) {
         };
         return new Wallet(eoa, this.provider);
     };
-    //
-    // async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-    //
-    //     return null;
-    // }
-    Wallet.prototype.sendTransaction = function (transaction) {
-        return __awaiter(this, void 0, void 0, function () {
-            var tx, signed, contractByteCode, chunks, fileCreate, signedFileCreate, resp, _i, _a, chunk, fileAppend, signedFileAppend, contractCreate, signedContractCreate;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, (0, properties_1.resolveProperties)(transaction)];
-                    case 1:
-                        tx = _b.sent();
-                        if (!tx.to) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.signTransaction(tx)];
-                    case 2:
-                        signed = _b.sent();
-                        return [4 /*yield*/, this.provider.sendTransaction(signed)];
-                    case 3: return [2 /*return*/, _b.sent()];
-                    case 4:
-                        contractByteCode = tx.data;
-                        chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
-                        fileCreate = {
-                            customData: {
-                                fileChunk: chunks[0],
-                                fileKey: sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)
-                            }
-                        };
-                        return [4 /*yield*/, this.signTransaction(fileCreate)];
-                    case 5:
-                        signedFileCreate = _b.sent();
-                        return [4 /*yield*/, this.provider.sendTransaction(signedFileCreate)];
-                    case 6:
-                        resp = _b.sent();
-                        _i = 0, _a = chunks.slice(1);
-                        _b.label = 7;
-                    case 7:
-                        if (!(_i < _a.length)) return [3 /*break*/, 11];
-                        chunk = _a[_i];
-                        fileAppend = {
-                            customData: {
-                                fileId: resp.customData.fileId.toString(),
-                                fileChunk: chunk
-                            }
-                        };
-                        return [4 /*yield*/, this.signTransaction(fileAppend)];
-                    case 8:
-                        signedFileAppend = _b.sent();
-                        return [4 /*yield*/, this.provider.sendTransaction(signedFileAppend)];
-                    case 9:
-                        _b.sent();
-                        _b.label = 10;
-                    case 10:
-                        _i++;
-                        return [3 /*break*/, 7];
-                    case 11:
-                        contractCreate = {
-                            gasLimit: tx.gasLimit,
-                            customData: {
-                                bytecodeFileId: resp.customData.fileId.toString()
-                            }
-                        };
-                        return [4 /*yield*/, this.signTransaction(contractCreate)];
-                    case 12:
-                        signedContractCreate = _b.sent();
-                        return [4 /*yield*/, this.provider.sendTransaction(signedContractCreate)];
-                    case 13: return [2 /*return*/, _b.sent()];
-                }
-            });
-        });
-    };
-    /**
-     * Signs a transaction with the key given upon creation.
-     * The transaction can be:
-     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
-     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
-     * - ContractCreate - when there is a `bytecodeFileId` field
-     * - ContractCall - when there is a `to` field present. Ignores the other fields
-     *
-     * @param transaction - the transaction to be signed.
-     */
-    Wallet.prototype.signTransaction = function (transaction) {
-        var _this = this;
-        var _a, _b;
-        var tx;
-        var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
-        var gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new sdk_1.ContractExecuteTransaction()
-                .setContractId(sdk_1.ContractId.fromSolidityAddress(transaction.to.toString()))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
-        }
-        else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new sdk_1.ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
-                    .setGas(gas);
-            }
-            else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new sdk_1.FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId);
-                }
-                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new sdk_1.FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)]);
-                }
-                else {
-                    logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
-                }
-            }
-        }
-        var accountID = (0, address_1.getAccountFromAddress)(this.address);
-        tx
-            .setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
-            shard: numberify(accountID.shard),
-            realm: numberify(accountID.realm),
-            num: numberify(accountID.num)
-        })))
-            // FIXME - should be taken from the network/ wallet's provider
-            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
-            .freeze();
-        var pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-        return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
-            var signed;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, tx.sign(pkey)];
-                    case 1:
-                        signed = _a.sent();
-                        resolve((0, bytes_1.hexlify)(signed.toBytes()));
-                        return [2 /*return*/];
-                }
-            });
-        }); });
-    };
     Wallet.prototype.signMessage = function (message) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -417,19 +268,4 @@ function verifyTypedData(domain, types, value, signature) {
     return (0, transactions_1.recoverAddress)(hash_1._TypedDataEncoder.hash(domain, types, value), signature);
 }
 exports.verifyTypedData = verifyTypedData;
-// TODO: think about moving those utils
-function numberify(num) {
-    return ethers_1.BigNumber.from(num).toNumber();
-}
-// @ts-ignore
-function splitInChunks(data, chunkSize) {
-    var chunks = [];
-    var num = 0;
-    while (num <= data.length) {
-        var slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
-}
 //# sourceMappingURL=index.js.map

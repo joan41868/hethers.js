@@ -1,9 +1,8 @@
 import { Account, AccountLike } from "@ethersproject/address";
-import { Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { Provider } from "@ethersproject/abstract-provider";
 import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@ethersproject/abstract-signer";
 import { Bytes, BytesLike, SignatureLike } from "@ethersproject/bytes";
 import { Mnemonic } from "@ethersproject/hdnode";
-import { Deferrable } from "@ethersproject/properties";
 import { SigningKey } from "@ethersproject/signing-key";
 import { ProgressCallback } from "@ethersproject/json-wallets";
 import { Wordlist } from "@ethersproject/wordlists";
@@ -23,18 +22,6 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     getAlias(): Promise<string>;
     connect(provider: Provider): Wallet;
     connectAccount(accountLike: AccountLike): Wallet;
-    sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse>;
-    /**
-     * Signs a transaction with the key given upon creation.
-     * The transaction can be:
-     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
-     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
-     * - ContractCreate - when there is a `bytecodeFileId` field
-     * - ContractCall - when there is a `to` field present. Ignores the other fields
-     *
-     * @param transaction - the transaction to be signed.
-     */
-    signTransaction(transaction: TransactionRequest): Promise<string>;
     signMessage(message: Bytes | string): Promise<string>;
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;
     encrypt(password: Bytes | string, options?: any, progressCallback?: ProgressCallback): Promise<string>;

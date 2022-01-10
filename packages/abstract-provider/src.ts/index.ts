@@ -16,57 +16,28 @@ const logger = new Logger(version);
 
 
 export type TransactionRequest = {
-    // Should be AccountLike. `to` is not populated for Contract Deployment
     to?: AccountLike,
-    // Should be AccountLike -> if `from` is populated, we should verify that the Wallet.account is the same
     from?: AccountLike,
-
-    // Should be the same. We must use it for `gas` property in ContractCreate/Call
     gasLimit?: BigNumberish,
-
-    // Should be the same. We must use it for `contents` property in `FileCreate` and for `functionArguments` in
-    // ContractCall
     data?: BytesLike,
-    // Should be the same. We must use it for `initialBalance` in `ContractCreate` and for `amount` in ContractCall
     value?: BigNumberish,
-    // We should leave it as is
     chainId?: number
-
-    // We should ignore it for now. This refers to Type2 TX (EIP1559)
     type?: number;
-    // We should ignore it for now. AccessList support is not yet merged into Hedera. Tanyu worked on it
     accessList?: AccessListish;
-
-    // We should ignore it for now. Refers to Type2 TX
     maxPriorityFeePerGas?: BigNumberish;
-    // We should ignore it for now. Refers to Type2 TX
     maxFeePerGas?: BigNumberish;
-
-    // https://github.com/ethers-io/ethers.js/issues/1761
-    // https://github.com/ethers-io/ethers.js/commit/68095a48ae19ed06cbcf2f415f1fcbda90d4b2ae
-    // We should use this to indicate whether we must do FileCreate/ContractCreate or ContractCall
     customData?: Record<string, any>;
 }
 
 export interface TransactionResponse extends Transaction {
-    // Populate it
     hash: string;
-
-    // Only if a transaction has been mined
-    blockNumber?: number, // Ignore and not populate it
-    blockHash?: string, // Ignore and not populate it
-    timestamp?: number, // Populate it if transaction has been mined and mirror node returns it
-
-    confirmations: number, // hardcode 0 for now
-
-    // Not optional (as it is in Transaction)
-    from: string; // populate it from ethersTx
-
-    // The raw transaction
-    raw?: string, // equivalent of signed transaction
-
-    // This function waits until the transaction has been mined
-    wait: (confirmations?: number) => Promise<TransactionReceipt>,// Should poll the mirror node
+    blockNumber?: number,
+    blockHash?: string,
+    timestamp?: number,
+    confirmations: number,
+    from: string;
+    raw?: string,
+    wait: (confirmations?: number) => Promise<TransactionReceipt>,
     customData?: {
         [key: string]:any;
     }

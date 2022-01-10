@@ -1,7 +1,5 @@
-"use strict";
-
-import { Account, AccountLike, getAccountFromAddress, getAddress, getAddressFromAccount } from "@ethersproject/address";
-import { Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import {Account, AccountLike, getAccountFromAddress, getAddress, getAddressFromAccount} from "@ethersproject/address";
+import {Provider } from "@ethersproject/abstract-provider";
 import {
     ExternallyOwnedAccount,
     Signer,
@@ -15,41 +13,22 @@ import {
     BytesLike,
     concat,
     hexDataSlice,
-    hexlify,
     isHexString,
     joinSignature,
     SignatureLike
 } from "@ethersproject/bytes";
-import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
-import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@ethersproject/hdnode";
-import { keccak256 } from "@ethersproject/keccak256";
-import { Deferrable, defineReadOnly, resolveProperties } from "@ethersproject/properties";
-import { randomBytes } from "@ethersproject/random";
-import { SigningKey } from "@ethersproject/signing-key";
-import {
-    decryptJsonWallet,
-    decryptJsonWalletSync,
-    encryptKeystore,
-    ProgressCallback
-} from "@ethersproject/json-wallets";
-import { computeAlias, recoverAddress, } from "@ethersproject/transactions";
-import { Wordlist } from "@ethersproject/wordlists";
+import {_TypedDataEncoder, hashMessage} from "@ethersproject/hash";
+import {defaultPath, entropyToMnemonic, HDNode, Mnemonic} from "@ethersproject/hdnode";
+import {keccak256} from "@ethersproject/keccak256";
+import {defineReadOnly} from "@ethersproject/properties";
+import {randomBytes} from "@ethersproject/random";
+import {SigningKey} from "@ethersproject/signing-key";
+import {decryptJsonWallet, decryptJsonWalletSync, encryptKeystore, ProgressCallback} from "@ethersproject/json-wallets";
+import {computeAlias, recoverAddress } from "@ethersproject/transactions";
+import {Wordlist} from "@ethersproject/wordlists";
 
-import { Logger } from "@ethersproject/logger";
-import { version } from "./_version";
-import {
-    AccountId,
-    ContractCreateTransaction,
-    ContractExecuteTransaction,
-    ContractId,
-    FileAppendTransaction,
-    FileCreateTransaction,
-    PrivateKey as HederaPrivKey,
-    PublicKey as HederaPubKey,
-    Transaction,
-    TransactionId,
-} from "@hashgraph/sdk";
-import { BigNumber, BigNumberish } from "ethers";
+import {Logger} from "@ethersproject/logger";
+import {version} from "./_version";
 
 const logger = new Logger(version);
 
@@ -144,6 +123,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         if (provider && !Provider.isProvider(provider)) {
             logger.throwArgumentError("invalid provider", "provider", provider);
         }
+
         defineReadOnly(this, "provider", provider || null);
     }
 
@@ -183,122 +163,6 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
             mnemonic: this._mnemonic()
         };
         return new Wallet(eoa, this.provider);
-    }
-
-    //
-    // async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-    //
-    //     return null;
-    // }
-
-    async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-        const tx = await resolveProperties(transaction);
-        // to - sign & send
-        // no `to` - file create and appends and contract create;
-        // create TransactionRequest objects and pass them down to the sign fn
-        // sign & send on each tx
-        // contract create would be the expected result of create + append + contract create
-
-        if (tx.to) {
-            const signed = await this.signTransaction(tx);
-            return await this.provider.sendTransaction(signed);
-        } else {
-            const contractByteCode = tx.data;
-            let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
-            const fileCreate = {
-                customData: {
-                    fileChunk: chunks[0],
-                    fileKey: HederaPubKey.fromString(this._signingKey().compressedPublicKey)
-                }
-            };
-            const signedFileCreate = await this.signTransaction(fileCreate);
-            const resp =  await this.provider.sendTransaction(signedFileCreate);
-            for (let chunk of chunks.slice(1)) {
-                const fileAppend = {
-                    customData: {
-                        fileId: resp.customData.fileId.toString(),
-                        fileChunk: chunk
-                    }
-                };
-                const signedFileAppend = await this.signTransaction(fileAppend);
-                await this.provider.sendTransaction(signedFileAppend);
-            }
-
-            const contractCreate = {
-                gasLimit: tx.gasLimit,
-                customData: {
-                    bytecodeFileId: resp.customData.fileId.toString()
-                }
-            }
-            const signedContractCreate = await this.signTransaction(contractCreate);
-            return await this.provider.sendTransaction(signedContractCreate);
-        }
-    }
-
-    /**
-     * Signs a transaction with the key given upon creation.
-     * The transaction can be:
-     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
-     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
-     * - ContractCreate - when there is a `bytecodeFileId` field
-     * - ContractCall - when there is a `to` field present. Ignores the other fields
-     *
-     * @param transaction - the transaction to be signed.
-     */
-    signTransaction(transaction: TransactionRequest): Promise<string> {
-        let tx: Transaction;
-        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new ContractExecuteTransaction()
-                .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas)
-            if (transaction.value) {
-                (tx as ContractExecuteTransaction).setPayableAmount(transaction.value?.toString())
-            }
-        } else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance(transaction.value?.toString())
-                    .setGas(gas);
-            } else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId)
-                } else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([ transaction.customData.fileKey ?
-                           transaction.customData.fileKey :
-                            HederaPubKey.fromString(this._signingKey().compressedPublicKey) ])
-                } else {
-                    logger.throwArgumentError(
-                        "Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`",
-                        Logger.errors.INVALID_ARGUMENT,
-                        transaction);
-                }
-            }
-        }
-        const accountID = getAccountFromAddress(this.address);
-        tx
-            .setTransactionId(TransactionId.generate(new AccountId({
-                shard: numberify(accountID.shard),
-                realm: numberify(accountID.realm),
-                num: numberify(accountID.num)
-            })))
-            // FIXME - should be taken from the network/ wallet's provider
-            .setNodeAccountIds([ new AccountId(0, 0, 3) ])
-            .freeze();
-        const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
-        return new Promise<string>(async (resolve) => {
-            const signed = await tx.sign(pkey);
-            resolve(hexlify(signed.toBytes()));
-        });
     }
 
     async signMessage(message: Bytes | string): Promise<string> {
@@ -349,7 +213,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
         }
 
         if (options.extraEntropy) {
-            entropy = arrayify(hexDataSlice(keccak256(concat([ entropy, options.extraEntropy ])), 0, 16));
+            entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
         }
 
         const mnemonic = entropyToMnemonic(entropy, options.locale);
@@ -382,22 +246,4 @@ export function verifyMessage(message: Bytes | string, signature: SignatureLike)
 // TODO to be revised
 export function verifyTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, signature: SignatureLike): string {
     return recoverAddress(_TypedDataEncoder.hash(domain, types, value), signature);
-}
-
-// TODO: think about moving those utils
-
-function numberify(num: BigNumberish) {
-    return BigNumber.from(num).toNumber();
-}
-
-// @ts-ignore
-function splitInChunks(data: string, chunkSize: number): string[] {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
 }
