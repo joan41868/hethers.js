@@ -9,9 +9,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import assert from 'assert';
+// @ts-ignore
 import { ethers } from "ethers";
 import { loadTests } from "@ethersproject/testcases";
 import * as utils from './utils';
+import { AccountId, ContractCreateTransaction, ContractExecuteTransaction, ContractFunctionParameters, Hbar, TransactionId, TransferTransaction } from "@hashgraph/sdk";
+import { getAddressFromAccount, hexlify } from "ethers/lib/utils";
+// @ts-ignore
 function equals(a, b) {
     if (Array.isArray(a)) {
         if (!Array.isArray(b) || a.length !== b.length) {
@@ -26,109 +30,6 @@ function equals(a, b) {
     }
     return a === b;
 }
-describe('Test Contract Address Generation', function () {
-    // @TODO: Mine a large collection of these from the blockchain
-    let getContractAddress = ethers.utils.getContractAddress;
-    let Tests = [
-        // Transaction: 0x939aa17985bc2a52a0c1cba9497ef09e092355a805a8150e30e24b753bac6864
-        {
-            address: '0x3474627D4F63A678266BC17171D87f8570936622',
-            name: 'tx-0x939aa179 (number)',
-            tx: {
-                from: '0xb2682160c482eb985ec9f3e364eec0a904c44c23',
-                nonce: 10,
-            }
-        },
-        {
-            address: '0x3474627D4F63A678266BC17171D87f8570936622',
-            name: 'tx-0x939aa179 (odd-zero-hex)',
-            tx: {
-                from: '0xb2682160c482eb985ec9f3e364eec0a904c44c23',
-                nonce: "0xa",
-            }
-        },
-        {
-            address: '0x3474627D4F63A678266BC17171D87f8570936622',
-            name: 'tx-0x939aa179 (even-zero-hex)',
-            tx: {
-                from: '0xb2682160c482eb985ec9f3e364eec0a904c44c23',
-                nonce: "0x0a",
-            }
-        },
-        // Ropsten: https://etherscan.io/tx/0x78d17f8ab31fb6ad688340634a9a29d8726feb6d588338a9b9b21a44159bc916
-        {
-            address: '0x271300790813f82638A8A6A8a86d65df6dF33c17',
-            name: 'tx-0x78d17f8a (odd-long-hex)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: "0x200",
-            }
-        },
-        {
-            address: '0x271300790813f82638A8A6A8a86d65df6dF33c17',
-            name: 'tx-0x78d17f8a (even-long-hex)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: "0x0200",
-            }
-        },
-        // https://ropsten.etherscan.io/tx/0x444ea8ae9890ac0ee5fd249512726abf9d23f44a378d5f45f727b65dc1b899c2
-        {
-            address: '0x995C25706C407a1F1E84b3777775e3e619764933',
-            name: 'tx-0x444ea8ae (even-long-hex)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: "0x1d",
-            }
-        },
-        {
-            address: '0x995C25706C407a1F1E84b3777775e3e619764933',
-            name: 'tx-0x444ea8ae (padded-long-hex)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: "0x001d",
-            }
-        },
-        {
-            address: '0x995C25706C407a1F1E84b3777775e3e619764933',
-            name: 'tx-0x444ea8ae (number)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: 29,
-            }
-        },
-        // Ropsten: 0x5bdfd14fcc917abc2f02a30721d152a6f147f09e8cbaad4e0d5405d646c5c3e1
-        {
-            address: '0x0CcCC7507aEDf9FEaF8C8D731421746e16b4d39D',
-            name: 'zero-nonce',
-            tx: {
-                from: '0xc6af6e1a78a6752c7f8cd63877eb789a2adb776c',
-                nonce: 0
-            }
-        },
-    ];
-    Tests.forEach(function (test) {
-        it(('Computes the transaction address - ' + test.name), function () {
-            this.timeout(120000);
-            assert.equal(getContractAddress(test.tx), test.address, 'computes the transaction address');
-        });
-    });
-});
-describe('Test RLP Coder', function () {
-    const tests = loadTests('rlp-coder');
-    tests.forEach(function (test) {
-        it(('RLP coder encoded - ' + test.name), function () {
-            this.timeout(120000);
-            assert.equal(ethers.utils.RLP.encode(test.decoded), test.encoded, 'RLP encoded - ' + test.name);
-        });
-    });
-    tests.forEach((test) => {
-        it(('RLP coder decoded - ' + test.name), function () {
-            this.timeout(120000);
-            assert.ok(equals(ethers.utils.RLP.decode(test.encoded), test.decoded), 'RLP decoded - ' + test.name);
-        });
-    });
-});
 describe('Test Unit Conversion', function () {
     const tests = loadTests('units');
     tests.forEach((test) => {
@@ -197,50 +98,6 @@ describe('Test Unit Conversion', function () {
         assert.ok(ethers.utils.parseUnits("2.5", 1).eq(25), "folds trailing zeros: 2.5");
         assert.ok(ethers.utils.parseUnits("2.50", 1).eq(25), "folds trailing zeros: 2.50");
         assert.ok(ethers.utils.parseUnits("2.500", 1).eq(25), "folds trailing zeros: 2.500");
-    });
-});
-describe('Test Namehash', function () {
-    const tests = loadTests('namehash');
-    tests.forEach((test) => {
-        it(('computes namehash - "' + test.name + '"'), function () {
-            this.timeout(120000);
-            assert.equal(ethers.utils.namehash(test.name), test.expected, 'computes namehash(' + test.name + ')');
-        });
-    });
-    const goodNames = [
-        "ricmoo.eth",
-        "foo",
-        "foo.bar",
-    ];
-    const badNames = [
-        ".",
-        "..",
-        "ricmoo..eth",
-        "ricmoo...eth",
-        ".foo",
-        "foo.",
-    ];
-    // The empty string is not a valid name, but has the zero hash
-    // as its namehash, which may be used for recursive purposes
-    it("empty ENS name", function () {
-        assert.ok(!ethers.utils.isValidName(""));
-    });
-    goodNames.forEach((name) => {
-        it(`ENS namehash ok - ${name}`, function () {
-            assert.ok(ethers.utils.isValidName(name));
-            ethers.utils.namehash(name);
-        });
-    });
-    badNames.forEach((name) => {
-        it(`ENS namehash fails - ${name}`, function () {
-            assert.ok(!ethers.utils.isValidName(name));
-            assert.throws(() => {
-                const namehash = ethers.utils.namehash(name);
-                console.log(name, namehash);
-            }, (error) => {
-                return !!error.message.match(/invalid ENS address/);
-            });
-        });
     });
 });
 describe('Test ID Hash Functions', function () {
@@ -485,7 +342,9 @@ describe("Test nameprep", function () {
         });
     });
 });
+// FIXME
 describe("Test Signature Manipulation", function () {
+    // TODO: fix by recovering PublicKey and not address (ecrecover)
     const tests = loadTests("transactions");
     tests.forEach((test) => {
         it("autofills partial signatures - " + test.name, function () {
@@ -515,92 +374,67 @@ describe("Test Signature Manipulation", function () {
         });
     });
 });
+// FIXME
+//  FileCreate requires some of the changes made in `feat/signing-and-sending-transactions`,
+//  as it currently throws on FileCreate parsing
 describe("Test Typed Transactions", function () {
-    const tests = loadTests("typed-transactions");
-    function equalsData(name, a, b, ifNull) {
-        assert.equal(ethers.utils.hexlify(a), ethers.utils.hexlify((b == null) ? ifNull : b), name);
-        return true;
-    }
-    function equalsNumber(name, a, b, ifNull) {
-        assert.ok(ethers.BigNumber.from(a).eq((b == null) ? ifNull : b), name);
-        return true;
-    }
-    function equalsArray(name, a, b, equals) {
-        assert.equal(a.length, b.length, `${name}.length`);
-        for (let i = 0; i < a.length; i++) {
-            if (!equals(`${name}[${i}]`, a[i], b[i])) {
-                return false;
+    const sendingAccount = "0.0.101010";
+    it('Should parse ContractCreate', function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const initialBalance = Hbar.fromTinybars(1);
+            const cc = new ContractCreateTransaction()
+                .setContractMemo("memo")
+                .setGas(1000)
+                .setBytecodeFileId("0.0.111111")
+                .setNodeAccountIds([new AccountId(0, 0, 3)])
+                .setInitialBalance(initialBalance)
+                .setConstructorParameters(new ContractFunctionParameters().addAddress(getAddressFromAccount(sendingAccount)))
+                .setTransactionId(TransactionId.generate(sendingAccount))
+                .freeze();
+            const tx = yield ethers.utils.parseTransaction(cc.toBytes());
+            assert(tx.gasLimit.toNumber() === 1000, "Invalid gas limit");
+            assert(tx.data == hexlify(cc.constructorParameters));
+            assert(tx.from === getAddressFromAccount(sendingAccount), "Invalid sending account");
+            assert(tx.hash === hexlify(yield cc.getTransactionHash()), "Hash mismatch");
+            assert(tx.value.toString() === "1", `Invalid initial balance tx.value(${tx.value.toString()}) != ce.initialBalance(1)`);
+        });
+    });
+    it("Should parse ContractExecute", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const payableAmount = Hbar.fromTinybars(1);
+            const ce = new ContractExecuteTransaction()
+                .setGas(1000)
+                .setPayableAmount(payableAmount)
+                .setContractId("0.0.1112121")
+                .setFunction("exec", new ContractFunctionParameters().addAddress(getAddressFromAccount(sendingAccount)))
+                .setTransactionId(TransactionId.generate(sendingAccount))
+                .setNodeAccountIds([new AccountId(0, 0, 3)])
+                .freeze();
+            const tx = yield ethers.utils.parseTransaction(ce.toBytes());
+            assert(tx.gasLimit.toNumber() === 1000, "Invalid gas");
+            assert(tx.from === getAddressFromAccount(sendingAccount), "Invalid sending account");
+            // remove 0x prefix
+            assert(tx.to.slice(2) === ce.contractId.toSolidityAddress(), "Invalid tx.to");
+            assert(tx.data == hexlify(ce.functionParameters));
+            assert(tx.hash === hexlify(yield ce.getTransactionHash()), "Hash mismatch");
+            assert(tx.value.toString() === "1", `Invalid initial balance tx.value(${tx.value.toString()}) != ce.payableAmount(1); Tinybar value ${ce.payableAmount.toTinybars().toNumber()}`);
+        });
+    });
+    it("Should fail parsing other transactions", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const t = new TransferTransaction()
+                .addHbarTransfer("0.0.98", new Hbar(1))
+                .addHbarTransfer("0.0.101010", new Hbar(-1))
+                .setNodeAccountIds([new AccountId(0, 0, 3)])
+                .setTransactionId(TransactionId.generate(sendingAccount))
+                .freeze();
+            try {
+                const tx = yield ethers.utils.parseTransaction(t.toBytes());
+                assert(tx == null, "unexpected tx");
             }
-        }
-        return true;
-    }
-    function makeEqualsArray(equals) {
-        return function (name, a, b) {
-            return equalsArray(name, a, b, equals);
-        };
-    }
-    function equalsAccessList(name, a, b) {
-        return equalsArray(`${name}-address`, a.map((f) => f.address), b.map((f) => f.address), equalsData) &&
-            equalsArray(`${name}-storageKeys`, a.map((f) => f.storageKeys), b.map((f) => f.storageKeys), makeEqualsArray(equalsData));
-    }
-    function allowNull(name, a, b, equals) {
-        if (a == null) {
-            assert.ok(b == null, `${name}:!NULL`);
-            return true;
-        }
-        else if (b == null) {
-            assert.fail(`${name}:!!NULL`);
-        }
-        return equals(name, a, b);
-    }
-    function equalsCommonTransaction(name, a, b) {
-        return equalsNumber(`${name}-type`, a.type, b.type, 0) &&
-            equalsData(`${name}-data`, a.data, b.data, "0x") &&
-            equalsNumber(`${name}-gasLimit`, a.gasLimit, b.gasLimit, 0) &&
-            equalsNumber(`${name}-nonce`, a.nonce, b.nonce, 0) &&
-            allowNull(`${name}-to`, a.to, b.to, equalsData) &&
-            equalsNumber(`${name}-value`, a.value, b.value, 0) &&
-            equalsNumber(`${name}-chainId`, a.chainId, b.chainId, 0) &&
-            equalsAccessList(`${name}-accessList`, a.accessList, b.accessList || []);
-    }
-    function equalsEip1559Transaction(name, a, b) {
-        return equalsNumber(`${name}-maxPriorityFeePerGas`, a.maxPriorityFeePerGas, b.maxPriorityFeePerGas, 0) &&
-            equalsNumber(`${name}-maxFeePerGas`, a.maxFeePerGas, b.maxFeePerGas, 0) &&
-            equalsCommonTransaction(name, a, b);
-    }
-    function equalsEip2930Transaction(name, a, b) {
-        return equalsNumber(`${name}-gasPrice`, a.gasPrice, b.gasPrice, 0) &&
-            equalsCommonTransaction(name, a, b);
-    }
-    function equalsTransaction(name, a, b) {
-        switch (a.type) {
-            case 1:
-                return equalsEip2930Transaction(name, a, b);
-            case 2:
-                return equalsEip1559Transaction(name, a, b);
-        }
-        assert.fail(`unknown transaction type ${a.type}`);
-    }
-    tests.forEach((test, index) => {
-        it(test.name, function () {
-            return __awaiter(this, void 0, void 0, function* () {
-                {
-                    const wallet = new ethers.Wallet(test.key);
-                    const signed = yield wallet.signTransaction(test.tx);
-                    assert.equal(signed, test.signed, "signed transactions match");
-                }
-                assert.equal(ethers.utils.serializeTransaction(test.tx), test.unsigned, "unsigned transactions match");
-                {
-                    const tx = ethers.utils.parseTransaction(test.unsigned);
-                    assert.ok(equalsTransaction("transaction", tx, test.tx), "all unsigned keys match");
-                }
-                {
-                    const tx = ethers.utils.parseTransaction(test.signed);
-                    assert.ok(equalsTransaction("transaction", tx, test.tx), "all signed keys match");
-                    // FIXME
-                    // assert.equal(tx.from.toLowerCase(), test.address, "sender matches");
-                }
-            });
+            catch (err) {
+                assert(err !== undefined, "expected error on parsing transfer tx");
+            }
         });
     });
 });
@@ -762,6 +596,7 @@ describe("Web Fetch", function() {
     });
 });
 */
+// TODO: check when implementing wallet.signTypedData
 describe("EIP-712", function () {
     const tests = loadTests("eip712");
     tests.forEach((test) => {
@@ -835,6 +670,7 @@ type EIP2930Test = {
 // function deepEquals(a: any, b: any): string {
 //     return _deepEquals(a, b, "");
 // }
+// TODO - check when hedera supports the optional access list
 describe("EIP-2930", function () {
     const Tests = [
         {

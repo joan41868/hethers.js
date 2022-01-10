@@ -59,9 +59,13 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
+// @ts-ignore
 var ethers_1 = require("ethers");
 var testcases_1 = require("@ethersproject/testcases");
 var utils = __importStar(require("./utils"));
+var sdk_1 = require("@hashgraph/sdk");
+var utils_1 = require("ethers/lib/utils");
+// @ts-ignore
 function equals(a, b) {
     if (Array.isArray(a)) {
         if (!Array.isArray(b) || a.length !== b.length) {
@@ -76,109 +80,6 @@ function equals(a, b) {
     }
     return a === b;
 }
-describe('Test Contract Address Generation', function () {
-    // @TODO: Mine a large collection of these from the blockchain
-    var getContractAddress = ethers_1.ethers.utils.getContractAddress;
-    var Tests = [
-        // Transaction: 0x939aa17985bc2a52a0c1cba9497ef09e092355a805a8150e30e24b753bac6864
-        {
-            address: '0x3474627D4F63A678266BC17171D87f8570936622',
-            name: 'tx-0x939aa179 (number)',
-            tx: {
-                from: '0xb2682160c482eb985ec9f3e364eec0a904c44c23',
-                nonce: 10,
-            }
-        },
-        {
-            address: '0x3474627D4F63A678266BC17171D87f8570936622',
-            name: 'tx-0x939aa179 (odd-zero-hex)',
-            tx: {
-                from: '0xb2682160c482eb985ec9f3e364eec0a904c44c23',
-                nonce: "0xa",
-            }
-        },
-        {
-            address: '0x3474627D4F63A678266BC17171D87f8570936622',
-            name: 'tx-0x939aa179 (even-zero-hex)',
-            tx: {
-                from: '0xb2682160c482eb985ec9f3e364eec0a904c44c23',
-                nonce: "0x0a",
-            }
-        },
-        // Ropsten: https://etherscan.io/tx/0x78d17f8ab31fb6ad688340634a9a29d8726feb6d588338a9b9b21a44159bc916
-        {
-            address: '0x271300790813f82638A8A6A8a86d65df6dF33c17',
-            name: 'tx-0x78d17f8a (odd-long-hex)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: "0x200",
-            }
-        },
-        {
-            address: '0x271300790813f82638A8A6A8a86d65df6dF33c17',
-            name: 'tx-0x78d17f8a (even-long-hex)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: "0x0200",
-            }
-        },
-        // https://ropsten.etherscan.io/tx/0x444ea8ae9890ac0ee5fd249512726abf9d23f44a378d5f45f727b65dc1b899c2
-        {
-            address: '0x995C25706C407a1F1E84b3777775e3e619764933',
-            name: 'tx-0x444ea8ae (even-long-hex)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: "0x1d",
-            }
-        },
-        {
-            address: '0x995C25706C407a1F1E84b3777775e3e619764933',
-            name: 'tx-0x444ea8ae (padded-long-hex)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: "0x001d",
-            }
-        },
-        {
-            address: '0x995C25706C407a1F1E84b3777775e3e619764933',
-            name: 'tx-0x444ea8ae (number)',
-            tx: {
-                from: '0x8ba1f109551bd432803012645ac136ddd64dba72',
-                nonce: 29,
-            }
-        },
-        // Ropsten: 0x5bdfd14fcc917abc2f02a30721d152a6f147f09e8cbaad4e0d5405d646c5c3e1
-        {
-            address: '0x0CcCC7507aEDf9FEaF8C8D731421746e16b4d39D',
-            name: 'zero-nonce',
-            tx: {
-                from: '0xc6af6e1a78a6752c7f8cd63877eb789a2adb776c',
-                nonce: 0
-            }
-        },
-    ];
-    Tests.forEach(function (test) {
-        it(('Computes the transaction address - ' + test.name), function () {
-            this.timeout(120000);
-            assert_1.default.equal(getContractAddress(test.tx), test.address, 'computes the transaction address');
-        });
-    });
-});
-describe('Test RLP Coder', function () {
-    var tests = (0, testcases_1.loadTests)('rlp-coder');
-    tests.forEach(function (test) {
-        it(('RLP coder encoded - ' + test.name), function () {
-            this.timeout(120000);
-            assert_1.default.equal(ethers_1.ethers.utils.RLP.encode(test.decoded), test.encoded, 'RLP encoded - ' + test.name);
-        });
-    });
-    tests.forEach(function (test) {
-        it(('RLP coder decoded - ' + test.name), function () {
-            this.timeout(120000);
-            assert_1.default.ok(equals(ethers_1.ethers.utils.RLP.decode(test.encoded), test.decoded), 'RLP decoded - ' + test.name);
-        });
-    });
-});
 describe('Test Unit Conversion', function () {
     var tests = (0, testcases_1.loadTests)('units');
     tests.forEach(function (test) {
@@ -247,50 +148,6 @@ describe('Test Unit Conversion', function () {
         assert_1.default.ok(ethers_1.ethers.utils.parseUnits("2.5", 1).eq(25), "folds trailing zeros: 2.5");
         assert_1.default.ok(ethers_1.ethers.utils.parseUnits("2.50", 1).eq(25), "folds trailing zeros: 2.50");
         assert_1.default.ok(ethers_1.ethers.utils.parseUnits("2.500", 1).eq(25), "folds trailing zeros: 2.500");
-    });
-});
-describe('Test Namehash', function () {
-    var tests = (0, testcases_1.loadTests)('namehash');
-    tests.forEach(function (test) {
-        it(('computes namehash - "' + test.name + '"'), function () {
-            this.timeout(120000);
-            assert_1.default.equal(ethers_1.ethers.utils.namehash(test.name), test.expected, 'computes namehash(' + test.name + ')');
-        });
-    });
-    var goodNames = [
-        "ricmoo.eth",
-        "foo",
-        "foo.bar",
-    ];
-    var badNames = [
-        ".",
-        "..",
-        "ricmoo..eth",
-        "ricmoo...eth",
-        ".foo",
-        "foo.",
-    ];
-    // The empty string is not a valid name, but has the zero hash
-    // as its namehash, which may be used for recursive purposes
-    it("empty ENS name", function () {
-        assert_1.default.ok(!ethers_1.ethers.utils.isValidName(""));
-    });
-    goodNames.forEach(function (name) {
-        it("ENS namehash ok - " + name, function () {
-            assert_1.default.ok(ethers_1.ethers.utils.isValidName(name));
-            ethers_1.ethers.utils.namehash(name);
-        });
-    });
-    badNames.forEach(function (name) {
-        it("ENS namehash fails - " + name, function () {
-            assert_1.default.ok(!ethers_1.ethers.utils.isValidName(name));
-            assert_1.default.throws(function () {
-                var namehash = ethers_1.ethers.utils.namehash(name);
-                console.log(name, namehash);
-            }, function (error) {
-                return !!error.message.match(/invalid ENS address/);
-            });
-        });
     });
 });
 describe('Test ID Hash Functions', function () {
@@ -535,7 +392,9 @@ describe("Test nameprep", function () {
         });
     });
 });
+// FIXME
 describe("Test Signature Manipulation", function () {
+    // TODO: fix by recovering PublicKey and not address (ecrecover)
     var tests = (0, testcases_1.loadTests)("transactions");
     tests.forEach(function (test) {
         it("autofills partial signatures - " + test.name, function () {
@@ -565,98 +424,106 @@ describe("Test Signature Manipulation", function () {
         });
     });
 });
+// FIXME
+//  FileCreate requires some of the changes made in `feat/signing-and-sending-transactions`,
+//  as it currently throws on FileCreate parsing
 describe("Test Typed Transactions", function () {
-    var tests = (0, testcases_1.loadTests)("typed-transactions");
-    function equalsData(name, a, b, ifNull) {
-        assert_1.default.equal(ethers_1.ethers.utils.hexlify(a), ethers_1.ethers.utils.hexlify((b == null) ? ifNull : b), name);
-        return true;
-    }
-    function equalsNumber(name, a, b, ifNull) {
-        assert_1.default.ok(ethers_1.ethers.BigNumber.from(a).eq((b == null) ? ifNull : b), name);
-        return true;
-    }
-    function equalsArray(name, a, b, equals) {
-        assert_1.default.equal(a.length, b.length, name + ".length");
-        for (var i = 0; i < a.length; i++) {
-            if (!equals(name + "[" + i + "]", a[i], b[i])) {
-                return false;
-            }
-        }
-        return true;
-    }
-    function makeEqualsArray(equals) {
-        return function (name, a, b) {
-            return equalsArray(name, a, b, equals);
-        };
-    }
-    function equalsAccessList(name, a, b) {
-        return equalsArray(name + "-address", a.map(function (f) { return f.address; }), b.map(function (f) { return f.address; }), equalsData) &&
-            equalsArray(name + "-storageKeys", a.map(function (f) { return f.storageKeys; }), b.map(function (f) { return f.storageKeys; }), makeEqualsArray(equalsData));
-    }
-    function allowNull(name, a, b, equals) {
-        if (a == null) {
-            assert_1.default.ok(b == null, name + ":!NULL");
-            return true;
-        }
-        else if (b == null) {
-            assert_1.default.fail(name + ":!!NULL");
-        }
-        return equals(name, a, b);
-    }
-    function equalsCommonTransaction(name, a, b) {
-        return equalsNumber(name + "-type", a.type, b.type, 0) &&
-            equalsData(name + "-data", a.data, b.data, "0x") &&
-            equalsNumber(name + "-gasLimit", a.gasLimit, b.gasLimit, 0) &&
-            equalsNumber(name + "-nonce", a.nonce, b.nonce, 0) &&
-            allowNull(name + "-to", a.to, b.to, equalsData) &&
-            equalsNumber(name + "-value", a.value, b.value, 0) &&
-            equalsNumber(name + "-chainId", a.chainId, b.chainId, 0) &&
-            equalsAccessList(name + "-accessList", a.accessList, b.accessList || []);
-    }
-    function equalsEip1559Transaction(name, a, b) {
-        return equalsNumber(name + "-maxPriorityFeePerGas", a.maxPriorityFeePerGas, b.maxPriorityFeePerGas, 0) &&
-            equalsNumber(name + "-maxFeePerGas", a.maxFeePerGas, b.maxFeePerGas, 0) &&
-            equalsCommonTransaction(name, a, b);
-    }
-    function equalsEip2930Transaction(name, a, b) {
-        return equalsNumber(name + "-gasPrice", a.gasPrice, b.gasPrice, 0) &&
-            equalsCommonTransaction(name, a, b);
-    }
-    function equalsTransaction(name, a, b) {
-        switch (a.type) {
-            case 1:
-                return equalsEip2930Transaction(name, a, b);
-            case 2:
-                return equalsEip1559Transaction(name, a, b);
-        }
-        assert_1.default.fail("unknown transaction type " + a.type);
-    }
-    tests.forEach(function (test, index) {
-        it(test.name, function () {
-            return __awaiter(this, void 0, void 0, function () {
-                var wallet, signed, tx, tx;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0:
-                            wallet = new ethers_1.ethers.Wallet(test.key);
-                            return [4 /*yield*/, wallet.signTransaction(test.tx)];
-                        case 1:
-                            signed = _a.sent();
-                            assert_1.default.equal(signed, test.signed, "signed transactions match");
-                            assert_1.default.equal(ethers_1.ethers.utils.serializeTransaction(test.tx), test.unsigned, "unsigned transactions match");
-                            {
-                                tx = ethers_1.ethers.utils.parseTransaction(test.unsigned);
-                                assert_1.default.ok(equalsTransaction("transaction", tx, test.tx), "all unsigned keys match");
-                            }
-                            {
-                                tx = ethers_1.ethers.utils.parseTransaction(test.signed);
-                                assert_1.default.ok(equalsTransaction("transaction", tx, test.tx), "all signed keys match");
-                                // FIXME
-                                // assert.equal(tx.from.toLowerCase(), test.address, "sender matches");
-                            }
-                            return [2 /*return*/];
-                    }
-                });
+    var sendingAccount = "0.0.101010";
+    it('Should parse ContractCreate', function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var initialBalance, cc, tx, _a, _b, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        initialBalance = sdk_1.Hbar.fromTinybars(1);
+                        cc = new sdk_1.ContractCreateTransaction()
+                            .setContractMemo("memo")
+                            .setGas(1000)
+                            .setBytecodeFileId("0.0.111111")
+                            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
+                            .setInitialBalance(initialBalance)
+                            .setConstructorParameters(new sdk_1.ContractFunctionParameters().addAddress((0, utils_1.getAddressFromAccount)(sendingAccount)))
+                            .setTransactionId(sdk_1.TransactionId.generate(sendingAccount))
+                            .freeze();
+                        return [4 /*yield*/, ethers_1.ethers.utils.parseTransaction(cc.toBytes())];
+                    case 1:
+                        tx = _d.sent();
+                        (0, assert_1.default)(tx.gasLimit.toNumber() === 1000, "Invalid gas limit");
+                        (0, assert_1.default)(tx.data == (0, utils_1.hexlify)(cc.constructorParameters));
+                        (0, assert_1.default)(tx.from === (0, utils_1.getAddressFromAccount)(sendingAccount), "Invalid sending account");
+                        _a = assert_1.default;
+                        _b = tx.hash;
+                        _c = utils_1.hexlify;
+                        return [4 /*yield*/, cc.getTransactionHash()];
+                    case 2:
+                        _a.apply(void 0, [_b === _c.apply(void 0, [_d.sent()]), "Hash mismatch"]);
+                        (0, assert_1.default)(tx.value.toString() === "1", "Invalid initial balance tx.value(" + tx.value.toString() + ") != ce.initialBalance(1)");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
+    it("Should parse ContractExecute", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var payableAmount, ce, tx, _a, _b, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        payableAmount = sdk_1.Hbar.fromTinybars(1);
+                        ce = new sdk_1.ContractExecuteTransaction()
+                            .setGas(1000)
+                            .setPayableAmount(payableAmount)
+                            .setContractId("0.0.1112121")
+                            .setFunction("exec", new sdk_1.ContractFunctionParameters().addAddress((0, utils_1.getAddressFromAccount)(sendingAccount)))
+                            .setTransactionId(sdk_1.TransactionId.generate(sendingAccount))
+                            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
+                            .freeze();
+                        return [4 /*yield*/, ethers_1.ethers.utils.parseTransaction(ce.toBytes())];
+                    case 1:
+                        tx = _d.sent();
+                        (0, assert_1.default)(tx.gasLimit.toNumber() === 1000, "Invalid gas");
+                        (0, assert_1.default)(tx.from === (0, utils_1.getAddressFromAccount)(sendingAccount), "Invalid sending account");
+                        // remove 0x prefix
+                        (0, assert_1.default)(tx.to.slice(2) === ce.contractId.toSolidityAddress(), "Invalid tx.to");
+                        (0, assert_1.default)(tx.data == (0, utils_1.hexlify)(ce.functionParameters));
+                        _a = assert_1.default;
+                        _b = tx.hash;
+                        _c = utils_1.hexlify;
+                        return [4 /*yield*/, ce.getTransactionHash()];
+                    case 2:
+                        _a.apply(void 0, [_b === _c.apply(void 0, [_d.sent()]), "Hash mismatch"]);
+                        (0, assert_1.default)(tx.value.toString() === "1", "Invalid initial balance tx.value(" + tx.value.toString() + ") != ce.payableAmount(1); Tinybar value " + ce.payableAmount.toTinybars().toNumber());
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
+    it("Should fail parsing other transactions", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var t, tx, err_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        t = new sdk_1.TransferTransaction()
+                            .addHbarTransfer("0.0.98", new sdk_1.Hbar(1))
+                            .addHbarTransfer("0.0.101010", new sdk_1.Hbar(-1))
+                            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
+                            .setTransactionId(sdk_1.TransactionId.generate(sendingAccount))
+                            .freeze();
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, ethers_1.ethers.utils.parseTransaction(t.toBytes())];
+                    case 2:
+                        tx = _a.sent();
+                        (0, assert_1.default)(tx == null, "unexpected tx");
+                        return [3 /*break*/, 4];
+                    case 3:
+                        err_1 = _a.sent();
+                        (0, assert_1.default)(err_1 !== undefined, "expected error on parsing transfer tx");
+                        return [3 /*break*/, 4];
+                    case 4: return [2 /*return*/];
+                }
             });
         });
     });
@@ -819,6 +686,7 @@ describe("Web Fetch", function() {
     });
 });
 */
+// TODO: check when implementing wallet.signTypedData
 describe("EIP-712", function () {
     var tests = (0, testcases_1.loadTests)("eip712");
     tests.forEach(function (test) {
@@ -901,6 +769,7 @@ type EIP2930Test = {
 // function deepEquals(a: any, b: any): string {
 //     return _deepEquals(a, b, "");
 // }
+// TODO - check when hedera supports the optional access list
 describe("EIP-2930", function () {
     var Tests = [
         {

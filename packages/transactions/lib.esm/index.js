@@ -29,6 +29,13 @@ export var TransactionTypes;
     TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes || (TransactionTypes = {}));
+//TODO handle possible exception
+export function parseTransactionId(transactionId) {
+    const accountId = transactionId.split('@');
+    const txValidStart = accountId[1].split('.');
+    const result = accountId[0] + '-' + txValidStart.join('-');
+    return result;
+}
 ///////////////////////////////
 function handleNumber(value) {
     if (value === "0x") {
@@ -267,74 +274,11 @@ export function serialize(transaction, signature) {
 //     }
 // }
 //
-// // Legacy Transactions and EIP-155
-// function _parse(rawTransaction: Uint8Array): Transaction {
-//     const transaction = RLP.decode(rawTransaction);
-//
-//     if (transaction.length !== 9 && transaction.length !== 6) {
-//         logger.throwArgumentError("invalid raw transaction", "rawTransaction", rawTransaction);
-//     }
-//
-//     const tx: Transaction = {
-//         nonce:    handleNumber(transaction[0]).toNumber(),
-//         gasPrice: handleNumber(transaction[1]),
-//         gasLimit: handleNumber(transaction[2]),
-//         to:       handleAddress(transaction[3]),
-//         value:    handleNumber(transaction[4]),
-//         data:     transaction[5],
-//         chainId:  0
-//     };
-//
-//     // Legacy unsigned transaction
-//     if (transaction.length === 6) { return tx; }
-//
-//     try {
-//         tx.v = BigNumber.from(transaction[6]).toNumber();
-//
-//     } catch (error) {
-//         console.log(error);
-//         return tx;
-//     }
-//
-//     tx.r = hexZeroPad(transaction[7], 32);
-//     tx.s = hexZeroPad(transaction[8], 32);
-//
-//     if (BigNumber.from(tx.r).isZero() && BigNumber.from(tx.s).isZero()) {
-//         // EIP-155 unsigned transaction
-//         tx.chainId = tx.v;
-//         tx.v = 0;
-//
-//     } else {
-//         // Signed Transaction
-//
-//         tx.chainId = Math.floor((tx.v - 35) / 2);
-//         if (tx.chainId < 0) { tx.chainId = 0; }
-//
-//         let recoveryParam = tx.v - 27;
-//
-//         const raw = transaction.slice(0, 6);
-//
-//         if (tx.chainId !== 0) {
-//             raw.push(hexlify(tx.chainId));
-//             raw.push("0x");
-//             raw.push("0x");
-//             recoveryParam -= tx.chainId * 2 + 8;
-//         }
-//
-//         const digest = keccak256(RLP.encode(raw));
-//         try {
-//             tx.from = recoverAddress(digest, { r: hexlify(tx.r), s: hexlify(tx.s), recoveryParam: recoveryParam });
-//         } catch (error) {
-//             console.log(error);
-//         }
-//
-//         tx.hash = keccak256(rawTransaction);
-//     }
-//
-//     tx.type = null;
-//
-//     return tx;
-// }
+function parseHederaTransactionId(obj) {
+    //TODO cleaner implementation
+    const parsedString = obj.accountId.realm + '.' + obj.accountId.shard + '.' + obj.accountId.num + '@' + obj.validStart.seconds + '.' + obj.validStart.nanos;
+    return parsedString;
+}
 export function parse(rawTransaction) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -370,7 +314,7 @@ export function parse(rawTransaction) {
             return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
-        return Object.assign(Object.assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null });
+        return Object.assign(Object.assign({ transactionId: parseHederaTransactionId(parsed.transactionId) }, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
 //# sourceMappingURL=index.js.map

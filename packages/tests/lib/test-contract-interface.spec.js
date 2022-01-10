@@ -253,30 +253,6 @@ describe('Test Interface Signatures', function () {
             assert_1.default.equal(iface.getSighash(descr), "0xa9059cbb", "incorrect sighash key - " + key);
         });
     });
-    // See: https://github.com/ethers-io/ethers.js/issues/370
-    it('parses transaction function', function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var iface, rawTx, tx, descr;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        iface = new ethers_1.ethers.utils.Interface(["function transfer(address from, uint amount)"]);
-                        rawTx = "0xf8aa028502540be4008316e36094334eec1482109bd802d9e72a447848de3bcc106380b844a9059cbb000000000000000000000000851b9167b7cbf772d38efaf89705b35022880a070000000000000000000000000000000000000000000000000de0b6b3a764000026a03200bf26e5f10f7eda59c0aad9adc2334dda79e785b9b004342524d97a66fca9a0450b07a4dc450bb472e08f8370350fa365fcef6db1a95309ae4c06c9d0748092";
-                        return [4 /*yield*/, ethers_1.ethers.utils.parseTransaction(rawTx)];
-                    case 1:
-                        tx = _a.sent();
-                        descr = iface.parseTransaction(tx);
-                        assert_1.default.equal(descr.args[0], '0x851b9167B7cbf772D38eFaf89705b35022880A07', 'parsed tx - args[0]');
-                        assert_1.default.equal(descr.args[1].toString(), '1000000000000000000', 'parsed tx - args[1]');
-                        assert_1.default.equal(descr.name, 'transfer', 'parsed tx - name');
-                        assert_1.default.equal(descr.signature, 'transfer(address,uint256)', 'parsed tx - signature');
-                        assert_1.default.equal(descr.sighash, '0xa9059cbb', 'parsed tx - sighash');
-                        assert_1.default.equal(descr.value.toString(), '0', 'parsed tx - value');
-                        return [2 /*return*/];
-                }
-            });
-        });
-    });
 });
 describe('Test Number Coder', function () {
     var coder = ethers_1.ethers.utils.defaultAbiCoder;

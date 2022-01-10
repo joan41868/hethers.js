@@ -75,6 +75,8 @@ describe('Test JSON Wallets', function () {
 });
 describe('Test Transaction Signing and Parsing', function () {
     // FIXME
+    //  unit tests for this functionality is present
+    //  at branches `feat/signing-and-sending-transactions` and/or `contract-interaction`
     // function checkTransaction(parsedTransaction: any, test: TestCase.SignedTransaction): any {
     //     let transaction: any = { };
     //
@@ -116,7 +118,7 @@ describe('Test Transaction Signing and Parsing', function () {
     //
     //     return transaction;
     // }
-    // FIXME
+    // FIXME - separate tests with `it`
     let tests = loadTests('transactions');
     tests.forEach((test) => {
         // it(('parses and signs transaction - ' + test.name), function() {

@@ -19,6 +19,7 @@ import tty from 'tty';
 var lib_esm$k = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	get TransactionTypes () { return TransactionTypes; },
+	get parseTransactionId () { return parseTransactionId; },
 	get computeAddress () { return computeAddress; },
 	get computeAlias () { return computeAlias; },
 	get computeAliasFromPubKey () { return computeAliasFromPubKey; },
@@ -80036,22 +80037,49 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var name = "@grpc/grpc-js";
-var version$m = "1.4.6";
-var description = "gRPC Library for Node - pure JS implementation";
-var homepage = "https://grpc.io/";
-var repository = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
-var main = "build/src/index.js";
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
-};
-var keywords = [
+var _args = [
+	[
+		"@grpc/grpc-js@1.4.5",
+		"C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js"
+	]
 ];
+var _from = "@grpc/grpc-js@1.4.5";
+var _id = "@grpc/grpc-js@1.4.5";
+var _inBundle = false;
+var _integrity = "sha512-A6cOzSu7dqXZ7rzvh/9JZf+Jg/MOpLEMP0IdT8pT8hrWJZ6TB4ydN/MRuqOtAugInJe/VQ9F8BPricUpYZSaZA==";
+var _location = "/@grpc/grpc-js";
+var _phantomChildren = {
+};
+var _requested = {
+	type: "version",
+	registry: true,
+	raw: "@grpc/grpc-js@1.4.5",
+	name: "@grpc/grpc-js",
+	escapedName: "@grpc%2fgrpc-js",
+	scope: "@grpc",
+	rawSpec: "1.4.5",
+	saveSpec: null,
+	fetchSpec: "1.4.5"
+};
+var _requiredBy = [
+	"/@hashgraph/sdk"
+];
+var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.5.tgz";
+var _spec = "1.4.5";
+var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
 var author = {
 	name: "Google Inc."
 };
-var types = "build/src/index.d.ts";
-var license = "Apache-2.0";
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var dependencies = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
+};
+var description = "gRPC Library for Node - pure JS implementation";
 var devDependencies = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -80075,28 +80103,8 @@ var devDependencies = {
 	typescript: "^3.7.2",
 	yargs: "^15.4.1"
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var scripts = {
-	build: "npm run compile",
-	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
-	compile: "tsc -p .",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	lint: "npm run check",
-	prepare: "npm run generate-types && npm run compile",
-	test: "gulp test",
-	check: "gts check src/**/*.ts",
-	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run compile",
-	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto"
-};
-var dependencies = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
 var files = [
 	"src/**/*.ts",
@@ -80112,29 +80120,61 @@ var files = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.6.tgz";
-var _integrity = "sha512-Byau4xiXfIixb1PnW30V/P9mkrZ05lknyNqiK+cVY9J5hj3gecxd/anwaUbAM8j834zg1x78NvAbwGnMfWEu7A==";
-var _from = "@grpc/grpc-js@1.4.6";
+var homepage = "https://grpc.io/";
+var keywords = [
+];
+var license = "Apache-2.0";
+var main = "build/src/index.js";
+var name = "@grpc/grpc-js";
+var repository = {
+	type: "git",
+	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
+};
+var scripts = {
+	build: "npm run compile",
+	check: "gts check src/**/*.ts",
+	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
+	compile: "tsc -p .",
+	fix: "gts fix src/*.ts",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto",
+	lint: "npm run check",
+	posttest: "npm run check && madge -c ./build/src",
+	prepare: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run compile",
+	test: "gulp test"
+};
+var types = "build/src/index.d.ts";
+var version$m = "1.4.5";
 var require$$0$2 = {
-	name: name,
-	version: version$m,
-	description: description,
-	homepage: homepage,
-	repository: repository,
-	main: main,
-	engines: engines,
-	keywords: keywords,
-	author: author,
-	types: types,
-	license: license,
-	devDependencies: devDependencies,
-	contributors: contributors,
-	scripts: scripts,
-	dependencies: dependencies,
-	files: files,
-	_resolved: _resolved,
+	_args: _args,
+	_from: _from,
+	_id: _id,
+	_inBundle: _inBundle,
 	_integrity: _integrity,
-	_from: _from
+	_location: _location,
+	_phantomChildren: _phantomChildren,
+	_requested: _requested,
+	_requiredBy: _requiredBy,
+	_resolved: _resolved,
+	_spec: _spec,
+	_where: _where,
+	author: author,
+	contributors: contributors,
+	dependencies: dependencies,
+	description: description,
+	devDependencies: devDependencies,
+	engines: engines,
+	files: files,
+	homepage: homepage,
+	keywords: keywords,
+	license: license,
+	main: main,
+	name: name,
+	repository: repository,
+	scripts: scripts,
+	types: types,
+	version: version$m
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -82365,7 +82405,7 @@ class ServerWritableStreamImpl extends stream_1.Writable {
         if (metadata) {
             this.trailingMetadata = metadata;
         }
-        return super.end();
+        super.end();
     }
 }
 exports.ServerWritableStreamImpl = ServerWritableStreamImpl;
@@ -82399,7 +82439,7 @@ class ServerDuplexStreamImpl extends stream_1.Duplex {
         if (metadata) {
             this.trailingMetadata = metadata;
         }
-        return super.end();
+        super.end();
     }
 }
 exports.ServerDuplexStreamImpl = ServerDuplexStreamImpl;
@@ -82409,6 +82449,7 @@ ServerDuplexStreamImpl.prototype._write =
     ServerWritableStreamImpl.prototype._write;
 ServerDuplexStreamImpl.prototype._final =
     ServerWritableStreamImpl.prototype._final;
+ServerDuplexStreamImpl.prototype.end = ServerWritableStreamImpl.prototype.end;
 // Internal class that wraps the HTTP2 request.
 class Http2ServerCallStream extends events_1.EventEmitter {
     constructor(stream, handler, options) {
@@ -85527,6 +85568,13 @@ var TransactionTypes;
     TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes || (TransactionTypes = {}));
+//TODO handle possible exception
+function parseTransactionId(transactionId) {
+    const accountId = transactionId.split('@');
+    const txValidStart = accountId[1].split('.');
+    const result = accountId[0] + '-' + txValidStart.join('-');
+    return result;
+}
 ///////////////////////////////
 function handleNumber(value) {
     if (value === "0x") {
@@ -85765,74 +85813,11 @@ function serialize(transaction, signature) {
 //     }
 // }
 //
-// // Legacy Transactions and EIP-155
-// function _parse(rawTransaction: Uint8Array): Transaction {
-//     const transaction = RLP.decode(rawTransaction);
-//
-//     if (transaction.length !== 9 && transaction.length !== 6) {
-//         logger.throwArgumentError("invalid raw transaction", "rawTransaction", rawTransaction);
-//     }
-//
-//     const tx: Transaction = {
-//         nonce:    handleNumber(transaction[0]).toNumber(),
-//         gasPrice: handleNumber(transaction[1]),
-//         gasLimit: handleNumber(transaction[2]),
-//         to:       handleAddress(transaction[3]),
-//         value:    handleNumber(transaction[4]),
-//         data:     transaction[5],
-//         chainId:  0
-//     };
-//
-//     // Legacy unsigned transaction
-//     if (transaction.length === 6) { return tx; }
-//
-//     try {
-//         tx.v = BigNumber.from(transaction[6]).toNumber();
-//
-//     } catch (error) {
-//         console.log(error);
-//         return tx;
-//     }
-//
-//     tx.r = hexZeroPad(transaction[7], 32);
-//     tx.s = hexZeroPad(transaction[8], 32);
-//
-//     if (BigNumber.from(tx.r).isZero() && BigNumber.from(tx.s).isZero()) {
-//         // EIP-155 unsigned transaction
-//         tx.chainId = tx.v;
-//         tx.v = 0;
-//
-//     } else {
-//         // Signed Transaction
-//
-//         tx.chainId = Math.floor((tx.v - 35) / 2);
-//         if (tx.chainId < 0) { tx.chainId = 0; }
-//
-//         let recoveryParam = tx.v - 27;
-//
-//         const raw = transaction.slice(0, 6);
-//
-//         if (tx.chainId !== 0) {
-//             raw.push(hexlify(tx.chainId));
-//             raw.push("0x");
-//             raw.push("0x");
-//             recoveryParam -= tx.chainId * 2 + 8;
-//         }
-//
-//         const digest = keccak256(RLP.encode(raw));
-//         try {
-//             tx.from = recoverAddress(digest, { r: hexlify(tx.r), s: hexlify(tx.s), recoveryParam: recoveryParam });
-//         } catch (error) {
-//             console.log(error);
-//         }
-//
-//         tx.hash = keccak256(rawTransaction);
-//     }
-//
-//     tx.type = null;
-//
-//     return tx;
-// }
+function parseHederaTransactionId(obj) {
+    //TODO cleaner implementation
+    const parsedString = obj.accountId.realm + '.' + obj.accountId.shard + '.' + obj.accountId.num + '@' + obj.validStart.seconds + '.' + obj.validStart.nanos;
+    return parsedString;
+}
 function parse$2(rawTransaction) {
     var _a;
     return __awaiter$7(this, void 0, void 0, function* () {
@@ -85868,7 +85853,7 @@ function parse$2(rawTransaction) {
             return logger$r.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
-        return Object.assign(Object.assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null });
+        return Object.assign(Object.assign({ transactionId: parseHederaTransactionId(parsed.transactionId) }, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
 
@@ -87535,7 +87520,7 @@ class Formatter {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash(value, strict) {
         const result = this.hex(value, strict);
-        if (hexDataLength(result) !== 32) {
+        if (hexDataLength(result) !== 48) {
             return logger$u.throwArgumentError("invalid hash", "value", value);
         }
         return result;
@@ -87629,9 +87614,9 @@ class Formatter {
             result.chainId = chainId;
         }
         // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
+        // if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
+        //     result.blockHash = null;
+        // }
         return result;
     }
     transaction(value) {
@@ -87640,34 +87625,75 @@ class Formatter {
     receiptLog(value) {
         return Formatter.check(this.formats.receiptLog, value);
     }
+    //parse to ethers format inside here?
+    //fill the txReceipt obj
     receipt(value) {
         const result = Formatter.check(this.formats.receipt, value);
         // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                const value = BigNumber.from(result.root).toNumber();
-                if (value === 0 || value === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value)) {
-                        logger$u.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value;
-                    delete result.root;
-                }
-                else {
-                    logger$u.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            }
-            else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger$u.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
+        // if (result.root != null) {
+        //     if (result.root.length <= 4) {
+        //         // Could be 0x00, 0x0, 0x01 or 0x1
+        //         const value = BigNumber.from(result.root).toNumber();
+        //         if (value === 0 || value === 1) {
+        //             // Make sure if both are specified, they match
+        //             if (result.status != null && (result.status !== value)) {
+        //                 logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
+        //             }
+        //             result.status = value;
+        //             delete result.root;
+        //         } else {
+        //             logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
+        //         }
+        //     } else if (result.root.length !== 66) {
+        //         // Must be a valid bytes32
+        //         logger.throwArgumentError("invalid root hash", "value.root", result.root);
+        //     }
+        // }
         if (result.status != null) {
             result.byzantium = true;
         }
         return result;
+    }
+    txRecordToTxResponse(txRecord) {
+        const senderAccount = txRecord.transaction_id.split('-');
+        return {
+            accessList: null,
+            chainId: 1,
+            data: '',
+            from: utils$1.getAddressFromAccount(senderAccount[0]),
+            gasLimit: null,
+            hash: txRecord.transaction_hash,
+            transactionId: txRecord.transaction_id,
+            r: '',
+            s: '',
+            to: utils$1.getAddressFromAccount(txRecord.entity_id),
+            v: 0,
+            value: null,
+            customData: { status: txRecord.result, name: txRecord.name },
+            wait: null
+        };
+    }
+    txRecordToTxReceipt(txRecord) {
+        let to = null;
+        let contractAddress = null;
+        if (txRecord.customData.name === "CONTRACTCREATEINSTANCE") {
+            contractAddress = txRecord.to;
+        }
+        else if (txRecord.customData.name === "CONTRACTCALL") {
+            to = txRecord.to;
+        }
+        return {
+            to: to,
+            from: txRecord.from,
+            contractAddress: contractAddress,
+            gasUsed: null,
+            logsBloom: null,
+            transactionHash: txRecord.hash,
+            logs: null,
+            cumulativeGasUsed: null,
+            byzantium: false,
+            status: txRecord.customData.status === "SUCCESS" ? 1 : 0
+        };
     }
     topics(value) {
         if (Array.isArray(value)) {
@@ -92009,10 +92035,10 @@ class BaseProvider extends Provider {
                     case "tx": {
                         const hash = event.hash;
                         let runner = this.getTransactionReceipt(hash).then((receipt) => {
-                            if (!receipt || receipt.blockNumber == null) {
+                            if (!receipt) {
                                 return null;
                             }
-                            this._emitted["t:" + hash] = receipt.blockNumber;
+                            // this._emitted["t:" + hash] = receipt.blockNumber;
                             this.emit(hash, receipt);
                             return null;
                         }).catch((error) => { this.emit("error", error); });
@@ -92145,14 +92171,43 @@ class BaseProvider extends Provider {
             this._poller = setInterval(() => { this.poll(); }, this._pollingInterval);
         }
     }
-    waitForTransaction(transactionHash, confirmations, timeout) {
+    waitForTransaction(transactionId, confirmations, timeout) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            return this._waitForTransaction(transactionHash, (confirmations == null) ? 1 : confirmations, timeout || 0, null);
+            return this._waitForTransaction(transactionId, timeout);
         });
     }
-    _waitForTransaction(transactionHash, confirmations, timeout, replaceable) {
+    _waitForTransaction(transactionId, timeoutMs) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            return logger$v.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+            //timeoutMs -> max limit to wait
+            //loop every 1sec until limit reached, or resolved
+            if (timeoutMs == null) {
+                return yield this.waitOrReturn(transactionId);
+            }
+            if (timeoutMs <= 0) {
+                //TODO fix timeoutMs value is always 0!
+                logger$v.throwError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeoutMs });
+            }
+            return yield this.waitOrReturn(transactionId, timeoutMs - 1000);
+        });
+    }
+    waitOrReturn(transactionId, timeoutMs) {
+        return __awaiter$9(this, void 0, void 0, function* () {
+            const txResponse = yield this.getTransaction(parseTransactionId(transactionId));
+            if (txResponse != null) {
+                return this.formatter.txRecordToTxReceipt(txResponse);
+            }
+            else {
+                console.log('waiting 1000 ms..');
+                yield this.sleep(1000);
+                return this._waitForTransaction(transactionId, timeoutMs);
+            }
+        });
+    }
+    sleep(ms) {
+        return __awaiter$9(this, void 0, void 0, function* () {
+            return new Promise((resolve) => {
+                setTimeout(resolve, ms);
+            });
         });
     }
     /**
@@ -92203,48 +92258,29 @@ class BaseProvider extends Provider {
         });
     }
     // This should be called by any subclass wrapping a TransactionResponse
-    _wrapTransaction(tx, hash, startBlock) {
-        if (hash != null && hexDataLength(hash) !== 48) {
-            throw new Error("invalid response - sendTransaction");
-        }
+    _wrapTransaction(tx, receipt) {
         const result = tx;
-        // Check the hash we expect is the same as the hash the server reported
-        if (hash != null && tx.hash !== hash) {
-            logger$v.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
+        console.log("HederaTransactionReceipt", receipt);
+        if (!result.customData) {
+            result.customData = {};
         }
-        result.wait = (confirms, timeout) => __awaiter$9(this, void 0, void 0, function* () {
-            if (confirms == null) {
-                confirms = 1;
-            }
-            if (timeout == null) {
-                timeout = 0;
-            }
-            // Get the details to detect replacement
-            let replacement = undefined;
-            if (confirms !== 0 && startBlock != null) {
-                replacement = {
-                    data: tx.data,
-                    from: tx.from,
-                    nonce: tx.nonce,
-                    to: tx.to,
-                    value: tx.value,
-                    startBlock
-                };
-            }
-            const receipt = yield this._waitForTransaction(tx.hash, confirms, timeout, replacement);
-            if (receipt == null && confirms === 0) {
-                return null;
-            }
-            // No longer pending, allow the polling loop to garbage collect this
-            this._emitted["t:" + tx.hash] = receipt.blockNumber;
-            if (receipt.status === 0) {
+        if (receipt.fileId) {
+            result.customData.fileId = receipt.fileId.toString();
+        }
+        if (receipt.contractId) {
+            result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
+        result.wait = (timeout) => __awaiter$9(this, void 0, void 0, function* () {
+            // query for txRecord (txId) 
+            const txReceipt = yield this._waitForTransaction(tx.transactionId, timeout);
+            if (txReceipt.status === 0) {
                 logger$v.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
                     transaction: tx,
                     receipt: receipt
                 });
             }
-            return receipt;
+            return txReceipt;
         });
         return result;
     }
@@ -92255,13 +92291,14 @@ class BaseProvider extends Provider {
             signedTransaction = yield signedTransaction;
             const txBytes = arrayify(signedTransaction);
             const hederaTx = Transaction.fromBytes(txBytes);
-            const ethersTx = yield this.formatter.transaction(signedTransaction);
+            const ethersTx = yield this.formatter.transaction(signedTransaction); //
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
                 // TODO once we have fallback provider use `provider.perform("sendTransaction")`
                 // TODO Before submission verify that the nodeId is the one that the provider is connected to
-                yield hederaTx.execute(this.hederaClient);
-                return this._wrapTransaction(ethersTx, txHash);
+                const resp = yield hederaTx.execute(this.hederaClient);
+                const receipt = yield resp.getReceipt(this.hederaClient);
+                return this._wrapTransaction(ethersTx, receipt);
             }
             catch (error) {
                 const err = logger$v.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
@@ -92382,48 +92419,51 @@ class BaseProvider extends Provider {
      *
      * @param txId - id of the transaction to search for
      */
-    getTransaction(txId) {
+    getTransaction(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            txId = yield txId;
-            const ep = '/api/v1/transactions/' + txId;
-            let { data } = yield axios$1.get(this.mirrorNodeUrl + ep);
-            const filtered = data.transactions
-                .filter((e) => e.result === "SUCCESS");
-            return filtered.length > 0 ? filtered[0] : null;
+            transactionId = yield transactionId;
+            const ep = '/api/v1/transactions/' + transactionId;
+            if (!this.mirrorNodeUrl)
+                logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            try {
+                let { data } = yield axios$1.get(this.mirrorNodeUrl + ep);
+                const filtered = data.transactions
+                    .filter((e) => e.result != "DUPLICATE_TRANSACTION");
+                console.log("Hedera filtered transactions", filtered);
+                const response = filtered.length > 0 ? this.formatter.txRecordToTxResponse(filtered[0]) : null;
+                return response;
+            }
+            catch (error) {
+                if (error.response.status != 404) {
+                    logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "TransactionResponseQuery",
+                        error
+                    });
+                }
+                return null;
+            }
         });
     }
-    getTransactionReceipt(transactionHash) {
+    getTransactionReceipt(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            transactionHash = yield transactionHash;
-            const params = { transactionHash: this.formatter.hash(transactionHash, true) };
-            return poll(() => __awaiter$9(this, void 0, void 0, function* () {
-                const result = yield this.perform("getTransactionReceipt", params);
-                if (result == null) {
-                    if (this._emitted["t:" + transactionHash] == null) {
-                        return null;
-                    }
-                    return undefined;
-                }
-                // "geth-etc" returns receipts before they are ready
-                if (result.blockHash == null) {
-                    return undefined;
-                }
-                const receipt = this.formatter.receipt(result);
-                if (receipt.blockNumber == null) {
-                    receipt.confirmations = 0;
-                }
-                else if (receipt.confirmations == null) {
-                    // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                    //
-                    // Add the confirmations using the fast block number (pessimistic)
-                    // let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                    // if (confirmations <= 0) { confirmations = 1; }
-                    // receipt.confirmations = confirmations;
-                }
-                return receipt;
-            }), { oncePoll: this });
+            transactionId = yield transactionId;
+            try {
+                let receipt = yield new TransactionReceiptQuery()
+                    .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
+                    .execute(this.hederaClient);
+                console.log("getTransactionReceipt: ", receipt);
+                //TODO parse to ethers format
+                // return this.formatter.txRecordToTxReceipt(txRecord); 
+                return null;
+            }
+            catch (error) {
+                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    method: "TransactionGetReceiptQuery",
+                    error
+                });
+            }
         });
     }
     getLogs(filter) {
