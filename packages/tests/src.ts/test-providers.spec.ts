@@ -1120,5 +1120,5 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(txResponse.from, getAddressFromAccount(hederaPreviewnetOperableAccount.operator.accountId));
         assert.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
         // assert.strictEqual(txResponse.value.toNumber(), 100000000000);
-    });
+    }).timeout(timeout*4);
 });
