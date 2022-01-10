@@ -43,13 +43,13 @@ import {
     ContractExecuteTransaction,
     ContractId,
     FileAppendTransaction,
-    FileCreateTransaction, Key as HederaKey, PrivateKey, PublicKey,
+    FileCreateTransaction,
+    PrivateKey as HederaPrivKey,
+    PublicKey as HederaPubKey,
     Transaction,
     TransactionId,
 } from "@hashgraph/sdk";
-// import {EcdsaPrivateKey, EcdsaPublicKey} from '@hashgraph/cryptography';
 import { BigNumber, BigNumberish } from "ethers";
-import { Key } from "@hashgraph/proto";
 
 const logger = new Logger(version);
 
@@ -208,7 +208,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
             const fileCreate = {
                 customData: {
                     fileChunk: chunks[0],
-                    fileKey: ecdsaPublicKeyToProtobufKey(PublicKey.fromString(this._signingKey().compressedPublicKey))
+                    fileKey: HederaPubKey.fromString(this._signingKey().compressedPublicKey)
                 }
             };
             const signedFileCreate = await this.signTransaction(fileCreate);
@@ -274,8 +274,8 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
                     tx = new FileCreateTransaction()
                         .setContents(transaction.customData.fileChunk)
                         .setKeys([ transaction.customData.fileKey ?
-                            ecdsaPublicKeyToProtobufKey(transaction.customData.fileKey) :
-                            ecdsaPublicKeyToProtobufKey(PublicKey.fromString(this._signingKey().compressedPublicKey)) ])
+                           transaction.customData.fileKey :
+                            HederaPubKey.fromString(this._signingKey().compressedPublicKey) ])
                 } else {
                     logger.throwArgumentError(
                         "Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`",
@@ -294,9 +294,9 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
             // FIXME - should be taken from the network/ wallet's provider
             .setNodeAccountIds([ new AccountId(0, 0, 3) ])
             .freeze();
-        const privKey = PrivateKey.fromString(this._signingKey().privateKey);
+        const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
         return new Promise<string>(async (resolve) => {
-            const signed = await tx.sign(PrivateKey.fromBytes(privKey.toBytesRaw()));
+            const signed = await tx.sign(pkey);
             resolve(hexlify(signed.toBytes()));
         });
     }
@@ -400,11 +400,4 @@ function splitInChunks(data: string, chunkSize: number): string[] {
         chunks.push(slice);
     }
     return chunks;
-}
-
-function ecdsaPublicKeyToProtobufKey(k1:PublicKey): HederaKey {
-    const protoKey = Key.create({
-        ECDSASecp256k1: k1.toBytesRaw()
-    });
-    return HederaKey._fromProtobufKey(protoKey);
 }

@@ -22,10 +22,8 @@ import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethe
 import { computeAlias, recoverAddress, } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { AccountId, ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Key as HederaKey, PrivateKey, PublicKey, TransactionId, } from "@hashgraph/sdk";
-// import {EcdsaPrivateKey, EcdsaPublicKey} from '@hashgraph/cryptography';
+import { AccountId, ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, PrivateKey as HederaPrivKey, PublicKey as HederaPubKey, TransactionId, } from "@hashgraph/sdk";
 import { BigNumber } from "ethers";
-import { Key } from "@hashgraph/proto";
 const logger = new Logger(version);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
@@ -151,7 +149,7 @@ export class Wallet extends Signer {
                 const fileCreate = {
                     customData: {
                         fileChunk: chunks[0],
-                        fileKey: ecdsaPublicKeyToProtobufKey(PublicKey.fromString(this._signingKey().compressedPublicKey))
+                        fileKey: HederaPubKey.fromString(this._signingKey().compressedPublicKey)
                     }
                 };
                 const signedFileCreate = yield this.signTransaction(fileCreate);
@@ -220,8 +218,8 @@ export class Wallet extends Signer {
                     tx = new FileCreateTransaction()
                         .setContents(transaction.customData.fileChunk)
                         .setKeys([transaction.customData.fileKey ?
-                            ecdsaPublicKeyToProtobufKey(transaction.customData.fileKey) :
-                            ecdsaPublicKeyToProtobufKey(PublicKey.fromString(this._signingKey().compressedPublicKey))]);
+                            transaction.customData.fileKey :
+                            HederaPubKey.fromString(this._signingKey().compressedPublicKey)]);
                 }
                 else {
                     logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
@@ -238,9 +236,9 @@ export class Wallet extends Signer {
             // FIXME - should be taken from the network/ wallet's provider
             .setNodeAccountIds([new AccountId(0, 0, 3)])
             .freeze();
-        const privKey = PrivateKey.fromString(this._signingKey().privateKey);
+        const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
         return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
-            const signed = yield tx.sign(PrivateKey.fromBytes(privKey.toBytesRaw()));
+            const signed = yield tx.sign(pkey);
             resolve(hexlify(signed.toBytes()));
         }));
     }
@@ -329,12 +327,5 @@ function splitInChunks(data, chunkSize) {
         chunks.push(slice);
     }
     return chunks;
-}
-// @ts-ignore
-function ecdsaPublicKeyToProtobufKey(k1) {
-    const protoKey = Key.create({
-        ECDSASecp256k1: k1.toBytesRaw()
-    });
-    return HederaKey._fromProtobufKey(protoKey);
 }
 //# sourceMappingURL=index.js.map
