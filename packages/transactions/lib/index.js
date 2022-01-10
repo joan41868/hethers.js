@@ -87,11 +87,6 @@ var TransactionTypes;
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes = exports.TransactionTypes || (exports.TransactionTypes = {}));
 ///////////////////////////////
-//
-// function handleAddress(value: string): string {
-//     if (value === "0x") { return null; }
-//     return getAddress(value);
-// }
 function handleNumber(value) {
     if (value === "0x") {
         return constants_1.Zero;
@@ -192,7 +187,7 @@ function _serializeEip1559(transaction, signature) {
         formatNumber(transaction.maxPriorityFeePerGas || 0, "maxPriorityFeePerGas"),
         formatNumber(transaction.maxFeePerGas || 0, "maxFeePerGas"),
         formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
+        ((transaction.to != null) ? (0, address_1.getAddress)(transaction.to) : "0x"),
         formatNumber(transaction.value || 0, "value"),
         (transaction.data || "0x"),
         (formatAccessList(transaction.accessList || []))
@@ -211,7 +206,7 @@ function _serializeEip2930(transaction, signature) {
         formatNumber(transaction.nonce || 0, "nonce"),
         formatNumber(transaction.gasPrice || 0, "gasPrice"),
         formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
+        ((transaction.to != null) ? (0, address_1.getAddress)(transaction.to) : "0x"),
         formatNumber(transaction.value || 0, "value"),
         (transaction.data || "0x"),
         (formatAccessList(transaction.accessList || []))
@@ -335,67 +330,6 @@ exports.serialize = serialize;
 //         console.log(error);
 //     }
 // }
-// function _parseEip1559(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
-//
-//     if (transaction.length !== 9 && transaction.length !== 12) {
-//         logger.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
-//     }
-//
-//     const maxPriorityFeePerGas = handleNumber(transaction[2]);
-//     const maxFeePerGas = handleNumber(transaction[3]);
-//     const tx: Transaction = {
-//         type:                  2,
-//         chainId:               handleNumber(transaction[0]).toNumber(),
-//         nonce:                 handleNumber(transaction[1]).toNumber(),
-//         maxPriorityFeePerGas:  maxPriorityFeePerGas,
-//         maxFeePerGas:          maxFeePerGas,
-//         gasPrice:              null,
-//         gasLimit:              handleNumber(transaction[4]),
-//         to:                    handleAddress(transaction[5]),
-//         value:                 handleNumber(transaction[6]),
-//         data:                  transaction[7],
-//         accessList:            accessListify(transaction[8]),
-//     };
-//
-//     // Unsigned EIP-1559 Transaction
-//     if (transaction.length === 9) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
-//
-//     return tx;
-// }
-//
-// function _parseEip2930(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
-//
-//     if (transaction.length !== 8 && transaction.length !== 11) {
-//         logger.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
-//     }
-//
-//     const tx: Transaction = {
-//         type:       1,
-//         chainId:    handleNumber(transaction[0]).toNumber(),
-//         nonce:      handleNumber(transaction[1]).toNumber(),
-//         gasPrice:   handleNumber(transaction[2]),
-//         gasLimit:   handleNumber(transaction[3]),
-//         to:         handleAddress(transaction[4]),
-//         value:      handleNumber(transaction[5]),
-//         data:       transaction[6],
-//         accessList: accessListify(transaction[7])
-//     };
-//
-//     // Unsigned EIP-2930 Transaction
-//     if (transaction.length === 8) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
-//
-//     return tx;
-// }
 //
 // // Legacy Transactions and EIP-155
 // function _parse(rawTransaction: Uint8Array): Transaction {
@@ -492,24 +426,16 @@ function parse(rawTransaction) {
                         contents.to = (0, utils_1.getAddressFromAccount)((_a = parsed.contractId) === null || _a === void 0 ? void 0 : _a.toString());
                         contents.gasLimit = handleNumber(parsed.gas.toString());
                         contents.value = parsed.payableAmount ?
-                            handleNumber(parsed.payableAmount.toTinybars().toString()) : handleNumber('0');
+                            handleNumber(parsed.payableAmount.toBigNumber().toString()) : handleNumber('0');
                         contents.data = parsed.functionParameters ? (0, bytes_1.hexlify)(parsed.functionParameters) : '0x';
                     }
                     else if (parsed instanceof sdk_1.ContractCreateTransaction) {
                         parsed = parsed;
                         contents.gasLimit = handleNumber(parsed.gas.toString());
                         contents.value = parsed.initialBalance ?
-                            handleNumber(parsed.initialBalance.toTinybars().toString()) : handleNumber('0');
+                            handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
                         // TODO IMPORTANT! We are setting only the constructor arguments and not the whole bytecode + constructor args
                         contents.data = parsed.constructorParameters ? (0, bytes_1.hexlify)(parsed.constructorParameters) : '0x';
-                    }
-                    else if (parsed instanceof sdk_1.FileCreateTransaction) {
-                        parsed = parsed;
-                        contents.data = (0, bytes_1.hexlify)(Buffer.from(parsed.contents));
-                    }
-                    else if (parsed instanceof sdk_1.FileAppendTransaction) {
-                        parsed = parsed;
-                        contents.data = (0, bytes_1.hexlify)(Buffer.from(parsed.contents));
                     }
                     else {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];

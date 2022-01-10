@@ -111,11 +111,6 @@ type HederaTransactionContents = {
 }
 
 ///////////////////////////////
-//
-// function handleAddress(value: string): string {
-//     if (value === "0x") { return null; }
-//     return getAddress(value);
-// }
 
 function handleNumber(value: string): BigNumber {
     if (value === "0x") { return Zero; }
@@ -386,68 +381,8 @@ export function serialize(transaction: UnsignedTransaction, signature?: Signatur
 //     }
 // }
 
-// function _parseEip1559(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
 //
-//     if (transaction.length !== 9 && transaction.length !== 12) {
-//         logger.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
-//     }
-//
-//     const maxPriorityFeePerGas = handleNumber(transaction[2]);
-//     const maxFeePerGas = handleNumber(transaction[3]);
-//     const tx: Transaction = {
-//         type:                  2,
-//         chainId:               handleNumber(transaction[0]).toNumber(),
-//         nonce:                 handleNumber(transaction[1]).toNumber(),
-//         maxPriorityFeePerGas:  maxPriorityFeePerGas,
-//         maxFeePerGas:          maxFeePerGas,
-//         gasPrice:              null,
-//         gasLimit:              handleNumber(transaction[4]),
-//         to:                    handleAddress(transaction[5]),
-//         value:                 handleNumber(transaction[6]),
-//         data:                  transaction[7],
-//         accessList:            accessListify(transaction[8]),
-//     };
-//
-//     // Unsigned EIP-1559 Transaction
-//     if (transaction.length === 9) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
-//
-//     return tx;
-// }
-//
-// function _parseEip2930(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
-//
-//     if (transaction.length !== 8 && transaction.length !== 11) {
-//         logger.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
-//     }
-//
-//     const tx: Transaction = {
-//         type:       1,
-//         chainId:    handleNumber(transaction[0]).toNumber(),
-//         nonce:      handleNumber(transaction[1]).toNumber(),
-//         gasPrice:   handleNumber(transaction[2]),
-//         gasLimit:   handleNumber(transaction[3]),
-//         to:         handleAddress(transaction[4]),
-//         value:      handleNumber(transaction[5]),
-//         data:       transaction[6],
-//         accessList: accessListify(transaction[7])
-//     };
-//
-//     // Unsigned EIP-2930 Transaction
-//     if (transaction.length === 8) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
-//
-//     return tx;
-// }
-//
+
 // // Legacy Transactions and EIP-155
 // function _parse(rawTransaction: Uint8Array): Transaction {
 //     const transaction = RLP.decode(rawTransaction);

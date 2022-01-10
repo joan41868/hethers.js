@@ -1056,9 +1056,8 @@ export class BaseProvider extends Provider implements EnsProvider {
         try {
             // TODO once we have fallback provider use `provider.perform("sendTransaction")`
             // TODO Before submission verify that the nodeId is the one that the provider is connected to
-            const resp = await hederaTx.execute(this.hederaClient);
-            const receipt = await resp.getReceipt(this.hederaClient);
-            return this._wrapTransaction(ethersTx, txHash, receipt);
+            await hederaTx.execute(this.hederaClient);
+            return this._wrapTransaction(ethersTx, txHash);
         } catch (error) {
             const err = logger.makeError(error.message, error.status?.toString());
             (<any>err).transaction = ethersTx;
