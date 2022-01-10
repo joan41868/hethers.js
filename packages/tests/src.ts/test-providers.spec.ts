@@ -8,6 +8,12 @@ import { ethers } from "ethers";
 import { DefaultHederaProvider } from "@ethersproject/providers";
 import { getAddressFromAccount } from "ethers/lib/utils";
 import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-provider";
+import {
+    AccountId,
+    ContractCreateTransaction, ContractFunctionParameters,
+    PrivateKey,
+    TransactionId,
+} from "@hashgraph/sdk";
 
 const bnify = ethers.BigNumber.from;
 
@@ -16,6 +22,13 @@ type TestCases = {
     blocks: Array<any>;
     transactions: Array<any>;
     transactionReceipts: Array<any>;
+};
+
+const hederaPreviewnetOperableAccount = {
+    "operator": {
+        "accountId": "0.0.1340",
+        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
+    },
 };
 
 const blockchainData: { [ network: string ]: TestCases } = {
@@ -866,98 +879,6 @@ testFunctions.push({
     }
 });
 
-// describe("Test Provider Methods", function() {
-//     let fundReceipt: Promise<ethers.providers.TransactionReceipt> = null;
-//     const faucet = "0x8210357f377E901f18E45294e86a2A32215Cc3C9";
-//
-//     before(async function() {
-//         this.timeout(300000);
-//
-//         // Get some ether from the faucet
-//         const provider = new ethers.providers.InfuraProvider("ropsten", getApiKeys("ropsten").infura);
-//         const funder = await ethers.utils.fetchJson(`https:/\/api.ethers.io/api/v1/?action=fundAccount&address=${ fundWallet.address.toLowerCase() }`);
-//         fundReceipt = provider.waitForTransaction(funder.hash);
-//         fundReceipt.then((receipt) => {
-//             console.log(`*** Funded: ${ fundWallet.address }`);
-//         });
-//     });
-//
-//     after(async function() {
-//         this.timeout(300000);
-//
-//         // Wait until the funding is complete
-//         await fundReceipt;
-//
-//         // Refund all unused ether to the faucet
-//         const provider = new ethers.providers.InfuraProvider("ropsten", getApiKeys("ropsten").infura);
-//         const gasPrice = await provider.getGasPrice();
-//         const balance = await provider.getBalance(fundWallet.address);
-//         const tx = await fundWallet.connect(provider).sendTransaction({
-//             to: faucet,
-//             gasLimit: 21000,
-//             gasPrice: gasPrice,
-//             value: balance.sub(gasPrice.mul(21000))
-//         });
-//
-//         console.log(`*** Sweep Transaction:`, tx.hash);
-//     });
-//
-//     providerFunctions.forEach(({ name, networks, create}) => {
-//
-//         networks.forEach((network) => {
-//             const provider = create(network);
-//
-//             testFunctions.forEach((test) => {
-//
-//                 // Skip tests not supported on this network
-//                 if (test.networks.indexOf(network) === -1) { return; }
-//                 if (test.checkSkip && test.checkSkip(name, network, test)) {
-//                     return;
-//                 }
-//
-//                 // How many attempts to try?
-//                 const attempts = (test.attempts != null) ? test.attempts: 3;
-//                 const timeout = (test.timeout != null) ? test.timeout: 60;
-//                 const extras = (test.extras || []).reduce((accum, key) => {
-//                     accum[key] = true;
-//                     return accum;
-//                 }, <Record<string, boolean>>{ });
-//
-//                 xit(`${ name }.${ network ? network: "default" } ${ test.name}`, async function() {
-//                     // Multiply by 2 to make sure this never happens; we want our
-//                     // timeout logic to success, not allow a done() called multiple
-//                     // times because our logic returns after the timeout has occurred.
-//                     this.timeout(2 * (1000 + timeout * 1000 * attempts));
-//                     // Wait for the funding transaction to be mined
-//                     if (extras.funding) { await fundReceipt; }
-//
-//                     // We wait at least 1 seconds between tests
-//                     if (!extras.nowait) { await waiter(1000); }
-//
-//                     let error: Error = null;
-//                     for (let attempt = 0; attempt < attempts; attempt++) {
-//                         try {
-//                             const result = await Promise.race([
-//                                 test.execute(provider),
-//                                 waiter(timeout * 1000).then((result) => { throw new Error("timeout"); })
-//                             ]);
-//                             return result;
-//                         } catch (attemptError) {
-//                             console.log(`*** Failed attempt ${ attempt + 1 }: ${ attemptError.message }`);
-//                             error = attemptError;
-//
-//                             // On failure, wait 5s
-//                             await waiter(5000);
-//                         }
-//                     }
-//                     throw error;
-//                 });
-//             });
-//         });
-//     });
-//
-// });
-
 describe("Extra tests", function() {
     xit("etherscan long-request #1093", async function() {
         this.timeout(60000);
@@ -971,26 +892,6 @@ describe("Extra tests", function() {
         assert.ok(!!value);
     });
 });
-
-/*
-describe("Test extra Etherscan operations", function() {
-    let provider = new providers.EtherscanProvider();
-    it("fethces the current price of ether", function() {
-        this.timeout(20000);
-        return provider.getEtherPrice().then(function(price) {
-            assert.ok(typeof(price) === "number", "Etherscan price returns a number");
-            assert.ok(price > 0.0, "Etherscan price returns non-zero");
-        });
-    });
-    it("fetches the history", function() {
-        this.timeout(100000);
-        return provider.getHistory("ricmoo.firefly.eth").then(function(history) {
-            assert.ok(history.length > 40, "Etherscan history returns results");
-            assert.equal(history[0].hash, "0xd25f550cfdff90c086a6496a84dbb2c4577df15b1416e5b3319a3e4ebb5b25d8", "Etherscan history returns correct transaction");
-        });
-    });
-});
-*/
 
 describe("Test Basic Authentication", function() {
     //this.retries(3);
@@ -1117,19 +1018,6 @@ describe("Test Basic Authentication", function() {
 //     });
 // });
 
-// describe("Test WebSocketProvider", function() {
-//     this.retries(3);
-//
-//     async function testWebSocketProvider(provider: ethers.providers.WebSocketProvider): Promise<void> {
-//         await provider.destroy();
-//     }
-//
-//     it("InfuraProvider.getWebSocketProvider", async function() {
-//         const provider = ethers.providers.InfuraProvider.getWebSocketProvider();
-//         await testWebSocketProvider(provider);
-//     });
-// });
-
 // describe("Test Events", function() {
 //     this.retries(3);
 //
@@ -1158,66 +1046,6 @@ describe("Test Basic Authentication", function() {
 //         await testBlockEvent(provider);
 //     });
 // });
-
-// describe("Bad ENS resolution", function() {
-//     const provider = providerFunctions[0].create("ropsten");
-//
-//     it("signer has a bad ENS name", async function() {
-//         this.timeout(300000);
-//
-//         const wallet = new ethers.Wallet(ethers.utils.id("random-wallet"), provider);
-//
-//         // If "to" is specified as an ENS name, it cannot resolve to null
-//         try {
-//             const tx = await wallet.sendTransaction({ to: "junk", value: 1 });
-//             console.log("TX", tx);
-//             assert.ok(false, "failed to throw an exception");
-//         } catch (error) {
-//             assert.ok(error.argument === "tx.to" && error.value === "junk");
-//         }
-//
-//         // But promises that resolve to null are ok
-//         const tos = [ null, Promise.resolve(null) ];
-//         for (let i = 0; i < tos.length; i++) {
-//             const to = tos[i];
-//             try {
-//                 const tx = await wallet.sendTransaction({ to, value: 1 });
-//                 console.log("TX", tx);
-//             } catch (error) {
-//                 assert.ok(error.code === "INSUFFICIENT_FUNDS");
-//             }
-//         }
-//     });
-//
-// });
-//
-// describe("Resolve ENS avatar", function() {
-//     [
-//         { title: "data", name: "data-avatar.tests.eth", value: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAMAAACeL25MAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyVpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDYuMC1jMDAyIDc5LjE2NDQ4OCwgMjAyMC8wNy8xMC0yMjowNjo1MyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDIyLjAgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NUQ4NTEyNUIyOEIwMTFFQzg0NTBDNTU2RDk1NTA5NzgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NUQ4NTEyNUMyOEIwMTFFQzg0NTBDNTU2RDk1NTA5NzgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1RDg1MTI1OTI4QjAxMUVDODQ1MEM1NTZEOTU1MDk3OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1RDg1MTI1QTI4QjAxMUVDODQ1MEM1NTZEOTU1MDk3OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PkbM0uMAAAAGUExURQAA/wAAAHtivz4AAAAOSURBVHjaYmDABAABBgAAFAABaEkyYwAAAABJRU5ErkJggg==" },
-//         { title: "ipfs", name: "ipfs-avatar.tests.eth", value: "https:/\/gateway.ipfs.io/ipfs/QmQsQgpda6JAYkFoeVcj5iPbwV3xRcvaiXv3bhp1VuYUqw" },
-//         { title: "url", name: "url-avatar.tests.eth", value: "https:/\/ethers.org/static/logo.png" },
-//     ].forEach((test) => {
-//         xit(`Resolves avatar for ${ test.title }`, async function() {
-//             this.timeout(60000);
-//             const provider = ethers.getDefaultProvider("ropsten", getApiKeys("ropsten"));
-//             const avatar = await provider.getAvatar(test.name);
-//             assert.equal(test.value, avatar, "avatar url");
-//         });
-//     });
-//
-//     [
-//         { title: "ERC-1155", name: "nick.eth", value: "https:/\/lh3.googleusercontent.com/hKHZTZSTmcznonu8I6xcVZio1IF76fq0XmcxnvUykC-FGuVJ75UPdLDlKJsfgVXH9wOSmkyHw0C39VAYtsGyxT7WNybjQ6s3fM3macE" },
-//         { title: "ERC-721", name: "brantly.eth", value: "https:/\/wrappedpunks.com:3000/images/punks/2430.png" },
-//     ].forEach((test) => {
-//         xit(`Resolves avatar for ${ test.title }`, async function() {
-//             this.timeout(60000);
-//             const provider = ethers.getDefaultProvider("homestead", getApiKeys("homestead"));
-//             const avatar = await provider.getAvatar(test.name);
-//             assert.equal(test.value, avatar, "avatar url");
-//         });
-//     });
-// });
-
 
 describe("Test Hedera Provider", function () {
     const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
@@ -1265,20 +1093,25 @@ describe("Test Hedera Provider", function () {
     }).timeout(timeout * 4);
 
     it('should submit signed transaction', async function() {
+        const privateKey = PrivateKey.fromString(hederaPreviewnetOperableAccount.operator.privateKey);
         // 1. Sign TX -> `sign-transaction.ts`
-
-        // const tx = await new TransferTransaction()
-        //     .addHbarTransfer("0.0.98", Hbar.fromTinybars(1))
-        //     .addHbarTransfer(operatorId, Hbar.fromTinybars(-1))
-        //     .setTransactionId(TransactionId.generate(operatorId))
-        //     .setNodeAccountIds([AccountId.fromString("0.0.3")])
-        //     .freeze()
-        //     .sign(privateKey);
-        // const txBytes = tx.toBytes();
-        // const signedTx = hethers.utils.hexlify(txBytes);
-        // console.log(signedTx);
-
-        // 2. Instance of Testnet provider
-        // 3. provider.submitTransaction
+        const tx = await new ContractCreateTransaction()
+            .setContractMemo("memo")
+            .setGas(1000)
+            .setInitialBalance(1000)
+            .setBytecodeFileId("0.0.111111")
+            .setNodeAccountIds([new AccountId(0,0,3)])
+            .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
+            .setTransactionId(TransactionId.generate(hederaPreviewnetOperableAccount.operator.accountId))
+            .freeze()
+            .sign(privateKey);
+        const txBytes = tx.toBytes();
+        const signedTx = ethers.utils.hexlify(txBytes);
+        const provider = ethers.providers.getDefaultProvider('previewnet');
+        const txResponse = await provider.sendTransaction(signedTx);
+        assert.strictEqual(txResponse.gasLimit.toNumber(), 1000);
+        assert.strictEqual(txResponse.from, getAddressFromAccount(hederaPreviewnetOperableAccount.operator.accountId));
+        assert.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
+        assert.strictEqual(txResponse.value.toNumber(), 100000000000);
     });
 });

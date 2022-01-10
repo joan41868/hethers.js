@@ -107,12 +107,6 @@ export function parseTransactionId(transactionId: string): string {
 }
 
 ///////////////////////////////
-//
-// function handleAddress(value: string): string {
-//     if (value === "0x") { return null; }
-//     return getAddress(value);
-// }
-
 function handleNumber(value: string): BigNumber {
     if (value === "0x") { return Zero; }
     return BigNumber.from(value);
@@ -382,136 +376,7 @@ export function serialize(transaction: UnsignedTransaction, signature?: Signatur
 //     }
 // }
 
-// function _parseEip1559(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
 //
-//     if (transaction.length !== 9 && transaction.length !== 12) {
-//         logger.throwArgumentError("invalid component count for transaction type: 2", "payload", hexlify(payload));
-//     }
-//
-//     const maxPriorityFeePerGas = handleNumber(transaction[2]);
-//     const maxFeePerGas = handleNumber(transaction[3]);
-//     const tx: Transaction = {
-//         type:                  2,
-//         chainId:               handleNumber(transaction[0]).toNumber(),
-//         nonce:                 handleNumber(transaction[1]).toNumber(),
-//         maxPriorityFeePerGas:  maxPriorityFeePerGas,
-//         maxFeePerGas:          maxFeePerGas,
-//         gasPrice:              null,
-//         gasLimit:              handleNumber(transaction[4]),
-//         to:                    handleAddress(transaction[5]),
-//         value:                 handleNumber(transaction[6]),
-//         data:                  transaction[7],
-//         accessList:            accessListify(transaction[8]),
-//     };
-//
-//     // Unsigned EIP-1559 Transaction
-//     if (transaction.length === 9) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(9), _serializeEip1559);
-//
-//     return tx;
-// }
-//
-// function _parseEip2930(payload: Uint8Array): Transaction {
-//     const transaction = RLP.decode(payload.slice(1));
-//
-//     if (transaction.length !== 8 && transaction.length !== 11) {
-//         logger.throwArgumentError("invalid component count for transaction type: 1", "payload", hexlify(payload));
-//     }
-//
-//     const tx: Transaction = {
-//         type:       1,
-//         chainId:    handleNumber(transaction[0]).toNumber(),
-//         nonce:      handleNumber(transaction[1]).toNumber(),
-//         gasPrice:   handleNumber(transaction[2]),
-//         gasLimit:   handleNumber(transaction[3]),
-//         to:         handleAddress(transaction[4]),
-//         value:      handleNumber(transaction[5]),
-//         data:       transaction[6],
-//         accessList: accessListify(transaction[7])
-//     };
-//
-//     // Unsigned EIP-2930 Transaction
-//     if (transaction.length === 8) { return tx; }
-//
-//     tx.hash = keccak256(payload);
-//
-//     _parseEipSignature(tx, transaction.slice(8), _serializeEip2930);
-//
-//     return tx;
-// }
-//
-// // Legacy Transactions and EIP-155
-// function _parse(rawTransaction: Uint8Array): Transaction {
-//     const transaction = RLP.decode(rawTransaction);
-//
-//     if (transaction.length !== 9 && transaction.length !== 6) {
-//         logger.throwArgumentError("invalid raw transaction", "rawTransaction", rawTransaction);
-//     }
-//
-//     const tx: Transaction = {
-//         nonce:    handleNumber(transaction[0]).toNumber(),
-//         gasPrice: handleNumber(transaction[1]),
-//         gasLimit: handleNumber(transaction[2]),
-//         to:       handleAddress(transaction[3]),
-//         value:    handleNumber(transaction[4]),
-//         data:     transaction[5],
-//         chainId:  0
-//     };
-//
-//     // Legacy unsigned transaction
-//     if (transaction.length === 6) { return tx; }
-//
-//     try {
-//         tx.v = BigNumber.from(transaction[6]).toNumber();
-//
-//     } catch (error) {
-//         console.log(error);
-//         return tx;
-//     }
-//
-//     tx.r = hexZeroPad(transaction[7], 32);
-//     tx.s = hexZeroPad(transaction[8], 32);
-//
-//     if (BigNumber.from(tx.r).isZero() && BigNumber.from(tx.s).isZero()) {
-//         // EIP-155 unsigned transaction
-//         tx.chainId = tx.v;
-//         tx.v = 0;
-//
-//     } else {
-//         // Signed Transaction
-//
-//         tx.chainId = Math.floor((tx.v - 35) / 2);
-//         if (tx.chainId < 0) { tx.chainId = 0; }
-//
-//         let recoveryParam = tx.v - 27;
-//
-//         const raw = transaction.slice(0, 6);
-//
-//         if (tx.chainId !== 0) {
-//             raw.push(hexlify(tx.chainId));
-//             raw.push("0x");
-//             raw.push("0x");
-//             recoveryParam -= tx.chainId * 2 + 8;
-//         }
-//
-//         const digest = keccak256(RLP.encode(raw));
-//         try {
-//             tx.from = recoverAddress(digest, { r: hexlify(tx.r), s: hexlify(tx.s), recoveryParam: recoveryParam });
-//         } catch (error) {
-//             console.log(error);
-//         }
-//
-//         tx.hash = keccak256(rawTransaction);
-//     }
-//
-//     tx.type = null;
-//
-//     return tx;
-// }
 
 function parseHederaTransactionId(obj: TransactionId): string {
     //TODO cleaner implementation
@@ -539,13 +404,13 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
         contents.to = getAddressFromAccount(parsed.contractId?.toString());
         contents.gasLimit = handleNumber(parsed.gas.toString());
         contents.value = parsed.payableAmount ?
-            handleNumber(parsed.payableAmount.toTinybars().toString()) : handleNumber('0');
+            handleNumber(parsed.payableAmount.toBigNumber().toString()) : handleNumber('0');
         contents.data = parsed.functionParameters ? hexlify(parsed.functionParameters) : '0x';
     } else if (parsed instanceof ContractCreateTransaction) {
         parsed = parsed as ContractCreateTransaction;
         contents.gasLimit = handleNumber(parsed.gas.toString());
         contents.value = parsed.initialBalance ?
-            handleNumber(parsed.initialBalance.toTinybars().toString()) : handleNumber('0');
+            handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
         // TODO IMPORTANT! We are setting only the constructor arguments and not the whole bytecode + constructor args
         contents.data = parsed.constructorParameters ? hexlify(parsed.constructorParameters) : '0x';
     } else {

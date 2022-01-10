@@ -16,18 +16,16 @@ import { HashZero } from "@ethersproject/constants";
 import { namehash } from "@ethersproject/hash";
 import { getNetwork } from "@ethersproject/networks";
 import { defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
-import { parseTransactionId } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import { fetchJson, poll } from "@ethersproject/web";
-// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 import bech32 from "bech32";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, TransactionReceiptQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
 //////////////////////////////
 // Event Serializeing
@@ -649,10 +647,10 @@ export class BaseProvider extends Provider {
                     case "tx": {
                         const hash = event.hash;
                         let runner = this.getTransactionReceipt(hash).then((receipt) => {
-                            if (!receipt) {
+                            if (!receipt || receipt.blockNumber == null) {
                                 return null;
                             }
-                            // this._emitted["t:" + hash] = receipt.blockNumber;
+                            this._emitted["t:" + hash] = receipt.blockNumber;
                             this.emit(hash, receipt);
                             return null;
                         }).catch((error) => { this.emit("error", error); });
@@ -785,43 +783,14 @@ export class BaseProvider extends Provider {
             this._poller = setInterval(() => { this.poll(); }, this._pollingInterval);
         }
     }
-    waitForTransaction(transactionId, confirmations, timeout) {
+    waitForTransaction(transactionHash, confirmations, timeout) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this._waitForTransaction(transactionId, timeout);
+            return this._waitForTransaction(transactionHash, (confirmations == null) ? 1 : confirmations, timeout || 0, null);
         });
     }
-    _waitForTransaction(transactionId, timeoutMs) {
+    _waitForTransaction(transactionHash, confirmations, timeout, replaceable) {
         return __awaiter(this, void 0, void 0, function* () {
-            //timeoutMs -> max limit to wait
-            //loop every 1sec until limit reached, or resolved
-            if (timeoutMs == null) {
-                return yield this.waitOrReturn(transactionId);
-            }
-            if (timeoutMs <= 0) {
-                //TODO fix timeoutMs value is always 0!
-                logger.throwError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeoutMs });
-            }
-            return yield this.waitOrReturn(transactionId, timeoutMs - 1000);
-        });
-    }
-    waitOrReturn(transactionId, timeoutMs) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const txResponse = yield this.getTransaction(parseTransactionId(transactionId));
-            if (txResponse != null) {
-                return this.formatter.txRecordToTxReceipt(txResponse);
-            }
-            else {
-                console.log('waiting 1000 ms..');
-                yield this.sleep(1000);
-                return this._waitForTransaction(transactionId, timeoutMs);
-            }
-        });
-    }
-    sleep(ms) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve) => {
-                setTimeout(resolve, ms);
-            });
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         });
     }
     /**
@@ -872,29 +841,48 @@ export class BaseProvider extends Provider {
         });
     }
     // This should be called by any subclass wrapping a TransactionResponse
-    _wrapTransaction(tx, receipt) {
+    _wrapTransaction(tx, hash, startBlock) {
+        if (hash != null && hexDataLength(hash) !== 48) {
+            throw new Error("invalid response - sendTransaction");
+        }
         const result = tx;
-        console.log("HederaTransactionReceipt", receipt);
-        if (!result.customData) {
-            result.customData = {};
+        // Check the hash we expect is the same as the hash the server reported
+        if (hash != null && tx.hash !== hash) {
+            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
-        if (receipt.fileId) {
-            result.customData.fileId = receipt.fileId.toString();
-        }
-        if (receipt.contractId) {
-            result.customData.contractId = receipt.contractId.toSolidityAddress();
-        }
-        result.wait = (timeout) => __awaiter(this, void 0, void 0, function* () {
-            // query for txRecord (txId) 
-            const txReceipt = yield this._waitForTransaction(tx.transactionId, timeout);
-            if (txReceipt.status === 0) {
+        result.wait = (confirms, timeout) => __awaiter(this, void 0, void 0, function* () {
+            if (confirms == null) {
+                confirms = 1;
+            }
+            if (timeout == null) {
+                timeout = 0;
+            }
+            // Get the details to detect replacement
+            let replacement = undefined;
+            if (confirms !== 0 && startBlock != null) {
+                replacement = {
+                    data: tx.data,
+                    from: tx.from,
+                    nonce: tx.nonce,
+                    to: tx.to,
+                    value: tx.value,
+                    startBlock
+                };
+            }
+            const receipt = yield this._waitForTransaction(tx.hash, confirms, timeout, replacement);
+            if (receipt == null && confirms === 0) {
+                return null;
+            }
+            // No longer pending, allow the polling loop to garbage collect this
+            this._emitted["t:" + tx.hash] = receipt.blockNumber;
+            if (receipt.status === 0) {
                 logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
                     transaction: tx,
                     receipt: receipt
                 });
             }
-            return txReceipt;
+            return receipt;
         });
         return result;
     }
@@ -905,14 +893,13 @@ export class BaseProvider extends Provider {
             signedTransaction = yield signedTransaction;
             const txBytes = arrayify(signedTransaction);
             const hederaTx = HederaTransaction.fromBytes(txBytes);
-            const ethersTx = yield this.formatter.transaction(signedTransaction); //
+            const ethersTx = yield this.formatter.transaction(signedTransaction);
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
                 // TODO once we have fallback provider use `provider.perform("sendTransaction")`
                 // TODO Before submission verify that the nodeId is the one that the provider is connected to
-                const resp = yield hederaTx.execute(this.hederaClient);
-                const receipt = yield resp.getReceipt(this.hederaClient);
-                return this._wrapTransaction(ethersTx, receipt);
+                yield hederaTx.execute(this.hederaClient);
+                return this._wrapTransaction(ethersTx, txHash);
             }
             catch (error) {
                 const err = logger.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
@@ -1033,51 +1020,48 @@ export class BaseProvider extends Provider {
      *
      * @param txId - id of the transaction to search for
      */
-    getTransaction(transactionId) {
+    getTransaction(txId) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            transactionId = yield transactionId;
-            const ep = '/api/v1/transactions/' + transactionId;
-            if (!this.mirrorNodeUrl)
-                logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
-            try {
-                let { data } = yield axios.get(this.mirrorNodeUrl + ep);
-                const filtered = data.transactions
-                    .filter((e) => e.result != "DUPLICATE_TRANSACTION");
-                console.log("Hedera filtered transactions", filtered);
-                const response = filtered.length > 0 ? this.formatter.txRecordToTxResponse(filtered[0]) : null;
-                return response;
-            }
-            catch (error) {
-                if (error.response.status != 404) {
-                    logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                        method: "TransactionResponseQuery",
-                        error
-                    });
-                }
-                return null;
-            }
+            txId = yield txId;
+            const ep = '/api/v1/transactions/' + txId;
+            let { data } = yield axios.get(this.mirrorNodeUrl + ep);
+            const filtered = data.transactions
+                .filter((e) => e.result === "SUCCESS");
+            return filtered.length > 0 ? filtered[0] : null;
         });
     }
-    getTransactionReceipt(transactionId) {
+    getTransactionReceipt(transactionHash) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            transactionId = yield transactionId;
-            try {
-                let receipt = yield new TransactionReceiptQuery()
-                    .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
-                    .execute(this.hederaClient);
-                console.log("getTransactionReceipt: ", receipt);
-                //TODO parse to ethers format
-                // return this.formatter.txRecordToTxReceipt(txRecord); 
-                return null;
-            }
-            catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "TransactionGetReceiptQuery",
-                    error
-                });
-            }
+            transactionHash = yield transactionHash;
+            const params = { transactionHash: this.formatter.hash(transactionHash, true) };
+            return poll(() => __awaiter(this, void 0, void 0, function* () {
+                const result = yield this.perform("getTransactionReceipt", params);
+                if (result == null) {
+                    if (this._emitted["t:" + transactionHash] == null) {
+                        return null;
+                    }
+                    return undefined;
+                }
+                // "geth-etc" returns receipts before they are ready
+                if (result.blockHash == null) {
+                    return undefined;
+                }
+                const receipt = this.formatter.receipt(result);
+                if (receipt.blockNumber == null) {
+                    receipt.confirmations = 0;
+                }
+                else if (receipt.confirmations == null) {
+                    // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
+                    //
+                    // Add the confirmations using the fast block number (pessimistic)
+                    // let confirmations = (blockNumber - receipt.blockNumber) + 1;
+                    // if (confirmations <= 0) { confirmations = 1; }
+                    // receipt.confirmations = confirmations;
+                }
+                return receipt;
+            }), { oncePoll: this });
         });
     }
     getLogs(filter) {
