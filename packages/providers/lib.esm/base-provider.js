@@ -1037,16 +1037,16 @@ export class BaseProvider extends Provider {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
             transactionId = yield transactionId;
-            const ep = '/api/v1/transactions/' + transactionId;
+            const ep = '/api/v1/contracts/results/' + transactionId;
             if (!this.mirrorNodeUrl)
                 logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
             try {
                 let { data } = yield axios.get(this.mirrorNodeUrl + ep);
-                const filtered = data.transactions
-                    .filter((e) => e.result != "DUPLICATE_TRANSACTION");
-                console.log("Hedera filtered transactions", filtered);
-                const response = filtered.length > 0 ? this.formatter.txRecordToTxResponse(filtered[0]) : null;
-                return response;
+                if (data) {
+                    console.log("Hedera contract result", data);
+                    return this.formatter.txRecordToTxResponse(data);
+                }
+                return null;
             }
             catch (error) {
                 if (error.response.status != 404) {

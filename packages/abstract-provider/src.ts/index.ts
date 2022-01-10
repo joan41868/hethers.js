@@ -36,25 +36,22 @@ export type TransactionRequest = {
 }
 
 export type HederaTransactionResponse = {
-    charged_tx_fee: number,
-    consensus_timestamp: string,
-    entity_id: string,
-    max_fee: string,
-    memo_base64: string,
-    name: string,
-    node: string,
-    nonce: number,
-    result: string,
-    scheduled: false,
-    bytes: BytesLike,
-    transaction_hash: string,
-    transaction_id: string,
-    transfers: Array<string>,
-    valid_duration_seconds: number,
-    valid_start_timestamp: string;
+    amount: number,
+    call_result: string,
+    contract_id: string,
+    created_contract_ids: [],
+    error_message: string,
+    from: string,
+    function_parameters: string,
+    gas_limit: number,
+    gas_used: number,
+    timestamp: string,
+    to: string,
+    block_hash: string,
+    block_number: number,
+    hash: string
 }
   
-
 export interface TransactionResponse extends Transaction {
     // Populate it
     hash: string;

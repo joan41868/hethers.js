@@ -11,7 +11,7 @@ import { AccessList, accessListify, parse as parseTransaction } from "@etherspro
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
-import { getAddressFromAccount } from "ethers/lib/utils";
+// import { getAddressFromAccount } from "ethers/lib/utils";
 // import { TransactionResponse } from "@hashgraph/sdk";
 
 export type FormatFunc = (value: any) => any;
@@ -377,12 +377,6 @@ export class Formatter {
 
             result.chainId = chainId;
         }
-
-        // 0x0000... should actually be null
-        // if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-        //     result.blockHash = null;
-        // }
-
         return result;
     }
 
@@ -394,31 +388,9 @@ export class Formatter {
         return Formatter.check(this.formats.receiptLog, value);
     }
 
-    //parse to ethers format inside here?
     //fill the txReceipt obj
     receipt(value: any): TransactionReceipt {
         const result: TransactionReceipt = Formatter.check(this.formats.receipt, value);
-
-        // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        // if (result.root != null) {
-        //     if (result.root.length <= 4) {
-        //         // Could be 0x00, 0x0, 0x01 or 0x1
-        //         const value = BigNumber.from(result.root).toNumber();
-        //         if (value === 0 || value === 1) {
-        //             // Make sure if both are specified, they match
-        //             if (result.status != null && (result.status !== value)) {
-        //                 logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-        //             }
-        //             result.status = value;
-        //             delete result.root;
-        //         } else {
-        //             logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-        //         }
-        //     } else if (result.root.length !== 66) {
-        //         // Must be a valid bytes32
-        //         logger.throwArgumentError("invalid root hash", "value.root", result.root);
-        //     }
-        // }
 
         if (result.status != null) {
             result.byzantium = true;
@@ -428,21 +400,24 @@ export class Formatter {
     }
 
     txRecordToTxResponse(txRecord: HederaTransactionResponse): TransactionResponse {
-        const senderAccount = txRecord.transaction_id.split('-');
         return {
             accessList: null,
             chainId: 1, // get from provider for "mainnet", "testnet", "previewnet"?
             data: '',
-            from: getAddressFromAccount(senderAccount[0]),
-            gasLimit: null,
-            hash: txRecord.transaction_hash,
-            transactionId: txRecord.transaction_id,
+            from: txRecord.from,
+            gasLimit: BigNumber.from(txRecord.gas_limit),
+            hash: txRecord.hash,
+            transactionId: '',
             r: '',
             s: '',
-            to: getAddressFromAccount(txRecord.entity_id),
+            to: txRecord.to,
             v: 0,
             value: null,
-            customData: { status: txRecord.result, name: txRecord.name },
+            customData: { 
+                gas_used: txRecord.gas_used,
+                call_result: txRecord.call_result, 
+                error_message: txRecord.error_message 
+            },
             wait: null
         }
     }
@@ -450,22 +425,22 @@ export class Formatter {
     txRecordToTxReceipt(txRecord: TransactionResponse): TransactionReceipt {
         let to = null;
         let contractAddress = null;
-        if (txRecord.customData.name === "CONTRACTCREATEINSTANCE") {
+        if (txRecord.customData.call_result != '0x') { //is not contract_create
             contractAddress = txRecord.to;
-        } else if (txRecord.customData.name === "CONTRACTCALL") {
+        } else {
             to = txRecord.to;
         }
         return {
             to: to,
             from: txRecord.from,
             contractAddress: contractAddress,
-            gasUsed: null,
+            gasUsed: txRecord.customData.gas_used,
             logsBloom: null, //to be provided by hedera rest api
             transactionHash: txRecord.hash,
             logs: null, //to be provided by hedera rest api
             cumulativeGasUsed: null,
             byzantium: false,
-            status: txRecord.customData.status === "SUCCESS" ? 1 : 0
+            status: txRecord.customData.error_message === '' ? 1 : 0
         }
     }
 

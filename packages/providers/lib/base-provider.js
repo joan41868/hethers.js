@@ -1336,7 +1336,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var ep, data, filtered, response, error_7;
+            var ep, data, error_7;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1345,7 +1345,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, transactionId];
                     case 2:
                         transactionId = _a.sent();
-                        ep = '/api/v1/transactions/' + transactionId;
+                        ep = '/api/v1/contracts/results/' + transactionId;
                         if (!this.mirrorNodeUrl)
                             logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
                         _a.label = 3;
@@ -1354,11 +1354,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + ep)];
                     case 4:
                         data = (_a.sent()).data;
-                        filtered = data.transactions
-                            .filter(function (e) { return e.result != "DUPLICATE_TRANSACTION"; });
-                        console.log("Hedera filtered transactions", filtered);
-                        response = filtered.length > 0 ? this.formatter.txRecordToTxResponse(filtered[0]) : null;
-                        return [2 /*return*/, response];
+                        if (data) {
+                            console.log("Hedera contract result", data);
+                            return [2 /*return*/, this.formatter.txRecordToTxResponse(data)];
+                        }
+                        return [2 /*return*/, null];
                     case 5:
                         error_7 = _a.sent();
                         if (error_7.response.status != 404) {

@@ -11,7 +11,6 @@ var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
-var utils_1 = require("ethers/lib/utils");
 var Formatter = /** @class */ (function () {
     function Formatter() {
         var _newTarget = this.constructor;
@@ -315,10 +314,6 @@ var Formatter = /** @class */ (function () {
             }
             result.chainId = chainId;
         }
-        // 0x0000... should actually be null
-        // if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-        //     result.blockHash = null;
-        // }
         return result;
     };
     Formatter.prototype.transaction = function (value) {
@@ -327,74 +322,56 @@ var Formatter = /** @class */ (function () {
     Formatter.prototype.receiptLog = function (value) {
         return Formatter.check(this.formats.receiptLog, value);
     };
-    //parse to ethers format inside here?
     //fill the txReceipt obj
     Formatter.prototype.receipt = function (value) {
         var result = Formatter.check(this.formats.receipt, value);
-        // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        // if (result.root != null) {
-        //     if (result.root.length <= 4) {
-        //         // Could be 0x00, 0x0, 0x01 or 0x1
-        //         const value = BigNumber.from(result.root).toNumber();
-        //         if (value === 0 || value === 1) {
-        //             // Make sure if both are specified, they match
-        //             if (result.status != null && (result.status !== value)) {
-        //                 logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-        //             }
-        //             result.status = value;
-        //             delete result.root;
-        //         } else {
-        //             logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-        //         }
-        //     } else if (result.root.length !== 66) {
-        //         // Must be a valid bytes32
-        //         logger.throwArgumentError("invalid root hash", "value.root", result.root);
-        //     }
-        // }
         if (result.status != null) {
             result.byzantium = true;
         }
         return result;
     };
     Formatter.prototype.txRecordToTxResponse = function (txRecord) {
-        var senderAccount = txRecord.transaction_id.split('-');
         return {
             accessList: null,
             chainId: 1,
             data: '',
-            from: (0, utils_1.getAddressFromAccount)(senderAccount[0]),
-            gasLimit: null,
-            hash: txRecord.transaction_hash,
-            transactionId: txRecord.transaction_id,
+            from: txRecord.from,
+            gasLimit: bignumber_1.BigNumber.from(txRecord.gas_limit),
+            hash: txRecord.hash,
+            transactionId: '',
             r: '',
             s: '',
-            to: (0, utils_1.getAddressFromAccount)(txRecord.entity_id),
+            to: txRecord.to,
             v: 0,
             value: null,
-            customData: { status: txRecord.result, name: txRecord.name },
+            customData: {
+                gas_used: txRecord.gas_used,
+                call_result: txRecord.call_result,
+                error_message: txRecord.error_message
+            },
             wait: null
         };
     };
     Formatter.prototype.txRecordToTxReceipt = function (txRecord) {
         var to = null;
         var contractAddress = null;
-        if (txRecord.customData.name === "CONTRACTCREATEINSTANCE") {
+        if (txRecord.customData.call_result != '0x') { //is not contract_create
             contractAddress = txRecord.to;
         }
-        else if (txRecord.customData.name === "CONTRACTCALL") {
+        else {
             to = txRecord.to;
         }
         return {
             to: to,
             from: txRecord.from,
             contractAddress: contractAddress,
-            gasUsed: null,
+            gasUsed: txRecord.customData.gas_used,
             logsBloom: null,
             transactionHash: txRecord.hash,
             logs: null,
             cumulativeGasUsed: null,
             byzantium: false,
-            status: txRecord.customData.status === "SUCCESS" ? 1 : 0
+            status: txRecord.customData.error_message === '' ? 1 : 0
         };
     };
     Formatter.prototype.topics = function (value) {

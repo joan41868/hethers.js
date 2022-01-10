@@ -1185,16 +1185,15 @@ export class BaseProvider extends Provider implements EnsProvider {
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
         await this.getNetwork();
         transactionId = await transactionId;
-        const ep = '/api/v1/transactions/' + transactionId;
+        const ep = '/api/v1/contracts/results/' + transactionId;
         if (!this.mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
         try {
             let { data } = await axios.get(this.mirrorNodeUrl + ep);
-            const filtered = data.transactions
-                .filter((e: { result: string; }) => e.result != "DUPLICATE_TRANSACTION");
-            
-            console.log("Hedera filtered transactions", filtered);            
-            const response = filtered.length > 0 ? this.formatter.txRecordToTxResponse(filtered[0]) : null;
-            return response;
+            if (data) {
+                console.log("Hedera contract result", data); 
+                return this.formatter.txRecordToTxResponse(data);
+            }
+            return null;
         } catch (error) {
             if (error.response.status != 404) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
