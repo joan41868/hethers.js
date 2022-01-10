@@ -222,8 +222,6 @@ var Formatter = /** @class */ (function () {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     Formatter.prototype.hash = function (value, strict) {
         var result = this.hex(value, strict);
-        console.log("hash result: ", result);
-        console.log("hash result length: ", (0, bytes_1.hexDataLength)(result));
         if ((0, bytes_1.hexDataLength)(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
         }
@@ -358,58 +356,45 @@ var Formatter = /** @class */ (function () {
         }
         return result;
     };
-    //TODO fix model mapping
     Formatter.prototype.txRecordToTxResponse = function (txRecord) {
-        console.log("txRecordToTxResponse", txRecord);
         var senderAccount = txRecord.transaction_id.split('-');
-        // const hashHex = '0x' + Buffer.from(txRecord.transaction_hash, 'base64').toString('hex')
         return {
             accessList: null,
-            // blockHash: null,
-            // blockNumber: 0,
             chainId: 1,
-            // confirmations: 0,
-            // creates: null,
             data: '',
             from: (0, utils_1.getAddressFromAccount)(senderAccount[0]),
-            // from: '',
             gasLimit: null,
-            // gasPrice: null,
             hash: txRecord.transaction_hash,
             transactionId: txRecord.transaction_id,
-            // nonce: 0,
             r: '',
             s: '',
             to: (0, utils_1.getAddressFromAccount)(txRecord.entity_id),
-            // transactionIndex: 0,
-            // type: 0,
             v: 0,
             value: null,
+            customData: { status: txRecord.result, name: txRecord.name },
             wait: null
         };
     };
-    //TODO fix model mapping form HederaTransactionResponse, handle status
     Formatter.prototype.txRecordToTxReceipt = function (txRecord) {
-        console.log("txRecordToTxReceipt", txRecord);
+        var to = null;
+        var contractAddress = null;
+        if (txRecord.customData.name === "CONTRACTCREATEINSTANCE") {
+            contractAddress = txRecord.to;
+        }
+        else if (txRecord.customData.name === "CONTRACTCALL") {
+            to = txRecord.to;
+        }
         return {
-            to: txRecord.to,
+            to: to,
             from: txRecord.from,
-            contractAddress: '',
-            // transactionIndex: 0,
-            // root: '',
+            contractAddress: contractAddress,
             gasUsed: null,
-            logsBloom: '',
-            // blockHash: '',
+            logsBloom: null,
             transactionHash: txRecord.hash,
             logs: null,
-            // blockNumber: 0,
-            // confirmations: 0,
             cumulativeGasUsed: null,
-            // effectiveGasPrice: null,
             byzantium: false,
-            // type: txRecord.type,
-            status: 1
-            // status: txRecord.result === "SUCCESS" ? 1 : 0
+            status: txRecord.customData.status === "SUCCESS" ? 1 : 0
         };
     };
     Formatter.prototype.topics = function (value) {

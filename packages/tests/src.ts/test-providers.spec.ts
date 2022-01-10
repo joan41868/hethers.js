@@ -643,9 +643,6 @@ Object.keys(blockchainData).forEach((network) => {
         addObjectTest(`fetches transaction ${ hash }`, async (provider: ethers.providers.Provider) => {
             const tx = await provider.getTransaction(hash);
 
-            // This changes with every block
-            assert.equal(typeof(tx.confirmations), "number", "confirmations is a number");
-            delete tx.confirmations;
 
             assert.equal(typeof(tx.wait), "function", "wait is a function");
             delete tx.wait
@@ -669,8 +666,8 @@ Object.keys(blockchainData).forEach((network) => {
             }
 
             // This changes with every block; so just make sure it is a number
-            assert.equal(typeof(receipt.confirmations), "number", "confirmations is a number");
-            delete receipt.confirmations;
+            // assert.equal(typeof(receipt.confirmations), "number", "confirmations is a number");
+            // delete receipt.confirmations;
 
             return receipt;
         }, test, (provider: string, network: string, test: TestDescription) => {

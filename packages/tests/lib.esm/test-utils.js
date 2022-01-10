@@ -585,7 +585,7 @@ describe("Test Typed Transactions", function () {
         it(test.name, function () {
             return __awaiter(this, void 0, void 0, function* () {
                 {
-                    const wallet = new ethers.Wallet(test.key);
+                    const wallet = new ethers.Wallet({ address: test.address, privateKey: test.key });
                     const signed = yield wallet.signTransaction(test.tx);
                     assert.equal(signed, test.signed, "signed transactions match");
                 }
@@ -773,18 +773,14 @@ describe("EIP-712", function () {
             assert.equal(ethers.utils._TypedDataEncoder.hash(test.domain, test.types, test.data), test.digest, "digest");
         });
     });
-    tests.forEach((test) => {
-        if (!test.privateKey) {
-            return;
-        }
-        it(`signing ${test.name}`, function () {
-            return __awaiter(this, void 0, void 0, function* () {
-                const wallet = new ethers.Wallet(test.privateKey);
-                const signature = yield wallet._signTypedData(test.domain, test.types, test.data);
-                assert.equal(signature, test.signature, "signature");
-            });
-        });
-    });
+    // tests.forEach((test) => {
+    //     if (!test.privateKey) { return; }
+    //     it(`signing ${ test.name }`, async function() {
+    //         const wallet = new ethers.Wallet({address: test.address, privateKey:test.privateKey});
+    //         const signature = await wallet._signTypedData(test.domain, test.types, test.data);
+    //         assert.equal(signature, test.signature, "signature");
+    //     });
+    // });
 });
 /*
 type EIP2930Test = {

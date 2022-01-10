@@ -5,9 +5,11 @@ import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "
 import { AddressZero } from "@ethersproject/constants";
 import { shallowCopy } from "@ethersproject/properties";
 import { accessListify, parse as parseTransaction } from "@ethersproject/transactions";
+// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
+import { getAddressFromAccount } from "ethers/lib/utils";
 export class Formatter {
     constructor() {
         logger.checkNew(new.target, Formatter);
@@ -216,7 +218,7 @@ export class Formatter {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash(value, strict) {
         const result = this.hex(value, strict);
-        if (hexDataLength(result) !== 32) {
+        if (hexDataLength(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
         }
         return result;
@@ -310,9 +312,9 @@ export class Formatter {
             result.chainId = chainId;
         }
         // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
+        // if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
+        //     result.blockHash = null;
+        // }
         return result;
     }
     transaction(value) {
@@ -321,34 +323,75 @@ export class Formatter {
     receiptLog(value) {
         return Formatter.check(this.formats.receiptLog, value);
     }
+    //parse to ethers format inside here?
+    //fill the txReceipt obj
     receipt(value) {
         const result = Formatter.check(this.formats.receipt, value);
         // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                const value = BigNumber.from(result.root).toNumber();
-                if (value === 0 || value === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value)) {
-                        logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value;
-                    delete result.root;
-                }
-                else {
-                    logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            }
-            else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
+        // if (result.root != null) {
+        //     if (result.root.length <= 4) {
+        //         // Could be 0x00, 0x0, 0x01 or 0x1
+        //         const value = BigNumber.from(result.root).toNumber();
+        //         if (value === 0 || value === 1) {
+        //             // Make sure if both are specified, they match
+        //             if (result.status != null && (result.status !== value)) {
+        //                 logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
+        //             }
+        //             result.status = value;
+        //             delete result.root;
+        //         } else {
+        //             logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
+        //         }
+        //     } else if (result.root.length !== 66) {
+        //         // Must be a valid bytes32
+        //         logger.throwArgumentError("invalid root hash", "value.root", result.root);
+        //     }
+        // }
         if (result.status != null) {
             result.byzantium = true;
         }
         return result;
+    }
+    txRecordToTxResponse(txRecord) {
+        const senderAccount = txRecord.transaction_id.split('-');
+        return {
+            accessList: null,
+            chainId: 1,
+            data: '',
+            from: getAddressFromAccount(senderAccount[0]),
+            gasLimit: null,
+            hash: txRecord.transaction_hash,
+            transactionId: txRecord.transaction_id,
+            r: '',
+            s: '',
+            to: getAddressFromAccount(txRecord.entity_id),
+            v: 0,
+            value: null,
+            customData: { status: txRecord.result, name: txRecord.name },
+            wait: null
+        };
+    }
+    txRecordToTxReceipt(txRecord) {
+        let to = null;
+        let contractAddress = null;
+        if (txRecord.customData.name === "CONTRACTCREATEINSTANCE") {
+            contractAddress = txRecord.to;
+        }
+        else if (txRecord.customData.name === "CONTRACTCALL") {
+            to = txRecord.to;
+        }
+        return {
+            to: to,
+            from: txRecord.from,
+            contractAddress: contractAddress,
+            gasUsed: null,
+            logsBloom: null,
+            transactionHash: txRecord.hash,
+            logs: null,
+            cumulativeGasUsed: null,
+            byzantium: false,
+            status: txRecord.customData.status === "SUCCESS" ? 1 : 0
+        };
     }
     topics(value) {
         if (Array.isArray(value)) {

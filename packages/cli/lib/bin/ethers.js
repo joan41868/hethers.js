@@ -890,8 +890,6 @@ var WaitPlugin = /** @class */ (function (_super) {
                     case 1:
                         receipt = _a.sent();
                         (0, cli_1.dump)("Response:", {
-                            "Block": receipt.blockNumber,
-                            "Block Hash": receipt.blockHash,
                             "Status": (receipt.status ? "ok" : "failed")
                         });
                         return [2 /*return*/];

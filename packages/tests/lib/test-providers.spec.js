@@ -652,9 +652,6 @@ Object.keys(blockchainData).forEach(function (network) {
                     case 0: return [4 /*yield*/, provider.getTransaction(hash)];
                     case 1:
                         tx = _a.sent();
-                        // This changes with every block
-                        assert_1.default.equal(typeof (tx.confirmations), "number", "confirmations is a number");
-                        delete tx.confirmations;
                         assert_1.default.equal(typeof (tx.wait), "function", "wait is a function");
                         delete tx.wait;
                         return [2 /*return*/, tx];
@@ -680,8 +677,8 @@ Object.keys(blockchainData).forEach(function (network) {
                             receipt.status = null;
                         }
                         // This changes with every block; so just make sure it is a number
-                        assert_1.default.equal(typeof (receipt.confirmations), "number", "confirmations is a number");
-                        delete receipt.confirmations;
+                        // assert.equal(typeof(receipt.confirmations), "number", "confirmations is a number");
+                        // delete receipt.confirmations;
                         return [2 /*return*/, receipt];
                 }
             });

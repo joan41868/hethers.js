@@ -12,6 +12,7 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 import { getAddressFromAccount } from "ethers/lib/utils";
+// import { TransactionResponse } from "@hashgraph/sdk";
 
 export type FormatFunc = (value: any) => any;
 
@@ -266,8 +267,6 @@ export class Formatter {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash(value: any, strict?: boolean): string {
         const result = this.hex(value, strict);
-        console.log("hash result: ", result);
-        console.log("hash result length: ", hexDataLength(result));
         if (hexDataLength(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
         }
@@ -428,59 +427,45 @@ export class Formatter {
         return result;
     }
 
-    //TODO fix model mapping
     txRecordToTxResponse(txRecord: HederaTransactionResponse): TransactionResponse {
-        console.log("txRecordToTxResponse", txRecord);
         const senderAccount = txRecord.transaction_id.split('-');
-        // const hashHex = '0x' + Buffer.from(txRecord.transaction_hash, 'base64').toString('hex')
         return {
             accessList: null,
-            // blockHash: null,
-            // blockNumber: 0,
-            chainId: 1,
-            // confirmations: 0,
-            // creates: null,
+            chainId: 1, // get from provider for "mainnet", "testnet", "previewnet"?
             data: '',
             from: getAddressFromAccount(senderAccount[0]),
-            // from: '',
             gasLimit: null,
-            // gasPrice: null,
             hash: txRecord.transaction_hash,
             transactionId: txRecord.transaction_id,
-            // nonce: 0,
             r: '',
             s: '',
             to: getAddressFromAccount(txRecord.entity_id),
-            // transactionIndex: 0,
-            // type: 0,
             v: 0,
             value: null,
+            customData: { status: txRecord.result, name: txRecord.name },
             wait: null
         }
     }
 
-    //TODO fix model mapping form HederaTransactionResponse, handle status
-    txRecordToTxReceipt(txRecord: TransactionResponse): TransactionReceipt {   
-        console.log("txRecordToTxReceipt", txRecord);
+    txRecordToTxReceipt(txRecord: TransactionResponse): TransactionReceipt {
+        let to = null;
+        let contractAddress = null;
+        if (txRecord.customData.name === "CONTRACTCREATEINSTANCE") {
+            contractAddress = txRecord.to;
+        } else if (txRecord.customData.name === "CONTRACTCALL") {
+            to = txRecord.to;
+        }
         return {
-            to: txRecord.to,
+            to: to,
             from: txRecord.from,
-            contractAddress: '',
-            // transactionIndex: 0,
-            // root: '',
+            contractAddress: contractAddress,
             gasUsed: null,
-            logsBloom: '',
-            // blockHash: '',
+            logsBloom: null, //to be provided by hedera rest api
             transactionHash: txRecord.hash,
-            logs: null,
-            // blockNumber: 0,
-            // confirmations: 0,
+            logs: null, //to be provided by hedera rest api
             cumulativeGasUsed: null,
-            // effectiveGasPrice: null,
             byzantium: false,
-            // type: txRecord.type,
-            status: 1
-            // status: txRecord.result === "SUCCESS" ? 1 : 0
+            status: txRecord.customData.status === "SUCCESS" ? 1 : 0
         }
     }
 

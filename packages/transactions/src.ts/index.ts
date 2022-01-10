@@ -73,10 +73,8 @@ export interface Transaction {
 
     to?: string;
     from?: string;
-    // nonce: number; // TODO remove
 
     gasLimit: BigNumber;
-    // gasPrice?: BigNumber; // TODO remove
 
     data: string;
     value: BigNumber;
@@ -86,15 +84,8 @@ export interface Transaction {
     s?: string;
     v?: number;
 
-    // Typed-Transaction features
-    // type?: number | null;
-
     // EIP-2930; Type 1 & EIP-1559; Type 2
     accessList?: AccessList;
-
-    // EIP-1559; Type 2
-    // maxPriorityFeePerGas?: BigNumber;
-    // maxFeePerGas?: BigNumber;
 }
 
 type HederaTransactionContents = {
@@ -539,8 +530,7 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     }
 
     let contents = {
-        hash: hexlify(await parsed.getTransactionHash()),
-        // hash: await parsed.getTransactionHash(),
+        hash: hexlify(await parsed.getTransactionHash()), //stringify?
         from: getAddressFromAccount(parsed.transactionId.accountId.toString()),
     } as HederaTransactionContents;
 
@@ -567,13 +557,10 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     return {
         transactionId: parseHederaTransactionId(parsed.transactionId),
         ...contents,
-        // nonce: 0,
-        // gasPrice: handleNumber('0'),
         chainId: 0,
         r: '',
         s: '',
         v: 0,
-        // type: null,
     };
 }
 

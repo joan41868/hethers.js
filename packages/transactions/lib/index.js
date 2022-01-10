@@ -498,7 +498,6 @@ function parse(rawTransaction) {
                     return [4 /*yield*/, parsed.getTransactionHash()];
                 case 1:
                     contents = (_c.hash = _b.apply(void 0, [_d.sent()]),
-                        // hash: await parsed.getTransactionHash(),
                         _c.from = (0, utils_1.getAddressFromAccount)(parsed.transactionId.accountId.toString()),
                         _c);
                     if (parsed instanceof sdk_1.ContractExecuteTransaction) {
@@ -521,10 +520,7 @@ function parse(rawTransaction) {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];
                     }
                     // TODO populate r, s ,v
-                    return [2 /*return*/, __assign(__assign({ transactionId: parseHederaTransactionId(parsed.transactionId) }, contents), { 
-                            // nonce: 0,
-                            // gasPrice: handleNumber('0'),
-                            chainId: 0, r: '', s: '', v: 0 })];
+                    return [2 /*return*/, __assign(__assign({ transactionId: parseHederaTransactionId(parsed.transactionId) }, contents), { chainId: 0, r: '', s: '', v: 0 })];
             }
         });
     });

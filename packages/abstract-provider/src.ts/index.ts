@@ -58,17 +58,9 @@ export type HederaTransactionResponse = {
 export interface TransactionResponse extends Transaction {
     // Populate it
     hash: string;
-
-    // Only if a transaction has been mined
-    // blockNumber?: number, // Ignore and not populate it
-    // blockHash?: string, // Ignore and not populate it
     timestamp?: number, // Populate it if transaction has been mined and mirror node returns it
-
-    // confirmations: number, // hardcode 0 for now
-
     // Not optional (as it is in Transaction)
     from: string; // populate it from ethersTx
-
     // The raw transaction
     raw?: string, // equivalent of signed transaction
 
@@ -129,19 +121,12 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string,
-    // transactionIndex: number,
-    // root?: string,
     gasUsed: BigNumber,
     logsBloom: string,
-    // blockHash: string,
     transactionHash: string,
     logs: Array<Log>,
-    // blockNumber: number,
-    // confirmations: number,
     cumulativeGasUsed: BigNumber,
-    // effectiveGasPrice: BigNumber,
     byzantium: boolean,
-    // type: number;
     status?: number
 };
 
