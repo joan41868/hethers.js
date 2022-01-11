@@ -12,8 +12,8 @@ export default class HederaProvider extends BaseProvider {
         };
         props.network[consensusNodeUrl] = nodeId.toString();
         super({
-            network:(props as HederaNetworkConfigLike).network
+            network:(props as HederaNetworkConfigLike).network,
+            mirrorNodeUrl,
         });
-        this.mirrorNodeUrl = mirrorNodeUrl;
     }
 }

@@ -513,7 +513,7 @@ export class BaseProvider extends Provider {
             else {
                 const asHederaNetwork = network;
                 this.hederaClient = Client.forNetwork(asHederaNetwork.network);
-                // FIXME: what about the mirror node? how do we resolve it with custom network?
+                this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
             }
         }
         this._maxInternalBlockNumber = -1024;
@@ -1015,17 +1015,11 @@ export class BaseProvider extends Provider {
         return __awaiter(this, void 0, void 0, function* () {
             txId = yield txId;
             const ep = '/api/v1/transactions/' + txId;
-            let { data } = yield axios.get(this.getMirrorNodeUrl() + ep);
+            let { data } = yield axios.get(this._mirrorNodeUrl + ep);
             const filtered = data.transactions
                 .filter((e) => e.result === "SUCCESS");
             return filtered.length > 0 ? filtered[0] : null;
         });
-    }
-    getMirrorNodeUrl() {
-        if (this.mirrorNodeUrl != undefined) {
-            return this.mirrorNodeUrl;
-        }
-        return this._mirrorNodeUrl;
     }
     getTransactionReceipt(transactionHash) {
         return __awaiter(this, void 0, void 0, function* () {

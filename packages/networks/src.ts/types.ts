@@ -18,8 +18,9 @@ export type HederaOperator = {
 
 export type HederaNetworkConfigLike = {
     operator?: HederaOperator,
-    network?: NodeUrlEntries
-}
+    network?: NodeUrlEntries,
+    mirrorNodeUrl? :string,
+};
 
 export type NodeUrlEntries = {
     [key: string]: any;

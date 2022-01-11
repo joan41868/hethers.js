@@ -1286,4 +1286,17 @@ describe("Test Hedera Provider", function () {
         const bal = await prov.getBalance(solAddr);
         assert.strictEqual(true, bal.gte(0));
     });
+
+    it("Should be able to query testnet with custom urls", async function() {
+        const provider2 = new ethers.providers.HederaProvider(
+            "0.0.3",
+            "0.testnet.hedera.com:50211",
+            "https://testnet.mirrornode.hedera.com");
+
+        const balance2 = await provider2.getBalance(solAddr);
+        assert.strictEqual(true, balance2.gte(0));
+        const txId = `0.0.15680048-1638189529-145876922`;
+        const record2 = await provider2.getTransaction(txId);
+        assert.notStrictEqual(record2, null, "Record is null")
+    });
 });

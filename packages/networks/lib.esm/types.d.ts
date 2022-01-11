@@ -13,6 +13,7 @@ export declare type HederaOperator = {
 export declare type HederaNetworkConfigLike = {
     operator?: HederaOperator;
     network?: NodeUrlEntries;
+    mirrorNodeUrl?: string;
 };
 export declare type NodeUrlEntries = {
     [key: string]: any;

@@ -582,8 +582,6 @@ export class BaseProvider extends Provider implements EnsProvider {
     readonly anyNetwork: boolean;
     private readonly hederaClient: Client;
     private readonly _mirrorNodeUrl: string; // initial mirror node URL, which is resolved from the provider's network
-    protected mirrorNodeUrl: string; // overridable mirror node URL
-
 
     /**
      *  ready
@@ -636,7 +634,7 @@ export class BaseProvider extends Provider implements EnsProvider {
             } else {
                 const asHederaNetwork = network as HederaNetworkConfigLike;
                 this.hederaClient = Client.forNetwork(asHederaNetwork.network);
-                // FIXME: what about the mirror node? how do we resolve it with custom network?
+                this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
             }
         }
 
@@ -1162,17 +1160,10 @@ export class BaseProvider extends Provider implements EnsProvider {
     async getTransaction(txId: string | Promise<string>): Promise<TransactionResponse> {
         txId = await txId;
         const ep = '/api/v1/transactions/'+txId;
-        let { data } = await axios.get(this.getMirrorNodeUrl() + ep);
+        let { data } = await axios.get(this._mirrorNodeUrl + ep);
         const filtered = data.transactions
             .filter((e: { result: string; }) => e.result === "SUCCESS");
         return filtered.length > 0 ? filtered[0] : null;
-    }
-
-    private getMirrorNodeUrl() :string {
-        if (this.mirrorNodeUrl != undefined) {
-            return this.mirrorNodeUrl;
-        }
-        return this._mirrorNodeUrl;
     }
 
     async getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt> {

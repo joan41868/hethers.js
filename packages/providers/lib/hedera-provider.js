@@ -28,9 +28,9 @@ var HederaProvider = /** @class */ (function (_super) {
         };
         props.network[consensusNodeUrl] = nodeId.toString();
         _this = _super.call(this, {
-            network: props.network
+            network: props.network,
+            mirrorNodeUrl: mirrorNodeUrl,
         }) || this;
-        _this.mirrorNodeUrl = mirrorNodeUrl;
         return _this;
     }
     return HederaProvider;

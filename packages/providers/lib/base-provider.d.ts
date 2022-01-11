@@ -72,7 +72,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
     readonly anyNetwork: boolean;
     private readonly hederaClient;
     private readonly _mirrorNodeUrl;
-    protected mirrorNodeUrl: string;
     /**
      *  ready
      *
@@ -126,7 +125,6 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      * @param txId - id of the transaction to search for
      */
     getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
-    private getMirrorNodeUrl;
     getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
