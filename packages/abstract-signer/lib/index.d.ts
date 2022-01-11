@@ -39,7 +39,7 @@ export declare abstract class Signer {
      *
      * @param transaction - the transaction to be signed.
      */
-    signTransaction(transaction: TransactionRequest): Promise<string>;
+    abstract signTransaction(transaction: TransactionRequest): Promise<string>;
     abstract connect(provider: Provider): Signer;
     readonly _isSigner: boolean;
     constructor();

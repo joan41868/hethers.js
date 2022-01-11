@@ -52,12 +52,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VoidSigner = exports.Signer = void 0;
-var bignumber_1 = require("@ethersproject/bignumber");
-var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
-var address_1 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var logger = new logger_1.Logger(_version_1.version);
 var allowedTransactionKeys = [
@@ -78,83 +75,6 @@ var Signer = /** @class */ (function () {
         logger.checkAbstract(_newTarget, Signer);
         (0, properties_1.defineReadOnly)(this, "_isSigner", true);
     }
-    /**
-     * Signs a transaction with the key given upon creation.
-     * The transaction can be:
-     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
-     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
-     * - ContractCreate - when there is a `bytecodeFileId` field
-     * - ContractCall - when there is a `to` field present. Ignores the other fields
-     *
-     * @param transaction - the transaction to be signed.
-     */
-    Signer.prototype.signTransaction = function (transaction) {
-        var _this = this;
-        var _a, _b;
-        var tx;
-        var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
-        var gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new sdk_1.ContractExecuteTransaction()
-                .setContractId(sdk_1.ContractId.fromSolidityAddress(transaction.to.toString()))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
-        }
-        else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new sdk_1.ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
-                    .setGas(gas);
-            }
-            else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new sdk_1.FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId);
-                }
-                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new sdk_1.FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)]);
-                }
-                else {
-                    logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
-                }
-            }
-        }
-        return this.getAddress().then(function (address) {
-            var accountID = (0, address_1.getAccountFromAddress)(address);
-            tx.setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
-                shard: numberify(accountID.shard),
-                realm: numberify(accountID.realm),
-                num: numberify(accountID.num)
-            })))
-                // FIXME - should be taken from the network/ wallet's provider
-                .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
-                .freeze();
-            var pkey = sdk_1.PrivateKey.fromStringECDSA(_this._signingKey().privateKey);
-            return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
-                var signed;
-                return __generator(this, function (_a) {
-                    switch (_a.label) {
-                        case 0: return [4 /*yield*/, tx.sign(pkey)];
-                        case 1:
-                            signed = _a.sent();
-                            resolve((0, bytes_1.hexlify)(signed.toBytes()));
-                            return [2 /*return*/];
-                    }
-                });
-            }); });
-        });
-    };
     Signer.prototype.getGasPrice = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -548,8 +468,5 @@ function splitInChunks(data, chunkSize) {
         chunks.push(slice);
     }
     return chunks;
-}
-function numberify(num) {
-    return bignumber_1.BigNumber.from(num).toNumber();
 }
 //# sourceMappingURL=index.js.map

@@ -66,6 +66,8 @@ var json_wallets_1 = require("@ethersproject/json-wallets");
 var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
+var sdk_1 = require("@hashgraph/sdk");
+var bignumber_1 = require("@ethersproject/bignumber");
 var logger = new logger_1.Logger(_version_1.version);
 function isAccount(value) {
     return value != null && (0, bytes_1.isHexString)(value.privateKey, 32);
@@ -184,6 +186,77 @@ var Wallet = /** @class */ (function (_super) {
         };
         return new Wallet(eoa, this.provider);
     };
+    Wallet.prototype.signTransaction = function (transaction) {
+        var _this = this;
+        var _a, _b;
+        this._checkAddress('signTransaction');
+        if (transaction.from) {
+            if ((0, address_1.getAddressFromAccount)(transaction.from) !== this.address) {
+                logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
+            }
+        }
+        var tx;
+        var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
+        var gas = (0, bignumber_1.numberify)(transaction.gasLimit ? transaction.gasLimit : 0);
+        if (transaction.to) {
+            tx = new sdk_1.ContractExecuteTransaction()
+                .setContractId(sdk_1.ContractId.fromSolidityAddress((0, address_1.getAddressFromAccount)(transaction.to)))
+                .setFunctionParameters(arrayifiedData)
+                .setGas(gas);
+            if (transaction.value) {
+                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
+            }
+        }
+        else {
+            if (transaction.customData.bytecodeFileId) {
+                tx = new sdk_1.ContractCreateTransaction()
+                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
+                    .setConstructorParameters(arrayifiedData)
+                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
+                    .setGas(gas);
+            }
+            else {
+                if (transaction.customData.fileChunk && transaction.customData.fileId) {
+                    tx = new sdk_1.FileAppendTransaction()
+                        .setContents(transaction.customData.fileChunk)
+                        .setFileId(transaction.customData.fileId);
+                }
+                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
+                    // only a chunk, thus the first one
+                    tx = new sdk_1.FileCreateTransaction()
+                        .setContents(transaction.customData.fileChunk)
+                        .setKeys([transaction.customData.fileKey ?
+                            transaction.customData.fileKey :
+                            sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)]);
+                }
+                else {
+                    logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
+                }
+            }
+        }
+        var account = (0, address_1.getAccountFromAddress)(this.address);
+        tx.setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
+            shard: (0, bignumber_1.numberify)(account.shard),
+            realm: (0, bignumber_1.numberify)(account.realm),
+            num: (0, bignumber_1.numberify)(account.num)
+        })))
+            // FIXME - should be taken from the network/ wallet's provider
+            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
+            .freeze();
+        var pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+        return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
+            var signed;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, tx.sign(pkey)];
+                    case 1:
+                        signed = _a.sent();
+                        resolve((0, bytes_1.hexlify)(signed.toBytes()));
+                        return [2 /*return*/];
+                }
+            });
+        }); });
+    };
     Wallet.prototype.signMessage = function (message) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -254,6 +327,13 @@ var Wallet = /** @class */ (function (_super) {
             path = hdnode_1.defaultPath;
         }
         return new Wallet(hdnode_1.HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+    };
+    Wallet.prototype._checkAddress = function (operation) {
+        if (!this.address) {
+            logger.throwError("missing address", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: (operation || "_checkAddress")
+            });
+        }
     };
     return Wallet;
 }(abstract_signer_1.Signer));
