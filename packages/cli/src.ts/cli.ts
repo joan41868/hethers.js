@@ -680,7 +680,7 @@ export abstract class Plugin {
             return Promise.resolve(ethers.utils.getAddress(addressOrName));
         } catch (error) { }
 
-        return "";
+        return Promise.resolve("");
         // return this.provider.resolveName(addressOrName).then((address) => {
         //     if (address == null) {
         //         this.throwError("ENS name not configured - " + addressOrName);
