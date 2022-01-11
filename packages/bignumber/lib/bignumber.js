@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports._base16To36 = exports._base36To16 = exports.BigNumber = exports.isBigNumberish = void 0;
+exports._base16To36 = exports._base36To16 = exports.numberify = exports.BigNumber = exports.isBigNumberish = void 0;
 /**
  *  BigNumber
  *
@@ -304,6 +304,10 @@ function throwFault(fault, operation, value) {
     }
     return logger.throwError(fault, logger_1.Logger.errors.NUMERIC_FAULT, params);
 }
+function numberify(num) {
+    return BigNumber.from(num).toNumber();
+}
+exports.numberify = numberify;
 // value should have no prefix
 function _base36To16(value) {
     return (new BN(value, 36)).toString(16);
