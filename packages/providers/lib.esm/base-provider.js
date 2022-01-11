@@ -27,6 +27,40 @@ import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as Hed
 import axios from "axios";
 //////////////////////////////
 // Event Serializeing
+// @ts-ignore
+function checkTopic(topic) {
+    if (topic == null) {
+        return "null";
+    }
+    if (hexDataLength(topic) !== 32) {
+        logger.throwArgumentError("invalid topic", "topic", topic);
+    }
+    return topic.toLowerCase();
+}
+// @ts-ignore
+function serializeTopics(topics) {
+    // Remove trailing null AND-topics; they are redundant
+    topics = topics.slice();
+    while (topics.length > 0 && topics[topics.length - 1] == null) {
+        topics.pop();
+    }
+    return topics.map((topic) => {
+        if (Array.isArray(topic)) {
+            // Only track unique OR-topics
+            const unique = {};
+            topic.forEach((topic) => {
+                unique[checkTopic(topic)] = true;
+            });
+            // The order of OR-topics does not matter
+            const sorted = Object.keys(unique);
+            sorted.sort();
+            return sorted.join("|");
+        }
+        else {
+            return checkTopic(topic);
+        }
+    }).join("&");
+}
 function deserializeTopics(data) {
     if (data === "") {
         return [];

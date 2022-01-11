@@ -112,7 +112,7 @@ export abstract class Signer {
         return await this.provider.estimateGas(tx);
     }
 
-    // Populates "from" if unspecified, and calls with the transaction
+    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
     async call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string> {
         return Promise.resolve("");
     }
@@ -134,7 +134,7 @@ export abstract class Signer {
 
     async resolveName(name: string): Promise<string> {
         this._checkProvider("resolveName");
-        return await this.provider.resolveName(name);
+        return "";
     }
 
 

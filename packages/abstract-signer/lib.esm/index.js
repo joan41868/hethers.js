@@ -51,7 +51,7 @@ export class Signer {
             return yield this.provider.estimateGas(tx);
         });
     }
-    // Populates "from" if unspecified, and calls with the transaction
+    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
     call(transaction, blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
             return Promise.resolve("");
@@ -76,7 +76,7 @@ export class Signer {
     resolveName(name) {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("resolveName");
-            return yield this.provider.resolveName(name);
+            return "";
         });
     }
     // Checks a transaction does not contain invalid keys and if

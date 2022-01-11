@@ -219,7 +219,8 @@ var Wallet = /** @class */ (function (_super) {
                                     value: name
                                 });
                             }
-                            return _this.provider.resolveName(name);
+                            return Promise.resolve(name);
+                            // return this.provider.resolveName(name);
                         })];
                     case 1:
                         populated = _a.sent();

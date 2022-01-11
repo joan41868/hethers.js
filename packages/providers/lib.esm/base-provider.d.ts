@@ -46,7 +46,7 @@ export declare class Resolver implements EnsResolver {
     getContentHash(): Promise<string>;
     getText(key: string): Promise<string>;
 }
-export declare class BaseProvider extends Provider implements EnsProvider {
+export declare class BaseProvider extends Provider {
     _networkPromise: Promise<Network>;
     _network: Network;
     _events: Array<Event>;

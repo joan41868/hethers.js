@@ -117,7 +117,7 @@ var Signer = /** @class */ (function () {
             });
         });
     };
-    // Populates "from" if unspecified, and calls with the transaction
+    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
     Signer.prototype.call = function (transaction, blockTag) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -163,12 +163,8 @@ var Signer = /** @class */ (function () {
     Signer.prototype.resolveName = function (name) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        this._checkProvider("resolveName");
-                        return [4 /*yield*/, this.provider.resolveName(name)];
-                    case 1: return [2 /*return*/, _a.sent()];
-                }
+                this._checkProvider("resolveName");
+                return [2 /*return*/, ""];
             });
         });
     };

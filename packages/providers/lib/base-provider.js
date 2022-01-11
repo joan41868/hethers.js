@@ -74,6 +74,40 @@ var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
 //////////////////////////////
 // Event Serializeing
+// @ts-ignore
+function checkTopic(topic) {
+    if (topic == null) {
+        return "null";
+    }
+    if ((0, bytes_1.hexDataLength)(topic) !== 32) {
+        logger.throwArgumentError("invalid topic", "topic", topic);
+    }
+    return topic.toLowerCase();
+}
+// @ts-ignore
+function serializeTopics(topics) {
+    // Remove trailing null AND-topics; they are redundant
+    topics = topics.slice();
+    while (topics.length > 0 && topics[topics.length - 1] == null) {
+        topics.pop();
+    }
+    return topics.map(function (topic) {
+        if (Array.isArray(topic)) {
+            // Only track unique OR-topics
+            var unique_1 = {};
+            topic.forEach(function (topic) {
+                unique_1[checkTopic(topic)] = true;
+            });
+            // The order of OR-topics does not matter
+            var sorted = Object.keys(unique_1);
+            sorted.sort();
+            return sorted.join("|");
+        }
+        else {
+            return checkTopic(topic);
+        }
+    }).join("&");
+}
 function deserializeTopics(data) {
     if (data === "") {
         return [];
