@@ -24,10 +24,10 @@ type TestCases = {
     transactionReceipts: Array<any>;
 };
 
-const hederaPreviewnetOperableAccount = {
+const hederaTestnetOperableAccount = {
     "operator": {
-        "accountId": "0.0.1340",
-        "privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
+        "accountId": "0.0.19041642",
+        "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
     },
 };
 
@@ -1096,27 +1096,31 @@ describe("Test Hedera Provider", function () {
     }).timeout(timeout * 4);
 
     it('should submit signed transaction', async function() {
-        const privateKey = PrivateKey.fromString(hederaPreviewnetOperableAccount.operator.privateKey);
+        // TODO: this test may be flaky
+        // The initial balance part is commented out as of the current non-payable constructor.
+        // In the future, this test should be changed to use testnet and pre-deployed
+        // bytecode for contract with a payable constructor .
+        const privateKey = PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
         // 1. Sign TX -> `sign-transaction.ts`
         const tx = await new ContractCreateTransaction()
             .setContractMemo("memo")
-            .setGas(1000)
-            .setInitialBalance(1000)
-            .setBytecodeFileId("0.0.111111")
+            .setGas(100000)
+            // .setInitialBalance(1000)
+            .setBytecodeFileId("0.0.26562254")
             .setNodeAccountIds([new AccountId(0,0,3)])
             .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
-            .setTransactionId(TransactionId.generate(hederaPreviewnetOperableAccount.operator.accountId))
+            .setTransactionId(TransactionId.generate(hederaTestnetOperableAccount.operator.accountId))
             .freeze()
             .sign(privateKey);
         const txBytes = tx.toBytes();
         const signedTx = ethers.utils.hexlify(txBytes);
-        const provider = ethers.providers.getDefaultProvider('previewnet');
+        const provider = ethers.providers.getDefaultProvider('testnet');
         const txResponse = await provider.sendTransaction(signedTx);
-        assert.strictEqual(txResponse.gasLimit.toNumber(), 1000);
-        assert.strictEqual(txResponse.from, getAddressFromAccount(hederaPreviewnetOperableAccount.operator.accountId));
+        assert.strictEqual(txResponse.gasLimit.toNumber(), 100000);
+        assert.strictEqual(txResponse.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
         assert.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
-        assert.strictEqual(txResponse.value.toNumber(), 100000000000);
-    });
+        // assert.strictEqual(txResponse.value.toNumber(), 100000000000);
+    }).timeout(timeout*4);
 
     /* This test is skipped because the local network won't be started in the CI */
     xit("Should be able to query local network", async function() {
