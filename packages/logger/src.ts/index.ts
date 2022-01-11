@@ -186,7 +186,7 @@ export class Logger {
         this._log(Logger.levels.WARNING, args);
     }
 
-    makeError(message: string, code?: ErrorCode, params?: any): Error {
+    makeError(message: string, code?: ErrorCode | string, params?: any): Error {
         // Errors are being censored
         if (_censorErrors) {
             return this.makeError("censored error", code, { });
@@ -233,7 +233,7 @@ export class Logger {
         return error;
     }
 
-    throwError(message: string, code?: ErrorCode, params?: any): never {
+    throwError(message: string, code?: ErrorCode | string, params?: any): never {
         throw this.makeError(message, code, params);
     }
 
