@@ -1,5 +1,5 @@
 import { Account, AccountLike, getAccountFromAddress, getAddress, getAddressFromAccount } from "@ethersproject/address";
-import { Provider } from "@ethersproject/abstract-provider";
+import {Provider, TransactionRequest} from "@ethersproject/abstract-provider";
 import {
 	ExternallyOwnedAccount,
 	Signer,
@@ -12,7 +12,7 @@ import {
 	Bytes,
 	BytesLike,
 	concat,
-	hexDataSlice,
+	hexDataSlice, hexlify,
 	isHexString,
 	joinSignature,
 	SignatureLike
@@ -20,7 +20,7 @@ import {
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import { defineReadOnly } from "@ethersproject/properties";
+import {defineReadOnly} from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import {
@@ -34,6 +34,16 @@ import { Wordlist } from "@ethersproject/wordlists";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import {
+	AccountId,
+	ContractCreateTransaction,
+	ContractExecuteTransaction,
+	ContractId,
+	FileAppendTransaction, FileCreateTransaction,
+	Transaction, TransactionId,
+	PrivateKey as HederaPrivKey, PublicKey as HederaPubKey
+} from "@hashgraph/sdk";
+import {numberify} from "@ethersproject/bignumber";
 
 const logger = new Logger(version);
 
@@ -170,6 +180,70 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		return new Wallet(eoa, this.provider);
 	}
 
+	signTransaction(transaction: TransactionRequest): Promise<string> {
+		this._checkAddress('signTransaction');
+		if (transaction.from) {
+			if (getAddressFromAccount(transaction.from) !== this.address) {
+				logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
+			}
+		}
+
+		let tx: Transaction;
+		const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
+		const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
+		if (transaction.to) {
+			tx = new ContractExecuteTransaction()
+				.setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
+				.setFunctionParameters(arrayifiedData)
+				.setGas(gas);
+			if (transaction.value) {
+				(tx as ContractExecuteTransaction).setPayableAmount(transaction.value?.toString())
+			}
+		} else {
+			if (transaction.customData.bytecodeFileId) {
+				tx = new ContractCreateTransaction()
+					.setBytecodeFileId(transaction.customData.bytecodeFileId)
+					.setConstructorParameters(arrayifiedData)
+					.setInitialBalance(transaction.value?.toString())
+					.setGas(gas);
+			} else {
+				if (transaction.customData.fileChunk && transaction.customData.fileId) {
+					tx = new FileAppendTransaction()
+						.setContents(transaction.customData.fileChunk)
+						.setFileId(transaction.customData.fileId)
+				} else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
+					// only a chunk, thus the first one
+					tx = new FileCreateTransaction()
+						.setContents(transaction.customData.fileChunk)
+						.setKeys([ transaction.customData.fileKey ?
+							transaction.customData.fileKey :
+							HederaPubKey.fromString(this._signingKey().compressedPublicKey) ])
+				} else {
+					logger.throwArgumentError(
+						"Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`",
+						Logger.errors.INVALID_ARGUMENT,
+						transaction);
+				}
+			}
+		}
+		const account = getAccountFromAddress(this.address);
+		tx.setTransactionId(
+			TransactionId.generate(new AccountId({
+			shard: numberify(account.shard),
+			realm: numberify(account.realm),
+			num: numberify(account.num)
+		})))
+			// FIXME - should be taken from the network/ wallet's provider
+			.setNodeAccountIds([ new AccountId(0, 0, 3) ])
+			.freeze();
+
+		const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
+		return new Promise<string>(async (resolve) => {
+			const signed = await tx.sign(pkey);
+			resolve(hexlify(signed.toBytes()));
+		});
+	}
+
 	async signMessage(message: Bytes | string): Promise<string> {
 		return joinSignature(this._signingKey().signDigest(hashMessage(message)));
 	}
@@ -240,6 +314,12 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 			path = defaultPath;
 		}
 		return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+	}
+
+	_checkAddress(operation?: string): void {
+		if (!this.address) { logger.throwError("missing address", Logger.errors.UNSUPPORTED_OPERATION, {
+			operation: (operation || "_checkAddress") });
+		}
 	}
 }
 

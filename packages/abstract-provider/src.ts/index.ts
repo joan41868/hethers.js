@@ -26,6 +26,7 @@ export type TransactionRequest = {
     accessList?: AccessListish;
     maxPriorityFeePerGas?: BigNumberish;
     maxFeePerGas?: BigNumberish;
+    nodeId?: AccountLike,
     customData?: Record<string, any>;
 }
 

@@ -2,22 +2,14 @@
 
 import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { arrayify, Bytes, BytesLike, hexlify } from "@ethersproject/bytes";
+import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
-
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { Account, getAccountFromAddress } from "@ethersproject/address";
-import {
-    AccountId,
-    ContractCreateTransaction,
-    ContractExecuteTransaction,
-    ContractId,
-    FileAppendTransaction, FileCreateTransaction,
-    Transaction, TransactionId,
-    PrivateKey as HederaPrivKey, PublicKey as HederaPubKey
-} from "@hashgraph/sdk";
+import {Account } from "@ethersproject/address";
 import { SigningKey } from "@ethersproject/signing-key";
+import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
+
 const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
@@ -93,63 +85,7 @@ export abstract class Signer {
      *
      * @param transaction - the transaction to be signed.
      */
-    signTransaction(transaction: TransactionRequest): Promise<string>{
-        let tx: Transaction;
-        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new ContractExecuteTransaction()
-                .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                (tx as ContractExecuteTransaction).setPayableAmount(transaction.value?.toString())
-            }
-        } else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance(transaction.value?.toString())
-                    .setGas(gas);
-            } else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId)
-                } else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([ transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            HederaPubKey.fromString(this._signingKey().compressedPublicKey) ])
-                } else {
-                    logger.throwArgumentError(
-                        "Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`",
-                        Logger.errors.INVALID_ARGUMENT,
-                        transaction);
-                }
-            }
-        }
-        return this.getAddress().then(address => {
-            const accountID = getAccountFromAddress(address);
-            tx.setTransactionId(TransactionId.generate(new AccountId({
-                    shard: numberify(accountID.shard),
-                    realm: numberify(accountID.realm),
-                    num: numberify(accountID.num)
-                })))
-                // FIXME - should be taken from the network/ wallet's provider
-                .setNodeAccountIds([ new AccountId(0, 0, 3) ])
-                .freeze();
-            const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
-            return new Promise<string>(async (resolve) => {
-                const signed = await tx.sign(pkey);
-                resolve(hexlify(signed.toBytes()));
-            });
-        });
-
-    }
+    abstract signTransaction(transaction: TransactionRequest): Promise<string>;
 
     // Returns a new instance of the Signer, connected to provider.
     // This MAY throw if changing providers is not supported.
@@ -487,8 +423,4 @@ function splitInChunks(data: string, chunkSize: number): string[] {
         chunks.push(slice);
     }
     return chunks;
-}
-
-function numberify(num: BigNumberish) {
-    return BigNumber.from(num).toNumber();
 }
