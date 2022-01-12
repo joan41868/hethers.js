@@ -643,13 +643,6 @@ Object.keys(blockchainData).forEach((network) => {
                 return provider.getCode(test.address);
             }, test.code);
         }
-
-        if (test.name) {
-            addSimpleTest(`fetches ENS name: ${ test.address }`, (provider: ethers.providers.Provider) => {
-                // return provider.resolveName(test.name);
-                return Promise.resolve("");
-            }, test.address);
-        }
     });
 
     tests.transactions.forEach((test) => {
