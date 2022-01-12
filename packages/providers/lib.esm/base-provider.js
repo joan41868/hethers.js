@@ -19,14 +19,14 @@ import { defineReadOnly, getStatic, resolveProperties } from "@ethersproject/pro
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import { fetchJson, poll } from "@ethersproject/web";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from '@hashgraph/sdk';
 import bech32 from "bech32";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-const logger = new Logger(version);
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
+const logger = new Logger(version);
 //////////////////////////////
 // Event Serializeing
 function checkTopic(topic) {
@@ -512,6 +512,9 @@ export class BaseProvider extends Provider {
         this._fastQueryDate = 0;
         this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
         this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(network));
+    }
+    getHederaNetworkConfig() {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
     }
     _ready() {
         return __awaiter(this, void 0, void 0, function* () {

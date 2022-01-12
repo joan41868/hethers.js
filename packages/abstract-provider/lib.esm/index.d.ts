@@ -4,6 +4,7 @@ import { Network } from "@ethersproject/networks";
 import { Deferrable, Description } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@ethersproject/transactions";
 import { AccountLike } from "@ethersproject/address";
+import { AccountId } from "@hashgraph/sdk";
 export declare type TransactionRequest = {
     to?: AccountLike;
     from?: AccountLike;
@@ -15,6 +16,7 @@ export declare type TransactionRequest = {
     accessList?: AccessListish;
     maxPriorityFeePerGas?: BigNumberish;
     maxFeePerGas?: BigNumberish;
+    nodeId?: AccountLike;
     customData?: Record<string, any>;
 };
 export interface TransactionResponse extends Transaction {
@@ -121,6 +123,7 @@ export declare type EventType = string | Array<string | Array<string>> | EventFi
 export declare type Listener = (...args: Array<any>) => void;
 export declare abstract class Provider {
     abstract getNetwork(): Promise<Network>;
+    getHederaNetworkConfig(): AccountId[];
     getGasPrice(): Promise<BigNumber>;
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
     abstract getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;

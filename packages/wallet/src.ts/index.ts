@@ -43,8 +43,8 @@ import {
 	Transaction, TransactionId,
 	PrivateKey as HederaPrivKey, PublicKey as HederaPubKey
 } from "@hashgraph/sdk";
-import {numberify} from "@ethersproject/bignumber";
 
+import {numberify} from "@ethersproject/bignumber";
 const logger = new Logger(version);
 
 function isAccount(value: any): value is ExternallyOwnedAccount {
@@ -226,19 +226,31 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 				}
 			}
 		}
-		const account = getAccountFromAddress(this.address);
-		tx.setTransactionId(
-			TransactionId.generate(new AccountId({
-			shard: numberify(account.shard),
-			realm: numberify(account.realm),
-			num: numberify(account.num)
-		})))
-			// FIXME - should be taken from the network/ wallet's provider
-			.setNodeAccountIds([ new AccountId(0, 0, 3) ])
-			.freeze();
-
 		const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
-		return new Promise<string>(async (resolve) => {
+		return new Promise<string>(async (resolve, reject) => {
+			let nodeID : any;
+			if (transaction.nodeId) {
+				nodeID = transaction.nodeId;
+			} else {
+				this._checkProvider();
+				// provider present, we can go on
+				const submittableNodeIDs = this.provider.getHederaNetworkConfig();
+				if (submittableNodeIDs.length > 0) {
+					nodeID = submittableNodeIDs[0];
+				} else {
+					reject(logger.makeError("Unable to find submittable node ID. The wallet's provider is not connected to any usable network"))
+				}
+			}
+			const account = getAccountFromAddress(this.address);
+			tx.setTransactionId(
+				TransactionId.generate(new AccountId({
+					shard: numberify(account.shard),
+					realm: numberify(account.realm),
+					num: numberify(account.num)
+				})))
+				.setNodeAccountIds([ nodeID ])
+				.freeze();
+
 			const signed = await tx.sign(pkey);
 			resolve(hexlify(signed.toBytes()));
 		});

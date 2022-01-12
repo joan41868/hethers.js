@@ -4,7 +4,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
-import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
+import { AccountId, TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
 export declare class Event {
     readonly listener: Listener;
@@ -83,6 +83,7 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      *
      */
     constructor(network: Networkish | Promise<Network>);
+    getHederaNetworkConfig(): AccountId[];
     _ready(): Promise<Network>;
     get ready(): Promise<Network>;
     static getFormatter(): Formatter;

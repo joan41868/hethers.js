@@ -96,9 +96,9 @@ export class LedgerSigner extends ethers.Signer {
                 chainId: (tx.chainId || undefined),
                 data: (tx.data || undefined),
                 gasLimit: (tx.gasLimit || undefined),
-                // gasPrice: (tx.gasPrice || undefined),
-                // nonce: (tx.nonce ? ethers.BigNumber.from(tx.nonce).toNumber(): undefined),
-                to: (tx.to.toString() || undefined),
+                gasPrice: (tx.gasPrice || undefined),
+                nonce: (tx.nonce ? ethers.BigNumber.from(tx.nonce).toNumber() : undefined),
+                to: (tx.to || undefined),
                 value: (tx.value || undefined),
             };
             const unsignedTx = ethers.utils.serializeTransaction(baseTx).substring(2);

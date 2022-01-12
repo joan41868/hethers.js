@@ -66,14 +66,14 @@ var properties_1 = require("@ethersproject/properties");
 var sha2_1 = require("@ethersproject/sha2");
 var strings_1 = require("@ethersproject/strings");
 var web_1 = require("@ethersproject/web");
+var sdk_1 = require("@hashgraph/sdk");
 var bech32_1 = __importDefault(require("bech32"));
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
-var logger = new logger_1.Logger(_version_1.version);
 var formatter_1 = require("./formatter");
 var address_1 = require("@ethersproject/address");
-var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
+var logger = new logger_1.Logger(_version_1.version);
 //////////////////////////////
 // Event Serializeing
 function checkTopic(topic) {
@@ -647,6 +647,9 @@ var BaseProvider = /** @class */ (function (_super) {
         _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(network));
         return _this;
     }
+    BaseProvider.prototype.getHederaNetworkConfig = function () {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    };
     BaseProvider.prototype._ready = function () {
         return __awaiter(this, void 0, void 0, function () {
             var network, error_4;

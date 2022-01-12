@@ -9,6 +9,7 @@ import { AccessListish, Transaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { AccountLike } from "@ethersproject/address";
+import { AccountId } from "@hashgraph/sdk";
 const logger = new Logger(version);
 
 ///////////////////////////////
@@ -214,6 +215,11 @@ export abstract class Provider {
 
     // Network
     abstract getNetwork(): Promise<Network>;
+    getHederaNetworkConfig() : AccountId[] {
+        return logger.throwError("getHederaNetworkConfig not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaNetworkConfig'
+        })
+    }
 
     // Latest State
     getGasPrice(): Promise<BigNumber> {

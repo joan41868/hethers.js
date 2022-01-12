@@ -8,13 +8,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, hexlify } from "@ethersproject/bytes";
 import { defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountId, ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, TransactionId, PrivateKey as HederaPrivKey, PublicKey as HederaPubKey } from "@hashgraph/sdk";
+import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
 const logger = new Logger(version);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
@@ -32,74 +29,6 @@ export class Signer {
     constructor() {
         logger.checkAbstract(new.target, Signer);
         defineReadOnly(this, "_isSigner", true);
-    }
-    /**
-     * Signs a transaction with the key given upon creation.
-     * The transaction can be:
-     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
-     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
-     * - ContractCreate - when there is a `bytecodeFileId` field
-     * - ContractCall - when there is a `to` field present. Ignores the other fields
-     *
-     * @param transaction - the transaction to be signed.
-     */
-    signTransaction(transaction) {
-        var _a, _b;
-        let tx;
-        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new ContractExecuteTransaction()
-                .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
-        }
-        else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
-                    .setGas(gas);
-            }
-            else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId);
-                }
-                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            HederaPubKey.fromString(this._signingKey().compressedPublicKey)]);
-                }
-                else {
-                    logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
-                }
-            }
-        }
-        return this.getAddress().then(address => {
-            const accountID = getAccountFromAddress(address);
-            tx.setTransactionId(TransactionId.generate(new AccountId({
-                shard: numberify(accountID.shard),
-                realm: numberify(accountID.realm),
-                num: numberify(accountID.num)
-            })))
-                // FIXME - should be taken from the network/ wallet's provider
-                .setNodeAccountIds([new AccountId(0, 0, 3)])
-                .freeze();
-            const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
-            return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
-                const signed = yield tx.sign(pkey);
-                resolve(hexlify(signed.toBytes()));
-            }));
-        });
     }
     getGasPrice() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -403,8 +332,5 @@ function splitInChunks(data, chunkSize) {
         chunks.push(slice);
     }
     return chunks;
-}
-function numberify(num) {
-    return BigNumber.from(num).toNumber();
 }
 //# sourceMappingURL=index.js.map

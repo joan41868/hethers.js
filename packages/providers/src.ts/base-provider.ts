@@ -1,12 +1,30 @@
 "use strict";
 
 import {
-    BlockTag, EventType, Filter, FilterByBlockHash, ForkEvent,
-    Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
+    BlockTag,
+    EventType,
+    Filter,
+    FilterByBlockHash,
+    ForkEvent,
+    Listener,
+    Log,
+    Provider,
+    TransactionReceipt,
+    TransactionRequest,
+    TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, concat, hexConcat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import {
+    arrayify,
+    concat,
+    hexConcat,
+    hexDataLength,
+    hexDataSlice,
+    hexlify,
+    hexZeroPad,
+    isHexString
+} from "@ethersproject/bytes";
 import { HashZero } from "@ethersproject/constants";
 import { namehash } from "@ethersproject/hash";
 import { getNetwork, Network, Networkish } from "@ethersproject/networks";
@@ -15,17 +33,23 @@ import { Transaction } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import { fetchJson, poll } from "@ethersproject/web";
-import {TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
+import {
+    AccountBalanceQuery,
+    AccountId,
+    Client,
+    NetworkName,
+    Transaction as HederaTransaction,
+    TransactionReceipt as HederaTransactionReceipt
+} from '@hashgraph/sdk';
 import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-const logger = new Logger(version);
-
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
+
+const logger = new Logger(version);
 
 //////////////////////////////
 // Event Serializeing
@@ -639,6 +663,10 @@ export class BaseProvider extends Provider implements EnsProvider {
         this._fastQueryDate = 0;
         this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
         this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(network));
+    }
+
+    getHederaNetworkConfig(): AccountId[] {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
     }
 
     async _ready(): Promise<Network> {

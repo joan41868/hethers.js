@@ -234,21 +234,34 @@ var Wallet = /** @class */ (function (_super) {
                 }
             }
         }
-        var account = (0, address_1.getAccountFromAddress)(this.address);
-        tx.setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
-            shard: (0, bignumber_1.numberify)(account.shard),
-            realm: (0, bignumber_1.numberify)(account.realm),
-            num: (0, bignumber_1.numberify)(account.num)
-        })))
-            // FIXME - should be taken from the network/ wallet's provider
-            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
-            .freeze();
         var pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-        return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
-            var signed;
+        return new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+            var nodeID, submittableNodeIDs, account, signed;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, tx.sign(pkey)];
+                    case 0:
+                        if (transaction.nodeId) {
+                            nodeID = transaction.nodeId;
+                        }
+                        else {
+                            this._checkProvider();
+                            submittableNodeIDs = this.provider.getHederaNetworkConfig();
+                            if (submittableNodeIDs.length > 0) {
+                                nodeID = submittableNodeIDs[0];
+                            }
+                            else {
+                                reject(logger.makeError("Unable to find submittable node ID. The wallet's provider is not connected to any usable network"));
+                            }
+                        }
+                        account = (0, address_1.getAccountFromAddress)(this.address);
+                        tx.setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
+                            shard: (0, bignumber_1.numberify)(account.shard),
+                            realm: (0, bignumber_1.numberify)(account.realm),
+                            num: (0, bignumber_1.numberify)(account.num)
+                        })))
+                            .setNodeAccountIds([nodeID])
+                            .freeze();
+                        return [4 /*yield*/, tx.sign(pkey)];
                     case 1:
                         signed = _a.sent();
                         resolve((0, bytes_1.hexlify)(signed.toBytes()));
