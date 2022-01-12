@@ -131,13 +131,11 @@ export abstract class Signer {
         return network.chainId;
     }
 
-
+    // TODO FIXME
     async resolveName(name: string): Promise<string> {
         this._checkProvider("resolveName");
         return "";
     }
-
-
 
     // Checks a transaction does not contain invalid keys and if
     // no "from" is provided, populates it.

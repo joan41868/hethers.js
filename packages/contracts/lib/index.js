@@ -81,6 +81,7 @@ var allowedTransactionKeys = {
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true
 };
+// TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function () {
         var name, address;

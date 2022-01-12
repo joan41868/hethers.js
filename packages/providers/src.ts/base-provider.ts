@@ -690,7 +690,9 @@ export class BaseProvider extends Provider {
     }
 
     async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
-        return Promise.resolve(BigNumber.from(0));
+        return logger.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "estimateGas"
+        });
     }
 
     // TODO FIX ME

@@ -411,12 +411,6 @@ export class BaseProvider extends Provider {
     static getNetwork(network) {
         return getNetwork((network == null) ? "mainnet" : network);
     }
-    poll() {
-        return __awaiter(this, void 0, void 0, function* () { });
-    }
-    // Deprecated; do not use this
-    resetEventsBlock(blockNumber) {
-    }
     get network() {
         return this._network;
     }
@@ -584,40 +578,6 @@ export class BaseProvider extends Provider {
             }
         });
     }
-    _getTransactionRequest(transaction) {
-        return __awaiter(this, void 0, void 0, function* () {
-            const values = yield transaction;
-            const tx = {};
-            ["from", "to"].forEach((key) => {
-                if (values[key] == null) {
-                    return;
-                }
-                tx[key] = Promise.resolve(values[key]).then((v) => (v ? this._getAddress(v) : null));
-            });
-            ["gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "value"].forEach((key) => {
-                if (values[key] == null) {
-                    return;
-                }
-                tx[key] = Promise.resolve(values[key]).then((v) => (v ? BigNumber.from(v) : null));
-            });
-            ["type"].forEach((key) => {
-                if (values[key] == null) {
-                    return;
-                }
-                tx[key] = Promise.resolve(values[key]).then((v) => ((v != null) ? v : null));
-            });
-            if (values.accessList) {
-                tx.accessList = this.formatter.accessList(values.accessList);
-            }
-            ["data"].forEach((key) => {
-                if (values[key] == null) {
-                    return;
-                }
-                tx[key] = Promise.resolve(values[key]).then((v) => (v ? hexlify(v) : null));
-            });
-            return this.formatter.transactionRequest(yield resolveProperties(tx));
-        });
-    }
     _getFilter(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             filter = yield filter;
@@ -641,9 +601,12 @@ export class BaseProvider extends Provider {
     }
     estimateGas(transaction) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Promise.resolve(BigNumber.from(0));
+            return logger.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
+                operation: "estimateGas"
+            });
         });
     }
+    // TODO FIX ME
     _getAddress(addressOrName) {
         return __awaiter(this, void 0, void 0, function* () {
             addressOrName = yield addressOrName;
@@ -711,6 +674,7 @@ export class BaseProvider extends Provider {
             return logger.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
+    // TODO FIXME
     getResolver(name) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
@@ -728,6 +692,7 @@ export class BaseProvider extends Provider {
             }
         });
     }
+    // TODO FIXME
     _getResolver(name) {
         return __awaiter(this, void 0, void 0, function* () {
             // Get the resolver from the blockchain
@@ -753,6 +718,7 @@ export class BaseProvider extends Provider {
             }
         });
     }
+    // TODO FIXME
     resolveName(name) {
         return __awaiter(this, void 0, void 0, function* () {
             name = yield name;
@@ -777,6 +743,7 @@ export class BaseProvider extends Provider {
             return yield resolver.getAddress();
         });
     }
+    // TODO FIXME
     lookupAddress(address) {
         return __awaiter(this, void 0, void 0, function* () {
             address = yield address;

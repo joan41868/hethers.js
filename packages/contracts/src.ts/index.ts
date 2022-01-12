@@ -113,6 +113,7 @@ const allowedTransactionKeys: { [ key: string ]: boolean } = {
     customData: true
 }
 
+// TODO FIXME
 async function resolveName(resolver: Signer | Provider, nameOrPromise: string | Promise<string>): Promise<string> {
     const name = await nameOrPromise;
 

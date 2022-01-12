@@ -73,6 +73,7 @@ export class Signer {
             return network.chainId;
         });
     }
+    // TODO FIXME
     resolveName(name) {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("resolveName");

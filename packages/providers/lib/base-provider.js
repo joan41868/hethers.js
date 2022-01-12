@@ -786,10 +786,13 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.estimateGas = function (transaction) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, Promise.resolve(bignumber_1.BigNumber.from(0))];
+                return [2 /*return*/, logger.throwArgumentError("estimateGas not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+                        operation: "estimateGas"
+                    })];
             });
         });
     };
+    // TODO FIX ME
     BaseProvider.prototype._getAddress = function (addressOrName) {
         return __awaiter(this, void 0, void 0, function () {
             var address;
@@ -907,6 +910,7 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    // TODO FIXME
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
             var address, error_4;
@@ -932,6 +936,7 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    // TODO FIXME
     BaseProvider.prototype._getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
             var network;
@@ -964,6 +969,7 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    // TODO FIXME
     BaseProvider.prototype.resolveName = function (name) {
         return __awaiter(this, void 0, void 0, function () {
             var resolver;
@@ -997,6 +1003,7 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    // TODO FIXME
     BaseProvider.prototype.lookupAddress = function (address) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {

@@ -160,6 +160,7 @@ var Signer = /** @class */ (function () {
             });
         });
     };
+    // TODO FIXME
     Signer.prototype.resolveName = function (name) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
