@@ -503,13 +503,6 @@ export class BaseProvider extends Provider {
         return getNetwork((network == null) ? "mainnet": network);
     }
 
-
-    async poll(): Promise<void> {}
-
-    // Deprecated; do not use this
-    resetEventsBlock(blockNumber: number): void {
-    }
-
     get network(): Network {
         return this._network;
     }
@@ -675,38 +668,6 @@ export class BaseProvider extends Provider {
         }
     }
 
-    async _getTransactionRequest(transaction: Deferrable<TransactionRequest>): Promise<Transaction> {
-        const values: any = await transaction;
-
-        const tx: any = { };
-
-        ["from", "to"].forEach((key) => {
-            if (values[key] == null) { return; }
-            tx[key] = Promise.resolve(values[key]).then((v) => (v ? this._getAddress(v): null))
-        });
-
-        ["gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "value"].forEach((key) => {
-            if (values[key] == null) { return; }
-            tx[key] = Promise.resolve(values[key]).then((v) => (v ? BigNumber.from(v): null));
-        });
-
-        ["type"].forEach((key) => {
-            if (values[key] == null) { return; }
-            tx[key] = Promise.resolve(values[key]).then((v) => ((v != null) ? v: null));
-        });
-
-        if (values.accessList) {
-            tx.accessList = this.formatter.accessList(values.accessList);
-        }
-
-        ["data"].forEach((key) => {
-            if (values[key] == null) { return; }
-            tx[key] = Promise.resolve(values[key]).then((v) => (v ? hexlify(v): null));
-        });
-
-        return this.formatter.transactionRequest(await resolveProperties(tx));
-    }
-
     async _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash> {
         filter = await filter;
 
@@ -732,6 +693,7 @@ export class BaseProvider extends Provider {
         return Promise.resolve(BigNumber.from(0));
     }
 
+    // TODO FIX ME
     async _getAddress(addressOrName: string | Promise<string>): Promise<string> {
         addressOrName = await addressOrName;
         if (typeof(addressOrName) !== "string") {
@@ -797,6 +759,7 @@ export class BaseProvider extends Provider {
         return logger.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
     }
 
+    // TODO FIXME
     async getResolver(name: string): Promise<null | Resolver> {
         try {
             const address = await this._getResolver(name);
@@ -808,6 +771,7 @@ export class BaseProvider extends Provider {
         }
     }
 
+    // TODO FIXME
     async _getResolver(name: string): Promise<string> {
         // Get the resolver from the blockchain
         const network = await this.getNetwork();
@@ -836,6 +800,7 @@ export class BaseProvider extends Provider {
         }
     }
 
+    // TODO FIXME
     async resolveName(name: string | Promise<string>): Promise<null | string> {
         name = await name;
 
@@ -858,6 +823,7 @@ export class BaseProvider extends Provider {
         return await resolver.getAddress();
     }
 
+    // TODO FIXME
     async lookupAddress(address: string | Promise<string>): Promise<null | string> {
         address = await address;
         address = this.formatter.address(address);

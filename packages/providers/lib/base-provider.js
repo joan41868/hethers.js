@@ -516,14 +516,6 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.getNetwork = function (network) {
         return (0, networks_1.getNetwork)((network == null) ? "mainnet" : network);
     };
-    BaseProvider.prototype.poll = function () {
-        return __awaiter(this, void 0, void 0, function () { return __generator(this, function (_a) {
-            return [2 /*return*/];
-        }); });
-    };
-    // Deprecated; do not use this
-    BaseProvider.prototype.resetEventsBlock = function (blockNumber) {
-    };
     Object.defineProperty(BaseProvider.prototype, "network", {
         get: function () {
             return this._network;
@@ -757,50 +749,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         err.transactionHash = txHash;
                         throw err;
                     case 8: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype._getTransactionRequest = function (transaction) {
-        return __awaiter(this, void 0, void 0, function () {
-            var values, tx, _a, _b;
-            var _this = this;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0: return [4 /*yield*/, transaction];
-                    case 1:
-                        values = _c.sent();
-                        tx = {};
-                        ["from", "to"].forEach(function (key) {
-                            if (values[key] == null) {
-                                return;
-                            }
-                            tx[key] = Promise.resolve(values[key]).then(function (v) { return (v ? _this._getAddress(v) : null); });
-                        });
-                        ["gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "value"].forEach(function (key) {
-                            if (values[key] == null) {
-                                return;
-                            }
-                            tx[key] = Promise.resolve(values[key]).then(function (v) { return (v ? bignumber_1.BigNumber.from(v) : null); });
-                        });
-                        ["type"].forEach(function (key) {
-                            if (values[key] == null) {
-                                return;
-                            }
-                            tx[key] = Promise.resolve(values[key]).then(function (v) { return ((v != null) ? v : null); });
-                        });
-                        if (values.accessList) {
-                            tx.accessList = this.formatter.accessList(values.accessList);
-                        }
-                        ["data"].forEach(function (key) {
-                            if (values[key] == null) {
-                                return;
-                            }
-                            tx[key] = Promise.resolve(values[key]).then(function (v) { return (v ? (0, bytes_1.hexlify)(v) : null); });
-                        });
-                        _b = (_a = this.formatter).transactionRequest;
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)(tx)];
-                    case 2: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                 }
             });
         });
