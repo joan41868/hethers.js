@@ -52,9 +52,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VoidSigner = exports.Signer = void 0;
+var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
+var address_1 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var logger = new logger_1.Logger(_version_1.version);
 var allowedTransactionKeys = [
@@ -118,10 +120,11 @@ var Signer = /** @class */ (function () {
             });
         });
     };
+    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
     // Populates "from" if unspecified, and calls with the transaction
     Signer.prototype.call = function (transaction, blockTag) {
         return __awaiter(this, void 0, void 0, function () {
-            var tx;
+            var tx, acc, contractId, hederaTx, signed, response;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -129,8 +132,16 @@ var Signer = /** @class */ (function () {
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(this.checkTransaction(transaction))];
                     case 1:
                         tx = _a.sent();
-                        return [4 /*yield*/, this.provider.call(tx, blockTag)];
-                    case 2: return [2 /*return*/, _a.sent()];
+                        acc = (0, address_1.getAccountFromAddress)(tx.to.toString());
+                        contractId = acc.shard + "." + acc.realm + "." + acc.num;
+                        hederaTx = new sdk_1.ContractCallQuery()
+                            .setContractId(contractId)
+                            .setFunctionParameters((0, bytes_1.arrayify)(tx.data));
+                        signed = hederaTx.toBytes();
+                        return [4 /*yield*/, this.provider.sendTransaction((0, bytes_1.hexlify)(signed))];
+                    case 2:
+                        response = _a.sent();
+                        return [2 /*return*/, response.data];
                 }
             });
         });
@@ -172,6 +183,7 @@ var Signer = /** @class */ (function () {
                         chunk = _a[_i];
                         fileAppend = {
                             customData: {
+                                // @ts-ignore
                                 fileId: resp.customData.fileId.toString(),
                                 fileChunk: chunk
                             }
@@ -190,6 +202,7 @@ var Signer = /** @class */ (function () {
                         contractCreate = {
                             gasLimit: tx.gasLimit,
                             customData: {
+                                // @ts-ignore
                                 bytecodeFileId: resp.customData.fileId.toString()
                             }
                         };

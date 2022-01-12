@@ -63,14 +63,33 @@ const account = {
 	const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
 	// @ts-ignore
 	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData.contractId, abi, wallet);
-	const params = contract.interface.encodeFunctionData('approve', [
+	const approveParams = contract.interface.encodeFunctionData('approve', [
 		getAddressFromAccount(account.operator.accountId),
 		1000
 	]);
 	const approveResponse = await wallet.sendTransaction({
 		to: contract.address,
-		data: params,
+		data: approveParams,
 		gasLimit: 100000
 	});
 	console.log(approveResponse);
+
+	const mintParams = contract.interface.encodeFunctionData('mint', [
+		1000
+	]);
+	const mintResponse = await wallet.sendTransaction({
+		to: contract.address,
+		data: mintParams,
+		gasLimit: 100000
+	});
+	console.log(mintResponse);
+
+	const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
+		await wallet.getAddress()
+	]);
+	const balanceOfResponse = await wallet.call({
+		to: contract.address,
+		data: balanceOfParams,
+	});
+	console.log(balanceOfResponse);
 })();

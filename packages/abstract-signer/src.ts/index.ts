@@ -2,13 +2,13 @@
 
 import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { Bytes, BytesLike } from "@ethersproject/bytes";
+import { arrayify, Bytes, BytesLike, hexlify } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import {Account } from "@ethersproject/address";
+import { Account, getAccountFromAddress } from "@ethersproject/address";
 import { SigningKey } from "@ethersproject/signing-key";
-import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
+import { PublicKey as HederaPubKey, ContractCallQuery } from "@hashgraph/sdk";
 
 const logger = new Logger(version);
 
@@ -120,11 +120,20 @@ export abstract class Signer {
         return await this.provider.estimateGas(tx);
     }
 
+    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
     // Populates "from" if unspecified, and calls with the transaction
     async call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string> {
         this._checkProvider("call");
-        const tx = await resolveProperties(this.checkTransaction(transaction));
-        return await this.provider.call(tx, blockTag);
+        const tx = await resolveProperties(this.checkTransaction(transaction))
+        const acc = getAccountFromAddress(tx.to.toString());
+        const contractId = `${acc.shard}.${acc.realm}.${acc.num}`;
+        const hederaTx = new ContractCallQuery()
+            .setContractId(contractId)
+            .setFunctionParameters(arrayify(tx.data));
+        // TODO: query payment
+        const signed = hederaTx.toBytes();
+        const response =  await this.provider.sendTransaction(hexlify(signed));
+        return response.data;
     }
 
     // Populates all fields in a transaction, signs it and sends it to the network
@@ -153,6 +162,7 @@ export abstract class Signer {
             for (let chunk of chunks.slice(1)) {
                 const fileAppend = {
                     customData: {
+                        // @ts-ignore
                         fileId: resp.customData.fileId.toString(),
                         fileChunk: chunk
                     }
@@ -161,9 +171,11 @@ export abstract class Signer {
                 await this.provider.sendTransaction(signedFileAppend);
             }
 
+            // @ts-ignore
             const contractCreate = {
                 gasLimit: tx.gasLimit,
                 customData: {
+                    // @ts-ignore
                     bytecodeFileId: resp.customData.fileId.toString()
                 }
             }
