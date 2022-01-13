@@ -20,5 +20,6 @@ import {AccountId, ContractExecuteTransaction, TransactionId, PrivateKey} from '
 	const txResponse = await provider.sendTransaction(signedTx);
     console.log("sendTransaction submitted txResponse: ", txResponse);
     const minedResult = await txResponse.wait();
-	console.log("txResponse.wait() mined receipt: ", minedResult);
+	console.log("txResponse.wait() mined receipt: ");
+	console.dir(minedResult, {depth: null});
 })();
