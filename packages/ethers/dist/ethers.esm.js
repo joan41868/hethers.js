@@ -9300,12 +9300,10 @@ class Signer {
             return yield this.provider.estimateGas(tx);
         });
     }
-    // Populates "from" if unspecified, and calls with the transaction
+    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
     call(transaction, blockTag) {
         return __awaiter$2(this, void 0, void 0, function* () {
-            this._checkProvider("call");
-            const tx = yield resolveProperties(this.checkTransaction(transaction));
-            return yield this.provider.call(tx, blockTag);
+            return Promise.resolve("");
         });
     }
     // Populates all fields in a transaction, signs it and sends it to the network
@@ -9324,10 +9322,11 @@ class Signer {
             return network.chainId;
         });
     }
+    // TODO FIXME
     resolveName(name) {
         return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("resolveName");
-            return yield this.provider.resolveName(name);
+            return "";
         });
     }
     // Checks a transaction does not contain invalid keys and if
@@ -16234,7 +16233,8 @@ class Wallet extends Signer {
                         value: name
                     });
                 }
-                return this.provider.resolveName(name);
+                return Promise.resolve(name);
+                // return this.provider.resolveName(name);
             });
             return joinSignature(this._signingKey().signDigest(TypedDataEncoder.hash(populated.domain, types, populated.value)));
         });
@@ -26024,10 +26024,10 @@ async function derive(parentKey, chainCode, index) {
 }
 
 /*
- *      bignumber.js v9.0.1
+ *      bignumber.js v9.0.2
  *      A JavaScript library for arbitrary-precision arithmetic.
  *      https://github.com/MikeMcl/bignumber.js
- *      Copyright (c) 2020 Michael Mclaughlin <M8ch88l@gmail.com>
+ *      Copyright (c) 2021 Michael Mclaughlin <M8ch88l@gmail.com>
  *      MIT Licensed.
  *
  *      BigNumber.prototype methods     |  BigNumber methods
@@ -26073,7 +26073,6 @@ async function derive(parentKey, chainCode, index) {
 
 var
   isNumeric = /^-?(?:\d+(?:\.\d*)?|\.\d+)(?:e[+-]?\d+)?$/i,
-
   mathceil = Math.ceil,
   mathfloor = Math.floor,
 
@@ -26168,7 +26167,7 @@ function clone(configObject) {
 
     // The maximum number of significant digits of the result of the exponentiatedBy operation.
     // If POW_PRECISION is 0, there will be unlimited significant digits.
-    POW_PRECISION = 0,                    // 0 to MAX
+    POW_PRECISION = 0,                       // 0 to MAX
 
     // The format specification used by the BigNumber.prototype.toFormat method.
     FORMAT = {
@@ -26178,14 +26177,15 @@ function clone(configObject) {
       groupSeparator: ',',
       decimalSeparator: '.',
       fractionGroupSize: 0,
-      fractionGroupSeparator: '\xA0',      // non-breaking space
+      fractionGroupSeparator: '\xA0',        // non-breaking space
       suffix: ''
     },
 
     // The alphabet used for base conversion. It must be at least 2 characters long, with no '+',
     // '-', '.', whitespace, or repeated character.
     // '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ$_'
-    ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
+    ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz',
+    alphabetHasNormalDecimalDigits = true;
 
 
   //------------------------------------------------------------------------------------------
@@ -26275,7 +26275,7 @@ function clone(configObject) {
 
       // Allow exponential notation to be used with base 10 argument, while
       // also rounding to DECIMAL_PLACES as with other bases.
-      if (b == 10) {
+      if (b == 10 && alphabetHasNormalDecimalDigits) {
         x = new BigNumber(v);
         return round(x, DECIMAL_PLACES + x.e + 1, ROUNDING_MODE);
       }
@@ -26429,7 +26429,7 @@ function clone(configObject) {
    *   MODULO_MODE      {number}           0 to 9
    *   POW_PRECISION       {number}           0 to MAX
    *   ALPHABET         {string}           A string of two or more unique characters which does
-   *                                     not contain '.'.
+   *                                       not contain '.'.
    *   FORMAT           {object}           An object with some of the following properties:
    *     prefix                 {string}
    *     groupSize              {number}
@@ -26564,9 +26564,10 @@ function clone(configObject) {
         if (obj.hasOwnProperty(p = 'ALPHABET')) {
           v = obj[p];
 
-          // Disallow if only one character,
+          // Disallow if less than two characters,
           // or if it contains '+', '-', '.', whitespace, or a repeated character.
-          if (typeof v == 'string' && !/^.$|[+-.\s]|(.).*\1/.test(v)) {
+          if (typeof v == 'string' && !/^.?$|[+\-.\s]|(.).*\1/.test(v)) {
+            alphabetHasNormalDecimalDigits = v.slice(0, 10) == '0123456789';
             ALPHABET = v;
           } else {
             throw Error
@@ -28741,7 +28742,7 @@ function clone(configObject) {
         str = e <= TO_EXP_NEG || e >= TO_EXP_POS
          ? toExponential(coeffToString(n.c), e)
          : toFixedPoint(coeffToString(n.c), e, '0');
-      } else if (b === 10) {
+      } else if (b === 10 && alphabetHasNormalDecimalDigits) {
         n = round(new BigNumber(n), DECIMAL_PLACES + e + 1, ROUNDING_MODE);
         str = toFixedPoint(coeffToString(n.c), n.e, '0');
       } else {
@@ -66931,7 +66932,7 @@ class Http2CallStream {
                             break;
                         case http2.constants.NGHTTP2_ENHANCE_YOUR_CALM:
                             code = constants.Status.RESOURCE_EXHAUSTED;
-                            details = 'Bandwidth exhausted';
+                            details = 'Bandwidth exhausted or memory limit exceeded';
                             break;
                         case http2.constants.NGHTTP2_INADEQUATE_SECURITY:
                             code = constants.Status.PERMISSION_DENIED;
@@ -67311,11 +67312,12 @@ class SecureChannelCredentialsImpl extends ChannelCredentials {
             cert: certChain || undefined,
             ciphers: tlsHelpers.CIPHER_SUITES,
         });
-        this.connectionOptions = { secureContext };
-        if (verifyOptions && verifyOptions.checkServerIdentity) {
-            this.connectionOptions.checkServerIdentity = (host, cert) => {
-                return verifyOptions.checkServerIdentity(host, { raw: cert.raw });
-            };
+        this.connectionOptions = {
+            secureContext
+        };
+        // Node asserts that this option is a function, so we cannot pass undefined
+        if (verifyOptions === null || verifyOptions === void 0 ? void 0 : verifyOptions.checkServerIdentity) {
+            this.connectionOptions.checkServerIdentity = verifyOptions.checkServerIdentity;
         }
     }
     compose(callCredentials) {
@@ -80037,7 +80039,7 @@ exports.setup = setup;
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
 var name = "@grpc/grpc-js";
-var version$m = "1.4.6";
+var version$m = "1.5.0";
 var description = "gRPC Library for Node - pure JS implementation";
 var homepage = "https://grpc.io/";
 var repository = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
@@ -80059,7 +80061,7 @@ var devDependencies = {
 	"@types/mocha": "^5.2.6",
 	"@types/ncp": "^2.0.1",
 	"@types/pify": "^3.0.2",
-	"@types/yargs": "^15.0.5",
+	"@types/semver": "^7.3.9",
 	"clang-format": "^1.0.55",
 	execa: "^2.0.3",
 	gts: "^2.0.0",
@@ -80071,9 +80073,9 @@ var devDependencies = {
 	ncp: "^2.0.0",
 	pify: "^4.0.1",
 	rimraf: "^3.0.2",
+	semver: "^7.3.5",
 	"ts-node": "^8.3.0",
-	typescript: "^3.7.2",
-	yargs: "^15.4.1"
+	typescript: "^3.7.2"
 };
 var contributors = [
 	{
@@ -80082,7 +80084,7 @@ var contributors = [
 ];
 var scripts = {
 	build: "npm run compile",
-	clean: "node -e 'require(\"rimraf\")(\"./build\", () => {})'",
+	clean: "rimraf ./build",
 	compile: "tsc -p .",
 	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
 	lint: "npm run check",
@@ -80090,9 +80092,10 @@ var scripts = {
 	test: "gulp test",
 	check: "gts check src/**/*.ts",
 	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
 	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ -O src/generated/ --grpcLib ../index channelz.proto"
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
+	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto"
 };
 var dependencies = {
 	"@grpc/proto-loader": "^0.6.4",
@@ -80112,9 +80115,9 @@ var files = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.4.6.tgz";
-var _integrity = "sha512-Byau4xiXfIixb1PnW30V/P9mkrZ05lknyNqiK+cVY9J5hj3gecxd/anwaUbAM8j834zg1x78NvAbwGnMfWEu7A==";
-var _from = "@grpc/grpc-js@1.4.6";
+var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.0.tgz";
+var _integrity = "sha512-PDLazk94MFV5hFn/+aSrVj3d5UsOK9HU1xa0ywachvDh1jymBU/Cb+4nGa2NjpfcBoXlHioBC/qIB/XzELednw==";
+var _from = "@grpc/grpc-js@1.5.0";
 var require$$0$2 = {
 	name: name,
 	version: version$m,
@@ -81376,6 +81379,38 @@ exports.DeadlineFilterFactory = DeadlineFilterFactory;
 
 var deadlineFilter$1 = /*@__PURE__*/getDefaultExportFromCjs(deadlineFilter);
 
+var compressionAlgorithms = createCommonjsModule(function (module, exports) {
+"use strict";
+/*
+ * Copyright 2021 gRPC authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ */
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.CompressionAlgorithms = void 0;
+var CompressionAlgorithms;
+(function (CompressionAlgorithms) {
+    CompressionAlgorithms[CompressionAlgorithms["identity"] = 0] = "identity";
+    CompressionAlgorithms[CompressionAlgorithms["deflate"] = 1] = "deflate";
+    CompressionAlgorithms[CompressionAlgorithms["gzip"] = 2] = "gzip";
+})(CompressionAlgorithms = exports.CompressionAlgorithms || (exports.CompressionAlgorithms = {}));
+;
+
+});
+
+var compressionAlgorithms$1 = /*@__PURE__*/getDefaultExportFromCjs(compressionAlgorithms);
+
 var compressionFilter = createCommonjsModule(function (module, exports) {
 "use strict";
 /*
@@ -81398,6 +81433,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CompressionFilterFactory = exports.CompressionFilter = void 0;
 
 
+
+
+
+const isCompressionAlgorithmKey = (key) => {
+    return typeof key === 'number' && typeof compressionAlgorithms.CompressionAlgorithms[key] === 'string';
+};
 class CompressionHandler {
     /**
      * @param message Raw uncompressed message bytes
@@ -81523,15 +81564,46 @@ function getCompressionHandler(compressionName) {
     }
 }
 class CompressionFilter extends filter.BaseFilter {
-    constructor() {
-        super(...arguments);
+    constructor(channelOptions, sharedFilterConfig) {
+        var _a;
+        super();
+        this.sharedFilterConfig = sharedFilterConfig;
         this.sendCompression = new IdentityHandler();
         this.receiveCompression = new IdentityHandler();
+        this.currentCompressionAlgorithm = 'identity';
+        const compressionAlgorithmKey = channelOptions['grpc.default_compression_algorithm'];
+        if (compressionAlgorithmKey !== undefined) {
+            if (isCompressionAlgorithmKey(compressionAlgorithmKey)) {
+                const clientSelectedEncoding = compressionAlgorithms.CompressionAlgorithms[compressionAlgorithmKey];
+                const serverSupportedEncodings = (_a = sharedFilterConfig.serverSupportedEncodingHeader) === null || _a === void 0 ? void 0 : _a.split(',');
+                /**
+                 * There are two possible situations here:
+                 * 1) We don't have any info yet from the server about what compression it supports
+                 *    In that case we should just use what the client tells us to use
+                 * 2) We've previously received a response from the server including a grpc-accept-encoding header
+                 *    In that case we only want to use the encoding chosen by the client if the server supports it
+                 */
+                if (!serverSupportedEncodings || serverSupportedEncodings.includes(clientSelectedEncoding)) {
+                    this.currentCompressionAlgorithm = clientSelectedEncoding;
+                    this.sendCompression = getCompressionHandler(this.currentCompressionAlgorithm);
+                }
+            }
+            else {
+                logging.log(constants.LogVerbosity.ERROR, `Invalid value provided for grpc.default_compression_algorithm option: ${compressionAlgorithmKey}`);
+            }
+        }
     }
     async sendMetadata(metadata) {
         const headers = await metadata;
         headers.set('grpc-accept-encoding', 'identity,deflate,gzip');
         headers.set('accept-encoding', 'identity');
+        // No need to send the header if it's "identity" -  behavior is identical; save the bandwidth
+        if (this.currentCompressionAlgorithm === 'identity') {
+            headers.remove('grpc-encoding');
+        }
+        else {
+            headers.set('grpc-encoding', this.currentCompressionAlgorithm);
+        }
         return headers;
     }
     receiveMetadata(metadata) {
@@ -81543,17 +81615,33 @@ class CompressionFilter extends filter.BaseFilter {
             }
         }
         metadata.remove('grpc-encoding');
+        /* Check to see if the compression we're using to send messages is supported by the server
+         * If not, reset the sendCompression filter and have it use the default IdentityHandler */
+        const serverSupportedEncodingsHeader = metadata.get('grpc-accept-encoding')[0];
+        if (serverSupportedEncodingsHeader) {
+            this.sharedFilterConfig.serverSupportedEncodingHeader = serverSupportedEncodingsHeader;
+            const serverSupportedEncodings = serverSupportedEncodingsHeader.split(',');
+            if (!serverSupportedEncodings.includes(this.currentCompressionAlgorithm)) {
+                this.sendCompression = new IdentityHandler();
+                this.currentCompressionAlgorithm = 'identity';
+            }
+        }
         metadata.remove('grpc-accept-encoding');
         return metadata;
     }
     async sendMessage(message) {
+        var _a;
         /* This filter is special. The input message is the bare message bytes,
          * and the output is a framed and possibly compressed message. For this
          * reason, this filter should be at the bottom of the filter stack */
         const resolvedMessage = await message;
-        const compress = resolvedMessage.flags === undefined
-            ? false
-            : (resolvedMessage.flags & 2 /* NoCompress */) === 0;
+        let compress;
+        if (this.sendCompression instanceof IdentityHandler) {
+            compress = false;
+        }
+        else {
+            compress = (((_a = resolvedMessage.flags) !== null && _a !== void 0 ? _a : 0) & 2 /* NoCompress */) === 0;
+        }
         return {
             message: await this.sendCompression.writeMessage(resolvedMessage.message, compress),
             flags: resolvedMessage.flags,
@@ -81569,11 +81657,13 @@ class CompressionFilter extends filter.BaseFilter {
 }
 exports.CompressionFilter = CompressionFilter;
 class CompressionFilterFactory {
-    constructor(channel) {
+    constructor(channel, options) {
         this.channel = channel;
+        this.options = options;
+        this.sharedFilterConfig = {};
     }
     createFilter(callStream) {
-        return new CompressionFilter();
+        return new CompressionFilter(this.options, this.sharedFilterConfig);
     }
 }
 exports.CompressionFilterFactory = CompressionFilterFactory;
@@ -81862,7 +81952,7 @@ class ChannelImplementation {
             new callCredentialsFilter.CallCredentialsFilterFactory(this),
             new deadlineFilter.DeadlineFilterFactory(this),
             new maxMessageSizeFilter.MaxMessageSizeFilterFactory(this.options),
-            new compressionFilter.CompressionFilterFactory(this),
+            new compressionFilter.CompressionFilterFactory(this, this.options),
         ]);
         this.trace('Channel constructed with options ' + JSON.stringify(options, undefined, 2));
     }
@@ -82236,6 +82326,7 @@ exports.Http2ServerCallStream = exports.ServerDuplexStreamImpl = exports.ServerW
 
 
 
+
 const TRACER_NAME = 'server_call';
 function trace(text) {
     logging.trace(constants.LogVerbosity.DEBUG, TRACER_NAME, text);
@@ -82257,7 +82348,7 @@ const deadlineUnitsToMs = {
 const defaultResponseHeaders = {
     // TODO(cjihrig): Remove these encoding headers from the default response
     // once compression is integrated.
-    [GRPC_ACCEPT_ENCODING_HEADER]: 'identity',
+    [GRPC_ACCEPT_ENCODING_HEADER]: 'identity,deflate,gzip',
     [GRPC_ENCODING_HEADER]: 'identity',
     [http2.constants.HTTP2_HEADER_STATUS]: http2.constants.HTTP_STATUS_OK,
     [http2.constants.HTTP2_HEADER_CONTENT_TYPE]: 'application/grpc+proto',
@@ -82286,14 +82377,14 @@ class ServerUnaryCallImpl extends events_1.EventEmitter {
 }
 exports.ServerUnaryCallImpl = ServerUnaryCallImpl;
 class ServerReadableStreamImpl extends stream_1.Readable {
-    constructor(call, metadata, deserialize) {
+    constructor(call, metadata, deserialize, encoding) {
         super({ objectMode: true });
         this.call = call;
         this.metadata = metadata;
         this.deserialize = deserialize;
         this.cancelled = false;
         this.call.setupSurfaceCall(this);
-        this.call.setupReadable(this);
+        this.call.setupReadable(this, encoding);
     }
     _read(size) {
         if (!this.call.consumeUnpushedMessages(this)) {
@@ -82370,7 +82461,7 @@ class ServerWritableStreamImpl extends stream_1.Writable {
 }
 exports.ServerWritableStreamImpl = ServerWritableStreamImpl;
 class ServerDuplexStreamImpl extends stream_1.Duplex {
-    constructor(call, metadata$1, serialize, deserialize) {
+    constructor(call, metadata$1, serialize, deserialize, encoding) {
         super({ objectMode: true });
         this.call = call;
         this.metadata = metadata$1;
@@ -82379,7 +82470,7 @@ class ServerDuplexStreamImpl extends stream_1.Duplex {
         this.cancelled = false;
         this.trailingMetadata = new metadata.Metadata();
         this.call.setupSurfaceCall(this);
-        this.call.setupReadable(this);
+        this.call.setupReadable(this, encoding);
         this.on('error', (err) => {
             this.call.sendError(err);
             this.end();
@@ -82464,6 +82555,52 @@ class Http2ServerCallStream extends events_1.EventEmitter {
         }
         return this.cancelled;
     }
+    getDecompressedMessage(message, encoding) {
+        switch (encoding) {
+            case 'deflate': {
+                return new Promise((resolve, reject) => {
+                    zlib.inflate(message.slice(5), (err, output) => {
+                        if (err) {
+                            this.sendError({
+                                code: constants.Status.INTERNAL,
+                                details: `Received "grpc-encoding" header "${encoding}" but ${encoding} decompression failed`,
+                            });
+                            resolve();
+                        }
+                        else {
+                            resolve(output);
+                        }
+                    });
+                });
+            }
+            case 'gzip': {
+                return new Promise((resolve, reject) => {
+                    zlib.unzip(message.slice(5), (err, output) => {
+                        if (err) {
+                            this.sendError({
+                                code: constants.Status.INTERNAL,
+                                details: `Received "grpc-encoding" header "${encoding}" but ${encoding} decompression failed`,
+                            });
+                            resolve();
+                        }
+                        else {
+                            resolve(output);
+                        }
+                    });
+                });
+            }
+            case 'identity': {
+                return Promise.resolve(message.slice(5));
+            }
+            default: {
+                this.sendError({
+                    code: constants.Status.UNIMPLEMENTED,
+                    details: `Received message compressed with unsupported encoding "${encoding}"`,
+                });
+                return Promise.resolve();
+            }
+        }
+    }
     sendMetadata(customMetadata) {
         if (this.checkCancelled()) {
             return;
@@ -82487,7 +82624,7 @@ class Http2ServerCallStream extends events_1.EventEmitter {
                 const err = new Error('Invalid deadline');
                 err.code = constants.Status.OUT_OF_RANGE;
                 this.sendError(err);
-                return;
+                return metadata$1;
             }
             const timeout = (+match[1] * deadlineUnitsToMs[match[2]]) | 0;
             const now = new Date();
@@ -82499,11 +82636,10 @@ class Http2ServerCallStream extends events_1.EventEmitter {
         metadata$1.remove(http2.constants.HTTP2_HEADER_ACCEPT_ENCODING);
         metadata$1.remove(http2.constants.HTTP2_HEADER_TE);
         metadata$1.remove(http2.constants.HTTP2_HEADER_CONTENT_TYPE);
-        metadata$1.remove('grpc-encoding');
         metadata$1.remove('grpc-accept-encoding');
         return metadata$1;
     }
-    receiveUnaryMessage() {
+    receiveUnaryMessage(encoding) {
         return new Promise((resolve, reject) => {
             const stream = this.stream;
             const chunks = [];
@@ -82524,7 +82660,17 @@ class Http2ServerCallStream extends events_1.EventEmitter {
                         resolve();
                     }
                     this.emit('receiveMessage');
-                    resolve(this.deserializeMessage(requestBytes));
+                    const compressed = requestBytes.readUInt8(0) === 1;
+                    const compressedMessageEncoding = compressed ? encoding : 'identity';
+                    const decompressedMessage = await this.getDecompressedMessage(requestBytes, compressedMessageEncoding);
+                    // Encountered an error with decompression; it'll already have been propogated back
+                    // Just return early
+                    if (!decompressedMessage) {
+                        resolve();
+                    }
+                    else {
+                        resolve(this.deserializeMessage(decompressedMessage));
+                    }
                 }
                 catch (err) {
                     err.code = constants.Status.INTERNAL;
@@ -82545,9 +82691,7 @@ class Http2ServerCallStream extends events_1.EventEmitter {
         return output;
     }
     deserializeMessage(bytes) {
-        // TODO(cjihrig): Call compression aware deserializeMessage().
-        const receivedMessage = bytes.slice(5);
-        return this.handler.deserialize(receivedMessage);
+        return this.handler.deserialize(bytes);
     }
     async sendUnaryMessage(err, value, metadata$1, flags) {
         if (this.checkCancelled()) {
@@ -82642,10 +82786,21 @@ class Http2ServerCallStream extends events_1.EventEmitter {
             call.emit('cancelled', reason);
         });
     }
-    setupReadable(readable) {
+    setupReadable(readable, encoding) {
         const decoder = new streamDecoder.StreamDecoder();
+        let readsDone = false;
+        let pendingMessageProcessing = false;
+        let pushedEnd = false;
+        const maybePushEnd = () => {
+            if (!pushedEnd && readsDone && !pendingMessageProcessing) {
+                pushedEnd = true;
+                this.pushOrBufferMessage(readable, null);
+            }
+        };
         this.stream.on('data', async (data) => {
             const messages = decoder.write(data);
+            pendingMessageProcessing = true;
+            this.stream.pause();
             for (const message of messages) {
                 if (this.maxReceiveMessageSize !== -1 &&
                     message.length > this.maxReceiveMessageSize) {
@@ -82656,11 +82811,22 @@ class Http2ServerCallStream extends events_1.EventEmitter {
                     return;
                 }
                 this.emit('receiveMessage');
-                this.pushOrBufferMessage(readable, message);
+                const compressed = message.readUInt8(0) === 1;
+                const compressedMessageEncoding = compressed ? encoding : 'identity';
+                const decompressedMessage = await this.getDecompressedMessage(message, compressedMessageEncoding);
+                // Encountered an error with decompression; it'll already have been propogated back
+                // Just return early
+                if (!decompressedMessage)
+                    return;
+                this.pushOrBufferMessage(readable, decompressedMessage);
             }
+            pendingMessageProcessing = false;
+            this.stream.resume();
+            maybePushEnd();
         });
         this.stream.once('end', () => {
-            this.pushOrBufferMessage(readable, null);
+            readsDone = true;
+            maybePushEnd();
         });
     }
     consumeUnpushedMessages(readable) {
@@ -82685,6 +82851,7 @@ class Http2ServerCallStream extends events_1.EventEmitter {
     }
     async pushMessage(readable, messageBytes) {
         if (messageBytes === null) {
+            trace('Received end of stream');
             if (this.canPush) {
                 readable.push(null);
             }
@@ -82693,6 +82860,7 @@ class Http2ServerCallStream extends events_1.EventEmitter {
             }
             return;
         }
+        trace('Received message of length ' + messageBytes.length);
         this.isPushPending = true;
         try {
             const deserialized = await this.deserializeMessage(messageBytes);
@@ -83371,6 +83539,7 @@ class Server {
             return;
         }
         http2Server.on('stream', (stream, headers) => {
+            var _a;
             const channelzSessionInfo = this.sessions.get(stream.session);
             this.callTracker.addCallStarted();
             channelzSessionInfo === null || channelzSessionInfo === void 0 ? void 0 : channelzSessionInfo.streamTracker.addCallStarted();
@@ -83437,18 +83606,20 @@ class Server {
                     });
                 }
                 const metadata = call.receiveMetadata(headers);
+                const encoding = (_a = metadata.get('grpc-encoding')[0]) !== null && _a !== void 0 ? _a : 'identity';
+                metadata.remove('grpc-encoding');
                 switch (handler.type) {
                     case 'unary':
-                        handleUnary(call, handler, metadata);
+                        handleUnary(call, handler, metadata, encoding);
                         break;
                     case 'clientStream':
-                        handleClientStreaming(call, handler, metadata);
+                        handleClientStreaming(call, handler, metadata, encoding);
                         break;
                     case 'serverStream':
-                        handleServerStreaming(call, handler, metadata);
+                        handleServerStreaming(call, handler, metadata, encoding);
                         break;
                     case 'bidi':
-                        handleBidiStreaming(call, handler, metadata);
+                        handleBidiStreaming(call, handler, metadata, encoding);
                         break;
                     default:
                         throw new Error(`Unknown handler type: ${handler.type}`);
@@ -83499,8 +83670,8 @@ class Server {
     }
 }
 exports.Server = Server;
-async function handleUnary(call, handler, metadata) {
-    const request = await call.receiveUnaryMessage();
+async function handleUnary(call, handler, metadata, encoding) {
+    const request = await call.receiveUnaryMessage(encoding);
     if (request === undefined || call.cancelled) {
         return;
     }
@@ -83509,8 +83680,8 @@ async function handleUnary(call, handler, metadata) {
         call.sendUnaryMessage(err, value, trailer, flags);
     });
 }
-function handleClientStreaming(call, handler, metadata) {
-    const stream = new serverCall.ServerReadableStreamImpl(call, metadata, handler.deserialize);
+function handleClientStreaming(call, handler, metadata, encoding) {
+    const stream = new serverCall.ServerReadableStreamImpl(call, metadata, handler.deserialize, encoding);
     function respond(err, value, trailer, flags) {
         stream.destroy();
         call.sendUnaryMessage(err, value, trailer, flags);
@@ -83521,16 +83692,16 @@ function handleClientStreaming(call, handler, metadata) {
     stream.on('error', respond);
     handler.func(stream, respond);
 }
-async function handleServerStreaming(call, handler, metadata) {
-    const request = await call.receiveUnaryMessage();
+async function handleServerStreaming(call, handler, metadata, encoding) {
+    const request = await call.receiveUnaryMessage(encoding);
     if (request === undefined || call.cancelled) {
         return;
     }
     const stream = new serverCall.ServerWritableStreamImpl(call, metadata, handler.serialize, request);
     handler.func(stream);
 }
-function handleBidiStreaming(call, handler, metadata) {
-    const stream = new serverCall.ServerDuplexStreamImpl(call, metadata, handler.serialize, handler.deserialize);
+function handleBidiStreaming(call, handler, metadata, encoding) {
+    const stream = new serverCall.ServerDuplexStreamImpl(call, metadata, handler.serialize, handler.deserialize, encoding);
     if (call.cancelled) {
         return;
     }
@@ -84624,11 +84795,13 @@ var src$2 = createCommonjsModule(function (module, exports) {
  *
  */
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.experimental = exports.StatusBuilder = exports.getClientChannel = exports.ServerCredentials = exports.Server = exports.setLogVerbosity = exports.setLogger = exports.load = exports.loadObject = exports.CallCredentials = exports.ChannelCredentials = exports.waitForClientReady = exports.closeClient = exports.Channel = exports.makeGenericClientConstructor = exports.makeClientConstructor = exports.loadPackageDefinition = exports.Client = exports.propagate = exports.connectivityState = exports.status = exports.logVerbosity = exports.Metadata = exports.credentials = void 0;
+exports.experimental = exports.StatusBuilder = exports.getClientChannel = exports.ServerCredentials = exports.Server = exports.setLogVerbosity = exports.setLogger = exports.load = exports.loadObject = exports.CallCredentials = exports.ChannelCredentials = exports.waitForClientReady = exports.closeClient = exports.Channel = exports.makeGenericClientConstructor = exports.makeClientConstructor = exports.loadPackageDefinition = exports.Client = exports.compressionAlgorithms = exports.propagate = exports.connectivityState = exports.status = exports.logVerbosity = exports.Metadata = exports.credentials = void 0;
 
 Object.defineProperty(exports, "CallCredentials", { enumerable: true, get: function () { return callCredentials.CallCredentials; } });
 
 Object.defineProperty(exports, "Channel", { enumerable: true, get: function () { return channel.ChannelImplementation; } });
+
+Object.defineProperty(exports, "compressionAlgorithms", { enumerable: true, get: function () { return compressionAlgorithms.CompressionAlgorithms; } });
 
 Object.defineProperty(exports, "connectivityState", { enumerable: true, get: function () { return connectivityState.ConnectivityState; } });
 
@@ -85894,6 +86067,7 @@ const allowedTransactionKeys$2 = {
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true
 };
+// TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter$8(this, void 0, void 0, function* () {
         const name = yield nameOrPromise;
@@ -85910,7 +86084,7 @@ function resolveName(resolver, nameOrPromise) {
                 operation: "resolveName"
             });
         }
-        const address = yield resolver.resolveName(name);
+        const address = ""; //await resolver.resolveName(name);
         if (address == null) {
             logger$s.throwArgumentError("resolver or addr is not configured for ENS name", "name", name);
         }
@@ -86131,7 +86305,7 @@ function addContractWait(contract, tx) {
     };
 }
 function buildCall(contract, fragment, collapseSimple) {
-    const signerOrProvider = (contract.signer || contract.provider);
+    const signer = contract.signer;
     return function (...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
             // Extract the "blockTag" override if present
@@ -86150,7 +86324,7 @@ function buildCall(contract, fragment, collapseSimple) {
             }
             // Call a node and get the result
             const tx = yield populateTransaction(contract, fragment, args);
-            const result = yield signerOrProvider.call(tx, blockTag);
+            const result = yield signer.call(tx, blockTag);
             try {
                 let value = contract.interface.decodeFunctionResult(fragment, result);
                 if (collapseSimple && fragment.outputs.length === 1) {
@@ -90029,9 +90203,9 @@ RedirectableRequest.prototype._processResponse = function (response) {
     var redirectUrlParts = url.parse(redirectUrl);
     Object.assign(this._options, redirectUrlParts);
 
-    // Drop the Authorization header if redirecting to another domain
+    // Drop the confidential headers when redirecting to another domain
     if (!(redirectUrlParts.host === currentHost || isSubdomainOf(redirectUrlParts.host, currentHost))) {
-      removeMatchingHeaders(/^authorization$/i, this._options.headers);
+      removeMatchingHeaders(/^(?:authorization|cookie)$/i, this._options.headers);
     }
 
     // Evaluate the beforeRedirect callback
@@ -90162,11 +90336,12 @@ function removeMatchingHeaders(regex, headers) {
   var lastValue;
   for (var header in headers) {
     if (regex.test(header)) {
-      lastValue = headers[header].toString().trim();
+      lastValue = headers[header];
       delete headers[header];
     }
   }
-  return lastValue;
+  return (lastValue === null || typeof lastValue === "undefined") ?
+    undefined : String(lastValue).trim();
 }
 
 function createErrorType(code, defaultMessage) {
@@ -91391,6 +91566,7 @@ var __awaiter$9 = (window && window.__awaiter) || function (thisArg, _arguments,
 const logger$v = new Logger(version$p);
 //////////////////////////////
 // Event Serializeing
+// @ts-ignore
 function checkTopic(topic) {
     if (topic == null) {
         return "null";
@@ -91400,6 +91576,7 @@ function checkTopic(topic) {
     }
     return topic.toLowerCase();
 }
+// @ts-ignore
 function serializeTopics(topics) {
     // Remove trailing null AND-topics; they are redundant
     topics = topics.slice();
@@ -91436,28 +91613,6 @@ function deserializeTopics(data) {
         });
         return ((comps.length === 1) ? comps[0] : comps);
     });
-}
-function getEventTag$1(eventName) {
-    if (typeof (eventName) === "string") {
-        eventName = eventName.toLowerCase();
-        if (hexDataLength(eventName) === 32) {
-            return "tx:" + eventName;
-        }
-        if (eventName.indexOf(":") === -1) {
-            return eventName;
-        }
-    }
-    else if (Array.isArray(eventName)) {
-        return "filter:*:" + serializeTopics(eventName);
-    }
-    else if (ForkEvent.isForkEvent(eventName)) {
-        logger$v.warn("not implemented");
-        throw new Error("not implemented");
-    }
-    else if (eventName && typeof (eventName) === "object") {
-        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
-    }
-    throw new Error("invalid event - " + eventName);
 }
 //////////////////////////////
 // Helper Object
@@ -91543,27 +91698,6 @@ function bytes32ify(value) {
 function base58Encode(data) {
     return Base58.encode(concat([data, hexDataSlice(sha256$1(sha256$1(data)), 0, 4)]));
 }
-const matchers = [
-    new RegExp("^(https):/\/(.*)$", "i"),
-    new RegExp("^(data):(.*)$", "i"),
-    new RegExp("^(ipfs):/\/(.*)$", "i"),
-    new RegExp("^eip155:[0-9]+/(erc[0-9]+):(.*)$", "i"),
-];
-function _parseString(result) {
-    try {
-        return toUtf8String(_parseBytes(result));
-    }
-    catch (error) { }
-    return null;
-}
-function _parseBytes(result) {
-    if (result === "0x") {
-        return null;
-    }
-    const offset = BigNumber.from(hexDataSlice(result, 0, 32)).toNumber();
-    const length = BigNumber.from(hexDataSlice(result, offset, offset + 32)).toNumber();
-    return hexDataSlice(result, offset + 32, offset + 32 + length);
-}
 class Resolver {
     // The resolvedAddress is only for creating a ReverseLookup resolver
     constructor(provider, address, name, resolvedAddress) {
@@ -91575,12 +91709,13 @@ class Resolver {
     _fetchBytes(selector, parameters) {
         return __awaiter$9(this, void 0, void 0, function* () {
             // e.g. keccak256("addr(bytes32,uint256)")
-            const tx = {
-                to: this.address,
-                data: hexConcat([selector, namehash(this.name), (parameters || "0x")])
-            };
+            // const tx = {
+            //     to: this.address,
+            //     data: hexConcat([ selector, namehash(this.name), (parameters || "0x") ])
+            // };
             try {
-                return _parseBytes(yield this.provider.call(tx));
+                // return _parseBytes(await this.provider.call(tx));
+                return null;
             }
             catch (error) {
                 if (error.code === Logger.errors.CALL_EXCEPTION) {
@@ -91650,17 +91785,7 @@ class Resolver {
             // If Ethereum, use the standard `addr(bytes32)`
             if (coinType === 60) {
                 try {
-                    // keccak256("addr(bytes32)")
-                    const transaction = {
-                        to: this.address,
-                        data: ("0x3b3b57de" + namehash(this.name).substring(2))
-                    };
-                    const hexBytes = yield this.provider.call(transaction);
-                    // No address
-                    if (hexBytes === "0x" || hexBytes === HashZero) {
-                        return null;
-                    }
-                    return this.provider.formatter.callAddress(hexBytes);
+                    return null;
                 }
                 catch (error) {
                     if (error.code === Logger.errors.CALL_EXCEPTION) {
@@ -91685,94 +91810,6 @@ class Resolver {
                 });
             }
             return address;
-        });
-    }
-    getAvatar() {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            const linkage = [];
-            try {
-                const avatar = yield this.getText("avatar");
-                if (avatar == null) {
-                    return null;
-                }
-                for (let i = 0; i < matchers.length; i++) {
-                    const match = avatar.match(matchers[i]);
-                    if (match == null) {
-                        continue;
-                    }
-                    switch (match[1]) {
-                        case "https":
-                            linkage.push({ type: "url", content: avatar });
-                            return { linkage, url: avatar };
-                        case "data":
-                            linkage.push({ type: "data", content: avatar });
-                            return { linkage, url: avatar };
-                        case "ipfs":
-                            linkage.push({ type: "ipfs", content: avatar });
-                            return { linkage, url: `https:/\/gateway.ipfs.io/ipfs/${avatar.substring(7)}` };
-                        case "erc721":
-                        case "erc1155": {
-                            // Depending on the ERC type, use tokenURI(uint256) or url(uint256)
-                            const selector = (match[1] === "erc721") ? "0xc87b56dd" : "0x0e89341c";
-                            linkage.push({ type: match[1], content: avatar });
-                            // The owner of this name
-                            const owner = (this._resolvedAddress || (yield this.getAddress()));
-                            const comps = (match[2] || "").split("/");
-                            if (comps.length !== 2) {
-                                return null;
-                            }
-                            const addr = yield this.provider.formatter.address(comps[0]);
-                            const tokenId = hexZeroPad(BigNumber.from(comps[1]).toHexString(), 32);
-                            // Check that this account owns the token
-                            if (match[1] === "erc721") {
-                                // ownerOf(uint256 tokenId)
-                                const tokenOwner = this.provider.formatter.callAddress(yield this.provider.call({
-                                    to: addr, data: hexConcat(["0x6352211e", tokenId])
-                                }));
-                                if (owner !== tokenOwner) {
-                                    return null;
-                                }
-                                linkage.push({ type: "owner", content: tokenOwner });
-                            }
-                            else if (match[1] === "erc1155") {
-                                // balanceOf(address owner, uint256 tokenId)
-                                const balance = BigNumber.from(yield this.provider.call({
-                                    to: addr, data: hexConcat(["0x00fdd58e", hexZeroPad(owner, 32), tokenId])
-                                }));
-                                if (balance.isZero()) {
-                                    return null;
-                                }
-                                linkage.push({ type: "balance", content: balance.toString() });
-                            }
-                            // Call the token contract for the metadata URL
-                            const tx = {
-                                to: this.provider.formatter.address(comps[0]),
-                                data: hexConcat([selector, tokenId])
-                            };
-                            let metadataUrl = _parseString(yield this.provider.call(tx));
-                            if (metadataUrl == null) {
-                                return null;
-                            }
-                            linkage.push({ type: "metadata-url", content: metadataUrl });
-                            // ERC-1155 allows a generic {id} in the URL
-                            if (match[1] === "erc1155") {
-                                metadataUrl = metadataUrl.replace("{id}", tokenId.substring(2));
-                            }
-                            // Get the token metadata
-                            const metadata = yield fetchJson(metadataUrl);
-                            // Pull the image URL out
-                            if (!metadata || typeof (metadata.image) !== "string" || !metadata.image.match(/^https:\/\//i)) {
-                                return null;
-                            }
-                            linkage.push({ type: "metadata", content: JSON.stringify(metadata) });
-                            linkage.push({ type: "url", content: metadata.image });
-                            return { linkage, url: metadata.image };
-                        }
-                    }
-                }
-            }
-            catch (error) { }
-            return null;
         });
     }
     getContentHash() {
@@ -91824,7 +91861,6 @@ class Resolver {
     }
 }
 let defaultFormatter = null;
-let nextPollId = 1;
 class BaseProvider extends Provider {
     /**
      *  ready
@@ -91838,8 +91874,6 @@ class BaseProvider extends Provider {
     constructor(network) {
         logger$v.checkNew(new.target, Provider);
         super();
-        this._events = [];
-        this._emitted = { block: -2 };
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -91868,10 +91902,6 @@ class BaseProvider extends Provider {
                 logger$v.throwArgumentError("invalid network", "network", network);
             }
         }
-        this._maxInternalBlockNumber = -1024;
-        this._lastBlockNumber = -2;
-        this._pollingInterval = 4000;
-        this._fastQueryDate = 0;
         this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
         this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(network));
     }
@@ -91909,22 +91939,6 @@ class BaseProvider extends Provider {
             return this._network;
         });
     }
-    // This will always return the most recently established network.
-    // For "any", this can change (a "network" event is emitted before
-    // any change is reflected); otherwise this cannot change
-    get ready() {
-        return poll(() => {
-            return this._ready().then((network) => {
-                return network;
-            }, (error) => {
-                // If the network isn't running yet, we will wait
-                if (error.code === Logger.errors.NETWORK_ERROR && error.event === "noNetwork") {
-                    return undefined;
-                }
-                throw error;
-            });
-        });
-    }
     // @TODO: Remove this and just create a singleton formatter
     static getFormatter() {
         if (defaultFormatter == null) {
@@ -91935,123 +91949,6 @@ class BaseProvider extends Provider {
     // @TODO: Remove this and just use getNetwork
     static getNetwork(network) {
         return getNetwork((network == null) ? "mainnet" : network);
-    }
-    poll() {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            const pollId = nextPollId++;
-            // Track all running promises, so we can trigger a post-poll once they are complete
-            const runners = [];
-            let blockNumber = null;
-            try {
-                // blockNumber = await this._getInternalBlockNumber(100 + this.pollingInterval / 2);
-            }
-            catch (error) {
-                this.emit("error", error);
-                return;
-            }
-            // this._setFastBlockNumber(blockNumber);
-            // Emit a poll event after we have the latest (fast) block number
-            this.emit("poll", pollId, blockNumber);
-            // If the block has not changed, meh.
-            if (blockNumber === this._lastBlockNumber) {
-                this.emit("didPoll", pollId);
-                return;
-            }
-            // First polling cycle, trigger a "block" events
-            if (this._emitted.block === -2) {
-                this._emitted.block = blockNumber - 1;
-            }
-            if (Math.abs((this._emitted.block) - blockNumber) > 1000) {
-                logger$v.warn(`network block skew detected; skipping block events (emitted=${this._emitted.block} blockNumber${blockNumber})`);
-                this.emit("error", logger$v.makeError("network block skew detected", Logger.errors.NETWORK_ERROR, {
-                    blockNumber: blockNumber,
-                    event: "blockSkew",
-                    previousBlockNumber: this._emitted.block
-                }));
-                this.emit("block", blockNumber);
-            }
-            else {
-                // Notify all listener for each block that has passed
-                for (let i = this._emitted.block + 1; i <= blockNumber; i++) {
-                    this.emit("block", i);
-                }
-            }
-            // The emitted block was updated, check for obsolete events
-            if (this._emitted.block !== blockNumber) {
-                this._emitted.block = blockNumber;
-                Object.keys(this._emitted).forEach((key) => {
-                    // The block event does not expire
-                    if (key === "block") {
-                        return;
-                    }
-                    // The block we were at when we emitted this event
-                    const eventBlockNumber = this._emitted[key];
-                    // We cannot garbage collect pending transactions or blocks here
-                    // They should be garbage collected by the Provider when setting
-                    // "pending" events
-                    if (eventBlockNumber === "pending") {
-                        return;
-                    }
-                    // Evict any transaction hashes or block hashes over 12 blocks
-                    // old, since they should not return null anyways
-                    if (blockNumber - eventBlockNumber > 12) {
-                        delete this._emitted[key];
-                    }
-                });
-            }
-            // First polling cycle
-            if (this._lastBlockNumber === -2) {
-                this._lastBlockNumber = blockNumber - 1;
-            }
-            // Find all transaction hashes we are waiting on
-            this._events.forEach((event) => {
-                switch (event.type) {
-                    case "tx": {
-                        const hash = event.hash;
-                        let runner = this.getTransactionReceipt(hash).then((receipt) => {
-                            if (!receipt || receipt.blockNumber == null) {
-                                return null;
-                            }
-                            this._emitted["t:" + hash] = receipt.blockNumber;
-                            this.emit(hash, receipt);
-                            return null;
-                        }).catch((error) => { this.emit("error", error); });
-                        runners.push(runner);
-                        break;
-                    }
-                    case "filter": {
-                        const filter = event.filter;
-                        filter.fromBlock = this._lastBlockNumber + 1;
-                        filter.toBlock = blockNumber;
-                        const runner = this.getLogs(filter).then((logs) => {
-                            if (logs.length === 0) {
-                                return;
-                            }
-                            logs.forEach((log) => {
-                                this._emitted["b:" + log.blockHash] = log.blockNumber;
-                                this._emitted["t:" + log.transactionHash] = log.blockNumber;
-                                this.emit(filter, log);
-                            });
-                        }).catch((error) => { this.emit("error", error); });
-                        runners.push(runner);
-                        break;
-                    }
-                }
-            });
-            this._lastBlockNumber = blockNumber;
-            // Once all events for this loop have been processed, emit "didPoll"
-            Promise.all(runners).then(() => {
-                this.emit("didPoll", pollId);
-            }).catch((error) => { this.emit("error", error); });
-            return;
-        });
-    }
-    // Deprecated; do not use this
-    resetEventsBlock(blockNumber) {
-        this._lastBlockNumber = blockNumber - 1;
-        if (this.polling) {
-            this.poll();
-        }
     }
     get network() {
         return this._network;
@@ -92078,14 +91975,6 @@ class BaseProvider extends Provider {
                 // make sure you know what you are doing if you use "any"
                 if (this.anyNetwork) {
                     this._network = currentNetwork;
-                    // Reset all internal block number guards and caches
-                    this._lastBlockNumber = -2;
-                    this._fastBlockNumber = null;
-                    this._fastBlockNumberPromise = null;
-                    this._fastQueryDate = 0;
-                    this._emitted.block = -2;
-                    this._maxInternalBlockNumber = -1024;
-                    this._internalBlockNumber = null;
                     // The "network" event MUST happen before this method resolves
                     // so any events have a chance to unregister, so we stall an
                     // additional event loop before returning from /this/ call
@@ -92103,47 +91992,6 @@ class BaseProvider extends Provider {
             }
             return network;
         });
-    }
-    get polling() {
-        return (this._poller != null);
-    }
-    set polling(value) {
-        if (value && !this._poller) {
-            this._poller = setInterval(() => { this.poll(); }, this.pollingInterval);
-            if (!this._bootstrapPoll) {
-                this._bootstrapPoll = setTimeout(() => {
-                    this.poll();
-                    // We block additional polls until the polling interval
-                    // is done, to prevent overwhelming the poll function
-                    this._bootstrapPoll = setTimeout(() => {
-                        // If polling was disabled, something may require a poke
-                        // since starting the bootstrap poll and it was disabled
-                        if (!this._poller) {
-                            this.poll();
-                        }
-                        // Clear out the bootstrap so we can do another
-                        this._bootstrapPoll = null;
-                    }, this.pollingInterval);
-                }, 0);
-            }
-        }
-        else if (!value && this._poller) {
-            clearInterval(this._poller);
-            this._poller = null;
-        }
-    }
-    get pollingInterval() {
-        return this._pollingInterval;
-    }
-    set pollingInterval(value) {
-        if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
-            throw new Error("invalid polling interval");
-        }
-        this._pollingInterval = value;
-        if (this._poller) {
-            clearInterval(this._poller);
-            this._poller = setInterval(() => { this.poll(); }, this._pollingInterval);
-        }
     }
     waitForTransaction(transactionHash, confirmations, timeout) {
         return __awaiter$9(this, void 0, void 0, function* () {
@@ -92235,8 +92083,6 @@ class BaseProvider extends Provider {
             if (receipt == null && confirms === 0) {
                 return null;
             }
-            // No longer pending, allow the polling loop to garbage collect this
-            this._emitted["t:" + tx.hash] = receipt.blockNumber;
             if (receipt.status === 0) {
                 logger$v.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
@@ -92271,40 +92117,6 @@ class BaseProvider extends Provider {
             }
         });
     }
-    _getTransactionRequest(transaction) {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            const values = yield transaction;
-            const tx = {};
-            ["from", "to"].forEach((key) => {
-                if (values[key] == null) {
-                    return;
-                }
-                tx[key] = Promise.resolve(values[key]).then((v) => (v ? this._getAddress(v) : null));
-            });
-            ["gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "value"].forEach((key) => {
-                if (values[key] == null) {
-                    return;
-                }
-                tx[key] = Promise.resolve(values[key]).then((v) => (v ? BigNumber.from(v) : null));
-            });
-            ["type"].forEach((key) => {
-                if (values[key] == null) {
-                    return;
-                }
-                tx[key] = Promise.resolve(values[key]).then((v) => ((v != null) ? v : null));
-            });
-            if (values.accessList) {
-                tx.accessList = this.formatter.accessList(values.accessList);
-            }
-            ["data"].forEach((key) => {
-                if (values[key] == null) {
-                    return;
-                }
-                tx[key] = Promise.resolve(values[key]).then((v) => (v ? hexlify(v) : null));
-            });
-            return this.formatter.transactionRequest(yield resolveProperties(tx));
-        });
-    }
     _getFilter(filter) {
         return __awaiter$9(this, void 0, void 0, function* () {
             filter = yield filter;
@@ -92326,42 +92138,14 @@ class BaseProvider extends Provider {
             return this.formatter.filter(yield resolveProperties(result));
         });
     }
-    call(transaction, blockTag) {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                transaction: this._getTransactionRequest(transaction),
-            });
-            const result = yield this.perform("call", params);
-            try {
-                return hexlify(result);
-            }
-            catch (error) {
-                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "call",
-                    params, result, error
-                });
-            }
-        });
-    }
     estimateGas(transaction) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                transaction: this._getTransactionRequest(transaction)
+            return logger$v.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
+                operation: "estimateGas"
             });
-            const result = yield this.perform("estimateGas", params);
-            try {
-                return BigNumber.from(result);
-            }
-            catch (error) {
-                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "estimateGas",
-                    params, result, error
-                });
-            }
         });
     }
+    // TODO FIX ME
     _getAddress(addressOrName) {
         return __awaiter$9(this, void 0, void 0, function* () {
             addressOrName = yield addressOrName;
@@ -92401,28 +92185,13 @@ class BaseProvider extends Provider {
             return poll(() => __awaiter$9(this, void 0, void 0, function* () {
                 const result = yield this.perform("getTransactionReceipt", params);
                 if (result == null) {
-                    if (this._emitted["t:" + transactionHash] == null) {
-                        return null;
-                    }
                     return undefined;
                 }
                 // "geth-etc" returns receipts before they are ready
                 if (result.blockHash == null) {
                     return undefined;
                 }
-                const receipt = this.formatter.receipt(result);
-                if (receipt.blockNumber == null) {
-                    receipt.confirmations = 0;
-                }
-                else if (receipt.confirmations == null) {
-                    // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                    //
-                    // Add the confirmations using the fast block number (pessimistic)
-                    // let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                    // if (confirmations <= 0) { confirmations = 1; }
-                    // receipt.confirmations = confirmations;
-                }
-                return receipt;
+                return this.formatter.receipt(result);
             }), { oncePoll: this });
         });
     }
@@ -92444,6 +92213,7 @@ class BaseProvider extends Provider {
             return logger$v.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
+    // TODO FIXME
     getResolver(name) {
         return __awaiter$9(this, void 0, void 0, function* () {
             try {
@@ -92461,6 +92231,7 @@ class BaseProvider extends Provider {
             }
         });
     }
+    // TODO FIXME
     _getResolver(name) {
         return __awaiter$9(this, void 0, void 0, function* () {
             // Get the resolver from the blockchain
@@ -92470,12 +92241,13 @@ class BaseProvider extends Provider {
                 logger$v.throwError("network does not support ENS", Logger.errors.UNSUPPORTED_OPERATION, { operation: "ENS", network: network.name });
             }
             // keccak256("resolver(bytes32)")
-            const transaction = {
-                to: network.ensAddress,
-                data: ("0x0178b8bf" + namehash(name).substring(2))
-            };
+            // const transaction = {
+            //     to: network.ensAddress,
+            //     data: ("0x0178b8bf" + namehash(name).substring(2))
+            // };
             try {
-                return this.formatter.callAddress(yield this.call(transaction));
+                return null;
+                // return this.formatter.callAddress(await this.call(transaction));
             }
             catch (error) {
                 if (error.code === Logger.errors.CALL_EXCEPTION) {
@@ -92485,6 +92257,7 @@ class BaseProvider extends Provider {
             }
         });
     }
+    // TODO FIXME
     resolveName(name) {
         return __awaiter$9(this, void 0, void 0, function* () {
             name = yield name;
@@ -92509,82 +92282,18 @@ class BaseProvider extends Provider {
             return yield resolver.getAddress();
         });
     }
+    // TODO FIXME
     lookupAddress(address) {
         return __awaiter$9(this, void 0, void 0, function* () {
             address = yield address;
             address = this.formatter.address(address);
-            const reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-            const resolverAddress = yield this._getResolver(reverseName);
-            if (!resolverAddress) {
-                return null;
-            }
-            // keccak("name(bytes32)")
-            let bytes = arrayify(yield this.call({
-                to: resolverAddress,
-                data: ("0x691f3431" + namehash(reverseName).substring(2))
-            }));
-            // Strip off the dynamic string pointer (0x20)
-            if (bytes.length < 32 || !BigNumber.from(bytes.slice(0, 32)).eq(32)) {
-                return null;
-            }
-            bytes = bytes.slice(32);
-            // Not a length-prefixed string
-            if (bytes.length < 32) {
-                return null;
-            }
-            // Get the length of the string (from the length-prefix)
-            const length = BigNumber.from(bytes.slice(0, 32)).toNumber();
-            bytes = bytes.slice(32);
-            // Length longer than available data
-            if (length > bytes.length) {
-                return null;
-            }
-            const name = toUtf8String(bytes.slice(0, length));
-            // Make sure the reverse record matches the foward record
-            const addr = yield this.resolveName(name);
-            if (addr != address) {
-                return null;
-            }
-            return name;
-        });
-    }
-    getAvatar(nameOrAddress) {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            let resolver = null;
-            if (isHexString(nameOrAddress)) {
-                // Address; reverse lookup
-                const address = this.formatter.address(nameOrAddress);
-                const reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-                const resolverAddress = yield this._getResolver(reverseName);
-                if (!resolverAddress) {
-                    return null;
-                }
-                resolver = new Resolver(this, resolverAddress, "_", address);
-            }
-            else {
-                // ENS name; forward lookup
-                resolver = yield this.getResolver(nameOrAddress);
-            }
-            const avatar = yield resolver.getAvatar();
-            if (avatar == null) {
-                return null;
-            }
-            return avatar.url;
+            return null;
         });
     }
     perform(method, params) {
         return logger$v.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
     }
-    _startEvent(event) {
-        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
-    }
-    _stopEvent(event) {
-        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
-    }
     _addEventListener(eventName, listener, once) {
-        const event = new Event(getEventTag$1(eventName), listener, once);
-        this._events.push(event);
-        this._startEvent(event);
         return this;
     }
     on(eventName, listener) {
@@ -92594,82 +92303,18 @@ class BaseProvider extends Provider {
         return this._addEventListener(eventName, listener, true);
     }
     emit(eventName, ...args) {
-        let result = false;
-        let stopped = [];
-        let eventTag = getEventTag$1(eventName);
-        this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag) {
-                return true;
-            }
-            setTimeout(() => {
-                event.listener.apply(this, args);
-            }, 0);
-            result = true;
-            if (event.once) {
-                stopped.push(event);
-                return false;
-            }
-            return true;
-        });
-        stopped.forEach((event) => { this._stopEvent(event); });
-        return result;
+        return false;
     }
     listenerCount(eventName) {
-        if (!eventName) {
-            return this._events.length;
-        }
-        let eventTag = getEventTag$1(eventName);
-        return this._events.filter((event) => {
-            return (event.tag === eventTag);
-        }).length;
+        return 0;
     }
     listeners(eventName) {
-        if (eventName == null) {
-            return this._events.map((event) => event.listener);
-        }
-        let eventTag = getEventTag$1(eventName);
-        return this._events
-            .filter((event) => (event.tag === eventTag))
-            .map((event) => event.listener);
+        return null;
     }
     off(eventName, listener) {
-        if (listener == null) {
-            return this.removeAllListeners(eventName);
-        }
-        const stopped = [];
-        let found = false;
-        let eventTag = getEventTag$1(eventName);
-        this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag || event.listener != listener) {
-                return true;
-            }
-            if (found) {
-                return true;
-            }
-            found = true;
-            stopped.push(event);
-            return false;
-        });
-        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
     }
     removeAllListeners(eventName) {
-        let stopped = [];
-        if (eventName == null) {
-            stopped = this._events;
-            this._events = [];
-        }
-        else {
-            const eventTag = getEventTag$1(eventName);
-            this._events = this._events.filter((event) => {
-                if (event.tag !== eventTag) {
-                    return true;
-                }
-                stopped.push(event);
-                return false;
-            });
-        }
-        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
     }
 }

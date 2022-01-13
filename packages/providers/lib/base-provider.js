@@ -59,8 +59,6 @@ var abstract_provider_1 = require("@ethersproject/abstract-provider");
 var basex_1 = require("@ethersproject/basex");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
-var constants_1 = require("@ethersproject/constants");
-var hash_1 = require("@ethersproject/hash");
 var networks_1 = require("@ethersproject/networks");
 var properties_1 = require("@ethersproject/properties");
 var sha2_1 = require("@ethersproject/sha2");
@@ -76,6 +74,7 @@ var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
 //////////////////////////////
 // Event Serializeing
+// @ts-ignore
 function checkTopic(topic) {
     if (topic == null) {
         return "null";
@@ -85,6 +84,7 @@ function checkTopic(topic) {
     }
     return topic.toLowerCase();
 }
+// @ts-ignore
 function serializeTopics(topics) {
     // Remove trailing null AND-topics; they are redundant
     topics = topics.slice();
@@ -121,28 +121,6 @@ function deserializeTopics(data) {
         });
         return ((comps.length === 1) ? comps[0] : comps);
     });
-}
-function getEventTag(eventName) {
-    if (typeof (eventName) === "string") {
-        eventName = eventName.toLowerCase();
-        if ((0, bytes_1.hexDataLength)(eventName) === 32) {
-            return "tx:" + eventName;
-        }
-        if (eventName.indexOf(":") === -1) {
-            return eventName;
-        }
-    }
-    else if (Array.isArray(eventName)) {
-        return "filter:*:" + serializeTopics(eventName);
-    }
-    else if (abstract_provider_1.ForkEvent.isForkEvent(eventName)) {
-        logger.warn("not implemented");
-        throw new Error("not implemented");
-    }
-    else if (eventName && typeof (eventName) === "object") {
-        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
-    }
-    throw new Error("invalid event - " + eventName);
 }
 //////////////////////////////
 // Helper Object
@@ -246,27 +224,6 @@ function bytes32ify(value) {
 function base58Encode(data) {
     return basex_1.Base58.encode((0, bytes_1.concat)([data, (0, bytes_1.hexDataSlice)((0, sha2_1.sha256)((0, sha2_1.sha256)(data)), 0, 4)]));
 }
-var matchers = [
-    new RegExp("^(https):/\/(.*)$", "i"),
-    new RegExp("^(data):(.*)$", "i"),
-    new RegExp("^(ipfs):/\/(.*)$", "i"),
-    new RegExp("^eip155:[0-9]+/(erc[0-9]+):(.*)$", "i"),
-];
-function _parseString(result) {
-    try {
-        return (0, strings_1.toUtf8String)(_parseBytes(result));
-    }
-    catch (error) { }
-    return null;
-}
-function _parseBytes(result) {
-    if (result === "0x") {
-        return null;
-    }
-    var offset = bignumber_1.BigNumber.from((0, bytes_1.hexDataSlice)(result, 0, 32)).toNumber();
-    var length = bignumber_1.BigNumber.from((0, bytes_1.hexDataSlice)(result, offset, offset + 32)).toNumber();
-    return (0, bytes_1.hexDataSlice)(result, offset + 32, offset + 32 + length);
-}
 var Resolver = /** @class */ (function () {
     // The resolvedAddress is only for creating a ReverseLookup resolver
     function Resolver(provider, address, name, resolvedAddress) {
@@ -277,28 +234,23 @@ var Resolver = /** @class */ (function () {
     }
     Resolver.prototype._fetchBytes = function (selector, parameters) {
         return __awaiter(this, void 0, void 0, function () {
-            var tx, _a, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        tx = {
-                            to: this.address,
-                            data: (0, bytes_1.hexConcat)([selector, (0, hash_1.namehash)(this.name), (parameters || "0x")])
-                        };
-                        _b.label = 1;
-                    case 1:
-                        _b.trys.push([1, 3, , 4]);
-                        _a = _parseBytes;
-                        return [4 /*yield*/, this.provider.call(tx)];
-                    case 2: return [2 /*return*/, _a.apply(void 0, [_b.sent()])];
-                    case 3:
-                        error_1 = _b.sent();
-                        if (error_1.code === logger_1.Logger.errors.CALL_EXCEPTION) {
-                            return [2 /*return*/, null];
-                        }
-                        return [2 /*return*/, null];
-                    case 4: return [2 /*return*/];
+            return __generator(this, function (_a) {
+                // e.g. keccak256("addr(bytes32,uint256)")
+                // const tx = {
+                //     to: this.address,
+                //     data: hexConcat([ selector, namehash(this.name), (parameters || "0x") ])
+                // };
+                try {
+                    // return _parseBytes(await this.provider.call(tx));
+                    return [2 /*return*/, null];
                 }
+                catch (error) {
+                    if (error.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        return [2 /*return*/, null];
+                    }
+                    return [2 /*return*/, null];
+                }
+                return [2 /*return*/];
             });
         });
     };
@@ -356,37 +308,27 @@ var Resolver = /** @class */ (function () {
     };
     Resolver.prototype.getAddress = function (coinType) {
         return __awaiter(this, void 0, void 0, function () {
-            var transaction, hexBytes_1, error_2, hexBytes, address;
+            var hexBytes, address;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         if (coinType == null) {
                             coinType = 60;
                         }
-                        if (!(coinType === 60)) return [3 /*break*/, 4];
-                        _a.label = 1;
+                        // If Ethereum, use the standard `addr(bytes32)`
+                        if (coinType === 60) {
+                            try {
+                                return [2 /*return*/, null];
+                            }
+                            catch (error) {
+                                if (error.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                                    return [2 /*return*/, null];
+                                }
+                                throw error;
+                            }
+                        }
+                        return [4 /*yield*/, this._fetchBytes("0xf1cb7e06", bytes32ify(coinType))];
                     case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        transaction = {
-                            to: this.address,
-                            data: ("0x3b3b57de" + (0, hash_1.namehash)(this.name).substring(2))
-                        };
-                        return [4 /*yield*/, this.provider.call(transaction)];
-                    case 2:
-                        hexBytes_1 = _a.sent();
-                        // No address
-                        if (hexBytes_1 === "0x" || hexBytes_1 === constants_1.HashZero) {
-                            return [2 /*return*/, null];
-                        }
-                        return [2 /*return*/, this.provider.formatter.callAddress(hexBytes_1)];
-                    case 3:
-                        error_2 = _a.sent();
-                        if (error_2.code === logger_1.Logger.errors.CALL_EXCEPTION) {
-                            return [2 /*return*/, null];
-                        }
-                        throw error_2;
-                    case 4: return [4 /*yield*/, this._fetchBytes("0xf1cb7e06", bytes32ify(coinType))];
-                    case 5:
                         hexBytes = _a.sent();
                         // No address
                         if (hexBytes == null || hexBytes === "0x") {
@@ -401,131 +343,6 @@ var Resolver = /** @class */ (function () {
                             });
                         }
                         return [2 /*return*/, address];
-                }
-            });
-        });
-    };
-    Resolver.prototype.getAvatar = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var linkage, avatar, i, match, _a, selector, owner, _b, comps, addr, tokenId, tokenOwner, _c, _d, balance, _e, _f, tx, metadataUrl, _g, metadata, error_3;
-            return __generator(this, function (_h) {
-                switch (_h.label) {
-                    case 0:
-                        linkage = [];
-                        _h.label = 1;
-                    case 1:
-                        _h.trys.push([1, 19, , 20]);
-                        return [4 /*yield*/, this.getText("avatar")];
-                    case 2:
-                        avatar = _h.sent();
-                        if (avatar == null) {
-                            return [2 /*return*/, null];
-                        }
-                        i = 0;
-                        _h.label = 3;
-                    case 3:
-                        if (!(i < matchers.length)) return [3 /*break*/, 18];
-                        match = avatar.match(matchers[i]);
-                        if (match == null) {
-                            return [3 /*break*/, 17];
-                        }
-                        _a = match[1];
-                        switch (_a) {
-                            case "https": return [3 /*break*/, 4];
-                            case "data": return [3 /*break*/, 5];
-                            case "ipfs": return [3 /*break*/, 6];
-                            case "erc721": return [3 /*break*/, 7];
-                            case "erc1155": return [3 /*break*/, 7];
-                        }
-                        return [3 /*break*/, 17];
-                    case 4:
-                        linkage.push({ type: "url", content: avatar });
-                        return [2 /*return*/, { linkage: linkage, url: avatar }];
-                    case 5:
-                        linkage.push({ type: "data", content: avatar });
-                        return [2 /*return*/, { linkage: linkage, url: avatar }];
-                    case 6:
-                        linkage.push({ type: "ipfs", content: avatar });
-                        return [2 /*return*/, { linkage: linkage, url: "https://gateway.ipfs.io/ipfs/" + avatar.substring(7) }];
-                    case 7:
-                        selector = (match[1] === "erc721") ? "0xc87b56dd" : "0x0e89341c";
-                        linkage.push({ type: match[1], content: avatar });
-                        _b = this._resolvedAddress;
-                        if (_b) return [3 /*break*/, 9];
-                        return [4 /*yield*/, this.getAddress()];
-                    case 8:
-                        _b = (_h.sent());
-                        _h.label = 9;
-                    case 9:
-                        owner = (_b);
-                        comps = (match[2] || "").split("/");
-                        if (comps.length !== 2) {
-                            return [2 /*return*/, null];
-                        }
-                        return [4 /*yield*/, this.provider.formatter.address(comps[0])];
-                    case 10:
-                        addr = _h.sent();
-                        tokenId = (0, bytes_1.hexZeroPad)(bignumber_1.BigNumber.from(comps[1]).toHexString(), 32);
-                        if (!(match[1] === "erc721")) return [3 /*break*/, 12];
-                        _d = (_c = this.provider.formatter).callAddress;
-                        return [4 /*yield*/, this.provider.call({
-                                to: addr, data: (0, bytes_1.hexConcat)(["0x6352211e", tokenId])
-                            })];
-                    case 11:
-                        tokenOwner = _d.apply(_c, [_h.sent()]);
-                        if (owner !== tokenOwner) {
-                            return [2 /*return*/, null];
-                        }
-                        linkage.push({ type: "owner", content: tokenOwner });
-                        return [3 /*break*/, 14];
-                    case 12:
-                        if (!(match[1] === "erc1155")) return [3 /*break*/, 14];
-                        _f = (_e = bignumber_1.BigNumber).from;
-                        return [4 /*yield*/, this.provider.call({
-                                to: addr, data: (0, bytes_1.hexConcat)(["0x00fdd58e", (0, bytes_1.hexZeroPad)(owner, 32), tokenId])
-                            })];
-                    case 13:
-                        balance = _f.apply(_e, [_h.sent()]);
-                        if (balance.isZero()) {
-                            return [2 /*return*/, null];
-                        }
-                        linkage.push({ type: "balance", content: balance.toString() });
-                        _h.label = 14;
-                    case 14:
-                        tx = {
-                            to: this.provider.formatter.address(comps[0]),
-                            data: (0, bytes_1.hexConcat)([selector, tokenId])
-                        };
-                        _g = _parseString;
-                        return [4 /*yield*/, this.provider.call(tx)];
-                    case 15:
-                        metadataUrl = _g.apply(void 0, [_h.sent()]);
-                        if (metadataUrl == null) {
-                            return [2 /*return*/, null];
-                        }
-                        linkage.push({ type: "metadata-url", content: metadataUrl });
-                        // ERC-1155 allows a generic {id} in the URL
-                        if (match[1] === "erc1155") {
-                            metadataUrl = metadataUrl.replace("{id}", tokenId.substring(2));
-                        }
-                        return [4 /*yield*/, (0, web_1.fetchJson)(metadataUrl)];
-                    case 16:
-                        metadata = _h.sent();
-                        // Pull the image URL out
-                        if (!metadata || typeof (metadata.image) !== "string" || !metadata.image.match(/^https:\/\//i)) {
-                            return [2 /*return*/, null];
-                        }
-                        linkage.push({ type: "metadata", content: JSON.stringify(metadata) });
-                        linkage.push({ type: "url", content: metadata.image });
-                        return [2 /*return*/, { linkage: linkage, url: metadata.image }];
-                    case 17:
-                        i++;
-                        return [3 /*break*/, 3];
-                    case 18: return [3 /*break*/, 20];
-                    case 19:
-                        error_3 = _h.sent();
-                        return [3 /*break*/, 20];
-                    case 20: return [2 /*return*/, null];
                 }
             });
         });
@@ -592,7 +409,6 @@ var Resolver = /** @class */ (function () {
 }());
 exports.Resolver = Resolver;
 var defaultFormatter = null;
-var nextPollId = 1;
 var BaseProvider = /** @class */ (function (_super) {
     __extends(BaseProvider, _super);
     /**
@@ -609,8 +425,6 @@ var BaseProvider = /** @class */ (function (_super) {
         var _this = this;
         logger.checkNew(_newTarget, abstract_provider_1.Provider);
         _this = _super.call(this) || this;
-        _this._events = [];
-        _this._emitted = { block: -2 };
         _this.formatter = _newTarget.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -639,17 +453,13 @@ var BaseProvider = /** @class */ (function (_super) {
                 logger.throwArgumentError("invalid network", "network", network);
             }
         }
-        _this._maxInternalBlockNumber = -1024;
-        _this._lastBlockNumber = -2;
-        _this._pollingInterval = 4000;
-        _this._fastQueryDate = 0;
         _this.mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
         _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(network));
         return _this;
     }
     BaseProvider.prototype._ready = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var network, error_4;
+            var network, error_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -664,7 +474,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         network = _a.sent();
                         return [3 /*break*/, 4];
                     case 3:
-                        error_4 = _a.sent();
+                        error_1 = _a.sent();
                         return [3 /*break*/, 4];
                     case 4:
                         if (!(network == null)) return [3 /*break*/, 6];
@@ -695,27 +505,6 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    Object.defineProperty(BaseProvider.prototype, "ready", {
-        // This will always return the most recently established network.
-        // For "any", this can change (a "network" event is emitted before
-        // any change is reflected); otherwise this cannot change
-        get: function () {
-            var _this = this;
-            return (0, web_1.poll)(function () {
-                return _this._ready().then(function (network) {
-                    return network;
-                }, function (error) {
-                    // If the network isn't running yet, we will wait
-                    if (error.code === logger_1.Logger.errors.NETWORK_ERROR && error.event === "noNetwork") {
-                        return undefined;
-                    }
-                    throw error;
-                });
-            });
-        },
-        enumerable: false,
-        configurable: true
-    });
     // @TODO: Remove this and just create a singleton formatter
     BaseProvider.getFormatter = function () {
         if (defaultFormatter == null) {
@@ -726,126 +515,6 @@ var BaseProvider = /** @class */ (function (_super) {
     // @TODO: Remove this and just use getNetwork
     BaseProvider.getNetwork = function (network) {
         return (0, networks_1.getNetwork)((network == null) ? "mainnet" : network);
-    };
-    BaseProvider.prototype.poll = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var pollId, runners, blockNumber, i;
-            var _this = this;
-            return __generator(this, function (_a) {
-                pollId = nextPollId++;
-                runners = [];
-                blockNumber = null;
-                try {
-                    // blockNumber = await this._getInternalBlockNumber(100 + this.pollingInterval / 2);
-                }
-                catch (error) {
-                    this.emit("error", error);
-                    return [2 /*return*/];
-                }
-                // this._setFastBlockNumber(blockNumber);
-                // Emit a poll event after we have the latest (fast) block number
-                this.emit("poll", pollId, blockNumber);
-                // If the block has not changed, meh.
-                if (blockNumber === this._lastBlockNumber) {
-                    this.emit("didPoll", pollId);
-                    return [2 /*return*/];
-                }
-                // First polling cycle, trigger a "block" events
-                if (this._emitted.block === -2) {
-                    this._emitted.block = blockNumber - 1;
-                }
-                if (Math.abs((this._emitted.block) - blockNumber) > 1000) {
-                    logger.warn("network block skew detected; skipping block events (emitted=" + this._emitted.block + " blockNumber" + blockNumber + ")");
-                    this.emit("error", logger.makeError("network block skew detected", logger_1.Logger.errors.NETWORK_ERROR, {
-                        blockNumber: blockNumber,
-                        event: "blockSkew",
-                        previousBlockNumber: this._emitted.block
-                    }));
-                    this.emit("block", blockNumber);
-                }
-                else {
-                    // Notify all listener for each block that has passed
-                    for (i = this._emitted.block + 1; i <= blockNumber; i++) {
-                        this.emit("block", i);
-                    }
-                }
-                // The emitted block was updated, check for obsolete events
-                if (this._emitted.block !== blockNumber) {
-                    this._emitted.block = blockNumber;
-                    Object.keys(this._emitted).forEach(function (key) {
-                        // The block event does not expire
-                        if (key === "block") {
-                            return;
-                        }
-                        // The block we were at when we emitted this event
-                        var eventBlockNumber = _this._emitted[key];
-                        // We cannot garbage collect pending transactions or blocks here
-                        // They should be garbage collected by the Provider when setting
-                        // "pending" events
-                        if (eventBlockNumber === "pending") {
-                            return;
-                        }
-                        // Evict any transaction hashes or block hashes over 12 blocks
-                        // old, since they should not return null anyways
-                        if (blockNumber - eventBlockNumber > 12) {
-                            delete _this._emitted[key];
-                        }
-                    });
-                }
-                // First polling cycle
-                if (this._lastBlockNumber === -2) {
-                    this._lastBlockNumber = blockNumber - 1;
-                }
-                // Find all transaction hashes we are waiting on
-                this._events.forEach(function (event) {
-                    switch (event.type) {
-                        case "tx": {
-                            var hash_2 = event.hash;
-                            var runner = _this.getTransactionReceipt(hash_2).then(function (receipt) {
-                                if (!receipt || receipt.blockNumber == null) {
-                                    return null;
-                                }
-                                _this._emitted["t:" + hash_2] = receipt.blockNumber;
-                                _this.emit(hash_2, receipt);
-                                return null;
-                            }).catch(function (error) { _this.emit("error", error); });
-                            runners.push(runner);
-                            break;
-                        }
-                        case "filter": {
-                            var filter_1 = event.filter;
-                            filter_1.fromBlock = _this._lastBlockNumber + 1;
-                            filter_1.toBlock = blockNumber;
-                            var runner = _this.getLogs(filter_1).then(function (logs) {
-                                if (logs.length === 0) {
-                                    return;
-                                }
-                                logs.forEach(function (log) {
-                                    _this._emitted["b:" + log.blockHash] = log.blockNumber;
-                                    _this._emitted["t:" + log.transactionHash] = log.blockNumber;
-                                    _this.emit(filter_1, log);
-                                });
-                            }).catch(function (error) { _this.emit("error", error); });
-                            runners.push(runner);
-                            break;
-                        }
-                    }
-                });
-                this._lastBlockNumber = blockNumber;
-                // Once all events for this loop have been processed, emit "didPoll"
-                Promise.all(runners).then(function () {
-                    _this.emit("didPoll", pollId);
-                }).catch(function (error) { _this.emit("error", error); });
-                return [2 /*return*/];
-            });
-        });
-    };
-    // Deprecated; do not use this
-    BaseProvider.prototype.resetEventsBlock = function (blockNumber) {
-        this._lastBlockNumber = blockNumber - 1;
-        if (this.polling) {
-            this.poll();
-        }
     };
     Object.defineProperty(BaseProvider.prototype, "network", {
         get: function () {
@@ -880,14 +549,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (!(network.chainId !== currentNetwork.chainId)) return [3 /*break*/, 5];
                         if (!this.anyNetwork) return [3 /*break*/, 4];
                         this._network = currentNetwork;
-                        // Reset all internal block number guards and caches
-                        this._lastBlockNumber = -2;
-                        this._fastBlockNumber = null;
-                        this._fastBlockNumberPromise = null;
-                        this._fastQueryDate = 0;
-                        this._emitted.block = -2;
-                        this._maxInternalBlockNumber = -1024;
-                        this._internalBlockNumber = null;
                         // The "network" event MUST happen before this method resolves
                         // so any events have a chance to unregister, so we stall an
                         // additional event loop before returning from /this/ call
@@ -909,57 +570,6 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    Object.defineProperty(BaseProvider.prototype, "polling", {
-        get: function () {
-            return (this._poller != null);
-        },
-        set: function (value) {
-            var _this = this;
-            if (value && !this._poller) {
-                this._poller = setInterval(function () { _this.poll(); }, this.pollingInterval);
-                if (!this._bootstrapPoll) {
-                    this._bootstrapPoll = setTimeout(function () {
-                        _this.poll();
-                        // We block additional polls until the polling interval
-                        // is done, to prevent overwhelming the poll function
-                        _this._bootstrapPoll = setTimeout(function () {
-                            // If polling was disabled, something may require a poke
-                            // since starting the bootstrap poll and it was disabled
-                            if (!_this._poller) {
-                                _this.poll();
-                            }
-                            // Clear out the bootstrap so we can do another
-                            _this._bootstrapPoll = null;
-                        }, _this.pollingInterval);
-                    }, 0);
-                }
-            }
-            else if (!value && this._poller) {
-                clearInterval(this._poller);
-                this._poller = null;
-            }
-        },
-        enumerable: false,
-        configurable: true
-    });
-    Object.defineProperty(BaseProvider.prototype, "pollingInterval", {
-        get: function () {
-            return this._pollingInterval;
-        },
-        set: function (value) {
-            var _this = this;
-            if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
-                throw new Error("invalid polling interval");
-            }
-            this._pollingInterval = value;
-            if (this._poller) {
-                clearInterval(this._poller);
-                this._poller = setInterval(function () { _this.poll(); }, this._pollingInterval);
-            }
-        },
-        enumerable: false,
-        configurable: true
-    });
     BaseProvider.prototype.waitForTransaction = function (transactionHash, confirmations, timeout) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -982,7 +592,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getBalance = function (addressOrName) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_5;
+            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_2;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1005,11 +615,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         balance = _b.sent();
                         return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
                     case 5:
-                        error_5 = _b.sent();
+                        error_2 = _b.sent();
                         return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "AccountBalanceQuery",
                                 params: { address: addressOrName },
-                                error: error_5
+                                error: error_2
                             })];
                     case 6: return [2 /*return*/];
                 }
@@ -1087,8 +697,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (receipt == null && confirms === 0) {
                             return [2 /*return*/, null];
                         }
-                        // No longer pending, allow the polling loop to garbage collect this
-                        this._emitted["t:" + tx.hash] = receipt.blockNumber;
                         if (receipt.status === 0) {
                             logger.throwError("transaction failed", logger_1.Logger.errors.CALL_EXCEPTION, {
                                 transactionHash: tx.hash,
@@ -1105,7 +713,7 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, hederaTx, ethersTx, txHash, _b, error_6, err;
+            var txBytes, hederaTx, ethersTx, txHash, _b, error_3, err;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1135,56 +743,12 @@ var BaseProvider = /** @class */ (function (_super) {
                         _c.sent();
                         return [2 /*return*/, this._wrapTransaction(ethersTx, txHash)];
                     case 7:
-                        error_6 = _c.sent();
-                        err = logger.makeError(error_6.message, (_a = error_6.status) === null || _a === void 0 ? void 0 : _a.toString());
+                        error_3 = _c.sent();
+                        err = logger.makeError(error_3.message, (_a = error_3.status) === null || _a === void 0 ? void 0 : _a.toString());
                         err.transaction = ethersTx;
                         err.transactionHash = txHash;
                         throw err;
                     case 8: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype._getTransactionRequest = function (transaction) {
-        return __awaiter(this, void 0, void 0, function () {
-            var values, tx, _a, _b;
-            var _this = this;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0: return [4 /*yield*/, transaction];
-                    case 1:
-                        values = _c.sent();
-                        tx = {};
-                        ["from", "to"].forEach(function (key) {
-                            if (values[key] == null) {
-                                return;
-                            }
-                            tx[key] = Promise.resolve(values[key]).then(function (v) { return (v ? _this._getAddress(v) : null); });
-                        });
-                        ["gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "value"].forEach(function (key) {
-                            if (values[key] == null) {
-                                return;
-                            }
-                            tx[key] = Promise.resolve(values[key]).then(function (v) { return (v ? bignumber_1.BigNumber.from(v) : null); });
-                        });
-                        ["type"].forEach(function (key) {
-                            if (values[key] == null) {
-                                return;
-                            }
-                            tx[key] = Promise.resolve(values[key]).then(function (v) { return ((v != null) ? v : null); });
-                        });
-                        if (values.accessList) {
-                            tx.accessList = this.formatter.accessList(values.accessList);
-                        }
-                        ["data"].forEach(function (key) {
-                            if (values[key] == null) {
-                                return;
-                            }
-                            tx[key] = Promise.resolve(values[key]).then(function (v) { return (v ? (0, bytes_1.hexlify)(v) : null); });
-                        });
-                        _b = (_a = this.formatter).transactionRequest;
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)(tx)];
-                    case 2: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                 }
             });
         });
@@ -1219,70 +783,16 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.call = function (transaction, blockTag) {
-        return __awaiter(this, void 0, void 0, function () {
-            var params, result;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                transaction: this._getTransactionRequest(transaction),
-                            })];
-                    case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("call", params)];
-                    case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, (0, bytes_1.hexlify)(result)];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "call",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
     BaseProvider.prototype.estimateGas = function (transaction) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, result;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                transaction: this._getTransactionRequest(transaction)
-                            })];
-                    case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("estimateGas", params)];
-                    case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, bignumber_1.BigNumber.from(result)];
-                        }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "estimateGas",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
-                }
+                return [2 /*return*/, logger.throwArgumentError("estimateGas not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+                        operation: "estimateGas"
+                    })];
             });
         });
     };
+    // TODO FIX ME
     BaseProvider.prototype._getAddress = function (addressOrName) {
         return __awaiter(this, void 0, void 0, function () {
             var address;
@@ -1348,35 +858,20 @@ var BaseProvider = /** @class */ (function (_super) {
                         transactionHash = _a.sent();
                         params = { transactionHash: this.formatter.hash(transactionHash, true) };
                         return [2 /*return*/, (0, web_1.poll)(function () { return __awaiter(_this, void 0, void 0, function () {
-                                var result, receipt;
+                                var result;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0: return [4 /*yield*/, this.perform("getTransactionReceipt", params)];
                                         case 1:
                                             result = _a.sent();
                                             if (result == null) {
-                                                if (this._emitted["t:" + transactionHash] == null) {
-                                                    return [2 /*return*/, null];
-                                                }
                                                 return [2 /*return*/, undefined];
                                             }
                                             // "geth-etc" returns receipts before they are ready
                                             if (result.blockHash == null) {
                                                 return [2 /*return*/, undefined];
                                             }
-                                            receipt = this.formatter.receipt(result);
-                                            if (receipt.blockNumber == null) {
-                                                receipt.confirmations = 0;
-                                            }
-                                            else if (receipt.confirmations == null) {
-                                                // const blockNumber = await this._getInternalBlockNumber(100 + 2 * this.pollingInterval);
-                                                //
-                                                // Add the confirmations using the fast block number (pessimistic)
-                                                // let confirmations = (blockNumber - receipt.blockNumber) + 1;
-                                                // if (confirmations <= 0) { confirmations = 1; }
-                                                // receipt.confirmations = confirmations;
-                                            }
-                                            return [2 /*return*/, receipt];
+                                            return [2 /*return*/, this.formatter.receipt(result)];
                                     }
                                 });
                             }); }, { oncePoll: this })];
@@ -1415,9 +910,10 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    // TODO FIXME
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_7;
+            var address, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1430,8 +926,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_7 = _a.sent();
-                        if (error_7.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_4 = _a.sent();
+                        if (error_4.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];
@@ -1440,39 +936,40 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    // TODO FIXME
     BaseProvider.prototype._getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var network, transaction, _a, _b, error_8;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var network;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
-                        network = _c.sent();
+                        network = _a.sent();
                         // No ENS...
                         if (!network.ensAddress) {
                             logger.throwError("network does not support ENS", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "ENS", network: network.name });
                         }
-                        transaction = {
-                            to: network.ensAddress,
-                            data: ("0x0178b8bf" + (0, hash_1.namehash)(name).substring(2))
-                        };
-                        _c.label = 2;
-                    case 2:
-                        _c.trys.push([2, 4, , 5]);
-                        _b = (_a = this.formatter).callAddress;
-                        return [4 /*yield*/, this.call(transaction)];
-                    case 3: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
-                    case 4:
-                        error_8 = _c.sent();
-                        if (error_8.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        // keccak256("resolver(bytes32)")
+                        // const transaction = {
+                        //     to: network.ensAddress,
+                        //     data: ("0x0178b8bf" + namehash(name).substring(2))
+                        // };
+                        try {
                             return [2 /*return*/, null];
+                            // return this.formatter.callAddress(await this.call(transaction));
                         }
-                        throw error_8;
-                    case 5: return [2 /*return*/];
+                        catch (error) {
+                            if (error.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                                return [2 /*return*/, null];
+                            }
+                            throw error;
+                        }
+                        return [2 /*return*/];
                 }
             });
         });
     };
+    // TODO FIXME
     BaseProvider.prototype.resolveName = function (name) {
         return __awaiter(this, void 0, void 0, function () {
             var resolver;
@@ -1506,86 +1003,16 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    // TODO FIXME
     BaseProvider.prototype.lookupAddress = function (address) {
         return __awaiter(this, void 0, void 0, function () {
-            var reverseName, resolverAddress, bytes, _a, length, name, addr;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, address];
-                    case 1:
-                        address = _b.sent();
-                        address = this.formatter.address(address);
-                        reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-                        return [4 /*yield*/, this._getResolver(reverseName)];
-                    case 2:
-                        resolverAddress = _b.sent();
-                        if (!resolverAddress) {
-                            return [2 /*return*/, null];
-                        }
-                        _a = bytes_1.arrayify;
-                        return [4 /*yield*/, this.call({
-                                to: resolverAddress,
-                                data: ("0x691f3431" + (0, hash_1.namehash)(reverseName).substring(2))
-                            })];
-                    case 3:
-                        bytes = _a.apply(void 0, [_b.sent()]);
-                        // Strip off the dynamic string pointer (0x20)
-                        if (bytes.length < 32 || !bignumber_1.BigNumber.from(bytes.slice(0, 32)).eq(32)) {
-                            return [2 /*return*/, null];
-                        }
-                        bytes = bytes.slice(32);
-                        // Not a length-prefixed string
-                        if (bytes.length < 32) {
-                            return [2 /*return*/, null];
-                        }
-                        length = bignumber_1.BigNumber.from(bytes.slice(0, 32)).toNumber();
-                        bytes = bytes.slice(32);
-                        // Length longer than available data
-                        if (length > bytes.length) {
-                            return [2 /*return*/, null];
-                        }
-                        name = (0, strings_1.toUtf8String)(bytes.slice(0, length));
-                        return [4 /*yield*/, this.resolveName(name)];
-                    case 4:
-                        addr = _b.sent();
-                        if (addr != address) {
-                            return [2 /*return*/, null];
-                        }
-                        return [2 /*return*/, name];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype.getAvatar = function (nameOrAddress) {
-        return __awaiter(this, void 0, void 0, function () {
-            var resolver, address, reverseName, resolverAddress, avatar;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        resolver = null;
-                        if (!(0, bytes_1.isHexString)(nameOrAddress)) return [3 /*break*/, 2];
-                        address = this.formatter.address(nameOrAddress);
-                        reverseName = address.substring(2).toLowerCase() + ".addr.reverse";
-                        return [4 /*yield*/, this._getResolver(reverseName)];
+                    case 0: return [4 /*yield*/, address];
                     case 1:
-                        resolverAddress = _a.sent();
-                        if (!resolverAddress) {
-                            return [2 /*return*/, null];
-                        }
-                        resolver = new Resolver(this, resolverAddress, "_", address);
-                        return [3 /*break*/, 4];
-                    case 2: return [4 /*yield*/, this.getResolver(nameOrAddress)];
-                    case 3:
-                        // ENS name; forward lookup
-                        resolver = _a.sent();
-                        _a.label = 4;
-                    case 4: return [4 /*yield*/, resolver.getAvatar()];
-                    case 5:
-                        avatar = _a.sent();
-                        if (avatar == null) {
-                            return [2 /*return*/, null];
-                        }
-                        return [2 /*return*/, avatar.url];
+                        address = _a.sent();
+                        address = this.formatter.address(address);
+                        return [2 /*return*/, null];
                 }
             });
         });
@@ -1593,16 +1020,7 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.perform = function (method, params) {
         return logger.throwError(method + " not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, { operation: method });
     };
-    BaseProvider.prototype._startEvent = function (event) {
-        this.polling = (this._events.filter(function (e) { return e.pollable(); }).length > 0);
-    };
-    BaseProvider.prototype._stopEvent = function (event) {
-        this.polling = (this._events.filter(function (e) { return e.pollable(); }).length > 0);
-    };
     BaseProvider.prototype._addEventListener = function (eventName, listener, once) {
-        var event = new Event(getEventTag(eventName), listener, once);
-        this._events.push(event);
-        this._startEvent(event);
         return this;
     };
     BaseProvider.prototype.on = function (eventName, listener) {
@@ -1612,89 +1030,22 @@ var BaseProvider = /** @class */ (function (_super) {
         return this._addEventListener(eventName, listener, true);
     };
     BaseProvider.prototype.emit = function (eventName) {
-        var _this = this;
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        var result = false;
-        var stopped = [];
-        var eventTag = getEventTag(eventName);
-        this._events = this._events.filter(function (event) {
-            if (event.tag !== eventTag) {
-                return true;
-            }
-            setTimeout(function () {
-                event.listener.apply(_this, args);
-            }, 0);
-            result = true;
-            if (event.once) {
-                stopped.push(event);
-                return false;
-            }
-            return true;
-        });
-        stopped.forEach(function (event) { _this._stopEvent(event); });
-        return result;
+        return false;
     };
     BaseProvider.prototype.listenerCount = function (eventName) {
-        if (!eventName) {
-            return this._events.length;
-        }
-        var eventTag = getEventTag(eventName);
-        return this._events.filter(function (event) {
-            return (event.tag === eventTag);
-        }).length;
+        return 0;
     };
     BaseProvider.prototype.listeners = function (eventName) {
-        if (eventName == null) {
-            return this._events.map(function (event) { return event.listener; });
-        }
-        var eventTag = getEventTag(eventName);
-        return this._events
-            .filter(function (event) { return (event.tag === eventTag); })
-            .map(function (event) { return event.listener; });
+        return null;
     };
     BaseProvider.prototype.off = function (eventName, listener) {
-        var _this = this;
-        if (listener == null) {
-            return this.removeAllListeners(eventName);
-        }
-        var stopped = [];
-        var found = false;
-        var eventTag = getEventTag(eventName);
-        this._events = this._events.filter(function (event) {
-            if (event.tag !== eventTag || event.listener != listener) {
-                return true;
-            }
-            if (found) {
-                return true;
-            }
-            found = true;
-            stopped.push(event);
-            return false;
-        });
-        stopped.forEach(function (event) { _this._stopEvent(event); });
         return this;
     };
     BaseProvider.prototype.removeAllListeners = function (eventName) {
-        var _this = this;
-        var stopped = [];
-        if (eventName == null) {
-            stopped = this._events;
-            this._events = [];
-        }
-        else {
-            var eventTag_1 = getEventTag(eventName);
-            this._events = this._events.filter(function (event) {
-                if (event.tag !== eventTag_1) {
-                    return true;
-                }
-                stopped.push(event);
-                return false;
-            });
-        }
-        stopped.forEach(function (event) { _this._stopEvent(event); });
         return this;
     };
     return BaseProvider;
