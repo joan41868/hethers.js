@@ -87646,7 +87646,8 @@ class Formatter {
             customData: {
                 gas_used: txRecord.gas_used,
                 call_result: txRecord.call_result,
-                error_message: txRecord.error_message
+                logs: txRecord.logs,
+                transaction: txRecord.transaction
             },
             wait: null
         };
@@ -87660,6 +87661,21 @@ class Formatter {
         else {
             to = txRecord.to;
         }
+        let logs = [];
+        txRecord.customData.logs.forEach(function (log) {
+            const values = {
+                blockNumber: 0,
+                blockHash: '',
+                transactionIndex: 0,
+                removed: false,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                transactionHash: txRecord.hash,
+                logIndex: log.index
+            };
+            logs.push(values);
+        });
         return {
             to: to,
             from: txRecord.from,
@@ -87667,10 +87683,10 @@ class Formatter {
             gasUsed: txRecord.customData.gas_used,
             logsBloom: null,
             transactionHash: txRecord.hash,
-            logs: null,
-            cumulativeGasUsed: null,
+            logs: logs,
+            cumulativeGasUsed: txRecord.customData.gas_used,
             byzantium: false,
-            status: txRecord.customData.error_message === '' ? 1 : 0
+            status: txRecord.customData.transaction.result === 'SUCCESS' ? 1 : 0
         };
     }
     topics(value) {
@@ -92156,8 +92172,6 @@ class BaseProvider extends Provider {
     }
     _waitForTransaction(transactionId, timeoutMs) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            //timeoutMs -> max limit to wait
-            //loop every 1sec until limit reached, or resolved
             if (timeoutMs == null) {
                 return yield this.waitOrReturn(transactionId);
             }
@@ -92249,7 +92263,6 @@ class BaseProvider extends Provider {
             result.customData.contractId = receipt.contractId.toSolidityAddress();
         }
         result.wait = (timeout) => __awaiter$9(this, void 0, void 0, function* () {
-            // query for txRecord (txId) 
             const txReceipt = yield this._waitForTransaction(tx.transactionId, timeout);
             if (txReceipt.status === 0) {
                 logger$v.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
@@ -92269,7 +92282,7 @@ class BaseProvider extends Provider {
             signedTransaction = yield signedTransaction;
             const txBytes = arrayify(signedTransaction);
             const hederaTx = Transaction.fromBytes(txBytes);
-            const ethersTx = yield this.formatter.transaction(signedTransaction); //
+            const ethersTx = yield this.formatter.transaction(signedTransaction);
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
                 // TODO once we have fallback provider use `provider.perform("sendTransaction")`
@@ -92279,6 +92292,7 @@ class BaseProvider extends Provider {
                 return this._wrapTransaction(ethersTx, receipt);
             }
             catch (error) {
+                //check where err is thrown
                 const err = logger$v.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
                 err.transaction = ethersTx;
                 err.transactionHash = txHash;
@@ -92400,17 +92414,35 @@ class BaseProvider extends Provider {
     getTransaction(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            transactionId = yield transactionId;
-            const ep = '/api/v1/contracts/results/' + transactionId;
             if (!this.mirrorNodeUrl)
                 logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            transactionId = yield transactionId;
+            //subsequent requests depend on finalized transaction
+            const epTransactions = '/api/v1/transactions/' + transactionId;
             try {
-                let { data } = yield axios$1.get(this.mirrorNodeUrl + ep);
+                let { data } = yield axios$1.get(this.mirrorNodeUrl + epTransactions);
+                let response;
                 if (data) {
-                    console.log("Hedera contract result", data);
-                    return this.formatter.txRecordToTxResponse(data);
+                    const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
+                    const res = filtered.length > 0 ? filtered[0] : null;
+                    if (res) {
+                        const epLogs = '/api/v1/contracts/' + res.entity_id + '/results/logs?timestamp=' + res.consensus_timestamp;
+                        const epContracts = '/api/v1/contracts/results/' + transactionId;
+                        response = Promise.all([
+                            axios$1.get(this.mirrorNodeUrl + epLogs),
+                            axios$1.get(this.mirrorNodeUrl + epContracts)
+                        ])
+                            .then(([logs, contracts]) => __awaiter$9(this, void 0, void 0, function* () {
+                            const mergedData = Object.assign(Object.assign(Object.assign({}, contracts.data), logs.data), { transaction: res });
+                            return this.formatter.txRecordToTxResponse(mergedData);
+                        }))
+                            .catch(error => {
+                            console.log(error);
+                            return null;
+                        });
+                    }
                 }
-                return null;
+                return response;
             }
             catch (error) {
                 if (error.response.status != 404) {

@@ -343,7 +343,8 @@ export class Formatter {
             customData: {
                 gas_used: txRecord.gas_used,
                 call_result: txRecord.call_result,
-                error_message: txRecord.error_message
+                logs: txRecord.logs,
+                transaction: txRecord.transaction
             },
             wait: null
         };
@@ -357,6 +358,21 @@ export class Formatter {
         else {
             to = txRecord.to;
         }
+        let logs = [];
+        txRecord.customData.logs.forEach(function (log) {
+            const values = {
+                blockNumber: 0,
+                blockHash: '',
+                transactionIndex: 0,
+                removed: false,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                transactionHash: txRecord.hash,
+                logIndex: log.index
+            };
+            logs.push(values);
+        });
         return {
             to: to,
             from: txRecord.from,
@@ -364,10 +380,10 @@ export class Formatter {
             gasUsed: txRecord.customData.gas_used,
             logsBloom: null,
             transactionHash: txRecord.hash,
-            logs: null,
-            cumulativeGasUsed: null,
+            logs: logs,
+            cumulativeGasUsed: txRecord.customData.gas_used,
             byzantium: false,
-            status: txRecord.customData.error_message === '' ? 1 : 0
+            status: txRecord.customData.transaction.result === 'SUCCESS' ? 1 : 0
         };
     }
     topics(value) {

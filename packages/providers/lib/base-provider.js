@@ -14,6 +14,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -1336,29 +1347,53 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var ep, data, error_7;
+            var epTransactions, data, response, filtered, res_1, epLogs, epContracts, error_7;
+            var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
                         _a.sent();
+                        if (!this.mirrorNodeUrl)
+                            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
                         return [4 /*yield*/, transactionId];
                     case 2:
                         transactionId = _a.sent();
-                        ep = '/api/v1/contracts/results/' + transactionId;
-                        if (!this.mirrorNodeUrl)
-                            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+                        epTransactions = '/api/v1/transactions/' + transactionId;
                         _a.label = 3;
                     case 3:
                         _a.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + ep)];
+                        return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + epTransactions)];
                     case 4:
                         data = (_a.sent()).data;
+                        response = void 0;
                         if (data) {
-                            console.log("Hedera contract result", data);
-                            return [2 /*return*/, this.formatter.txRecordToTxResponse(data)];
+                            filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
+                            res_1 = filtered.length > 0 ? filtered[0] : null;
+                            if (res_1) {
+                                epLogs = '/api/v1/contracts/' + res_1.entity_id + '/results/logs?timestamp=' + res_1.consensus_timestamp;
+                                epContracts = '/api/v1/contracts/results/' + transactionId;
+                                response = Promise.all([
+                                    axios_1.default.get(this.mirrorNodeUrl + epLogs),
+                                    axios_1.default.get(this.mirrorNodeUrl + epContracts)
+                                ])
+                                    .then(function (_a) {
+                                    var logs = _a[0], contracts = _a[1];
+                                    return __awaiter(_this, void 0, void 0, function () {
+                                        var mergedData;
+                                        return __generator(this, function (_b) {
+                                            mergedData = __assign(__assign(__assign({}, contracts.data), logs.data), { transaction: res_1 });
+                                            return [2 /*return*/, this.formatter.txRecordToTxResponse(mergedData)];
+                                        });
+                                    });
+                                })
+                                    .catch(function (error) {
+                                    console.log(error);
+                                    return null;
+                                });
+                            }
                         }
-                        return [2 /*return*/, null];
+                        return [2 /*return*/, response];
                     case 5:
                         error_7 = _a.sent();
                         if (error_7.response.status != 404) {

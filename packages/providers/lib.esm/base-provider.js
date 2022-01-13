@@ -792,8 +792,6 @@ export class BaseProvider extends Provider {
     }
     _waitForTransaction(transactionId, timeoutMs) {
         return __awaiter(this, void 0, void 0, function* () {
-            //timeoutMs -> max limit to wait
-            //loop every 1sec until limit reached, or resolved
             if (timeoutMs == null) {
                 return yield this.waitOrReturn(transactionId);
             }
@@ -885,7 +883,6 @@ export class BaseProvider extends Provider {
             result.customData.contractId = receipt.contractId.toSolidityAddress();
         }
         result.wait = (timeout) => __awaiter(this, void 0, void 0, function* () {
-            // query for txRecord (txId) 
             const txReceipt = yield this._waitForTransaction(tx.transactionId, timeout);
             if (txReceipt.status === 0) {
                 logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
@@ -905,7 +902,7 @@ export class BaseProvider extends Provider {
             signedTransaction = yield signedTransaction;
             const txBytes = arrayify(signedTransaction);
             const hederaTx = HederaTransaction.fromBytes(txBytes);
-            const ethersTx = yield this.formatter.transaction(signedTransaction); //
+            const ethersTx = yield this.formatter.transaction(signedTransaction);
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
                 // TODO once we have fallback provider use `provider.perform("sendTransaction")`
@@ -915,6 +912,7 @@ export class BaseProvider extends Provider {
                 return this._wrapTransaction(ethersTx, receipt);
             }
             catch (error) {
+                //check where err is thrown
                 const err = logger.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
                 err.transaction = ethersTx;
                 err.transactionHash = txHash;
@@ -1036,17 +1034,35 @@ export class BaseProvider extends Provider {
     getTransaction(transactionId) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            transactionId = yield transactionId;
-            const ep = '/api/v1/contracts/results/' + transactionId;
             if (!this.mirrorNodeUrl)
                 logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            transactionId = yield transactionId;
+            //subsequent requests depend on finalized transaction
+            const epTransactions = '/api/v1/transactions/' + transactionId;
             try {
-                let { data } = yield axios.get(this.mirrorNodeUrl + ep);
+                let { data } = yield axios.get(this.mirrorNodeUrl + epTransactions);
+                let response;
                 if (data) {
-                    console.log("Hedera contract result", data);
-                    return this.formatter.txRecordToTxResponse(data);
+                    const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
+                    const res = filtered.length > 0 ? filtered[0] : null;
+                    if (res) {
+                        const epLogs = '/api/v1/contracts/' + res.entity_id + '/results/logs?timestamp=' + res.consensus_timestamp;
+                        const epContracts = '/api/v1/contracts/results/' + transactionId;
+                        response = Promise.all([
+                            axios.get(this.mirrorNodeUrl + epLogs),
+                            axios.get(this.mirrorNodeUrl + epContracts)
+                        ])
+                            .then(([logs, contracts]) => __awaiter(this, void 0, void 0, function* () {
+                            const mergedData = Object.assign(Object.assign(Object.assign({}, contracts.data), logs.data), { transaction: res });
+                            return this.formatter.txRecordToTxResponse(mergedData);
+                        }))
+                            .catch(error => {
+                            console.log(error);
+                            return null;
+                        });
+                    }
                 }
-                return null;
+                return response;
             }
             catch (error) {
                 if (error.response.status != 404) {

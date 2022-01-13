@@ -949,8 +949,6 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     async _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt> {
-        //timeoutMs -> max limit to wait
-        //loop every 1sec until limit reached, or resolved
         if (timeoutMs == null) {
             return await this.waitOrReturn(transactionId);
         }
@@ -1037,9 +1035,7 @@ export class BaseProvider extends Provider implements EnsProvider {
         }
 
         result.wait = async (timeout?: number) => {
-            // query for txRecord (txId) 
             const txReceipt = await this._waitForTransaction(tx.transactionId, timeout);
-
             if (txReceipt.status === 0) {
                 logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
@@ -1047,7 +1043,6 @@ export class BaseProvider extends Provider implements EnsProvider {
                     receipt: receipt
                 });
             }
-
             return txReceipt;
         };
         return result;
@@ -1059,7 +1054,7 @@ export class BaseProvider extends Provider implements EnsProvider {
 
         const txBytes = arrayify(signedTransaction);
         const hederaTx = HederaTransaction.fromBytes(txBytes);
-        const ethersTx = await this.formatter.transaction(signedTransaction); //
+        const ethersTx = await this.formatter.transaction(signedTransaction);
         const txHash = hexlify(await hederaTx.getTransactionHash());
         try {
             // TODO once we have fallback provider use `provider.perform("sendTransaction")`
@@ -1068,6 +1063,7 @@ export class BaseProvider extends Provider implements EnsProvider {
             const receipt = await resp.getReceipt(this.hederaClient);
             return this._wrapTransaction(ethersTx, receipt);
         } catch (error) {
+            //check where err is thrown
             const err = logger.makeError(error.message, error.status?.toString());
             (<any>err).transaction = ethersTx;
             (<any>err).transactionHash = txHash;
@@ -1184,16 +1180,34 @@ export class BaseProvider extends Provider implements EnsProvider {
      */
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
         await this.getNetwork();
-        transactionId = await transactionId;
-        const ep = '/api/v1/contracts/results/' + transactionId;
         if (!this.mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+        transactionId = await transactionId;
+        //subsequent requests depend on finalized transaction
+        const epTransactions = '/api/v1/transactions/' + transactionId;
         try {
-            let { data } = await axios.get(this.mirrorNodeUrl + ep);
+            let { data } = await axios.get(this.mirrorNodeUrl + epTransactions);
+            let response;
             if (data) {
-                console.log("Hedera contract result", data); 
-                return this.formatter.txRecordToTxResponse(data);
-            }
-            return null;
+                const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
+                const res = filtered.length > 0 ? filtered[0] : null;
+                if (res) {
+                    const epLogs = '/api/v1/contracts/' + res.entity_id + '/results/logs?timestamp=' + res.consensus_timestamp;
+                    const epContracts = '/api/v1/contracts/results/' + transactionId;
+                    response = Promise.all([
+                        axios.get(this.mirrorNodeUrl + epLogs),
+                        axios.get(this.mirrorNodeUrl + epContracts)
+                    ])
+                        .then(async ([logs, contracts]) => {
+                            const mergedData = { ...contracts.data, ...logs.data, transaction: res };
+                            return this.formatter.txRecordToTxResponse(mergedData);
+                        })
+                        .catch(error => {
+                            console.log(error);
+                            return null;
+                        });
+                }
+            } 
+            return response;
         } catch (error) {
             if (error.response.status != 404) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
