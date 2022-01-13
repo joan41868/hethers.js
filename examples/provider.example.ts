@@ -27,25 +27,11 @@ const hethers = require("ethers");
 
     /**
      * Example 3: Connecting to custom consensus and mirror node URLs via HederaProvider
-     * - Includes getting balance and tx record
      */
-    const testnetOperator = {
-        "operator": {
-            "accountId": "0.0.19041642",
-            "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
-            "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
-        },
-        "network": {
-            "0.testnet.hedera.com:50211": "0.0.3",
-            "1.testnet.hedera.com:50211": "0.0.4",
-            "2.testnet.hedera.com:50211": "0.0.5",
-            "3.testnet.hedera.com:50211": "0.0.6"
-        }
-    };
-    const provider2 = new hethers.providers.HederaProvider(
-        testnetOperator.network["0.testnet.hedera.com:50211"],
-        "0.testnet.hedera.com:50211",
-        "https://testnet.mirrornode.hedera.com");
+    const consensusNodeUrl = '0.testnet.hedera.com:50211';
+    const consensusNodeId = '0.0.3';
+    const mirrorNodeUrl = 'https://testnet.mirrornode.hedera.com';
+    const provider2 = new hethers.providers.HederaProvider(consensusNodeId, consensusNodeUrl, mirrorNodeUrl);
 
     const balance2 = await provider2.getBalance(solAddr);
     console.log(balance2);
