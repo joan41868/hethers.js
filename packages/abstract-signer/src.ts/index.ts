@@ -112,11 +112,9 @@ export abstract class Signer {
         return await this.provider.estimateGas(tx);
     }
 
-    // Populates "from" if unspecified, and calls with the transaction
+    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
     async call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string> {
-        this._checkProvider("call");
-        const tx = await resolveProperties(this.checkTransaction(transaction));
-        return await this.provider.call(tx, blockTag);
+        return Promise.resolve("");
     }
 
     // Populates all fields in a transaction, signs it and sends it to the network
@@ -133,13 +131,11 @@ export abstract class Signer {
         return network.chainId;
     }
 
-
+    // TODO FIXME
     async resolveName(name: string): Promise<string> {
         this._checkProvider("resolveName");
-        return await this.provider.resolveName(name);
+        return "";
     }
-
-
 
     // Checks a transaction does not contain invalid keys and if
     // no "from" is provided, populates it.
