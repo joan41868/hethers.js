@@ -67,7 +67,6 @@ var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var sdk_1 = require("@hashgraph/sdk");
-var bignumber_1 = require("@ethersproject/bignumber");
 var logger = new logger_1.Logger(_version_1.version);
 function isAccount(value) {
     return value != null && (0, bytes_1.isHexString)(value.privateKey, 32);
@@ -189,44 +188,18 @@ var Wallet = /** @class */ (function (_super) {
     Wallet.prototype.signTransaction = function (transaction) {
         var _this = this;
         this._checkAddress('signTransaction');
-        if (transaction.from) {
-            if ((0, address_1.getAddressFromAccount)(transaction.from) !== this.address) {
-                logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-            }
-        }
-        var tx = (0, transactions_1.serializeHederaTransaction)(transaction);
-        var pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-        return new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-            var nodeID, submittableNodeIDs, account, signed;
+        this.checkTransaction(transaction);
+        return this.populateTransaction(transaction).then(function (readyTx) { return __awaiter(_this, void 0, void 0, function () {
+            var tx, pkey, signed;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (transaction.nodeId) {
-                            nodeID = transaction.nodeId;
-                        }
-                        else {
-                            this._checkProvider();
-                            submittableNodeIDs = this.provider.getHederaNetworkConfig();
-                            if (submittableNodeIDs.length > 0) {
-                                nodeID = submittableNodeIDs[0];
-                            }
-                            else {
-                                reject(logger.makeError("Unable to find submittable node ID. The wallet's provider is not connected to any usable network"));
-                            }
-                        }
-                        account = (0, address_1.getAccountFromAddress)(this.address);
-                        tx.setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
-                            shard: (0, bignumber_1.numberify)(account.shard),
-                            realm: (0, bignumber_1.numberify)(account.realm),
-                            num: (0, bignumber_1.numberify)(account.num)
-                        })))
-                            .setNodeAccountIds([nodeID])
-                            .freeze();
+                        tx = (0, transactions_1.serializeHederaTransaction)(readyTx);
+                        pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
                         return [4 /*yield*/, tx.sign(pkey)];
                     case 1:
                         signed = _a.sent();
-                        resolve((0, bytes_1.hexlify)(signed.toBytes()));
-                        return [2 /*return*/];
+                        return [2 /*return*/, (0, bytes_1.hexlify)(signed.toBytes())];
                 }
             });
         }); });

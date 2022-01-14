@@ -1,6 +1,6 @@
 "use strict";
 
-import { AccountLike, getAddress } from "@ethersproject/address";
+import { AccountLike, getAccountFromAddress, getAddress } from "@ethersproject/address";
 import { BigNumber, BigNumberish, numberify } from "@ethersproject/bignumber";
 import {
     arrayify,
@@ -30,7 +30,7 @@ import {
     ContractExecuteTransaction, ContractId, FileAppendTransaction,
     FileCreateTransaction,
     Transaction as HederaTransaction,
-    PublicKey as HederaPubKey
+    PublicKey as HederaPubKey, TransactionId, AccountId
 } from "@hashgraph/sdk";
 import { TransactionRequest } from "@ethersproject/abstract-provider";
 
@@ -402,6 +402,15 @@ export function serializeHederaTransaction(transaction: TransactionRequest) : He
             }
         }
     }
+    const account = getAccountFromAddress(transaction.from.toString());
+    tx.setTransactionId(
+        TransactionId.generate(new AccountId({
+            shard: numberify(account.shard),
+            realm: numberify(account.realm),
+            num: numberify(account.num)
+        })))
+    .setNodeAccountIds([AccountId.fromString(transaction.nodeId.toString())])
+    .freeze();
     return tx;
 }
 

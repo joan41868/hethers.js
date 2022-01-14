@@ -6,7 +6,7 @@ import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import {Account } from "@ethersproject/address";
+import { Account, getAddressFromAccount, getChecksumAddress } from "@ethersproject/address";
 import { SigningKey } from "@ethersproject/signing-key";
 import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
 
@@ -16,11 +16,11 @@ const allowedTransactionKeys: Array<string> = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
 ];
 
-const forwardErrors = [
-    Logger.errors.INSUFFICIENT_FUNDS,
-    Logger.errors.NONCE_EXPIRED,
-    Logger.errors.REPLACEMENT_UNDERPRICED,
-];
+// const forwardErrors = [
+//     Logger.errors.INSUFFICIENT_FUNDS,
+//     Logger.errors.NONCE_EXPIRED,
+//     Logger.errors.REPLACEMENT_UNDERPRICED,
+// ];
 
 // EIP-712 Typed Data
 // See: https://eips.ethereum.org/EIPS/eip-712
@@ -117,6 +117,7 @@ export abstract class Signer {
     async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
         this._checkProvider("estimateGas");
         const tx = await resolveProperties(this.checkTransaction(transaction));
+        // cost-answer query on hedera
         return await this.provider.estimateGas(tx);
     }
 
@@ -176,12 +177,6 @@ export abstract class Signer {
         return network.chainId;
     }
 
-    // TODO FIXME
-    async resolveName(name: string): Promise<string> {
-        this._checkProvider("resolveName");
-        return "";
-    }
-
     // Checks a transaction does not contain invalid keys and if
     // no "from" is provided, populates it.
     // - does NOT require a provider
@@ -199,6 +194,22 @@ export abstract class Signer {
         }
 
         const tx = shallowCopy(transaction);
+        if (!tx.nodeId) {
+            let nodeID : any;
+            if (transaction.nodeId) {
+                nodeID = transaction.nodeId;
+            } else {
+                this._checkProvider();
+                // provider present, we can go on
+                const submittableNodeIDs = this.provider.getHederaNetworkConfig();
+                if (submittableNodeIDs.length > 0) {
+                    nodeID = submittableNodeIDs[0];
+                } else {
+                    logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
+                }
+            }
+            tx.nodeId = nodeID;
+        }
 
         if (tx.from == null) {
             tx.from = this.getAddress();
@@ -220,124 +231,28 @@ export abstract class Signer {
     }
 
     // Populates ALL keys for a transaction and checks that "from" matches
-    // this Signer. Should be used by sendTransaction but NOT by signTransaction.
+    // this Signer. Should be used by signTransaction.
     // By default called from: (overriding these prevents it)
-    //   - sendTransaction
+    //   - signTransaciton
     //
     // Notes:
     //  - We allow gasPrice for EIP-1559 as long as it matches maxFeePerGas
     async populateTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionRequest> {
-
         const tx: Deferrable<TransactionRequest> = await resolveProperties(this.checkTransaction(transaction))
 
         if (tx.to != null) {
             tx.to = Promise.resolve(tx.to).then(async (to) => {
                 if (to == null) { return null; }
-                const address = await this.resolveName(to.toString());
-                if (address == null) {
-                    logger.throwArgumentError("provided ENS name resolves to null", "tx.to", to);
-                }
-                return address;
+                return getChecksumAddress(getAddressFromAccount(to));
             });
 
             // Prevent this error from causing an UnhandledPromiseException
             tx.to.catch((error) => {  });
         }
 
-        // Do not allow mixing pre-eip-1559 and eip-1559 properties
-        // const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
-        // if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
-        //     logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
-        // } else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
-        //     logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
-        // }
-
-        if ((tx.type === 2 || tx.type == null) && (tx.maxFeePerGas != null && tx.maxPriorityFeePerGas != null)) {
-            // Fully-formed EIP-1559 transaction (skip getFeeData)
-            tx.type = 2;
-
-        } else if (tx.type === 0 || tx.type === 1) {
-            // Explicit Legacy or EIP-2930 transaction
-
-            // Populate missing gasPrice
-            // TODO: gas price
-            // if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
-
-        } else {
-            /*
-            // We need to get fee data to determine things
-            // TODO: get the fee data somehow ( probably fee schedule in the hedera context )
-            // const feeData = await this.getFeeData();
-
-            if (tx.type == null) {
-                // We need to auto-detect the intended type of this transaction...
-
-                if (feeData.maxFeePerGas != null && feeData.maxPriorityFeePerGas != null) {
-                    // The network supports EIP-1559!
-
-                    // Upgrade transaction from null to eip-1559
-                    tx.type = 2;
-
-                    // if (tx.gasPrice != null) {
-                        // Using legacy gasPrice property on an eip-1559 network,
-                        // so use gasPrice as both fee properties
-                        // const gasPrice = tx.gasPrice;
-                        // delete tx.gasPrice;
-                        // tx.maxFeePerGas = gasPrice;
-                        // tx.maxPriorityFeePerGas = gasPrice;
-
-                    // } else {
-                    //     Populate missing fee data
-                        // if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
-                        // if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
-                    // }
-
-                } else if (feeData.gasPrice != null) {
-                    // Network doesn't support EIP-1559...
-
-                    // ...but they are trying to use EIP-1559 properties
-                    if (hasEip1559) {
-                        logger.throwError("network does not support EIP-1559", Logger.errors.UNSUPPORTED_OPERATION, {
-                            operation: "populateTransaction"
-                        });
-                    }
-
-                    // Populate missing fee data
-                    // if (tx.gasPrice == null) { tx.gasPrice = feeData.gasPrice; }
-
-                    // Explicitly set untyped transaction to legacy
-                    tx.type = 0;
-
-                } else {
-                    // getFeeData has failed us.
-                    logger.throwError("failed to get consistent fee data", Logger.errors.UNSUPPORTED_OPERATION, {
-                        operation: "signer.getFeeData"
-                    });
-                }
-
-            } else if (tx.type === 2) {
-                // Explicitly using EIP-1559
-
-                // Populate missing fee data
-                if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
-                if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
-            }
-            */
-        }
-
-        // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
 
         if (tx.gasLimit == null) {
-            tx.gasLimit = this.estimateGas(tx).catch((error) => {
-                if (forwardErrors.indexOf(error.code) >= 0) {
-                    throw error;
-                }
-
-                return logger.throwError("cannot estimate gas; transaction may fail or may require manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, {
-                    error: error,
-                    tx: tx
-                });
-            });
+            return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
         }
 
         if (tx.chainId == null) {
@@ -353,7 +268,6 @@ export abstract class Signer {
                 return results[0];
             });
         }
-
         return await resolveProperties(tx);
     }
 

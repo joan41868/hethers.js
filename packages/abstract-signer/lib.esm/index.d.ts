@@ -49,7 +49,6 @@ export declare abstract class Signer {
     call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string>;
     sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse>;
     getChainId(): Promise<number>;
-    resolveName(name: string): Promise<string>;
     checkTransaction(transaction: Deferrable<TransactionRequest>): Deferrable<TransactionRequest>;
     populateTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionRequest>;
     _checkProvider(operation?: string): void;

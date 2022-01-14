@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { getAddress } from "@ethersproject/address";
+import { getAccountFromAddress, getAddress } from "@ethersproject/address";
 import { BigNumber, numberify } from "@ethersproject/bignumber";
 import { arrayify, hexConcat, hexDataLength, hexDataSlice, hexlify, 
 // hexZeroPad,
@@ -21,7 +21,7 @@ import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { base64, getAddressFromAccount } from "ethers/lib/utils";
-import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, PublicKey as HederaPubKey } from "@hashgraph/sdk";
+import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, PublicKey as HederaPubKey, TransactionId, AccountId } from "@hashgraph/sdk";
 const logger = new Logger(version);
 export var TransactionTypes;
 (function (TransactionTypes) {
@@ -288,6 +288,14 @@ export function serializeHederaTransaction(transaction) {
             }
         }
     }
+    const account = getAccountFromAddress(transaction.from.toString());
+    tx.setTransactionId(TransactionId.generate(new AccountId({
+        shard: numberify(account.shard),
+        realm: numberify(account.realm),
+        num: numberify(account.num)
+    })))
+        .setNodeAccountIds([AccountId.fromString(transaction.nodeId.toString())])
+        .freeze();
     return tx;
 }
 // function _parseEipSignature(tx: Transaction, fields: Array<string>, serialize: (tx: UnsignedTransaction) => string): void {

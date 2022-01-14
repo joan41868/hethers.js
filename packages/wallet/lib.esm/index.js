@@ -21,8 +21,7 @@ import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethe
 import { computeAlias, recoverAddress, serializeHederaTransaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { AccountId, TransactionId, PrivateKey as HederaPrivKey, } from "@hashgraph/sdk";
-import { numberify } from "@ethersproject/bignumber";
+import { PrivateKey as HederaPrivKey, } from "@hashgraph/sdk";
 const logger = new Logger(version);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
@@ -127,39 +126,12 @@ export class Wallet extends Signer {
     }
     signTransaction(transaction) {
         this._checkAddress('signTransaction');
-        if (transaction.from) {
-            if (getAddressFromAccount(transaction.from) !== this.address) {
-                logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-            }
-        }
-        const tx = serializeHederaTransaction(transaction);
-        const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
-        return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-            let nodeID;
-            if (transaction.nodeId) {
-                nodeID = transaction.nodeId;
-            }
-            else {
-                this._checkProvider();
-                // provider present, we can go on
-                const submittableNodeIDs = this.provider.getHederaNetworkConfig();
-                if (submittableNodeIDs.length > 0) {
-                    nodeID = submittableNodeIDs[0];
-                }
-                else {
-                    reject(logger.makeError("Unable to find submittable node ID. The wallet's provider is not connected to any usable network"));
-                }
-            }
-            const account = getAccountFromAddress(this.address);
-            tx.setTransactionId(TransactionId.generate(new AccountId({
-                shard: numberify(account.shard),
-                realm: numberify(account.realm),
-                num: numberify(account.num)
-            })))
-                .setNodeAccountIds([nodeID])
-                .freeze();
+        this.checkTransaction(transaction);
+        return this.populateTransaction(transaction).then((readyTx) => __awaiter(this, void 0, void 0, function* () {
+            const tx = serializeHederaTransaction(readyTx);
+            const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
             const signed = yield tx.sign(pkey);
-            resolve(hexlify(signed.toBytes()));
+            return hexlify(signed.toBytes());
         }));
     }
     signMessage(message) {

@@ -352,6 +352,14 @@ function serializeHederaTransaction(transaction) {
             }
         }
     }
+    var account = (0, address_1.getAccountFromAddress)(transaction.from.toString());
+    tx.setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
+        shard: (0, bignumber_1.numberify)(account.shard),
+        realm: (0, bignumber_1.numberify)(account.realm),
+        num: (0, bignumber_1.numberify)(account.num)
+    })))
+        .setNodeAccountIds([sdk_1.AccountId.fromString(transaction.nodeId.toString())])
+        .freeze();
     return tx;
 }
 exports.serializeHederaTransaction = serializeHederaTransaction;
