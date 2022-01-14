@@ -16,12 +16,6 @@ const allowedTransactionKeys: Array<string> = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
 ];
 
-const forwardErrors = [
-    Logger.errors.INSUFFICIENT_FUNDS,
-    Logger.errors.NONCE_EXPIRED,
-    Logger.errors.REPLACEMENT_UNDERPRICED,
-];
-
 // EIP-712 Typed Data
 // See: https://eips.ethereum.org/EIPS/eip-712
 
