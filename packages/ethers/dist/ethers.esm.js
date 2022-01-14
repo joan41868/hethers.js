@@ -91890,20 +91890,28 @@ class BaseProvider extends Provider {
             this._ready().catch((error) => { });
         }
         else {
-            // defineReadOnly(this, "_network", getNetwork(network));
-            this._network = getNetwork(network);
-            this._networkPromise = Promise.resolve(this._network);
-            const knownNetwork = getStatic(new.target, "getNetwork")(network);
-            if (knownNetwork) {
-                defineReadOnly(this, "_network", knownNetwork);
-                this.emit("network", knownNetwork, null);
+            if (!isHederaNetworkConfigLike(network)) {
+                const asDefaultNetwork = network;
+                // defineReadOnly(this, "_network", getNetwork(network));
+                this._network = getNetwork(asDefaultNetwork);
+                this._networkPromise = Promise.resolve(this._network);
+                const knownNetwork = getStatic(new.target, "getNetwork")(asDefaultNetwork);
+                if (knownNetwork) {
+                    defineReadOnly(this, "_network", knownNetwork);
+                    this.emit("network", knownNetwork, null);
+                }
+                else {
+                    logger$v.throwArgumentError("invalid network", "network", network);
+                }
+                this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
+                this._mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
             }
             else {
-                logger$v.throwArgumentError("invalid network", "network", network);
+                const asHederaNetwork = network;
+                this.hederaClient = NodeClient.forNetwork(asHederaNetwork.network);
+                this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
             }
         }
-        this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
-        this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(network));
     }
     _ready() {
         return __awaiter$9(this, void 0, void 0, function* () {
@@ -92171,7 +92179,7 @@ class BaseProvider extends Provider {
             yield this.getNetwork();
             txId = yield txId;
             const ep = '/api/v1/transactions/' + txId;
-            let { data } = yield axios$1.get(this.mirrorNodeUrl + ep);
+            let { data } = yield axios$1.get(this._mirrorNodeUrl + ep);
             const filtered = data.transactions
                 .filter((e) => e.result === "SUCCESS");
             return filtered.length > 0 ? filtered[0] : null;
@@ -92346,6 +92354,9 @@ function resolveMirrorNetworkUrl(net) {
             return null;
     }
 }
+function isHederaNetworkConfigLike(cfg) {
+    return cfg.network !== undefined;
+}
 
 // contains predefined, sdk acceptable hedera network strings
 var HederaNetworks;
@@ -92363,6 +92374,22 @@ var HederaNetworks;
 class DefaultHederaProvider extends BaseProvider {
     constructor(network) {
         super(network);
+    }
+}
+
+/**
+ * Provides support for connecting to custom network by specifying consensus and mirror node url.
+ */
+class HederaProvider extends BaseProvider {
+    constructor(nodeId, consensusNodeUrl, mirrorNodeUrl) {
+        const props = {
+            network: {}
+        };
+        props.network[consensusNodeUrl] = nodeId.toString();
+        super({
+            network: props.network,
+            mirrorNodeUrl,
+        });
     }
 }
 
@@ -92395,6 +92422,7 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
+        HederaProvider,
         DefaultHederaProvider,
     }, options);
 }
@@ -92405,6 +92433,7 @@ var index$4 = /*#__PURE__*/Object.freeze({
 	BaseProvider: BaseProvider,
 	Resolver: Resolver,
 	DefaultHederaProvider: DefaultHederaProvider,
+	HederaProvider: HederaProvider,
 	getDefaultProvider: getDefaultProvider,
 	getNetwork: getNetwork,
 	isCommunityResource: isCommunityResource,

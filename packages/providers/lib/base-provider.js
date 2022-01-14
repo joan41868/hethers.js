@@ -441,20 +441,28 @@ var BaseProvider = /** @class */ (function (_super) {
             _this._ready().catch(function (error) { });
         }
         else {
-            // defineReadOnly(this, "_network", getNetwork(network));
-            _this._network = (0, networks_1.getNetwork)(network);
-            _this._networkPromise = Promise.resolve(_this._network);
-            var knownNetwork = (0, properties_1.getStatic)(_newTarget, "getNetwork")(network);
-            if (knownNetwork) {
-                (0, properties_1.defineReadOnly)(_this, "_network", knownNetwork);
-                _this.emit("network", knownNetwork, null);
+            if (!isHederaNetworkConfigLike(network)) {
+                var asDefaultNetwork = network;
+                // defineReadOnly(this, "_network", getNetwork(network));
+                _this._network = (0, networks_1.getNetwork)(asDefaultNetwork);
+                _this._networkPromise = Promise.resolve(_this._network);
+                var knownNetwork = (0, properties_1.getStatic)(_newTarget, "getNetwork")(asDefaultNetwork);
+                if (knownNetwork) {
+                    (0, properties_1.defineReadOnly)(_this, "_network", knownNetwork);
+                    _this.emit("network", knownNetwork, null);
+                }
+                else {
+                    logger.throwArgumentError("invalid network", "network", network);
+                }
+                _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
+                _this._mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
             }
             else {
-                logger.throwArgumentError("invalid network", "network", network);
+                var asHederaNetwork = network;
+                _this.hederaClient = sdk_1.Client.forNetwork(asHederaNetwork.network);
+                _this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
             }
         }
-        _this.mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
-        _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(network));
         return _this;
     }
     BaseProvider.prototype._ready = function () {
@@ -834,7 +842,7 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 2:
                         txId = _a.sent();
                         ep = '/api/v1/transactions/' + txId;
-                        return [4 /*yield*/, axios_1.default.get(this.mirrorNodeUrl + ep)];
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + ep)];
                     case 3:
                         data = (_a.sent()).data;
                         filtered = data.transactions
@@ -1078,5 +1086,8 @@ function resolveMirrorNetworkUrl(net) {
             logger.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
+}
+function isHederaNetworkConfigLike(cfg) {
+    return cfg.network !== undefined;
 }
 //# sourceMappingURL=base-provider.js.map

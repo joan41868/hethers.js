@@ -6,10 +6,8 @@ import {
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, concat, hexConcat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { getNetwork, Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
-import { HashZero } from "@ethersproject/constants";
-import { namehash } from "@ethersproject/hash";
 import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
