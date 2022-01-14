@@ -72,6 +72,7 @@ export class Signer {
                 const contractByteCode = tx.data;
                 let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
                 const fileCreate = {
+                    gasLimit: tx.gasLimit,
                     customData: {
                         fileChunk: chunks[0],
                         fileKey: HederaPubKey.fromString(this._signingKey().compressedPublicKey)
@@ -81,6 +82,7 @@ export class Signer {
                 const resp = yield this.provider.sendTransaction(signedFileCreate);
                 for (let chunk of chunks.slice(1)) {
                     const fileAppend = {
+                        gasLimit: tx.gasLimit,
                         customData: {
                             fileId: resp.customData.fileId.toString(),
                             fileChunk: chunk
@@ -156,6 +158,7 @@ export class Signer {
                 return result[0];
             });
         }
+        tx.gasLimit = transaction.gasLimit;
         return tx;
     }
     // Populates ALL keys for a transaction and checks that "from" matches

@@ -143,6 +143,7 @@ var Signer = /** @class */ (function () {
                         contractByteCode = tx.data;
                         chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
                         fileCreate = {
+                            gasLimit: tx.gasLimit,
                             customData: {
                                 fileChunk: chunks[0],
                                 fileKey: sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)
@@ -160,6 +161,7 @@ var Signer = /** @class */ (function () {
                         if (!(_i < _a.length)) return [3 /*break*/, 11];
                         chunk = _a[_i];
                         fileAppend = {
+                            gasLimit: tx.gasLimit,
                             customData: {
                                 fileId: resp.customData.fileId.toString(),
                                 fileChunk: chunk
@@ -255,6 +257,7 @@ var Signer = /** @class */ (function () {
                 return result[0];
             });
         }
+        tx.gasLimit = transaction.gasLimit;
         return tx;
     };
     // Populates ALL keys for a transaction and checks that "from" matches

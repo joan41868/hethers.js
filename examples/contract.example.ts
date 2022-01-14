@@ -52,7 +52,6 @@ const account = {
 	};
 	// @ts-ignore
 	const wallet = new hethers.Wallet(hederaEoa, provider);
-	// const walletPrivateKey = PrivateKey.fromBytes(arrayify(wallet._signingKey().privateKey));
 
 	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
 	const contractCreateResponse = await wallet.sendTransaction({
