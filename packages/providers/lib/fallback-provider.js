@@ -353,7 +353,6 @@ function getRunner(config, currentBlockNumber, method, params) {
                         case "getHbarPrice": return [3 /*break*/, 2];
                         case "getBalance": return [3 /*break*/, 3];
                         case "getCode": return [3 /*break*/, 3];
-                        case "call": return [3 /*break*/, 4];
                         case "estimateGas": return [3 /*break*/, 4];
                         case "getTransaction": return [3 /*break*/, 5];
                         case "getTransactionReceipt": return [3 /*break*/, 5];
