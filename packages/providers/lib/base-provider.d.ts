@@ -3,8 +3,8 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
-import { AccountId, TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
+import { AccountId, TransactionReceipt as HederaTransactionReceipt } from "@hashgraph/sdk";
 export declare class Event {
     readonly listener: Listener;
     readonly once: boolean;

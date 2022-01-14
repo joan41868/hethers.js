@@ -5,7 +5,6 @@ import {
     EventType,
     Filter,
     FilterByBlockHash,
-    ForkEvent,
     Listener,
     Log,
     Provider,
@@ -30,6 +29,14 @@ import { version } from "./_version";
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
 import axios from "axios";
+import {
+    AccountId,
+    Client,
+    TransactionReceipt as HederaTransactionReceipt,
+    AccountBalanceQuery,
+    NetworkName,
+    Transaction as HederaTransaction
+} from "@hashgraph/sdk";
 
 const logger = new Logger(version);
 
