@@ -461,6 +461,11 @@ var BaseProvider = /** @class */ (function (_super) {
                 var asHederaNetwork = network;
                 _this.hederaClient = sdk_1.Client.forNetwork(asHederaNetwork.network);
                 _this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
+                (0, properties_1.defineReadOnly)(_this, "_network", {
+                    // FIXME: chainId
+                    chainId: 0,
+                    name: _this.hederaClient.networkName
+                });
             }
         }
         return _this;
@@ -493,9 +498,9 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 6:
                         // This should never happen; every Provider sub-class should have
                         // suggested a network by here (or have thrown).
-                        if (!network) {
-                            logger.throwError("no network detected", logger_1.Logger.errors.UNKNOWN_ERROR, {});
-                        }
+                        // if (!network) {
+                        //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
+                        // }
                         // Possible this call stacked so do not call defineReadOnly again
                         if (this._network == null) {
                             if (this.anyNetwork) {
@@ -603,33 +608,30 @@ var BaseProvider = /** @class */ (function (_super) {
             var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_2;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 0: return [4 /*yield*/, addressOrName];
                     case 1:
-                        _b.sent();
-                        return [4 /*yield*/, addressOrName];
-                    case 2:
                         addressOrName = _b.sent();
                         _a = (0, address_1.getAccountFromAddress)(addressOrName), shard = _a.shard, realm = _a.realm, num = _a.num;
                         shardNum = bignumber_1.BigNumber.from(shard).toNumber();
                         realmNum = bignumber_1.BigNumber.from(realm).toNumber();
                         accountNum = bignumber_1.BigNumber.from(num).toNumber();
-                        _b.label = 3;
-                    case 3:
-                        _b.trys.push([3, 5, , 6]);
+                        _b.label = 2;
+                    case 2:
+                        _b.trys.push([2, 4, , 5]);
                         return [4 /*yield*/, new sdk_1.AccountBalanceQuery()
                                 .setAccountId(new sdk_1.AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
                                 .execute(this.hederaClient)];
-                    case 4:
+                    case 3:
                         balance = _b.sent();
                         return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
-                    case 5:
+                    case 4:
                         error_2 = _b.sent();
                         return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "AccountBalanceQuery",
                                 params: { address: addressOrName },
                                 error: error_2
                             })];
-                    case 6: return [2 /*return*/];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -724,39 +726,36 @@ var BaseProvider = /** @class */ (function (_super) {
             var txBytes, hederaTx, ethersTx, txHash, _b, error_3, err;
             return __generator(this, function (_c) {
                 switch (_c.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 0: return [4 /*yield*/, signedTransaction];
                     case 1:
-                        _c.sent();
-                        return [4 /*yield*/, signedTransaction];
-                    case 2:
                         signedTransaction = _c.sent();
                         txBytes = (0, bytes_1.arrayify)(signedTransaction);
                         hederaTx = sdk_1.Transaction.fromBytes(txBytes);
                         return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
-                    case 3:
+                    case 2:
                         ethersTx = _c.sent();
                         _b = bytes_1.hexlify;
                         return [4 /*yield*/, hederaTx.getTransactionHash()];
-                    case 4:
+                    case 3:
                         txHash = _b.apply(void 0, [_c.sent()]);
-                        _c.label = 5;
-                    case 5:
-                        _c.trys.push([5, 7, , 8]);
+                        _c.label = 4;
+                    case 4:
+                        _c.trys.push([4, 6, , 7]);
                         // TODO once we have fallback provider use `provider.perform("sendTransaction")`
                         // TODO Before submission verify that the nodeId is the one that the provider is connected to
                         return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
-                    case 6:
+                    case 5:
                         // TODO once we have fallback provider use `provider.perform("sendTransaction")`
                         // TODO Before submission verify that the nodeId is the one that the provider is connected to
                         _c.sent();
                         return [2 /*return*/, this._wrapTransaction(ethersTx, txHash)];
-                    case 7:
+                    case 6:
                         error_3 = _c.sent();
                         err = logger.makeError(error_3.message, (_a = error_3.status) === null || _a === void 0 ? void 0 : _a.toString());
                         err.transaction = ethersTx;
                         err.transactionHash = txHash;
                         throw err;
-                    case 8: return [2 /*return*/];
+                    case 7: return [2 /*return*/];
                 }
             });
         });

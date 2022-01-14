@@ -457,6 +457,11 @@ export class BaseProvider extends Provider {
                 const asHederaNetwork = network as HederaNetworkConfigLike;
                 this.hederaClient = Client.forNetwork(asHederaNetwork.network);
                 this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
+                defineReadOnly(this, "_network", {
+                    // FIXME: chainId
+                    chainId: 0,
+                    name: this.hederaClient.networkName
+                });
             }
         }
     }
@@ -477,9 +482,9 @@ export class BaseProvider extends Provider {
 
             // This should never happen; every Provider sub-class should have
             // suggested a network by here (or have thrown).
-            if (!network) {
-                logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
-            }
+            // if (!network) {
+            //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
+            // }
 
             // Possible this call stacked so do not call defineReadOnly again
             if (this._network == null) {
@@ -572,7 +577,6 @@ export class BaseProvider extends Provider {
      * @param addressOrName The address to check balance of
      */
     async getBalance(addressOrName: string | Promise<string>): Promise<BigNumber> {
-        await this.getNetwork();
         addressOrName = await addressOrName;
         const { shard, realm, num } = getAccountFromAddress(addressOrName);
         const shardNum = BigNumber.from(shard).toNumber();
@@ -654,7 +658,6 @@ export class BaseProvider extends Provider {
     }
 
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
-        await this.getNetwork();
         signedTransaction = await signedTransaction;
 
         const txBytes = arrayify(signedTransaction);
