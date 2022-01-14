@@ -15,7 +15,7 @@ import { Transaction } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import { fetchJson, poll } from "@ethersproject/web";
-import {TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
+import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
@@ -24,7 +24,7 @@ const logger = new Logger(version);
 
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction, ContractCallQuery } from "@hashgraph/sdk";
 import axios from "axios";
 
 //////////////////////////////
@@ -1048,9 +1048,18 @@ export class BaseProvider extends Provider implements EnsProvider {
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
         await this.getNetwork();
         signedTransaction = await signedTransaction;
-
+        let hederaTx: HederaTransaction | any;
         const txBytes = arrayify(signedTransaction);
-        const hederaTx = HederaTransaction.fromBytes(txBytes);
+        try {
+            hederaTx = HederaTransaction.fromBytes(txBytes);
+        } catch (ignore) {
+            // It's a query
+            hederaTx = ContractCallQuery.fromBytes(txBytes);
+            console.log(hederaTx);
+            const resp = await hederaTx.execute(this.hederaClient);
+            console.log('QueryResponse', resp);
+            return null;
+        }
         const ethersTx = await this.formatter.transaction(signedTransaction);
         const txHash = hexlify(await hederaTx.getTransactionHash());
         try {

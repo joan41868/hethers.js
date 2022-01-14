@@ -1113,7 +1113,7 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, hederaTx, ethersTx, txHash, _b, resp, receipt, error_6, err;
+            var hederaTx, txBytes, ignore_1, resp, ethersTx, txHash, _b, resp, receipt, error_6, err;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, this.getNetwork()];
@@ -1123,31 +1123,45 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 2:
                         signedTransaction = _c.sent();
                         txBytes = (0, bytes_1.arrayify)(signedTransaction);
-                        hederaTx = sdk_1.Transaction.fromBytes(txBytes);
-                        return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
+                        _c.label = 3;
                     case 3:
+                        _c.trys.push([3, 4, , 6]);
+                        hederaTx = sdk_1.Transaction.fromBytes(txBytes);
+                        return [3 /*break*/, 6];
+                    case 4:
+                        ignore_1 = _c.sent();
+                        // It's a query
+                        hederaTx = sdk_1.ContractCallQuery.fromBytes(txBytes);
+                        console.log(hederaTx);
+                        return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
+                    case 5:
+                        resp = _c.sent();
+                        console.log('QueryResponse', resp);
+                        return [2 /*return*/, null];
+                    case 6: return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
+                    case 7:
                         ethersTx = _c.sent();
                         _b = bytes_1.hexlify;
                         return [4 /*yield*/, hederaTx.getTransactionHash()];
-                    case 4:
+                    case 8:
                         txHash = _b.apply(void 0, [_c.sent()]);
-                        _c.label = 5;
-                    case 5:
-                        _c.trys.push([5, 8, , 9]);
+                        _c.label = 9;
+                    case 9:
+                        _c.trys.push([9, 12, , 13]);
                         return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
-                    case 6:
+                    case 10:
                         resp = _c.sent();
                         return [4 /*yield*/, resp.getReceipt(this.hederaClient)];
-                    case 7:
+                    case 11:
                         receipt = _c.sent();
                         return [2 /*return*/, this._wrapTransaction(ethersTx, txHash, receipt)];
-                    case 8:
+                    case 12:
                         error_6 = _c.sent();
                         err = logger.makeError(error_6.message, (_a = error_6.status) === null || _a === void 0 ? void 0 : _a.toString());
                         err.transaction = ethersTx;
                         err.transactionHash = txHash;
                         throw err;
-                    case 9: return [2 /*return*/];
+                    case 13: return [2 /*return*/];
                 }
             });
         });

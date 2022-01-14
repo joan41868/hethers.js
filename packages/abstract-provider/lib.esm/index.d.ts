@@ -15,6 +15,7 @@ export declare type TransactionRequest = {
     accessList?: AccessListish;
     maxPriorityFeePerGas?: BigNumberish;
     maxFeePerGas?: BigNumberish;
+    nodeId?: AccountLike;
     customData?: Record<string, any>;
 };
 export interface TransactionResponse extends Transaction {

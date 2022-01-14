@@ -25,7 +25,7 @@ import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction, ContractCallQuery } from "@hashgraph/sdk";
 import axios from "axios";
 //////////////////////////////
 // Event Serializeing
@@ -899,8 +899,19 @@ export class BaseProvider extends Provider {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
             signedTransaction = yield signedTransaction;
+            let hederaTx;
             const txBytes = arrayify(signedTransaction);
-            const hederaTx = HederaTransaction.fromBytes(txBytes);
+            try {
+                hederaTx = HederaTransaction.fromBytes(txBytes);
+            }
+            catch (ignore) {
+                // It's a query
+                hederaTx = ContractCallQuery.fromBytes(txBytes);
+                console.log(hederaTx);
+                const resp = yield hederaTx.execute(this.hederaClient);
+                console.log('QueryResponse', resp);
+                return null;
+            }
             const ethersTx = yield this.formatter.transaction(signedTransaction);
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {

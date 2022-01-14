@@ -46,6 +46,16 @@ export declare abstract class Signer {
     getGasPrice(): Promise<BigNumber>;
     getBalance(blockTag?: BlockTag): Promise<BigNumber>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
+    /**
+     * TODO: attempt hacking the hedera sdk to get a costAnswer query.
+     *  The dry run of the query should have returned the answer as well
+     *  This may be bad for hedera but is good for ethers
+     *  It may also be necessary to re-create the provider.call method in order to send those queries
+     *
+     *
+     * @param transaction - the unsigned raw query to be sent against the smart contract
+     * @param blockTag - currently unused
+     */
     call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string>;
     sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse>;
     getChainId(): Promise<number>;

@@ -4548,6 +4548,9 @@ function throwFault(fault, operation, value) {
     }
     return logger$1.throwError(fault, Logger.errors.NUMERIC_FAULT, params);
 }
+function numberify(num) {
+    return BigNumber.from(num).toNumber();
+}
 // value should have no prefix
 function _base36To16(value) {
     return (new BN(value, 36)).toString(16);
@@ -86353,74 +86356,6 @@ class Signer {
         logger$f.checkAbstract(new.target, Signer);
         defineReadOnly(this, "_isSigner", true);
     }
-    /**
-     * Signs a transaction with the key given upon creation.
-     * The transaction can be:
-     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
-     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
-     * - ContractCreate - when there is a `bytecodeFileId` field
-     * - ContractCall - when there is a `to` field present. Ignores the other fields
-     *
-     * @param transaction - the transaction to be signed.
-     */
-    signTransaction(transaction) {
-        var _a, _b;
-        let tx;
-        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new ContractExecuteTransaction()
-                .setContractId(ContractId.fromSolidityAddress(transaction.to.toString()))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
-        }
-        else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
-                    .setGas(gas);
-            }
-            else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId);
-                }
-                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            PublicKey$1.fromString(this._signingKey().compressedPublicKey)]);
-                }
-                else {
-                    logger$f.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
-                }
-            }
-        }
-        return this.getAddress().then(address => {
-            const accountID = getAccountFromAddress(address);
-            tx.setTransactionId(TransactionId.generate(new AccountId({
-                shard: numberify(accountID.shard),
-                realm: numberify(accountID.realm),
-                num: numberify(accountID.num)
-            })))
-                // FIXME - should be taken from the network/ wallet's provider
-                .setNodeAccountIds([new AccountId(0, 0, 3)])
-                .freeze();
-            const pkey = PrivateKey$1.fromStringECDSA(this._signingKey().privateKey);
-            return new Promise((resolve) => __awaiter$2(this, void 0, void 0, function* () {
-                const signed = yield tx.sign(pkey);
-                resolve(hexlify(signed.toBytes()));
-            }));
-        });
-    }
     getGasPrice() {
         return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("getGasPrice");
@@ -86443,12 +86378,28 @@ class Signer {
             return yield this.provider.estimateGas(tx);
         });
     }
-    // Populates "from" if unspecified, and calls with the transaction
+    /**
+     * TODO: attempt hacking the hedera sdk to get a costAnswer query.
+     *  The dry run of the query should have returned the answer as well
+     *  This may be bad for hedera but is good for ethers
+     *  It may also be necessary to re-create the provider.call method in order to send those queries
+     *
+     *
+     * @param transaction - the unsigned raw query to be sent against the smart contract
+     * @param blockTag - currently unused
+     */
     call(transaction, blockTag) {
         return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("call");
             const tx = yield resolveProperties(this.checkTransaction(transaction));
-            return yield this.provider.call(tx, blockTag);
+            const acc = getAccountFromAddress(tx.to.toString());
+            const contractId = `${acc.shard}.${acc.realm}.${acc.num}`;
+            const hederaTx = new ContractCallQuery()
+                .setContractId(contractId)
+                .setFunctionParameters(arrayify(tx.data));
+            const signed = hederaTx.toBytes();
+            const response = yield this.provider.sendTransaction(hexlify(signed));
+            return response.data;
         });
     }
     // Populates all fields in a transaction, signs it and sends it to the network
@@ -86478,6 +86429,7 @@ class Signer {
                 for (let chunk of chunks.slice(1)) {
                     const fileAppend = {
                         customData: {
+                            // @ts-ignore
                             fileId: resp.customData.fileId.toString(),
                             fileChunk: chunk
                         }
@@ -86485,9 +86437,11 @@ class Signer {
                     const signedFileAppend = yield this.signTransaction(fileAppend);
                     yield this.provider.sendTransaction(signedFileAppend);
                 }
+                // @ts-ignore
                 const contractCreate = {
                     gasLimit: tx.gasLimit,
                     customData: {
+                        // @ts-ignore
                         bytecodeFileId: resp.customData.fileId.toString()
                     }
                 };
@@ -86723,9 +86677,6 @@ function splitInChunks(data, chunkSize) {
         chunks.push(slice);
     }
     return chunks;
-}
-function numberify(num) {
-    return BigNumber.from(num).toNumber();
 }
 
 var commonjsGlobal$1 = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -92064,6 +92015,68 @@ class Wallet extends Signer {
         };
         return new Wallet(eoa, this.provider);
     }
+    signTransaction(transaction) {
+        var _a, _b;
+        this._checkAddress('signTransaction');
+        if (transaction.from) {
+            if (getAddressFromAccount(transaction.from) !== this.address) {
+                logger$p.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
+            }
+        }
+        let tx;
+        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
+        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
+        if (transaction.to) {
+            tx = new ContractExecuteTransaction()
+                .setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
+                .setFunctionParameters(arrayifiedData)
+                .setGas(gas);
+            if (transaction.value) {
+                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
+            }
+        }
+        else {
+            if (transaction.customData.bytecodeFileId) {
+                tx = new ContractCreateTransaction()
+                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
+                    .setConstructorParameters(arrayifiedData)
+                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
+                    .setGas(gas);
+            }
+            else {
+                if (transaction.customData.fileChunk && transaction.customData.fileId) {
+                    tx = new FileAppendTransaction()
+                        .setContents(transaction.customData.fileChunk)
+                        .setFileId(transaction.customData.fileId);
+                }
+                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
+                    // only a chunk, thus the first one
+                    tx = new FileCreateTransaction()
+                        .setContents(transaction.customData.fileChunk)
+                        .setKeys([transaction.customData.fileKey ?
+                            transaction.customData.fileKey :
+                            PublicKey$1.fromString(this._signingKey().compressedPublicKey)]);
+                }
+                else {
+                    logger$p.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
+                }
+            }
+        }
+        const account = getAccountFromAddress(this.address);
+        tx.setTransactionId(TransactionId.generate(new AccountId({
+            shard: numberify(account.shard),
+            realm: numberify(account.realm),
+            num: numberify(account.num)
+        })))
+            // FIXME - should be taken from the network/ wallet's provider
+            .setNodeAccountIds([new AccountId(0, 0, 3)])
+            .freeze();
+        const pkey = PrivateKey$1.fromStringECDSA(this._signingKey().privateKey);
+        return new Promise((resolve) => __awaiter$4(this, void 0, void 0, function* () {
+            const signed = yield tx.sign(pkey);
+            resolve(hexlify(signed.toBytes()));
+        }));
+    }
     signMessage(message) {
         return __awaiter$4(this, void 0, void 0, function* () {
             return joinSignature(this._signingKey().signDigest(hashMessage(message)));
@@ -92125,6 +92138,13 @@ class Wallet extends Signer {
             path = defaultPath;
         }
         return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+    }
+    _checkAddress(operation) {
+        if (!this.address) {
+            logger$p.throwError("missing address", Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: (operation || "_checkAddress")
+            });
+        }
     }
 }
 // TODO to be revised
@@ -99511,8 +99531,19 @@ class BaseProvider extends Provider {
         return __awaiter$9(this, void 0, void 0, function* () {
             yield this.getNetwork();
             signedTransaction = yield signedTransaction;
+            let hederaTx;
             const txBytes = arrayify(signedTransaction);
-            const hederaTx = Transaction.fromBytes(txBytes);
+            try {
+                hederaTx = Transaction.fromBytes(txBytes);
+            }
+            catch (ignore) {
+                // It's a query
+                hederaTx = ContractCallQuery.fromBytes(txBytes);
+                console.log(hederaTx);
+                const resp = yield hederaTx.execute(this.hederaClient);
+                console.log('QueryResponse', resp);
+                return null;
+            }
             const ethersTx = yield this.formatter.transaction(signedTransaction);
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {

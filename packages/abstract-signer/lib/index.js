@@ -120,8 +120,16 @@ var Signer = /** @class */ (function () {
             });
         });
     };
-    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
-    // Populates "from" if unspecified, and calls with the transaction
+    /**
+     * TODO: attempt hacking the hedera sdk to get a costAnswer query.
+     *  The dry run of the query should have returned the answer as well
+     *  This may be bad for hedera but is good for ethers
+     *  It may also be necessary to re-create the provider.call method in order to send those queries
+     *
+     *
+     * @param transaction - the unsigned raw query to be sent against the smart contract
+     * @param blockTag - currently unused
+     */
     Signer.prototype.call = function (transaction, blockTag) {
         return __awaiter(this, void 0, void 0, function () {
             var tx, acc, contractId, hederaTx, signed, response;

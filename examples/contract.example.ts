@@ -1,11 +1,11 @@
 import * as hethers from "ethers";
-import { arrayify, getAddressFromAccount } from "ethers/lib/utils";
+import { arrayify, getAccountFromAddress, getAddressFromAccount } from "ethers/lib/utils";
 import {
 	AccountCreateTransaction,
 	PrivateKey,
 	Hbar,
 	Client,
-	Key as HederaKey, AccountId, TransactionId,
+	Key as HederaKey, AccountId, TransactionId, ContractCallQuery,
 } from "@hashgraph/sdk";
 import { readFileSync } from "fs";
 import { Key } from "@hashgraph/proto";
@@ -63,33 +63,42 @@ const account = {
 	const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
 	// @ts-ignore
 	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData.contractId, abi, wallet);
-	const approveParams = contract.interface.encodeFunctionData('approve', [
-		getAddressFromAccount(account.operator.accountId),
-		1000
-	]);
-	const approveResponse = await wallet.sendTransaction({
-		to: contract.address,
-		data: approveParams,
-		gasLimit: 100000
-	});
-	console.log(approveResponse);
-
-	const mintParams = contract.interface.encodeFunctionData('mint', [
-		1000
-	]);
-	const mintResponse = await wallet.sendTransaction({
-		to: contract.address,
-		data: mintParams,
-		gasLimit: 100000
-	});
-	console.log(mintResponse);
-
+	// const approveParams = contract.interface.encodeFunctionData('approve', [
+	// 	getAddressFromAccount(account.operator.accountId),
+	// 	1000
+	// ]);
+	// const approveResponse = await wallet.sendTransaction({
+	// 	to: contract.address,
+	// 	data: approveParams,
+	// 	gasLimit: 100000
+	// });
+	// console.log(approveResponse);
+	//
+	// const mintParams = contract.interface.encodeFunctionData('mint', [
+	// 	1000
+	// ]);
+	// const mintResponse = await wallet.sendTransaction({
+	// 	to: contract.address,
+	// 	data: mintParams,
+	// 	gasLimit: 100000
+	// });
+	// console.log(mintResponse);
+	//
 	const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
 		await wallet.getAddress()
 	]);
-	const balanceOfResponse = await wallet.call({
-		to: contract.address,
-		data: balanceOfParams,
-	});
-	console.log(balanceOfResponse);
+	// const balanceOfResponse = await wallet.call({
+	// 	to: contract.address,
+	// 	data: balanceOfParams,
+	// });
+	// console.log(balanceOfResponse);
+	//
+
+	const contractAccountID = getAccountFromAddress(contract.address);
+	const contractID = `${contractAccountID.shard}.${contractAccountID.realm}.${contractAccountID.num}`;
+	const cc = new ContractCallQuery()
+		.setContractId(contractID)
+		.setFunctionParameters(arrayify(balanceOfParams));
+	const cost = await cc.getCost(client);
+	console.log(cost);
 })();
