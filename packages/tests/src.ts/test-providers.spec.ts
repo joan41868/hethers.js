@@ -1103,6 +1103,7 @@ describe("Test Hedera Provider", function () {
         // bytecode for contract with a payable constructor .
         const privateKey = PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
         // 1. Sign TX -> `sign-transaction.ts`
+        const txID = TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
         const tx = await new ContractCreateTransaction()
             .setContractMemo("memo")
             .setGas(100000)
@@ -1110,7 +1111,7 @@ describe("Test Hedera Provider", function () {
             .setBytecodeFileId("0.0.26562254")
             .setNodeAccountIds([new AccountId(0,0,3)])
             .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
-            .setTransactionId(TransactionId.generate(hederaTestnetOperableAccount.operator.accountId))
+            .setTransactionId(txID)
             .freeze()
             .sign(privateKey);
         const txBytes = tx.toBytes();

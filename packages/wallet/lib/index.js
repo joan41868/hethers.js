@@ -188,52 +188,13 @@ var Wallet = /** @class */ (function (_super) {
     };
     Wallet.prototype.signTransaction = function (transaction) {
         var _this = this;
-        var _a, _b;
         this._checkAddress('signTransaction');
         if (transaction.from) {
             if ((0, address_1.getAddressFromAccount)(transaction.from) !== this.address) {
                 logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
             }
         }
-        var tx;
-        var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
-        var gas = (0, bignumber_1.numberify)(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new sdk_1.ContractExecuteTransaction()
-                .setContractId(sdk_1.ContractId.fromSolidityAddress((0, address_1.getAddressFromAccount)(transaction.to)))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
-        }
-        else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new sdk_1.ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
-                    .setGas(gas);
-            }
-            else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new sdk_1.FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId);
-                }
-                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new sdk_1.FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)]);
-                }
-                else {
-                    logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
-                }
-            }
-        }
+        var tx = (0, transactions_1.serializeHederaTransaction)(transaction);
         var pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
         return new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
             var nodeID, submittableNodeIDs, account, signed;

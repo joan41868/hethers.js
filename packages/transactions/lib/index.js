@@ -66,7 +66,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parse = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
+exports.parse = exports.serializeHederaTransaction = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
 var address_1 = require("@ethersproject/address");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
@@ -311,6 +311,50 @@ function serialize(transaction, signature) {
     });
 }
 exports.serialize = serialize;
+function serializeHederaTransaction(transaction) {
+    var _a, _b;
+    var tx;
+    var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
+    var gas = (0, bignumber_1.numberify)(transaction.gasLimit ? transaction.gasLimit : 0);
+    if (transaction.to) {
+        tx = new sdk_1.ContractExecuteTransaction()
+            .setContractId(sdk_1.ContractId.fromSolidityAddress((0, utils_1.getAddressFromAccount)(transaction.to)))
+            .setFunctionParameters(arrayifiedData)
+            .setGas(gas);
+        if (transaction.value) {
+            tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
+        }
+    }
+    else {
+        if (transaction.customData.bytecodeFileId) {
+            tx = new sdk_1.ContractCreateTransaction()
+                .setBytecodeFileId(transaction.customData.bytecodeFileId)
+                .setConstructorParameters(arrayifiedData)
+                .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
+                .setGas(gas);
+        }
+        else {
+            if (transaction.customData.fileChunk && transaction.customData.fileId) {
+                tx = new sdk_1.FileAppendTransaction()
+                    .setContents(transaction.customData.fileChunk)
+                    .setFileId(transaction.customData.fileId);
+            }
+            else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
+                // only a chunk, thus the first one
+                tx = new sdk_1.FileCreateTransaction()
+                    .setContents(transaction.customData.fileChunk)
+                    .setKeys([transaction.customData.fileKey ?
+                        transaction.customData.fileKey :
+                        sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)]);
+            }
+            else {
+                logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
+            }
+        }
+    }
+    return tx;
+}
+exports.serializeHederaTransaction = serializeHederaTransaction;
 // function _parseEipSignature(tx: Transaction, fields: Array<string>, serialize: (tx: UnsignedTransaction) => string): void {
 //     try {
 //         const recid = handleNumber(fields[0]).toNumber();

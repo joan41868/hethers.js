@@ -29,19 +29,15 @@ import {
 	encryptKeystore,
 	ProgressCallback
 } from "@ethersproject/json-wallets";
-import { computeAlias, recoverAddress } from "@ethersproject/transactions";
+import { computeAlias, recoverAddress, serializeHederaTransaction } from "@ethersproject/transactions";
 import { Wordlist } from "@ethersproject/wordlists";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import {
 	AccountId,
-	ContractCreateTransaction,
-	ContractExecuteTransaction,
-	ContractId,
-	FileAppendTransaction, FileCreateTransaction,
-	Transaction, TransactionId,
-	PrivateKey as HederaPrivKey, PublicKey as HederaPubKey
+	TransactionId,
+	PrivateKey as HederaPrivKey,
 } from "@hashgraph/sdk";
 
 import {numberify} from "@ethersproject/bignumber";
@@ -188,44 +184,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 			}
 		}
 
-		let tx: Transaction;
-		const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-		const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-		if (transaction.to) {
-			tx = new ContractExecuteTransaction()
-				.setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
-				.setFunctionParameters(arrayifiedData)
-				.setGas(gas);
-			if (transaction.value) {
-				(tx as ContractExecuteTransaction).setPayableAmount(transaction.value?.toString())
-			}
-		} else {
-			if (transaction.customData.bytecodeFileId) {
-				tx = new ContractCreateTransaction()
-					.setBytecodeFileId(transaction.customData.bytecodeFileId)
-					.setConstructorParameters(arrayifiedData)
-					.setInitialBalance(transaction.value?.toString())
-					.setGas(gas);
-			} else {
-				if (transaction.customData.fileChunk && transaction.customData.fileId) {
-					tx = new FileAppendTransaction()
-						.setContents(transaction.customData.fileChunk)
-						.setFileId(transaction.customData.fileId)
-				} else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-					// only a chunk, thus the first one
-					tx = new FileCreateTransaction()
-						.setContents(transaction.customData.fileChunk)
-						.setKeys([ transaction.customData.fileKey ?
-							transaction.customData.fileKey :
-							HederaPubKey.fromString(this._signingKey().compressedPublicKey) ])
-				} else {
-					logger.throwArgumentError(
-						"Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`",
-						Logger.errors.INVALID_ARGUMENT,
-						transaction);
-				}
-			}
-		}
+		const tx = serializeHederaTransaction(transaction);
 		const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
 		return new Promise<string>(async (resolve, reject) => {
 			let nodeID : any;

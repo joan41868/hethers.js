@@ -18,10 +18,10 @@ import { defineReadOnly } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethersproject/json-wallets";
-import { computeAlias, recoverAddress } from "@ethersproject/transactions";
+import { computeAlias, recoverAddress, serializeHederaTransaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { AccountId, ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, TransactionId, PrivateKey as HederaPrivKey, PublicKey as HederaPubKey } from "@hashgraph/sdk";
+import { AccountId, TransactionId, PrivateKey as HederaPrivKey, } from "@hashgraph/sdk";
 import { numberify } from "@ethersproject/bignumber";
 const logger = new Logger(version);
 function isAccount(value) {
@@ -126,52 +126,13 @@ export class Wallet extends Signer {
         return new Wallet(eoa, this.provider);
     }
     signTransaction(transaction) {
-        var _a, _b;
         this._checkAddress('signTransaction');
         if (transaction.from) {
             if (getAddressFromAccount(transaction.from) !== this.address) {
                 logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
             }
         }
-        let tx;
-        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new ContractExecuteTransaction()
-                .setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
-        }
-        else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
-                    .setGas(gas);
-            }
-            else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId);
-                }
-                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            HederaPubKey.fromString(this._signingKey().compressedPublicKey)]);
-                }
-                else {
-                    logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
-                }
-            }
-        }
+        const tx = serializeHederaTransaction(transaction);
         const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
             let nodeID;

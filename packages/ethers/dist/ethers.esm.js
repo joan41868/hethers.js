@@ -25,6 +25,7 @@ var lib_esm$k = /*#__PURE__*/Object.freeze({
 	get recoverAddress () { return recoverAddress; },
 	get accessListify () { return accessListify; },
 	get serialize () { return serialize; },
+	get serializeHederaTransaction () { return serializeHederaTransaction; },
 	get parse () { return parse$2; }
 });
 
@@ -92001,52 +92002,13 @@ class Wallet extends Signer {
         return new Wallet(eoa, this.provider);
     }
     signTransaction(transaction) {
-        var _a, _b;
         this._checkAddress('signTransaction');
         if (transaction.from) {
             if (getAddressFromAccount(transaction.from) !== this.address) {
                 logger$p.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
             }
         }
-        let tx;
-        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new ContractExecuteTransaction()
-                .setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
-        }
-        else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
-                    .setGas(gas);
-            }
-            else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId);
-                }
-                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            PublicKey$1.fromString(this._signingKey().compressedPublicKey)]);
-                }
-                else {
-                    logger$p.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
-                }
-            }
-        }
+        const tx = serializeHederaTransaction(transaction);
         const pkey = PrivateKey$1.fromStringECDSA(this._signingKey().privateKey);
         return new Promise((resolve, reject) => __awaiter$4(this, void 0, void 0, function* () {
             let nodeID;
@@ -93005,6 +92967,49 @@ function serialize(transaction, signature) {
         operation: "serializeTransaction",
         transactionType: transaction.type
     });
+}
+function serializeHederaTransaction(transaction) {
+    var _a, _b;
+    let tx;
+    const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
+    const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
+    if (transaction.to) {
+        tx = new ContractExecuteTransaction()
+            .setContractId(ContractId.fromSolidityAddress(utils$1.getAddressFromAccount(transaction.to)))
+            .setFunctionParameters(arrayifiedData)
+            .setGas(gas);
+        if (transaction.value) {
+            tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
+        }
+    }
+    else {
+        if (transaction.customData.bytecodeFileId) {
+            tx = new ContractCreateTransaction()
+                .setBytecodeFileId(transaction.customData.bytecodeFileId)
+                .setConstructorParameters(arrayifiedData)
+                .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
+                .setGas(gas);
+        }
+        else {
+            if (transaction.customData.fileChunk && transaction.customData.fileId) {
+                tx = new FileAppendTransaction()
+                    .setContents(transaction.customData.fileChunk)
+                    .setFileId(transaction.customData.fileId);
+            }
+            else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
+                // only a chunk, thus the first one
+                tx = new FileCreateTransaction()
+                    .setContents(transaction.customData.fileChunk)
+                    .setKeys([transaction.customData.fileKey ?
+                        transaction.customData.fileKey :
+                        PublicKey$1.fromString(this._signingKey().compressedPublicKey)]);
+            }
+            else {
+                logger$r.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
+            }
+        }
+    }
+    return tx;
 }
 // function _parseEipSignature(tx: Transaction, fields: Array<string>, serialize: (tx: UnsignedTransaction) => string): void {
 //     try {
