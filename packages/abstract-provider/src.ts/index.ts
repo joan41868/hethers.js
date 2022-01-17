@@ -8,6 +8,8 @@ import { AccessListish, Transaction } from "@ethersproject/transactions";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import { AccountLike } from "@ethersproject/address";
+import { AccountId } from "@hashgraph/sdk";
 const logger = new Logger(version);
 
 ///////////////////////////////
@@ -15,23 +17,17 @@ const logger = new Logger(version);
 
 
 export type TransactionRequest = {
-    to?: string,
-    from?: string,
-    nonce?: BigNumberish,
-
+    to?: AccountLike,
+    from?: AccountLike,
     gasLimit?: BigNumberish,
-    gasPrice?: BigNumberish,
-
     data?: BytesLike,
     value?: BigNumberish,
     chainId?: number
-
     type?: number;
     accessList?: AccessListish;
-
     maxPriorityFeePerGas?: BigNumberish;
     maxFeePerGas?: BigNumberish;
-
+    nodeId?: AccountLike,
     customData?: Record<string, any>;
 }
 
@@ -55,20 +51,18 @@ export type HederaTransactionResponse = {
 }
   
 export interface TransactionResponse extends Transaction {
-    // Populate it
     hash: string;
-    timestamp?: number, // Populate it if transaction has been mined and mirror node returns it
-    // Not optional (as it is in Transaction)
-    from: string; // populate it from ethersTx
-    // The raw transaction
-    raw?: string, // equivalent of signed transaction
-
-    // This function waits until the transaction has been mined
-    wait: (timeout?: number) => Promise<TransactionReceipt>, // Should poll the mirror node
+    blockNumber?: number,
+    blockHash?: string,
+    timestamp?: number,
+    confirmations: number,
+    from: string;
+    raw?: string,
+    wait: (confirmations?: number) => Promise<TransactionReceipt>,
     customData?: {
         [key: string]:any;
     }
-};
+}
 
 export type BlockTag = string | number;
 
@@ -233,6 +227,11 @@ export abstract class Provider {
 
     // Network
     abstract getNetwork(): Promise<Network>;
+    getHederaNetworkConfig() : AccountId[] {
+        return logger.throwError("getHederaNetworkConfig not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaNetworkConfig'
+        })
+    }
 
     // Latest State
     getGasPrice(): Promise<BigNumber> {
@@ -247,7 +246,6 @@ export abstract class Provider {
 
     // Execution
     abstract sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
-    abstract call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     abstract estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
 
     abstract getTransaction(transactionHash: string): Promise<TransactionResponse>;
@@ -255,10 +253,6 @@ export abstract class Provider {
 
     // Bloom-filter Queries
     abstract getLogs(filter: Filter): Promise<Array<Log>>;
-
-    // ENS
-    abstract resolveName(name: string | Promise<string>): Promise<null | string>;
-    abstract lookupAddress(address: string | Promise<string>): Promise<null | string>;
 
     // Event Emitter (ish)
     abstract on(eventName: EventType, listener: Listener): Provider;

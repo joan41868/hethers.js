@@ -38,7 +38,9 @@ export class NonceManager extends ethers.Signer {
         return this.signer.signTransaction(transaction);
     }
     sendTransaction(transaction) {
-        return null;
+        return this.signer.sendTransaction(transaction).then((tx) => {
+            return tx;
+        });
     }
 }
 //# sourceMappingURL=nonce-manager.js.map

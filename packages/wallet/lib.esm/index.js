@@ -1,4 +1,3 @@
-"use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -11,17 +10,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { getAccountFromAddress, getAddress, getAddressFromAccount } from "@ethersproject/address";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Signer } from "@ethersproject/abstract-signer";
-import { arrayify, concat, hexDataSlice, isHexString, joinSignature } from "@ethersproject/bytes";
+import { arrayify, concat, hexDataSlice, hexlify, isHexString, joinSignature } from "@ethersproject/bytes";
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import { defineReadOnly, resolveProperties } from "@ethersproject/properties";
+import { defineReadOnly } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethersproject/json-wallets";
-import { computeAlias, recoverAddress, serialize } from "@ethersproject/transactions";
+import { computeAlias, recoverAddress, serializeHederaTransaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import { PrivateKey as HederaPrivKey, } from "@hashgraph/sdk";
 const logger = new Logger(version);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
@@ -124,18 +124,15 @@ export class Wallet extends Signer {
         };
         return new Wallet(eoa, this.provider);
     }
-    // TODO to be revised
     signTransaction(transaction) {
-        return resolveProperties(transaction).then((tx) => {
-            if (tx.from != null) {
-                if (getAddress(tx.from) !== this.address) {
-                    logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-                }
-                delete tx.from;
-            }
-            const signature = this._signingKey().signDigest(keccak256(serialize(tx)));
-            return serialize(tx, signature);
-        });
+        this._checkAddress('signTransaction');
+        this.checkTransaction(transaction);
+        return this.populateTransaction(transaction).then((readyTx) => __awaiter(this, void 0, void 0, function* () {
+            const tx = serializeHederaTransaction(readyTx);
+            const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
+            const signed = yield tx.sign(pkey);
+            return hexlify(signed.toBytes());
+        }));
     }
     signMessage(message) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -153,7 +150,8 @@ export class Wallet extends Signer {
                         value: name
                     });
                 }
-                return this.provider.resolveName(name);
+                return Promise.resolve(name);
+                // return this.provider.resolveName(name);
             });
             return joinSignature(this._signingKey().signDigest(_TypedDataEncoder.hash(populated.domain, types, populated.value)));
         });
@@ -198,6 +196,13 @@ export class Wallet extends Signer {
             path = defaultPath;
         }
         return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+    }
+    _checkAddress(operation) {
+        if (!this.address) {
+            logger.throwError("missing address", Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: (operation || "_checkAddress")
+            });
+        }
     }
 }
 // TODO to be revised

@@ -5,7 +5,6 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 ;
-;
 //export type CallTransactionable = {
 //    call(transaction: TransactionRequest): Promise<TransactionResponse>;
 //};
@@ -63,6 +62,11 @@ export class Provider {
     constructor() {
         logger.checkAbstract(new.target, Provider);
         defineReadOnly(this, "_isProvider", true);
+    }
+    getHederaNetworkConfig() {
+        return logger.throwError("getHederaNetworkConfig not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaNetworkConfig'
+        });
     }
     // Latest State
     getGasPrice() {

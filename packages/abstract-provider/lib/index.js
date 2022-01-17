@@ -22,7 +22,6 @@ var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 ;
-;
 //export type CallTransactionable = {
 //    call(transaction: TransactionRequest): Promise<TransactionResponse>;
 //};
@@ -103,6 +102,11 @@ var Provider = /** @class */ (function () {
         logger.checkAbstract(_newTarget, Provider);
         (0, properties_1.defineReadOnly)(this, "_isProvider", true);
     }
+    Provider.prototype.getHederaNetworkConfig = function () {
+        return logger.throwError("getHederaNetworkConfig not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaNetworkConfig'
+        });
+    };
     // Latest State
     Provider.prototype.getGasPrice = function () {
         return logger.throwArgumentError("getGasPrice not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {

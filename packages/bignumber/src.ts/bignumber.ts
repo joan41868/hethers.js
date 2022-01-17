@@ -358,6 +358,10 @@ function throwFault(fault: string, operation: string, value?: any): never {
     return logger.throwError(fault, Logger.errors.NUMERIC_FAULT, params);
 }
 
+export function numberify(num: BigNumberish) {
+    return BigNumber.from(num).toNumber();
+}
+
 // value should have no prefix
 export function _base36To16(value: string): string {
     return (new BN(value, 36)).toString(16);

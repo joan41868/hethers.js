@@ -3,12 +3,12 @@ import { BytesLike } from "@ethersproject/bytes";
 import { Network } from "@ethersproject/networks";
 import { Deferrable, Description } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@ethersproject/transactions";
+import { AccountLike } from "@ethersproject/address";
+import { AccountId } from "@hashgraph/sdk";
 export declare type TransactionRequest = {
-    to?: string;
-    from?: string;
-    nonce?: BigNumberish;
+    to?: AccountLike;
+    from?: AccountLike;
     gasLimit?: BigNumberish;
-    gasPrice?: BigNumberish;
     data?: BytesLike;
     value?: BigNumberish;
     chainId?: number;
@@ -16,32 +16,18 @@ export declare type TransactionRequest = {
     accessList?: AccessListish;
     maxPriorityFeePerGas?: BigNumberish;
     maxFeePerGas?: BigNumberish;
+    nodeId?: AccountLike;
     customData?: Record<string, any>;
-};
-export declare type HederaTransactionResponse = {
-    amount: number;
-    call_result: string;
-    contract_id: string;
-    created_contract_ids: [];
-    error_message: string;
-    from: string;
-    function_parameters: string;
-    gas_limit: number;
-    gas_used: number;
-    timestamp: string;
-    to: string;
-    block_hash: string;
-    block_number: number;
-    hash: string;
-    logs: {};
-    transaction: {};
 };
 export interface TransactionResponse extends Transaction {
     hash: string;
+    blockNumber?: number;
+    blockHash?: string;
     timestamp?: number;
+    confirmations: number;
     from: string;
     raw?: string;
-    wait: (timeout?: number) => Promise<TransactionReceipt>;
+    wait: (confirmations?: number) => Promise<TransactionReceipt>;
     customData?: {
         [key: string]: any;
     };
@@ -82,12 +68,19 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string;
+    transactionIndex: number;
+    root?: string;
     gasUsed: BigNumber;
     logsBloom: string;
+    blockHash: string;
     transactionHash: string;
     logs: Array<Log>;
+    blockNumber: number;
+    confirmations: number;
     cumulativeGasUsed: BigNumber;
+    effectiveGasPrice: BigNumber;
     byzantium: boolean;
+    type: number;
     status?: number;
 }
 export interface FeeData {
@@ -130,17 +123,15 @@ export declare type EventType = string | Array<string | Array<string>> | EventFi
 export declare type Listener = (...args: Array<any>) => void;
 export declare abstract class Provider {
     abstract getNetwork(): Promise<Network>;
+    getHederaNetworkConfig(): AccountId[];
     getGasPrice(): Promise<BigNumber>;
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
     abstract getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     abstract sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
-    abstract call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     abstract estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     abstract getTransaction(transactionHash: string): Promise<TransactionResponse>;
     abstract getTransactionReceipt(transactionHash: string): Promise<TransactionReceipt>;
     abstract getLogs(filter: Filter): Promise<Array<Log>>;
-    abstract resolveName(name: string | Promise<string>): Promise<null | string>;
-    abstract lookupAddress(address: string | Promise<string>): Promise<null | string>;
     abstract on(eventName: EventType, listener: Listener): Provider;
     abstract once(eventName: EventType, listener: Listener): Provider;
     abstract emit(eventName: EventType, ...args: Array<any>): boolean;

@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { TransactionRequest } from "@ethersproject/abstract-provider";
 /**
  * TODO: This class and it's usage in the hedera network must be explored.
  */
@@ -12,7 +13,7 @@ export declare class NonceManager extends ethers.Signer {
     setTransactionCount(transactionCount: ethers.BigNumberish | Promise<ethers.BigNumberish>): void;
     incrementTransactionCount(count?: number): void;
     signMessage(message: ethers.Bytes | string): Promise<string>;
-    signTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<string>;
-    sendTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<ethers.providers.TransactionResponse>;
+    signTransaction(transaction: TransactionRequest): Promise<string>;
+    sendTransaction(transaction: TransactionRequest): Promise<ethers.providers.TransactionResponse>;
 }
 //# sourceMappingURL=nonce-manager.d.ts.map

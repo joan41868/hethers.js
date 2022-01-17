@@ -3,6 +3,7 @@ import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable } from "@ethersproject/properties";
 import { Account } from "@ethersproject/address";
+import { SigningKey } from "@ethersproject/signing-key";
 export interface TypedDataDomain {
     name?: string;
     version?: string;
@@ -25,9 +26,20 @@ export interface TypedDataSigner {
 }
 export declare abstract class Signer {
     readonly provider?: Provider;
+    readonly _signingKey: () => SigningKey;
     abstract getAddress(): Promise<string>;
     abstract signMessage(message: Bytes | string): Promise<string>;
-    abstract signTransaction(transaction: Deferrable<TransactionRequest>): Promise<string>;
+    /**
+     * Signs a transaction with the key given upon creation.
+     * The transaction can be:
+     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
+     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
+     * - ContractCreate - when there is a `bytecodeFileId` field
+     * - ContractCall - when there is a `to` field present. Ignores the other fields
+     *
+     * @param transaction - the transaction to be signed.
+     */
+    abstract signTransaction(transaction: TransactionRequest): Promise<string>;
     abstract connect(provider: Provider): Signer;
     readonly _isSigner: boolean;
     constructor();
@@ -37,7 +49,6 @@ export declare abstract class Signer {
     call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string>;
     sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse>;
     getChainId(): Promise<number>;
-    resolveName(name: string): Promise<string>;
     checkTransaction(transaction: Deferrable<TransactionRequest>): Deferrable<TransactionRequest>;
     populateTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionRequest>;
     _checkProvider(operation?: string): void;

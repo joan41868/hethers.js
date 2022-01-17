@@ -361,7 +361,6 @@ async function getRunner(config: RunningConfig, currentBlockNumber: number, meth
         case "getBalance":
         case "getCode":
             return provider[method](params.address);
-        case "call":
         case "estimateGas":
             return provider[method](params.transaction);
         case "getTransaction":

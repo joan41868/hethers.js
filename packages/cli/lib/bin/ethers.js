@@ -463,7 +463,7 @@ var InfoPlugin = /** @class */ (function (_super) {
                             else {
                                 _this.queries.push("ENS Name: " + arg);
                             }
-                            runners.push(_this.provider.resolveName(arg));
+                            // runners.push(this.provider.resolveName(arg));
                         });
                         _a = this;
                         return [4 /*yield*/, Promise.all(runners)];
@@ -489,7 +489,7 @@ var InfoPlugin = /** @class */ (function (_super) {
                                 balance: this.provider.getBalance(address),
                                 nonce: 0,
                                 code: this.provider.getCode(address),
-                                reverse: this.provider.lookupAddress(address)
+                                reverse: "" //this.provider.lookupAddress(address)
                             })];
                     case 2:
                         _a = _b.sent(), balance = _a.balance, nonce = _a.nonce, code = _a.code, reverse = _a.reverse;
@@ -667,7 +667,7 @@ var SweepPlugin = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.accounts[0].sendTransaction({
                                 to: this.toAddress,
                                 gasLimit: 21000,
-                                gasPrice: gasPrice,
+                                // gasPrice: gasPrice,
                                 value: maxSpendable
                             })];
                     case 2:

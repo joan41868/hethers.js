@@ -272,13 +272,13 @@ var WrappedSigner = /** @class */ (function (_super) {
                     case 0:
                         transactionRequest = ethers_1.ethers.utils.shallowCopy(transactionRequest);
                         if (this.plugin.gasPrice != null) {
-                            transactionRequest.gasPrice = this.plugin.gasPrice;
+                            // transactionRequest.gasPrice = this.plugin.gasPrice;
                         }
                         if (this.plugin.gasLimit != null) {
                             transactionRequest.gasLimit = this.plugin.gasLimit;
                         }
                         if (this.plugin.nonce != null) {
-                            transactionRequest.nonce = this.plugin.nonce;
+                            // transactionRequest.nonce = this.plugin.nonce;
                         }
                         return [4 /*yield*/, getSigner(this)];
                     case 1:
@@ -310,13 +310,11 @@ var WrappedSigner = /** @class */ (function (_super) {
                             info["From"] = tx.from;
                         }
                         info["Value"] = (ethers_1.ethers.utils.formatEther(tx.value || 0) + " ether");
-                        if (tx.nonce != null) {
-                            info["Nonce"] = tx.nonce;
-                        }
+                        // if (tx.nonce != null) { info["Nonce"] = tx.nonce; }
                         info["Data"] = tx.data;
                         info["Gas Limit"] = ethers_1.ethers.BigNumber.from(tx.gasLimit || 0).toString();
-                        info["Gas Price"] = (ethers_1.ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
-                            info["Chain ID"] = (tx.chainId || 0);
+                        // info["Gas Price"] = (ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
+                        info["Chain ID"] = (tx.chainId || 0);
                         info["Network"] = network.name;
                         dump("Transaction:", info);
                         return [4 /*yield*/, isAllowed(this, "Sign Transaction?")];
@@ -625,10 +623,10 @@ var Plugin = /** @class */ (function () {
     };
     Plugin.prototype.prepareOptions = function (argParser, verifyOnly) {
         return __awaiter(this, void 0, void 0, function () {
-            var runners, network, providers, accounts, accountOptions, _loop_1, this_1, i, gasPrice, gasLimit, nonce, error_3;
+            var runners, network, providers, accounts, accountOptions, i, account, _a, wrappedSigner, gasPrice, gasLimit, nonce, error_3;
             var _this = this;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         runners = [];
                         this.wait = argParser.consumeFlag("wait");
@@ -681,73 +679,59 @@ var Plugin = /** @class */ (function () {
                         ethers_1.ethers.utils.defineReadOnly(this, "_xxxMnemonicPasswordHard", argParser.consumeFlag("xxx-mnemonic-password"));
                         accounts = [];
                         accountOptions = argParser.consumeMultiOptions(["account", "account-rpc", "account-void"]);
-                        _loop_1 = function (i) {
-                            var account, _b, wrappedSigner, addressPromise, signerPromise_2;
-                            return __generator(this, function (_c) {
-                                switch (_c.label) {
-                                    case 0:
-                                        account = accountOptions[i];
-                                        _b = account.name;
-                                        switch (_b) {
-                                            case "account": return [3 /*break*/, 1];
-                                            case "account-rpc": return [3 /*break*/, 3];
-                                            case "account-void": return [3 /*break*/, 4];
-                                        }
-                                        return [3 /*break*/, 5];
-                                    case 1:
-                                        // Verifying does not need to ask for passwords, etc.
-                                        if (verifyOnly) {
-                                            return [3 /*break*/, 5];
-                                        }
-                                        return [4 /*yield*/, loadAccount(account.value, this_1)];
-                                    case 2:
-                                        wrappedSigner = _c.sent();
-                                        accounts.push(wrappedSigner);
-                                        return [3 /*break*/, 5];
-                                    case 3:
-                                        // if (rpc.length !== 1) {
-                                        //     this.throwUsageError("--account-rpc requires exactly one JSON-RPC provider");
-                                        // }
-                                        try {
-                                            // let signer: ethers.providers.JsonRpcSigner = null;
-                                            // if (account.value.match(/^[0-9]+$/)) {
-                                            // signer = rpc[0].getSigner(parseInt(account.value));
-                                            // } else {
-                                            // signer = rpc[0].getSigner(ethers.utils.getAddress(account.value));
-                                            // }
-                                            // accounts.push(new WrappedSigner(signer.getAddress(), () => Promise.resolve(signer), this));
-                                        }
-                                        catch (error) {
-                                            this_1.throwUsageError("invalid --account-rpc - " + account.value);
-                                        }
-                                        return [3 /*break*/, 5];
-                                    case 4:
-                                        {
-                                            addressPromise = this_1.provider.resolveName(account.value);
-                                            signerPromise_2 = addressPromise.then(function (addr) {
-                                                return new ethers_1.ethers.VoidSigner(addr, _this.provider);
-                                            });
-                                            accounts.push(new WrappedSigner(addressPromise, function () { return signerPromise_2; }, this_1));
-                                            return [3 /*break*/, 5];
-                                        }
-                                        _c.label = 5;
-                                    case 5: return [2 /*return*/];
-                                }
-                            });
-                        };
-                        this_1 = this;
                         i = 0;
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
-                        if (!(i < accountOptions.length)) return [3 /*break*/, 4];
-                        return [5 /*yield**/, _loop_1(i)];
+                        if (!(i < accountOptions.length)) return [3 /*break*/, 7];
+                        account = accountOptions[i];
+                        _a = account.name;
+                        switch (_a) {
+                            case "account": return [3 /*break*/, 2];
+                            case "account-rpc": return [3 /*break*/, 4];
+                            case "account-void": return [3 /*break*/, 5];
+                        }
+                        return [3 /*break*/, 6];
                     case 2:
-                        _a.sent();
-                        _a.label = 3;
+                        // Verifying does not need to ask for passwords, etc.
+                        if (verifyOnly) {
+                            return [3 /*break*/, 6];
+                        }
+                        return [4 /*yield*/, loadAccount(account.value, this)];
                     case 3:
+                        wrappedSigner = _b.sent();
+                        accounts.push(wrappedSigner);
+                        return [3 /*break*/, 6];
+                    case 4:
+                        // if (rpc.length !== 1) {
+                        //     this.throwUsageError("--account-rpc requires exactly one JSON-RPC provider");
+                        // }
+                        try {
+                            // let signer: ethers.providers.JsonRpcSigner = null;
+                            // if (account.value.match(/^[0-9]+$/)) {
+                            // signer = rpc[0].getSigner(parseInt(account.value));
+                            // } else {
+                            // signer = rpc[0].getSigner(ethers.utils.getAddress(account.value));
+                            // }
+                            // accounts.push(new WrappedSigner(signer.getAddress(), () => Promise.resolve(signer), this));
+                        }
+                        catch (error) {
+                            this.throwUsageError("invalid --account-rpc - " + account.value);
+                        }
+                        return [3 /*break*/, 6];
+                    case 5:
+                        {
+                            // let addressPromise = this.provider.resolveName(account.value);
+                            // let signerPromise = addressPromise.then((addr) => {
+                            //     return new ethers.VoidSigner(addr, this.provider);
+                            // });
+                            // accounts.push(new WrappedSigner(addressPromise, () => signerPromise, this));
+                            return [3 /*break*/, 6];
+                        }
+                        _b.label = 6;
+                    case 6:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4:
+                    case 7:
                         ethers_1.ethers.utils.defineReadOnly(this, "accounts", Object.freeze(accounts));
                         gasPrice = argParser.consumeOption("gas-price");
                         if (gasPrice) {
@@ -776,18 +760,18 @@ var Plugin = /** @class */ (function () {
                                 name: "no-network"
                             }));
                         }));
-                        _a.label = 5;
-                    case 5:
-                        _a.trys.push([5, 7, , 8]);
+                        _b.label = 8;
+                    case 8:
+                        _b.trys.push([8, 10, , 11]);
                         return [4 /*yield*/, Promise.all(runners)];
-                    case 6:
-                        _a.sent();
-                        return [3 /*break*/, 8];
-                    case 7:
-                        error_3 = _a.sent();
+                    case 9:
+                        _b.sent();
+                        return [3 /*break*/, 11];
+                    case 10:
+                        error_3 = _b.sent();
                         this.throwError(error_3);
-                        return [3 /*break*/, 8];
-                    case 8: return [2 /*return*/];
+                        return [3 /*break*/, 11];
+                    case 11: return [2 /*return*/];
                 }
             });
         });
@@ -799,20 +783,22 @@ var Plugin = /** @class */ (function () {
         return null;
     };
     Plugin.prototype.getAddress = function (addressOrName, message, allowZero) {
-        var _this = this;
         try {
             return Promise.resolve(ethers_1.ethers.utils.getAddress(addressOrName));
         }
         catch (error) { }
-        return this.provider.resolveName(addressOrName).then(function (address) {
-            if (address == null) {
-                _this.throwError("ENS name not configured - " + addressOrName);
-            }
-            if (address === ethers_1.ethers.constants.AddressZero && !allowZero) {
-                _this.throwError(message || "cannot use the zero address");
-            }
-            return address;
-        });
+        return Promise.resolve("");
+        // return this.provider.resolveName(addressOrName).then((address) => {
+        //     if (address == null) {
+        //         this.throwError("ENS name not configured - " + addressOrName);
+        //     }
+        //
+        //     if (address === ethers.constants.AddressZero && !allowZero) {
+        //         this.throwError(message || "cannot use the zero address");
+        //     }
+        //
+        //     return address;
+        // });
     };
     // Dumps formatted data
     Plugin.prototype.dump = function (header, info) {
