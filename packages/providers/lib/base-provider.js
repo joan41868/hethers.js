@@ -67,11 +67,11 @@ var web_1 = require("@ethersproject/web");
 var bech32_1 = __importDefault(require("bech32"));
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
-var logger = new logger_1.Logger(_version_1.version);
 var formatter_1 = require("./formatter");
 var address_1 = require("@ethersproject/address");
-var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
+var sdk_1 = require("@hashgraph/sdk");
+var logger = new logger_1.Logger(_version_1.version);
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -470,6 +470,9 @@ var BaseProvider = /** @class */ (function (_super) {
         }
         return _this;
     }
+    BaseProvider.prototype.getHederaNetworkConfig = function () {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    };
     BaseProvider.prototype._ready = function () {
         return __awaiter(this, void 0, void 0, function () {
             var network, error_1;
@@ -669,12 +672,20 @@ var BaseProvider = /** @class */ (function (_super) {
         });
     };
     // This should be called by any subclass wrapping a TransactionResponse
-    BaseProvider.prototype._wrapTransaction = function (tx, hash, startBlock) {
+    BaseProvider.prototype._wrapTransaction = function (tx, hash, receipt) {
         var _this = this;
         if (hash != null && (0, bytes_1.hexDataLength)(hash) !== 48) {
             throw new Error("invalid response - sendTransaction");
         }
         var result = tx;
+        if (!result.customData)
+            result.customData = {};
+        if (receipt && receipt.fileId) {
+            result.customData.fileId = receipt.fileId.toString();
+        }
+        if (receipt && receipt.contractId) {
+            result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", logger_1.Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
@@ -691,14 +702,14 @@ var BaseProvider = /** @class */ (function (_super) {
                             timeout = 0;
                         }
                         replacement = undefined;
-                        if (confirms !== 0 && startBlock != null) {
+                        if (confirms !== 0) {
                             replacement = {
                                 data: tx.data,
                                 from: tx.from,
                                 nonce: tx.nonce,
                                 to: tx.to,
                                 value: tx.value,
-                                startBlock: startBlock
+                                startBlock: 0
                             };
                         }
                         return [4 /*yield*/, this._waitForTransaction(tx.hash, confirms, timeout, replacement)];
@@ -723,7 +734,7 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, hederaTx, ethersTx, txHash, _b, error_3, err;
+            var txBytes, hederaTx, ethersTx, txHash, _b, resp, receipt, error_3, err;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, signedTransaction];
@@ -740,22 +751,21 @@ var BaseProvider = /** @class */ (function (_super) {
                         txHash = _b.apply(void 0, [_c.sent()]);
                         _c.label = 4;
                     case 4:
-                        _c.trys.push([4, 6, , 7]);
-                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
-                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
+                        _c.trys.push([4, 7, , 8]);
                         return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
                     case 5:
-                        // TODO once we have fallback provider use `provider.perform("sendTransaction")`
-                        // TODO Before submission verify that the nodeId is the one that the provider is connected to
-                        _c.sent();
-                        return [2 /*return*/, this._wrapTransaction(ethersTx, txHash)];
+                        resp = _c.sent();
+                        return [4 /*yield*/, resp.getReceipt(this.hederaClient)];
                     case 6:
+                        receipt = _c.sent();
+                        return [2 /*return*/, this._wrapTransaction(ethersTx, txHash, receipt)];
+                    case 7:
                         error_3 = _c.sent();
                         err = logger.makeError(error_3.message, (_a = error_3.status) === null || _a === void 0 ? void 0 : _a.toString());
                         err.transaction = ethersTx;
                         err.transactionHash = txHash;
                         throw err;
-                    case 7: return [2 /*return*/];
+                    case 8: return [2 /*return*/];
                 }
             });
         });
