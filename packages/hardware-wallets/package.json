@@ -1,4 +1,5 @@
 {
+  "_ethers_nobuild": true,
   "_ethers.alias": {
     "ledger-transport.js": "browser-ledger-transport.js"
   },
