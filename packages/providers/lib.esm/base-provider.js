@@ -351,20 +351,33 @@ export class BaseProvider extends Provider {
             this._ready().catch((error) => { });
         }
         else {
-            // defineReadOnly(this, "_network", getNetwork(network));
-            this._network = getNetwork(network);
-            this._networkPromise = Promise.resolve(this._network);
-            const knownNetwork = getStatic(new.target, "getNetwork")(network);
-            if (knownNetwork) {
-                defineReadOnly(this, "_network", knownNetwork);
-                this.emit("network", knownNetwork, null);
+            if (!isHederaNetworkConfigLike(network)) {
+                const asDefaultNetwork = network;
+                // defineReadOnly(this, "_network", getNetwork(network));
+                this._network = getNetwork(asDefaultNetwork);
+                this._networkPromise = Promise.resolve(this._network);
+                const knownNetwork = getStatic(new.target, "getNetwork")(asDefaultNetwork);
+                if (knownNetwork) {
+                    defineReadOnly(this, "_network", knownNetwork);
+                    this.emit("network", knownNetwork, null);
+                }
+                else {
+                    logger.throwArgumentError("invalid network", "network", network);
+                }
+                this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
+                this._mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
             }
             else {
-                logger.throwArgumentError("invalid network", "network", network);
+                const asHederaNetwork = network;
+                this.hederaClient = Client.forNetwork(asHederaNetwork.network);
+                this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
+                defineReadOnly(this, "_network", {
+                    // FIXME: chainId
+                    chainId: 0,
+                    name: this.hederaClient.networkName
+                });
             }
         }
-        this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
-        this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(network));
     }
     _ready() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -382,9 +395,9 @@ export class BaseProvider extends Provider {
                 }
                 // This should never happen; every Provider sub-class should have
                 // suggested a network by here (or have thrown).
-                if (!network) {
-                    logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, {});
-                }
+                // if (!network) {
+                //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
+                // }
                 // Possible this call stacked so do not call defineReadOnly again
                 if (this._network == null) {
                     if (this.anyNetwork) {
@@ -472,7 +485,6 @@ export class BaseProvider extends Provider {
      */
     getBalance(addressOrName) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
             addressOrName = yield addressOrName;
             const { shard, realm, num } = getAccountFromAddress(addressOrName);
             const shardNum = BigNumber.from(shard).toNumber();
@@ -558,7 +570,6 @@ export class BaseProvider extends Provider {
     sendTransaction(signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
             signedTransaction = yield signedTransaction;
             const txBytes = arrayify(signedTransaction);
             const hederaTx = HederaTransaction.fromBytes(txBytes);
@@ -632,7 +643,7 @@ export class BaseProvider extends Provider {
             yield this.getNetwork();
             txId = yield txId;
             const ep = '/api/v1/transactions/' + txId;
-            let { data } = yield axios.get(this.mirrorNodeUrl + ep);
+            let { data } = yield axios.get(this._mirrorNodeUrl + ep);
             const filtered = data.transactions
                 .filter((e) => e.result === "SUCCESS");
             return filtered.length > 0 ? filtered[0] : null;
@@ -806,5 +817,8 @@ function resolveMirrorNetworkUrl(net) {
             logger.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
+}
+function isHederaNetworkConfigLike(cfg) {
+    return cfg.network !== undefined;
 }
 //# sourceMappingURL=base-provider.js.map

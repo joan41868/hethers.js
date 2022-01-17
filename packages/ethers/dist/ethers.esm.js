@@ -80038,22 +80038,46 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var name = "@grpc/grpc-js";
-var version$m = "1.5.0";
-var description = "gRPC Library for Node - pure JS implementation";
-var homepage = "https://grpc.io/";
-var repository = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
-var main = "build/src/index.js";
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var _from = "@grpc/grpc-js@^1.3.4";
+var _id = "@grpc/grpc-js@1.5.0";
+var _inBundle = false;
+var _integrity = "sha512-PDLazk94MFV5hFn/+aSrVj3d5UsOK9HU1xa0ywachvDh1jymBU/Cb+4nGa2NjpfcBoXlHioBC/qIB/XzELednw==";
+var _location = "/@grpc/grpc-js";
+var _phantomChildren = {
 };
-var keywords = [
+var _requested = {
+	type: "range",
+	registry: true,
+	raw: "@grpc/grpc-js@^1.3.4",
+	name: "@grpc/grpc-js",
+	escapedName: "@grpc%2fgrpc-js",
+	scope: "@grpc",
+	rawSpec: "^1.3.4",
+	saveSpec: null,
+	fetchSpec: "^1.3.4"
+};
+var _requiredBy = [
+	"/@hashgraph/sdk"
 ];
+var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.0.tgz";
+var _shasum = "fa0ca3170d7544aa89db6f64f7b4778603d0a786";
+var _spec = "@grpc/grpc-js@^1.3.4";
+var _where = "/home/yoan/WebstormProjects/hethers.js/node_modules/@hashgraph/sdk";
 var author = {
 	name: "Google Inc."
 };
-var types = "build/src/index.d.ts";
-var license = "Apache-2.0";
+var bundleDependencies = false;
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var dependencies = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
+};
+var deprecated = false;
+var description = "gRPC Library for Node - pure JS implementation";
 var devDependencies = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -80077,29 +80101,8 @@ var devDependencies = {
 	"ts-node": "^8.3.0",
 	typescript: "^3.7.2"
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var scripts = {
-	build: "npm run compile",
-	clean: "rimraf ./build",
-	compile: "tsc -p .",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	lint: "npm run check",
-	prepare: "npm run generate-types && npm run compile",
-	test: "gulp test",
-	check: "gts check src/**/*.ts",
-	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
-	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
-	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto"
-};
-var dependencies = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
 var files = [
 	"src/**/*.ts",
@@ -80115,29 +80118,64 @@ var files = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var _resolved = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.0.tgz";
-var _integrity = "sha512-PDLazk94MFV5hFn/+aSrVj3d5UsOK9HU1xa0ywachvDh1jymBU/Cb+4nGa2NjpfcBoXlHioBC/qIB/XzELednw==";
-var _from = "@grpc/grpc-js@1.5.0";
+var homepage = "https://grpc.io/";
+var keywords = [
+];
+var license = "Apache-2.0";
+var main = "build/src/index.js";
+var name = "@grpc/grpc-js";
+var repository = {
+	type: "git",
+	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
+};
+var scripts = {
+	build: "npm run compile",
+	check: "gts check src/**/*.ts",
+	clean: "rimraf ./build",
+	compile: "tsc -p .",
+	fix: "gts fix src/*.ts",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
+	lint: "npm run check",
+	posttest: "npm run check && madge -c ./build/src",
+	prepare: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
+	test: "gulp test"
+};
+var types = "build/src/index.d.ts";
+var version$m = "1.5.0";
 var require$$0$2 = {
-	name: name,
-	version: version$m,
-	description: description,
-	homepage: homepage,
-	repository: repository,
-	main: main,
-	engines: engines,
-	keywords: keywords,
-	author: author,
-	types: types,
-	license: license,
-	devDependencies: devDependencies,
-	contributors: contributors,
-	scripts: scripts,
-	dependencies: dependencies,
-	files: files,
-	_resolved: _resolved,
+	_from: _from,
+	_id: _id,
+	_inBundle: _inBundle,
 	_integrity: _integrity,
-	_from: _from
+	_location: _location,
+	_phantomChildren: _phantomChildren,
+	_requested: _requested,
+	_requiredBy: _requiredBy,
+	_resolved: _resolved,
+	_shasum: _shasum,
+	_spec: _spec,
+	_where: _where,
+	author: author,
+	bundleDependencies: bundleDependencies,
+	contributors: contributors,
+	dependencies: dependencies,
+	deprecated: deprecated,
+	description: description,
+	devDependencies: devDependencies,
+	engines: engines,
+	files: files,
+	homepage: homepage,
+	keywords: keywords,
+	license: license,
+	main: main,
+	name: name,
+	repository: repository,
+	scripts: scripts,
+	types: types,
+	version: version$m
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -91890,20 +91928,33 @@ class BaseProvider extends Provider {
             this._ready().catch((error) => { });
         }
         else {
-            // defineReadOnly(this, "_network", getNetwork(network));
-            this._network = getNetwork(network);
-            this._networkPromise = Promise.resolve(this._network);
-            const knownNetwork = getStatic(new.target, "getNetwork")(network);
-            if (knownNetwork) {
-                defineReadOnly(this, "_network", knownNetwork);
-                this.emit("network", knownNetwork, null);
+            if (!isHederaNetworkConfigLike(network)) {
+                const asDefaultNetwork = network;
+                // defineReadOnly(this, "_network", getNetwork(network));
+                this._network = getNetwork(asDefaultNetwork);
+                this._networkPromise = Promise.resolve(this._network);
+                const knownNetwork = getStatic(new.target, "getNetwork")(asDefaultNetwork);
+                if (knownNetwork) {
+                    defineReadOnly(this, "_network", knownNetwork);
+                    this.emit("network", knownNetwork, null);
+                }
+                else {
+                    logger$v.throwArgumentError("invalid network", "network", network);
+                }
+                this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
+                this._mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
             }
             else {
-                logger$v.throwArgumentError("invalid network", "network", network);
+                const asHederaNetwork = network;
+                this.hederaClient = NodeClient.forNetwork(asHederaNetwork.network);
+                this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
+                defineReadOnly(this, "_network", {
+                    // FIXME: chainId
+                    chainId: 0,
+                    name: this.hederaClient.networkName
+                });
             }
         }
-        this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
-        this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(network));
     }
     _ready() {
         return __awaiter$9(this, void 0, void 0, function* () {
@@ -91921,9 +91972,9 @@ class BaseProvider extends Provider {
                 }
                 // This should never happen; every Provider sub-class should have
                 // suggested a network by here (or have thrown).
-                if (!network) {
-                    logger$v.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, {});
-                }
+                // if (!network) {
+                //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
+                // }
                 // Possible this call stacked so do not call defineReadOnly again
                 if (this._network == null) {
                     if (this.anyNetwork) {
@@ -92011,7 +92062,6 @@ class BaseProvider extends Provider {
      */
     getBalance(addressOrName) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
             addressOrName = yield addressOrName;
             const { shard, realm, num } = getAccountFromAddress(addressOrName);
             const shardNum = BigNumber.from(shard).toNumber();
@@ -92097,7 +92147,6 @@ class BaseProvider extends Provider {
     sendTransaction(signedTransaction) {
         var _a;
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
             signedTransaction = yield signedTransaction;
             const txBytes = arrayify(signedTransaction);
             const hederaTx = Transaction.fromBytes(txBytes);
@@ -92171,7 +92220,7 @@ class BaseProvider extends Provider {
             yield this.getNetwork();
             txId = yield txId;
             const ep = '/api/v1/transactions/' + txId;
-            let { data } = yield axios$1.get(this.mirrorNodeUrl + ep);
+            let { data } = yield axios$1.get(this._mirrorNodeUrl + ep);
             const filtered = data.transactions
                 .filter((e) => e.result === "SUCCESS");
             return filtered.length > 0 ? filtered[0] : null;
@@ -92346,6 +92395,9 @@ function resolveMirrorNetworkUrl(net) {
             return null;
     }
 }
+function isHederaNetworkConfigLike(cfg) {
+    return cfg.network !== undefined;
+}
 
 // contains predefined, sdk acceptable hedera network strings
 var HederaNetworks;
@@ -92363,6 +92415,22 @@ var HederaNetworks;
 class DefaultHederaProvider extends BaseProvider {
     constructor(network) {
         super(network);
+    }
+}
+
+/**
+ * Provides support for connecting to custom network by specifying consensus and mirror node url.
+ */
+class HederaProvider extends BaseProvider {
+    constructor(nodeId, consensusNodeUrl, mirrorNodeUrl) {
+        const props = {
+            network: {}
+        };
+        props.network[consensusNodeUrl] = nodeId.toString();
+        super({
+            network: props.network,
+            mirrorNodeUrl,
+        });
     }
 }
 
@@ -92395,6 +92463,7 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
+        HederaProvider,
         DefaultHederaProvider,
     }, options);
 }
@@ -92405,6 +92474,7 @@ var index$4 = /*#__PURE__*/Object.freeze({
 	BaseProvider: BaseProvider,
 	Resolver: Resolver,
 	DefaultHederaProvider: DefaultHederaProvider,
+	HederaProvider: HederaProvider,
 	getDefaultProvider: getDefaultProvider,
 	getNetwork: getNetwork,
 	isCommunityResource: isCommunityResource,

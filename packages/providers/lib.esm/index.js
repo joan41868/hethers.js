@@ -6,6 +6,7 @@ import { DefaultHederaProvider } from "./default-hedera-provider";
 import { Formatter, isCommunityResourcable, isCommunityResource, showThrottleMessage } from "./formatter";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import HederaProvider from "./hedera-provider";
 const logger = new Logger(version);
 ////////////////////////
 // Helper Functions
@@ -34,6 +35,7 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
+        HederaProvider,
         DefaultHederaProvider,
     }, options);
 }
@@ -44,7 +46,7 @@ export {
 Provider, BaseProvider, Resolver, 
 ///////////////////////
 // Concrete Providers
-DefaultHederaProvider, 
+DefaultHederaProvider, HederaProvider, 
 ///////////////////////
 // Signer
 ///////////////////////

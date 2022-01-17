@@ -4,11 +4,14 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 
-import { Network, Networkish } from "./types";
+import { Network, Networkish, HederaNetworkConfigLike, HederaOperator, NodeUrlEntries } from "./types";
 
 export {
     Network,
-    Networkish
+    Networkish,
+    HederaNetworkConfigLike,
+    HederaOperator,
+    NodeUrlEntries
 };
 
 type DefaultProviderFunc = (providers: any, options?: any) => any;
