@@ -1,6 +1,9 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.Formatter = exports.showThrottleMessage = exports.isCommunityResourcable = exports.isCommunityResource = exports.getNetwork = exports.getDefaultProvider = exports.DefaultHederaProvider = exports.Resolver = exports.BaseProvider = exports.Provider = void 0;
+exports.Formatter = exports.showThrottleMessage = exports.isCommunityResourcable = exports.isCommunityResource = exports.getNetwork = exports.getDefaultProvider = exports.HederaProvider = exports.DefaultHederaProvider = exports.Resolver = exports.BaseProvider = exports.Provider = void 0;
 var abstract_provider_1 = require("@ethersproject/abstract-provider");
 Object.defineProperty(exports, "Provider", { enumerable: true, get: function () { return abstract_provider_1.Provider; } });
 var networks_1 = require("@ethersproject/networks");
@@ -17,6 +20,8 @@ Object.defineProperty(exports, "isCommunityResource", { enumerable: true, get: f
 Object.defineProperty(exports, "showThrottleMessage", { enumerable: true, get: function () { return formatter_1.showThrottleMessage; } });
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
+var hedera_provider_1 = __importDefault(require("./hedera-provider"));
+exports.HederaProvider = hedera_provider_1.default;
 var logger = new logger_1.Logger(_version_1.version);
 ////////////////////////
 // Helper Functions
@@ -45,6 +50,7 @@ function getDefaultProvider(network, options) {
         });
     }
     return n._defaultProvider({
+        HederaProvider: hedera_provider_1.default,
         DefaultHederaProvider: default_hedera_provider_1.DefaultHederaProvider,
     }, options);
 }

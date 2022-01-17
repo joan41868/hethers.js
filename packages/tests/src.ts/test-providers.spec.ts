@@ -1123,4 +1123,38 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
         // assert.strictEqual(txResponse.value.toNumber(), 100000000000);
     }).timeout(timeout*4);
+
+    /* This test is skipped because the local network won't be started in the CI */
+    xit("Should be able to query local network", async function() {
+        const genesis = {
+            operator: {
+                // genesis is the operator
+                accountId: "0.0.2",
+                privateKey: "302e020100300506032b65700422042091132178e72057a1d7528025956fe39b0b847f200ab59b2fdd367017f3087137",
+                publicKey: "302a300506032b65700321000aa8e21064c61eab86e2a9c164565b4e7a9a4146106e0a6cd03a8c395a110e92"
+            },
+            network: {
+                "127.0.0.1:50211": "0.0.3",
+                "127.0.0.1:50212": "0.0.4",
+                "127.0.0.1:50213": "0.0.5"
+            }
+        };
+        /* Connected to the local network as the GENESIS account*/
+        const prov = new ethers.providers.HederaProvider(genesis.network["127.0.0.1:50211"], "127.0.0.1:50211", "");
+        const bal = await prov.getBalance(solAddr);
+        assert.strictEqual(true, bal.gte(0));
+    });
+
+    it("Should be able to query testnet with custom urls", async function() {
+        const provider2 = new ethers.providers.HederaProvider(
+            "0.0.3",
+            "0.testnet.hedera.com:50211",
+            "https://testnet.mirrornode.hedera.com");
+
+        const balance2 = await provider2.getBalance(solAddr);
+        assert.strictEqual(true, balance2.gte(0));
+        const txId = `0.0.15680048-1638189529-145876922`;
+        const record2 = await provider2.getTransaction(txId);
+        assert.notStrictEqual(record2, null, "Record is null")
+    });
 });

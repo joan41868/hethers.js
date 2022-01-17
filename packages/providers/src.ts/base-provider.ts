@@ -15,7 +15,7 @@ import {
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
-import { getNetwork, Network, Networkish } from "@ethersproject/networks";
+import { getNetwork, Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
@@ -422,8 +422,7 @@ export class BaseProvider extends Provider {
 
     readonly anyNetwork: boolean;
     private readonly hederaClient: Client;
-    private readonly mirrorNodeUrl: string;
-
+    private readonly _mirrorNodeUrl: string; // initial mirror node URL, which is resolved from the provider's network
 
     /**
      *  ready
@@ -435,7 +434,7 @@ export class BaseProvider extends Provider {
      *
      */
 
-    constructor(network: Networkish | Promise<Network>) {
+    constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike) {
         logger.checkNew(new.target, Provider);
         super();
 
@@ -455,19 +454,31 @@ export class BaseProvider extends Provider {
             this._ready().catch((error) => { });
 
         } else {
-            // defineReadOnly(this, "_network", getNetwork(network));
-            this._network = getNetwork(network);
-            this._networkPromise = Promise.resolve(this._network);
-            const knownNetwork = getStatic<(network: Networkish) => Network>(new.target, "getNetwork")(network);
-            if (knownNetwork) {
-                defineReadOnly(this, "_network", knownNetwork);
-                this.emit("network", knownNetwork, null);
+            if (!isHederaNetworkConfigLike(network)) {
+                const asDefaultNetwork = network as Network;
+                // defineReadOnly(this, "_network", getNetwork(network));
+                this._network = getNetwork(asDefaultNetwork);
+                this._networkPromise = Promise.resolve(this._network);
+                const knownNetwork = getStatic<(network: Networkish) => Network>(new.target, "getNetwork")(asDefaultNetwork);
+                if (knownNetwork) {
+                    defineReadOnly(this, "_network", knownNetwork);
+                    this.emit("network", knownNetwork, null);
+                } else {
+                    logger.throwArgumentError("invalid network", "network", network);
+                }
+                this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
+                this._mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
             } else {
-                logger.throwArgumentError("invalid network", "network", network);
+                const asHederaNetwork = network as HederaNetworkConfigLike;
+                this.hederaClient = Client.forNetwork(asHederaNetwork.network);
+                this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
+                defineReadOnly(this, "_network", {
+                    // FIXME: chainId
+                    chainId: 0,
+                    name: this.hederaClient.networkName
+                });
             }
         }
-        this.mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
-        this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(network));
     }
 
     getHederaNetworkConfig(): AccountId[] {
@@ -490,9 +501,9 @@ export class BaseProvider extends Provider {
 
             // This should never happen; every Provider sub-class should have
             // suggested a network by here (or have thrown).
-            if (!network) {
-                logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
-            }
+            // if (!network) {
+            //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
+            // }
 
             // Possible this call stacked so do not call defineReadOnly again
             if (this._network == null) {
@@ -585,7 +596,6 @@ export class BaseProvider extends Provider {
      * @param addressOrName The address to check balance of
      */
     async getBalance(addressOrName: string | Promise<string>): Promise<BigNumber> {
-        await this.getNetwork();
         addressOrName = await addressOrName;
         const { shard, realm, num } = getAccountFromAddress(addressOrName);
         const shardNum = BigNumber.from(shard).toNumber();
@@ -673,7 +683,6 @@ export class BaseProvider extends Provider {
     }
 
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
-        await this.getNetwork();
         signedTransaction = await signedTransaction;
 
         const txBytes = arrayify(signedTransaction);
@@ -746,7 +755,7 @@ export class BaseProvider extends Provider {
         await this.getNetwork();
         txId = await txId;
         const ep = '/api/v1/transactions/'+txId;
-        let { data } = await axios.get(this.mirrorNodeUrl + ep);
+        let { data } = await axios.get(this._mirrorNodeUrl + ep);
         const filtered = data.transactions
             .filter((e: { result: string; }) => e.result === "SUCCESS");
         return filtered.length > 0 ? filtered[0] : null;
@@ -925,4 +934,8 @@ function resolveMirrorNetworkUrl(net: Network): string {
             logger.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
+}
+
+function isHederaNetworkConfigLike(cfg : HederaNetworkConfigLike | Networkish): cfg is HederaNetworkConfigLike {
+    return (cfg as HederaNetworkConfigLike).network !== undefined;
 }
