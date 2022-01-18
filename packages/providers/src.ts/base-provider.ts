@@ -1054,10 +1054,12 @@ export class BaseProvider extends Provider implements EnsProvider {
             hederaTx = HederaTransaction.fromBytes(txBytes);
         } catch (ignore) {
             // It's a query
+            // FIXME: ser/des is not working properly - it's losing the payment tx id + node ids
             hederaTx = ContractCallQuery.fromBytes(txBytes);
-            console.log(hederaTx);
+            console.log('HederaTX in provider:', hederaTx);
             const resp = await hederaTx.execute(this.hederaClient);
             console.log('QueryResponse', resp);
+            // TODO: map and return something
             return null;
         }
         const ethersTx = await this.formatter.transaction(signedTransaction);
@@ -1130,20 +1132,8 @@ export class BaseProvider extends Provider implements EnsProvider {
     }
 
     async call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
-        await this.getNetwork();
-        const params = await resolveProperties({
-            transaction: this._getTransactionRequest(transaction),
-        });
 
-        const result = await this.perform("call", params);
-        try {
-            return hexlify(result);
-        } catch (error) {
-            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                method: "call",
-                params, result, error
-            });
-        }
+        return "";
     }
 
     async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {

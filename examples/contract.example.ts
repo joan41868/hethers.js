@@ -5,10 +5,12 @@ import {
 	PrivateKey,
 	Hbar,
 	Client,
-	Key as HederaKey, AccountId, TransactionId, ContractCallQuery,
+	Key as HederaKey, TransactionId, TransferTransaction, AccountId,
+	ContractCallQuery
 } from "@hashgraph/sdk";
 import { readFileSync } from "fs";
-import { Key } from "@hashgraph/proto";
+import { Key, TransactionBody, SignedTransaction } from "@hashgraph/proto";
+import * as Long from 'long';
 
 const account = {
 	"operator": {
@@ -27,7 +29,8 @@ const account = {
 // main
 (async () => {
 	const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
-	const client = Client.forNetwork(account.network);
+	const client = Client.forName("testnet");
+	const nodeIds = client._network.getNodeAccountIdsForExecute();
 	const generatedWallet = hethers.Wallet.createRandom();
 	const provider = hethers.providers.getDefaultProvider('testnet');
 	const protoKey = Key.create({
@@ -38,7 +41,7 @@ const account = {
 		.setKey(newAccountKey)
 		.setTransactionId(TransactionId.generate(account.operator.accountId))
 		.setInitialBalance(new Hbar(10))
-		.setNodeAccountIds([new AccountId(0,0,3)])
+		.setNodeAccountIds([ nodeIds[0] ])
 		.freeze()
 		.sign(edPrivateKey))
 		.execute(client);
@@ -57,7 +60,8 @@ const account = {
 	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
 	const contractCreateResponse = await wallet.sendTransaction({
 		data: contractByteCode,
-		gasLimit: 300000
+		gasLimit: 300000,
+		nodeId: nodeIds[0].toString()
 	});
 	console.log(contractCreateResponse);
 	const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
@@ -93,12 +97,72 @@ const account = {
 	// });
 	// console.log(balanceOfResponse);
 	//
+	//
+	const nodeID = nodeIds[0];
+	const transfer = new TransferTransaction()
+		.addHbarTransfer(nodeID.toString(), 3)
+		.addHbarTransfer(hederaEoa.account, -3)
+		.setTransactionId(TransactionId.generate(hederaEoa.account))
+		.setNodeAccountIds([ nodeID ])
+		.freeze();
 
 	const contractAccountID = getAccountFromAddress(contract.address);
 	const contractID = `${contractAccountID.shard}.${contractAccountID.realm}.${contractAccountID.num}`;
+
+	const paymentTxID = transfer.transactionId;
+
 	const cc = new ContractCallQuery()
 		.setContractId(contractID)
-		.setFunctionParameters(arrayify(balanceOfParams));
-	const cost = await cc.getCost(client);
-	console.log(cost);
+		.setFunctionParameters(arrayify(balanceOfParams))
+		.setNodeAccountIds([ nodeID ])
+		.setGas(10000)
+		.setPaymentTransactionId(paymentTxID);
+
+	const body = {
+		transactionID: paymentTxID._toProtobuf(),
+		nodeAccountID: nodeID._toProtobuf(),
+		transactionFee: new Hbar(1).toTinybars(),
+		transactionValidDuration: {
+			seconds: Long.fromInt(120),
+		},
+		cryptoTransfer: {
+			transfers: {
+				accountAmounts: [
+					{
+						accountID: AccountId.fromString(hederaEoa.account)._toProtobuf(),
+						amount: new Hbar(3).negated().toTinybars()
+					},
+					{
+						accountID: nodeID._toProtobuf(),
+						amount: new Hbar(3).toTinybars()
+					}
+				],
+			},
+		},
+	};
+	const signed = {
+		bodyBytes: TransactionBody.encode(body).finish(),
+		sigMap: {}
+	};
+	const walletKey = PrivateKey.fromStringECDSA(wallet._signingKey().privateKey);
+	const signature = walletKey.sign(signed.bodyBytes);
+	signed.sigMap = {
+		sigPair: [ walletKey.publicKey._toProtobufSignature(signature) ]
+	}
+	const transferSignedTransactionBytes = SignedTransaction.encode(signed).finish();
+	cc._paymentTransactions.push({
+		signedTransactionBytes: transferSignedTransactionBytes
+	});
+	const resp = await cc.execute(client);
+	console.log(resp);
+
+
+	// TODO: use when done with fixing the payment tx issues
+	const cc2 = {
+		to: contract.address,
+		gasLimit: 10000,
+		data: arrayify(balanceOfParams),
+		nodeId: nodeID.toString()
+	};
+	await wallet.call(cc2);
 })();

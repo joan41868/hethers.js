@@ -31,8 +31,6 @@
     "@ethersproject/strings": "^5.5.0",
     "@ethersproject/transactions": "^5.5.0",
     "@ethersproject/web": "^5.5.0",
-    "@hashgraph/proto": "2.0.1-beta.1",
-    "@hashgraph/sdk": "2.6.0",
     "@types/axios": "^0.14.0",
     "axios": "^0.24.0",
     "bech32": "1.1.4",

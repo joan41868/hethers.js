@@ -53,10 +53,10 @@ export declare abstract class Signer {
      *  It may also be necessary to re-create the provider.call method in order to send those queries
      *
      *
-     * @param transaction - the unsigned raw query to be sent against the smart contract
+     * @param unsignedRawTransaction - the unsigned raw query to be sent against the smart contract
      * @param blockTag - currently unused
      */
-    call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string>;
+    call(unsignedRawTransaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string>;
     sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse>;
     getChainId(): Promise<number>;
     resolveName(name: string): Promise<string>;

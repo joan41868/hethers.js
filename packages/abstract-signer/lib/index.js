@@ -14,6 +14,25 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -58,9 +77,11 @@ var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var address_1 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
+var proto_1 = require("@hashgraph/proto");
+var Long = __importStar(require("long"));
 var logger = new logger_1.Logger(_version_1.version);
 var allowedTransactionKeys = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value", "nodeId", "nodeIds"
 ];
 var forwardErrors = [
     logger_1.Logger.errors.INSUFFICIENT_FUNDS,
@@ -127,28 +148,73 @@ var Signer = /** @class */ (function () {
      *  It may also be necessary to re-create the provider.call method in order to send those queries
      *
      *
-     * @param transaction - the unsigned raw query to be sent against the smart contract
+     * @param unsignedRawTransaction - the unsigned raw query to be sent against the smart contract
      * @param blockTag - currently unused
      */
-    Signer.prototype.call = function (transaction, blockTag) {
+    Signer.prototype.call = function (unsignedRawTransaction, blockTag) {
         return __awaiter(this, void 0, void 0, function () {
-            var tx, acc, contractId, hederaTx, signed, response;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var tx, contractAccountLikeID, contractId, thisAcc, _a, thisAccId, nodeID, paymentTxId, hederaTx, paymentBody, signed, walletKey, signature, transferSignedTransactionBytes, response;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         this._checkProvider("call");
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)(this.checkTransaction(transaction))];
+                        return [4 /*yield*/, (0, properties_1.resolveProperties)(this.checkTransaction(unsignedRawTransaction))];
                     case 1:
-                        tx = _a.sent();
-                        acc = (0, address_1.getAccountFromAddress)(tx.to.toString());
-                        contractId = acc.shard + "." + acc.realm + "." + acc.num;
+                        tx = _b.sent();
+                        contractAccountLikeID = (0, address_1.getAccountFromAddress)(tx.to.toString());
+                        contractId = contractAccountLikeID.shard + "." + contractAccountLikeID.realm + "." + contractAccountLikeID.num;
+                        _a = address_1.getAccountFromAddress;
+                        return [4 /*yield*/, this.getAddress()];
+                    case 2:
+                        thisAcc = _a.apply(void 0, [_b.sent()]);
+                        thisAccId = thisAcc.shard + "." + thisAcc.realm + "." + thisAcc.num;
+                        nodeID = sdk_1.AccountId.fromString(tx.nodeId.toString());
+                        paymentTxId = sdk_1.TransactionId.generate(thisAccId);
                         hederaTx = new sdk_1.ContractCallQuery()
                             .setContractId(contractId)
-                            .setFunctionParameters((0, bytes_1.arrayify)(tx.data));
-                        signed = hederaTx.toBytes();
-                        return [4 /*yield*/, this.provider.sendTransaction((0, bytes_1.hexlify)(signed))];
-                    case 2:
-                        response = _a.sent();
+                            .setFunctionParameters((0, bytes_1.arrayify)(tx.data))
+                            .setNodeAccountIds([nodeID])
+                            .setGas(Long.fromString(tx.gasLimit.toString()))
+                            .setPaymentTransactionId(paymentTxId);
+                        paymentBody = {
+                            transactionID: paymentTxId._toProtobuf(),
+                            nodeAccountID: nodeID._toProtobuf(),
+                            transactionFee: new sdk_1.Hbar(1).toTinybars(),
+                            transactionValidDuration: {
+                                seconds: Long.fromInt(120),
+                            },
+                            cryptoTransfer: {
+                                transfers: {
+                                    accountAmounts: [
+                                        {
+                                            accountID: sdk_1.AccountId.fromString(thisAccId)._toProtobuf(),
+                                            amount: new sdk_1.Hbar(3).negated().toTinybars()
+                                        },
+                                        {
+                                            accountID: nodeID._toProtobuf(),
+                                            amount: new sdk_1.Hbar(3).toTinybars()
+                                        }
+                                    ],
+                                },
+                            },
+                        };
+                        signed = {
+                            bodyBytes: proto_1.TransactionBody.encode(paymentBody).finish(),
+                            sigMap: {}
+                        };
+                        walletKey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+                        signature = walletKey.sign(signed.bodyBytes);
+                        signed.sigMap = {
+                            sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
+                        };
+                        transferSignedTransactionBytes = proto_1.SignedTransaction.encode(signed).finish();
+                        hederaTx._paymentTransactions.push({
+                            signedTransactionBytes: transferSignedTransactionBytes
+                        });
+                        console.log('HederaTX in signer:', hederaTx);
+                        return [4 /*yield*/, this.provider.sendTransaction((0, bytes_1.hexlify)(hederaTx.toBytes()))];
+                    case 3:
+                        response = _b.sent();
                         return [2 /*return*/, response.data];
                 }
             });

@@ -907,7 +907,6 @@ export class BaseProvider extends Provider {
             catch (ignore) {
                 // It's a query
                 hederaTx = ContractCallQuery.fromBytes(txBytes);
-                console.log(hederaTx);
                 const resp = yield hederaTx.execute(this.hederaClient);
                 console.log('QueryResponse', resp);
                 return null;
@@ -986,20 +985,7 @@ export class BaseProvider extends Provider {
     }
     call(transaction, blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                transaction: this._getTransactionRequest(transaction),
-            });
-            const result = yield this.perform("call", params);
-            try {
-                return hexlify(result);
-            }
-            catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "call",
-                    params, result, error
-                });
-            }
+            return "";
         });
     }
     estimateGas(transaction) {

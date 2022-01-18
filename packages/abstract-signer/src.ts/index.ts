@@ -8,12 +8,13 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { Account, getAccountFromAddress } from "@ethersproject/address";
 import { SigningKey } from "@ethersproject/signing-key";
-import { PublicKey as HederaPubKey, ContractCallQuery } from "@hashgraph/sdk";
-
+import { PublicKey as HederaPubKey, ContractCallQuery, TransactionId, Hbar, AccountId, PrivateKey } from "@hashgraph/sdk";
+import { TransactionBody, SignedTransaction } from '@hashgraph/proto'
+import * as Long from 'long';
 const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value", "nodeId", "nodeIds"
 ];
 
 const forwardErrors = [
@@ -127,19 +128,68 @@ export abstract class Signer {
      *  It may also be necessary to re-create the provider.call method in order to send those queries
      *
      *
-     * @param transaction - the unsigned raw query to be sent against the smart contract
+     * @param unsignedRawTransaction - the unsigned raw query to be sent against the smart contract
      * @param blockTag - currently unused
      */
-    async call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string> {
+    async call(unsignedRawTransaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string> {
         this._checkProvider("call");
-        const tx = await resolveProperties(this.checkTransaction(transaction))
-        const acc = getAccountFromAddress(tx.to.toString());
-        const contractId = `${acc.shard}.${acc.realm}.${acc.num}`;
+        const tx = await resolveProperties(this.checkTransaction(unsignedRawTransaction));
+        const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
+        const contractId = `${contractAccountLikeID.shard}.${contractAccountLikeID.realm}.${contractAccountLikeID.num}`;
+
+        const thisAcc = getAccountFromAddress(await this.getAddress());
+        const thisAccId = `${thisAcc.shard}.${thisAcc.realm}.${thisAcc.num}`;
+
+        const nodeID = AccountId.fromString(tx.nodeId.toString());
+        const paymentTxId = TransactionId.generate(thisAccId);
+
         const hederaTx = new ContractCallQuery()
             .setContractId(contractId)
-            .setFunctionParameters(arrayify(tx.data));
-        const signed = hederaTx.toBytes();
-        const response =  await this.provider.sendTransaction(hexlify(signed));
+            .setFunctionParameters(arrayify(tx.data))
+            .setNodeAccountIds([nodeID])
+            .setGas(Long.fromString(tx.gasLimit.toString()))
+            .setPaymentTransactionId(paymentTxId);
+
+        const paymentBody = {
+            transactionID: paymentTxId._toProtobuf(),
+            nodeAccountID: nodeID._toProtobuf(),
+            transactionFee: new Hbar(1).toTinybars(),
+            transactionValidDuration: {
+                seconds: Long.fromInt(120),
+            },
+            cryptoTransfer: {
+                transfers: {
+                    accountAmounts:[
+                        {
+                            accountID: AccountId.fromString(thisAccId)._toProtobuf(),
+                            amount: new Hbar(3).negated().toTinybars()
+                        },
+                        {
+                            accountID: nodeID._toProtobuf(),
+                            amount: new Hbar(3).toTinybars()
+                        }
+                    ],
+                },
+            },
+        };
+
+        const signed = {
+            bodyBytes: TransactionBody.encode(paymentBody).finish(),
+            sigMap: {}
+        };
+
+        const walletKey = PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+        const signature = walletKey.sign(signed.bodyBytes);
+        signed.sigMap ={
+            sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
+        }
+
+        const transferSignedTransactionBytes =  SignedTransaction.encode(signed).finish();
+        hederaTx._paymentTransactions.push({
+            signedTransactionBytes: transferSignedTransactionBytes
+        });
+        console.log('HederaTX in signer:', hederaTx);
+        const response =  await this.provider.sendTransaction(hexlify(hederaTx.toBytes()));
         return response.data;
     }
 

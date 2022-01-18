@@ -8,15 +8,18 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexlify } from "@ethersproject/bytes";
 import { defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { PublicKey as HederaPubKey, ContractCallQuery } from "@hashgraph/sdk";
+import { PublicKey as HederaPubKey, ContractCallQuery, TransactionId, Hbar, AccountId, PrivateKey } from "@hashgraph/sdk";
+import { TransactionBody, SignedTransaction } from '@hashgraph/proto';
+import * as Long from 'long';
 const logger = new Logger(version);
 const allowedTransactionKeys = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value", "nodeId", "nodeIds"
 ];
 const forwardErrors = [
     Logger.errors.INSUFFICIENT_FUNDS,
@@ -61,20 +64,61 @@ export class Signer {
      *  It may also be necessary to re-create the provider.call method in order to send those queries
      *
      *
-     * @param transaction - the unsigned raw query to be sent against the smart contract
+     * @param unsignedRawTransaction - the unsigned raw query to be sent against the smart contract
      * @param blockTag - currently unused
      */
-    call(transaction, blockTag) {
+    call(unsignedRawTransaction, blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("call");
-            const tx = yield resolveProperties(this.checkTransaction(transaction));
-            const acc = getAccountFromAddress(tx.to.toString());
-            const contractId = `${acc.shard}.${acc.realm}.${acc.num}`;
+            const tx = yield resolveProperties(this.checkTransaction(unsignedRawTransaction));
+            const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
+            const contractId = `${contractAccountLikeID.shard}.${contractAccountLikeID.realm}.${contractAccountLikeID.num}`;
+            const thisAcc = getAccountFromAddress(yield this.getAddress());
+            const thisAccId = `${thisAcc.shard}.${thisAcc.realm}.${thisAcc.num}`;
+            const nodeID = AccountId.fromString(tx.nodeId.toString());
+            const paymentTxId = TransactionId.generate(thisAccId);
             const hederaTx = new ContractCallQuery()
                 .setContractId(contractId)
-                .setFunctionParameters(arrayify(tx.data));
-            const signed = hederaTx.toBytes();
-            const response = yield this.provider.sendTransaction(hexlify(signed));
+                .setFunctionParameters(arrayify(tx.data))
+                .setGas(BigNumber.from(tx.gasLimit.toString()).toNumber())
+                .setNodeAccountIds([nodeID])
+                .setPaymentTransactionId(paymentTxId);
+            const paymentBody = {
+                transactionID: paymentTxId._toProtobuf(),
+                nodeAccountID: nodeID._toProtobuf(),
+                transactionFee: new Hbar(1).toTinybars(),
+                transactionValidDuration: {
+                    seconds: Long.fromInt(120),
+                },
+                cryptoTransfer: {
+                    transfers: {
+                        accountAmounts: [
+                            {
+                                accountID: AccountId.fromString(thisAccId)._toProtobuf(),
+                                amount: new Hbar(3).negated().toTinybars()
+                            },
+                            {
+                                accountID: nodeID._toProtobuf(),
+                                amount: new Hbar(3).toTinybars()
+                            }
+                        ],
+                    },
+                },
+            };
+            const signed = {
+                bodyBytes: TransactionBody.encode(paymentBody).finish(),
+                sigMap: {}
+            };
+            const walletKey = PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+            const signature = walletKey.sign(signed.bodyBytes);
+            signed.sigMap = {
+                sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
+            };
+            const transferSignedTransactionBytes = SignedTransaction.encode(signed).finish();
+            hederaTx._paymentTransactions.push({
+                signedTransactionBytes: transferSignedTransactionBytes
+            });
+            const response = yield this.provider.sendTransaction(hexlify(hederaTx.toBytes()));
             return response.data;
         });
     }
