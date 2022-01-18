@@ -20,8 +20,6 @@ import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ether
 import { Transaction, parseTransactionId } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
-import { poll } from "@ethersproject/web";
-// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 
 import bech32 from "bech32";
 
@@ -34,14 +32,6 @@ import {
     Transaction as HederaTransaction, TransactionReceipt as HederaTransactionReceipt
 } from "@hashgraph/sdk";
 import axios from "axios";
-import {
-    AccountId,
-    Client,
-    TransactionReceipt as HederaTransactionReceipt,
-    AccountBalanceQuery,
-    NetworkName,
-    Transaction as HederaTransaction
-} from "@hashgraph/sdk";
 
 const logger = new Logger(version);
 
@@ -664,7 +654,6 @@ export class BaseProvider extends Provider {
     // This should be called by any subclass wrapping a TransactionResponse
     _wrapTransaction(tx: Transaction, receipt?: HederaTransactionReceipt): TransactionResponse {
         const result = <TransactionResponse>tx;
-        console.log("HederaTransactionReceipt", receipt);
         if (!result.customData) {
             result.customData = {};
         }
@@ -761,25 +750,23 @@ export class BaseProvider extends Provider {
      */
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
         await this.getNetwork();
-        if (!this.mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+        if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
         transactionId = await transactionId;
         //subsequent requests depend on finalized transaction
         const epTransactions = '/api/v1/transactions/' + transactionId;
         try {
-            let { data } = await axios.get(this.mirrorNodeUrl + epTransactions);
+            let { data } = await axios.get(this._mirrorNodeUrl + epTransactions);
             let response;
             if (data) {
                 const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
                 const res = filtered.length > 0 ? filtered[0] : null;
                 if (res) {
-                    const epLogs = '/api/v1/contracts/' + res.entity_id + '/results/logs?timestamp=' + res.consensus_timestamp;
                     const epContracts = '/api/v1/contracts/results/' + transactionId;
                     response = Promise.all([
-                        axios.get(this.mirrorNodeUrl + epLogs),
-                        axios.get(this.mirrorNodeUrl + epContracts)
+                        axios.get(this._mirrorNodeUrl + epContracts)
                     ])
-                        .then(async ([logs, contracts]) => {
-                            const mergedData = { ...contracts.data, ...logs.data, transaction: res };
+                        .then(async ([contracts]) => {
+                            const mergedData = { ...contracts.data, transaction: res };
                             return this.formatter.txRecordToTxResponse(mergedData);
                         })
                         .catch(error => {
@@ -823,9 +810,6 @@ export class BaseProvider extends Provider {
         await this.getNetwork();
         const params = await resolveProperties({ filter: this._getFilter(filter) });
         const logs: Array<Log> = await this.perform("getLogs", params);
-        logs.forEach((log) => {
-            if (log.removed == null) { log.removed = false; }
-        });
         return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
     }
 

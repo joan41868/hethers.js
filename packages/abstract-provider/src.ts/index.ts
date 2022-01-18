@@ -52,10 +52,7 @@ export type HederaTransactionResponse = {
   
 export interface TransactionResponse extends Transaction {
     hash: string;
-    blockNumber?: number,
-    blockHash?: string,
     timestamp?: number,
-    confirmations: number,
     from: string;
     raw?: string,
     wait: (confirmations?: number) => Promise<TransactionReceipt>,
@@ -95,12 +92,6 @@ export interface BlockWithTransactions extends _Block {
 
 
 export interface Log {
-    blockNumber: number;
-    blockHash: string;
-    transactionIndex: number;
-
-    removed: boolean;
-
     address: string;
     data: string;
 
