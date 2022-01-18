@@ -3,7 +3,6 @@ import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable } from "@ethersproject/properties";
 import { Account } from "@ethersproject/address";
-import { SigningKey } from "@ethersproject/signing-key";
 export interface TypedDataDomain {
     name?: string;
     version?: string;
@@ -26,37 +25,16 @@ export interface TypedDataSigner {
 }
 export declare abstract class Signer {
     readonly provider?: Provider;
-    readonly _signingKey: () => SigningKey;
     abstract getAddress(): Promise<string>;
     abstract signMessage(message: Bytes | string): Promise<string>;
-    /**
-     * Signs a transaction with the key given upon creation.
-     * The transaction can be:
-     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
-     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
-     * - ContractCreate - when there is a `bytecodeFileId` field
-     * - ContractCall - when there is a `to` field present. Ignores the other fields
-     *
-     * @param transaction - the transaction to be signed.
-     */
-    abstract signTransaction(transaction: TransactionRequest): Promise<string>;
+    abstract signTransaction(transaction: Deferrable<TransactionRequest>): Promise<string>;
     abstract connect(provider: Provider): Signer;
     readonly _isSigner: boolean;
     constructor();
     getGasPrice(): Promise<BigNumber>;
     getBalance(blockTag?: BlockTag): Promise<BigNumber>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
-    /**
-     * TODO: attempt hacking the hedera sdk to get a costAnswer query.
-     *  The dry run of the query should have returned the answer as well
-     *  This may be bad for hedera but is good for ethers
-     *  It may also be necessary to re-create the provider.call method in order to send those queries
-     *
-     *
-     * @param unsignedRawTransaction - the unsigned raw query to be sent against the smart contract
-     * @param blockTag - currently unused
-     */
-    call(unsignedRawTransaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string>;
+    call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string>;
     sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse>;
     getChainId(): Promise<number>;
     resolveName(name: string): Promise<string>;

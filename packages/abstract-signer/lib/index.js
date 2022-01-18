@@ -194,7 +194,7 @@ var Signer = /** @class */ (function () {
                 Promise.resolve(tx.from),
                 this.getAddress()
             ]).then(function (result) {
-                if (result[0].toLowerCase() !== result[1].toLowerCase()) {
+                if (result[0].toString().toLowerCase() !== result[1].toString().toLowerCase()) {
                     logger.throwArgumentError("from address mismatch", "transaction", transaction);
                 }
                 return result[0];
@@ -211,7 +211,7 @@ var Signer = /** @class */ (function () {
     //  - We allow gasPrice for EIP-1559 as long as it matches maxFeePerGas
     Signer.prototype.populateTransaction = function (transaction) {
         return __awaiter(this, void 0, void 0, function () {
-            var tx, hasEip1559;
+            var tx;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -227,7 +227,7 @@ var Signer = /** @class */ (function () {
                                             if (to == null) {
                                                 return [2 /*return*/, null];
                                             }
-                                            return [4 /*yield*/, this.resolveName(to)];
+                                            return [4 /*yield*/, this.resolveName(to.toString())];
                                         case 1:
                                             address = _a.sent();
                                             if (address == null) {
@@ -240,13 +240,13 @@ var Signer = /** @class */ (function () {
                             // Prevent this error from causing an UnhandledPromiseException
                             tx.to.catch(function (error) { });
                         }
-                        hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
-                        if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
-                            logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
-                        }
-                        else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
-                            logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
-                        }
+                        // Do not allow mixing pre-eip-1559 and eip-1559 properties
+                        // const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
+                        // if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
+                        //     logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
+                        // } else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
+                        //     logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
+                        // }
                         if ((tx.type === 2 || tx.type == null) && (tx.maxFeePerGas != null && tx.maxPriorityFeePerGas != null)) {
                             // Fully-formed EIP-1559 transaction (skip getFeeData)
                             tx.type = 2;

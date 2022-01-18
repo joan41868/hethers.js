@@ -105,7 +105,7 @@ export class Signer {
                 Promise.resolve(tx.from),
                 this.getAddress()
             ]).then((result) => {
-                if (result[0].toLowerCase() !== result[1].toLowerCase()) {
+                if (result[0].toString().toLowerCase() !== result[1].toString().toLowerCase()) {
                     logger.throwArgumentError("from address mismatch", "transaction", transaction);
                 }
                 return result[0];
@@ -128,7 +128,7 @@ export class Signer {
                     if (to == null) {
                         return null;
                     }
-                    const address = yield this.resolveName(to);
+                    const address = yield this.resolveName(to.toString());
                     if (address == null) {
                         logger.throwArgumentError("provided ENS name resolves to null", "tx.to", to);
                     }
@@ -138,13 +138,12 @@ export class Signer {
                 tx.to.catch((error) => { });
             }
             // Do not allow mixing pre-eip-1559 and eip-1559 properties
-            const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
-            if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
-                logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
-            }
-            else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
-                logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
-            }
+            // const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
+            // if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
+            //     logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
+            // } else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
+            //     logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
+            // }
             if ((tx.type === 2 || tx.type == null) && (tx.maxFeePerGas != null && tx.maxPriorityFeePerGas != null)) {
                 // Fully-formed EIP-1559 transaction (skip getFeeData)
                 tx.type = 2;

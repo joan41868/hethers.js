@@ -12,7 +12,7 @@ import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ether
 import { Transaction } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
-import { fetchJson, poll } from "@ethersproject/web";
+import { poll } from "@ethersproject/web";
 import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import bech32 from "bech32";
 
