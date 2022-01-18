@@ -361,10 +361,6 @@ export class Formatter {
         let logs = [];
         txRecord.customData.logs.forEach(function (log) {
             const values = {
-                blockNumber: 0,
-                blockHash: '',
-                transactionIndex: 0,
-                removed: false,
                 address: log.address,
                 data: log.data,
                 topics: log.topics,

@@ -365,10 +365,6 @@ var Formatter = /** @class */ (function () {
         var logs = [];
         txRecord.customData.logs.forEach(function (log) {
             var values = {
-                blockNumber: 0,
-                blockHash: '',
-                transactionIndex: 0,
-                removed: false,
                 address: log.address,
                 data: log.data,
                 topics: log.topics,

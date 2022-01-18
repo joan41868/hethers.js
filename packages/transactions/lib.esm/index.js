@@ -29,6 +29,13 @@ export var TransactionTypes;
     TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes || (TransactionTypes = {}));
+//TODO handle possible exception
+export function parseTransactionId(transactionId) {
+    const accountId = transactionId.split('@');
+    const txValidStart = accountId[1].split('.');
+    const result = accountId[0] + '-' + txValidStart.join('-');
+    return result;
+}
 ///////////////////////////////
 function handleNumber(value) {
     if (value === "0x") {
@@ -386,6 +393,11 @@ export function serializeHederaTransaction(transaction) {
 //
 //     return tx;
 // }
+function parseHederaTransactionId(obj) {
+    //TODO cleaner implementation
+    const parsedString = obj.accountId.realm + '.' + obj.accountId.shard + '.' + obj.accountId.num + '@' + obj.validStart.seconds + '.' + obj.validStart.nanos;
+    return parsedString;
+}
 export function parse(rawTransaction) {
     var _a;
     return __awaiter(this, void 0, void 0, function* () {
@@ -429,7 +441,7 @@ export function parse(rawTransaction) {
             return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
-        return Object.assign(Object.assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null });
+        return Object.assign(Object.assign({ transactionId: parseHederaTransactionId(parsed.transactionId) }, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
 //# sourceMappingURL=index.js.map

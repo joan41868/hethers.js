@@ -72,15 +72,10 @@ export declare class BaseProvider extends Provider {
     get network(): Network;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
-    waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
-    _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: {
-        data: string;
-        from: string;
-        nonce: number;
-        to: string;
-        value: BigNumber;
-        startBlock: number;
-    }): Promise<TransactionReceipt>;
+    waitForTransaction(transactionId: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
+    _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt>;
+    waitOrReturn(transactionId: string, timeoutMs?: number): Promise<TransactionReceipt>;
+    sleep(ms: number): Promise<void>;
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
@@ -89,7 +84,7 @@ export declare class BaseProvider extends Provider {
      */
     getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
-    _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
+    _wrapTransaction(tx: Transaction, receipt?: HederaTransactionReceipt): TransactionResponse;
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
@@ -99,8 +94,8 @@ export declare class BaseProvider extends Provider {
      *
      * @param txId - id of the transaction to search for
      */
-    getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
-    getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt>;
+    getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse>;
+    getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
     getResolver(name: string): Promise<null | Resolver>;
