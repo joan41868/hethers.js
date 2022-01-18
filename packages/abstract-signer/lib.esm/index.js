@@ -15,7 +15,8 @@ import { getAddressFromAccount, getChecksumAddress } from "@ethersproject/addres
 import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
 const logger = new Logger(version);
 const allowedTransactionKeys = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
+    "nodeId"
 ];
 ;
 ;
@@ -55,15 +56,13 @@ export class Signer {
             return Promise.resolve("");
         });
     }
-    // Populates all fields in a transaction, signs it and sends it to the network
+    /**
+     * Composes a transaction which is signed and sent to the provider's network.
+     * @param transaction - the actual tx
+     */
     sendTransaction(transaction) {
         return __awaiter(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(transaction);
-            // to - sign & send
-            // no `to` - file create and appends and contract create;
-            // create TransactionRequest objects and pass them down to the sign fn
-            // sign & send on each tx
-            // contract create would be the expected result of create + append + contract create
             if (tx.to) {
                 const signed = yield this.signTransaction(tx);
                 return yield this.provider.sendTransaction(signed);
@@ -109,15 +108,11 @@ export class Signer {
             return network.chainId;
         });
     }
-    // Checks a transaction does not contain invalid keys and if
-    // no "from" is provided, populates it.
-    // - does NOT require a provider
-    // - adds "from" is not present
-    // - returns a COPY (safe to mutate the result)
-    // By default called from: (overriding these prevents it)
-    //   - call
-    //   - estimateGas
-    //   - populateTransaction (and therefor sendTransaction)
+    /**
+     * Checks if the given transaction is usable.
+     * Properties - `from`, `nodeId`, `gasLimit`
+     * @param transaction - the tx to be checked
+     */
     checkTransaction(transaction) {
         for (const key in transaction) {
             if (allowedTransactionKeys.indexOf(key) === -1) {
@@ -126,22 +121,15 @@ export class Signer {
         }
         const tx = shallowCopy(transaction);
         if (!tx.nodeId) {
-            let nodeID;
-            if (transaction.nodeId) {
-                nodeID = transaction.nodeId;
+            this._checkProvider();
+            // provider present, we can go on
+            const submittableNodeIDs = this.provider.getHederaNetworkConfig();
+            if (submittableNodeIDs.length > 0) {
+                tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length - 1)].toString();
             }
             else {
-                this._checkProvider();
-                // provider present, we can go on
-                const submittableNodeIDs = this.provider.getHederaNetworkConfig();
-                if (submittableNodeIDs.length > 0) {
-                    nodeID = submittableNodeIDs[0];
-                }
-                else {
-                    logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
-                }
+                logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
-            tx.nodeId = nodeID;
         }
         if (tx.from == null) {
             tx.from = this.getAddress();
@@ -161,13 +149,11 @@ export class Signer {
         tx.gasLimit = transaction.gasLimit;
         return tx;
     }
-    // Populates ALL keys for a transaction and checks that "from" matches
-    // this Signer. Should be used by signTransaction.
-    // By default called from: (overriding these prevents it)
-    //   - signTransaciton
-    //
-    // Notes:
-    //  - We allow gasPrice for EIP-1559 as long as it matches maxFeePerGas
+    /**
+     * Populates any missing properties in a transaction request.
+     * Properties affected - `to`, `chainId`
+     * @param transaction
+     */
     populateTransaction(transaction) {
         return __awaiter(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(this.checkTransaction(transaction));
@@ -251,5 +237,15 @@ function splitInChunks(data, chunkSize) {
         chunks.push(slice);
     }
     return chunks;
+}
+/**
+ * Generates a random integer in the given range
+ * @param min - range start
+ * @param max - range end
+ */
+export function randomNumBetween(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 //# sourceMappingURL=index.js.map

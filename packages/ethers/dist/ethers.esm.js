@@ -39675,7 +39675,7 @@ const COST_QUERY = [];
 /**
  * The ID for a crypto-currency contract on Hedera.
  */
-class ContractId extends Key$1 {
+class ContractId extends Key {
     /**
      * @param {number | Long | import("../EntityIdHelper").IEntityId} props
      * @param {(number | Long)=} realm
@@ -40151,6 +40151,10 @@ class TokenDecimalMap extends ObjectMap {
  * @typedef {object} AccountBalanceJson
  * @property {string} hbars
  * @property {TokenBalanceJson[]} tokens
+ */
+
+/**
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  */
 
 class AccountBalance {
@@ -43443,7 +43447,7 @@ class TransactionHashMap extends ObjectMap {
  */
 class NodeAccountIdSignatureMap extends ObjectMap {
     constructor() {
-        super((s) => PublicKey$1.fromString(s));
+        super((s) => PublicKey.fromString(s));
     }
 
     /**
@@ -43456,18 +43460,11 @@ class NodeAccountIdSignatureMap extends ObjectMap {
         const sigPairs = sigMap.sigPair != null ? sigMap.sigPair : [];
 
         for (const sigPair of sigPairs) {
-            if (sigPair.pubKeyPrefix != null) {
-                if (sigPair.ed25519 != null) {
-                    signatures._set(
-                        PublicKey$1.fromBytesED25519(sigPair.pubKeyPrefix),
-                        sigPair.ed25519
-                    );
-                } else if (sigPair.ECDSASecp256k1 != null) {
-                    signatures._set(
-                        PublicKey$1.fromBytesECDSA(sigPair.pubKeyPrefix),
-                        sigPair.ECDSASecp256k1
-                    );
-                }
+            if (sigPair.pubKeyPrefix != null && sigPair.ed25519 != null) {
+                signatures._set(
+                    PublicKey.fromBytes(sigPair.pubKeyPrefix),
+                    sigPair.ed25519
+                );
             }
         }
 
@@ -44285,11 +44282,7 @@ class Transaction extends Executable {
             this._nextTransactionIndex * this._nodeIds.length +
             this._nextNodeIndex;
 
-        if (this._signOnDemand) {
-            await this._buildTransactionAsync(index);
-        } else {
-            this._buildTransaction(index);
-        }
+        await this._buildTransactionAsync(index);
 
         return /** @type {proto.ITransaction} */ (this._transactions[index]);
     }
@@ -44373,8 +44366,6 @@ class Transaction extends Executable {
                 this._transactions.push(null);
             }
         }
-
-        // console.log(JSON.stringify(this._signedTransactions[index]));
 
         this._transactions[index] = {
             signedTransactionBytes: lib.SignedTransaction.encode(
@@ -46956,13 +46947,14 @@ QUERY_REGISTRY.set("contractGetBytecode", ContractByteCodeQuery._fromProtobuf);
 // https://github.com/MaiaVictor/eth-lib/blob/da0971f5b09964d9c8449975fa87933f0c9fef35/src/hash.js
 //  - added type declarations
 //  - switched to es6 module syntax
-//
-// Disable linting for entire file because it's nearly all pure JS
-// eslint-disable
 
-const HEX_CHARS$1 = "0123456789abcdef".split("");
+/** @type {number[]} */
 const KECCAK_PADDING$1 = [1, 256, 65536, 16777216];
+
+/** @type {number[]} */
 const SHIFT$1 = [0, 8, 16, 24];
+
+/** @type {number[]} */
 const RC$1 = [
     1, 0, 32898, 0, 32906, 2147483648, 2147516416, 2147483648, 32907, 0,
     2147483649, 0, 2147516545, 2147483648, 32777, 2147483648, 138, 0, 136, 0,
@@ -46973,7 +46965,7 @@ const RC$1 = [
 ];
 
 /**
- * @typedef {object} KeccakT
+ * @typedef {object} Keccak
  * @property {number[]} blocks
  * @property {number} blockCount
  * @property {number} outputBlocks
@@ -46981,23 +46973,45 @@ const RC$1 = [
  * @property {number} start
  * @property {number} block
  * @property {boolean} reset
- * @property {number=} lastByteIndex
+ * @property {?number} lastByteIndex
  */
 
-/** @type {(bits: number) => KeccakT} */
-const Keccak$1 = (bits) => ({
-    blocks: [],
-    reset: true,
-    block: 0,
-    start: 0,
-    blockCount: (1600 - (bits << 1)) >> 5,
-    outputBlocks: bits >> 5,
-    // @ts-ignore
-    s: ((s) => [].concat(s, s, s, s, s))([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-});
+/**
+ * @param {number} bits
+ * @returns {Keccak}
+ */
+function createKeccakState(bits) {
+    return {
+        blocks: [],
+        reset: true,
+        block: 0,
+        start: 0,
+        lastByteIndex: null,
+        blockCount: (1600 - (bits << 1)) >> 5,
+        outputBlocks: bits >> 5,
+        s: zeroFill(50),
+    };
+}
 
-/** @type {(state: KeccakT, message: string | number[]) => string} */
-const update$1 = (state, /** @type {string | number[]} */ message) => {
+/**
+ * @param {number} n
+ * @returns {number[]}
+ */
+function zeroFill(n) {
+    /** @type {number[]} */
+    let arr = Array(n);
+
+    for (let i = 0; i < n; ++i) arr[i] = 0;
+
+    return arr;
+}
+
+/**
+ * @param {Keccak} state
+ * @param {string | Uint8Array} message
+ * @returns {Uint8Array}
+ */
+function update$1(state, message) {
     var length = message.length,
         blocks = state.blocks,
         byteCount = state.blockCount << 2,
@@ -47005,7 +47019,7 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
         outputBlocks = state.outputBlocks,
         s = state.s,
         index = 0,
-        i,
+        i = 0,
         code;
 
     // update
@@ -47017,35 +47031,35 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
                 blocks[i] = 0;
             }
         }
-        if (typeof message !== "string") {
-            for (i = state.start; index < length && i < byteCount; ++index) {
-                blocks[i >> 2] |= message[index] << SHIFT$1[i++ & 3];
-            }
-        } else {
-            for (i = state.start; index < length && i < byteCount; ++index) {
-                code = message.charCodeAt(index);
-                if (code < 0x80) {
-                    blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
-                } else if (code < 0x800) {
-                    blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-                } else if (code < 0xd800 || code >= 0xe000) {
-                    blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |=
-                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-                } else {
-                    code =
-                        0x10000 +
-                        (((code & 0x3ff) << 10) |
-                            (message.charCodeAt(++index) & 0x3ff));
-                    blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |=
-                        (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |=
-                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-                }
+        for (i = state.start; index < length && i < byteCount; ++index) {
+            code =
+                typeof message === "string"
+                    ? message.charCodeAt(index)
+                    : message[index];
+            if (code < 0x80) {
+                blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
+            } else if (code < 0x800) {
+                blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+            } else if (code < 0xd800 || code >= 0xe000) {
+                blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |=
+                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+            } else {
+                code =
+                    0x10000 +
+                    (((code & 0x3ff) << 10) |
+                        ((typeof message === "string"
+                            ? message.charCodeAt(++index)
+                            : message[++index]) &
+                            0x3ff));
+                blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |=
+                    (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |=
+                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
             }
         }
         state.lastByteIndex = i;
@@ -47063,9 +47077,9 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
     }
 
     // finalize
-    i = state.lastByteIndex;
-    // @ts-ignore
+    i = /** @type {number} */ (state.lastByteIndex);
     blocks[i >> 2] |= KECCAK_PADDING$1[i & 3];
+
     if (state.lastByteIndex === byteCount) {
         blocks[0] = blocks[blockCount];
         for (i = 1; i < blockCount + 1; ++i) {
@@ -47076,37 +47090,33 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
     for (i = 0; i < blockCount; ++i) {
         s[i] ^= blocks[i];
     }
+
     f$2(s);
 
-    // toString
-    var hex = "";
-    var block;
-    var j = 0;
+    const buffer = new ArrayBuffer(outputBlocks * 4);
+    const view = new DataView(buffer);
+
     i = 0;
+    var j = 0;
+
     while (j < outputBlocks) {
         for (i = 0; i < blockCount && j < outputBlocks; ++i, ++j) {
-            block = s[i];
-            hex +=
-                HEX_CHARS$1[(block >> 4) & 0x0f] +
-                HEX_CHARS$1[block & 0x0f] +
-                HEX_CHARS$1[(block >> 12) & 0x0f] +
-                HEX_CHARS$1[(block >> 8) & 0x0f] +
-                HEX_CHARS$1[(block >> 20) & 0x0f] +
-                HEX_CHARS$1[(block >> 16) & 0x0f] +
-                HEX_CHARS$1[(block >> 28) & 0x0f] +
-                HEX_CHARS$1[(block >> 24) & 0x0f];
+            view.setInt32(i * 4, s[i], true);
         }
+
         if (j % blockCount === 0) {
             f$2(s);
             i = 0;
         }
     }
-    // @ts-ignore
-    return "0x" + hex;
-};
 
-/** @type {(s: number[]) => void} */
-const f$2 = (s) => {
+    return new Uint8Array(buffer);
+}
+
+/**
+ * @param {number[]} s
+ */
+function f$2(s) {
     var h,
         l,
         n,
@@ -47349,25 +47359,19 @@ const f$2 = (s) => {
         s[0] ^= RC$1[n];
         s[1] ^= RC$1[n + 1];
     }
-};
-
-const keccak$1 = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
-    var msg;
-    if (str.slice(0, 2) === "0x") {
-        msg = [];
-        for (var i = 2, l = str.length; i < l; i += 2)
-            msg.push(parseInt(str.slice(i, i + 2), 16));
-    } else {
-        msg = str;
-    }
-    // @ts-ignore
-    return update$1(Keccak$1(bits, bits), msg);
-};
+}
 
 /**
- * @type {(message: string) => string}
+ * @param {number} bits
+ * @returns {(message: string | Uint8Array) => Uint8Array}
  */
-const keccak256$2 = keccak$1(256);
+function createKeccak(bits) {
+    return function (message) {
+        return update$1(createKeccakState(bits), message);
+    };
+}
+
+const keccak256$2 = createKeccak(256);
 
 /**
  * @enum {number}
@@ -47636,8 +47640,7 @@ class ContractFunctionSelector {
             throw new Error("`name` required for ContractFunctionSelector");
         }
 
-        const func = encode$4(encode$5(this.toString()));
-        return decode$5(keccak256$2(`0x${func}`)).slice(0, 4);
+        return new Uint8Array(keccak256$2(this.toString()).slice(0, 4));
     }
 
     /**
@@ -49293,6 +49296,7 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../account/AccountId.js").default} AccountId
@@ -52705,6 +52709,7 @@ TRANSACTION_REGISTRY.set(
  */
 
 /**
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
@@ -57173,6 +57178,7 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
  * @typedef {import("./CustomFee.js").default} CustomFee
@@ -58671,6 +58677,9 @@ TRANSACTION_REGISTRY.set(
  * @typedef {import("@hashgraph/proto").IDuration} proto.IDuration
  */
 
+/**
+ * @typedef {import("@hashgraph/cryptography").Key} Key
+ */
 class TokenNftInfo {
     /**
      * @private
@@ -69518,6 +69527,9 @@ function mapProxyName(target, options) {
         extraOptions: {},
     };
     if (((_a = options['grpc.enable_http_proxy']) !== null && _a !== void 0 ? _a : 1) === 0) {
+        return noProxyResult;
+    }
+    if (target.scheme === 'unix') {
         return noProxyResult;
     }
     const proxyInfo = getProxyInfo();
@@ -80676,7 +80688,7 @@ exports.setup = setup;
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
 var name$1 = "@grpc/grpc-js";
-var version$c = "1.5.0";
+var version$c = "1.5.1";
 var description$1 = "gRPC Library for Node - pure JS implementation";
 var homepage$1 = "https://grpc.io/";
 var repository$1 = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
@@ -80752,9 +80764,9 @@ var files$1 = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.0.tgz";
-var _integrity$1 = "sha512-PDLazk94MFV5hFn/+aSrVj3d5UsOK9HU1xa0ywachvDh1jymBU/Cb+4nGa2NjpfcBoXlHioBC/qIB/XzELednw==";
-var _from$1 = "@grpc/grpc-js@1.5.0";
+var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
+var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
+var _from$1 = "@grpc/grpc-js@1.5.1";
 var require$$0$2 = {
 	name: name$1,
 	version: version$c,
@@ -84486,6 +84498,7 @@ exports.setup = void 0;
 const constants_2 = constants;
 
 
+
 const TRACER_NAME = 'dns_resolver';
 function trace(text) {
     logging.trace(constants_2.LogVerbosity.DEBUG, TRACER_NAME, text);
@@ -84525,6 +84538,7 @@ class DnsResolver {
         this.latestLookupResult = null;
         this.latestServiceConfig = null;
         this.latestServiceConfigError = null;
+        this.continueResolving = false;
         trace('Resolver constructed for target ' + uriParser.uriToString(target));
         const hostPort = uriParser.splitHostPort(target.path);
         if (hostPort === null) {
@@ -84555,6 +84569,16 @@ class DnsResolver {
             details: `Name resolution failed for target ${uriParser.uriToString(this.target)}`,
             metadata: new metadata.Metadata(),
         };
+        const backoffOptions = {
+            initialDelay: channelOptions['grpc.initial_reconnect_backoff_ms'],
+            maxDelay: channelOptions['grpc.max_reconnect_backoff_ms'],
+        };
+        this.backoff = new backoffTimeout.BackoffTimeout(() => {
+            if (this.continueResolving) {
+                this.startResolutionWithBackoff();
+            }
+        }, backoffOptions);
+        this.backoff.unref();
     }
     /**
      * If the target is an IP address, just provide that address as a result.
@@ -84569,6 +84593,7 @@ class DnsResolver {
             return;
         }
         if (this.dnsHostname === null) {
+            trace('Failed to parse DNS address ' + uriParser.uriToString(this.target));
             setImmediate(() => {
                 this.listener.onError({
                     code: constants.Status.UNAVAILABLE,
@@ -84578,6 +84603,7 @@ class DnsResolver {
             });
         }
         else {
+            trace('Looking up DNS hostname ' + this.dnsHostname);
             /* We clear out latestLookupResult here to ensure that it contains the
              * latest result since the last time we started resolving. That way, the
              * TXT resolution handler can use it, but only if it finishes second. We
@@ -84593,6 +84619,7 @@ class DnsResolver {
             this.pendingLookupPromise = dnsLookupPromise(hostname, { all: true });
             this.pendingLookupPromise.then((addressList) => {
                 this.pendingLookupPromise = null;
+                this.backoff.reset();
                 const ip4Addresses = addressList.filter((addr) => addr.family === 4);
                 const ip6Addresses = addressList.filter((addr) => addr.family === 6);
                 this.latestLookupResult = mergeArrays(ip6Addresses, ip4Addresses).map((addr) => ({ host: addr.address, port: +this.port }));
@@ -84660,10 +84687,21 @@ class DnsResolver {
             }
         }
     }
+    startResolutionWithBackoff() {
+        this.startResolution();
+        this.backoff.runOnce();
+    }
     updateResolution() {
-        trace('Resolution update requested for target ' + uriParser.uriToString(this.target));
+        /* If there is a pending lookup, just let it finish. Otherwise, if the
+         * backoff timer is running, do another lookup when it ends, and if not,
+         * do another lookup immeidately. */
         if (this.pendingLookupPromise === null) {
-            this.startResolution();
+            if (this.backoff.isRunning()) {
+                this.continueResolving = true;
+            }
+            else {
+                this.startResolutionWithBackoff();
+            }
         }
     }
     destroy() {
@@ -86346,7 +86384,8 @@ var __awaiter$2 = (window && window.__awaiter) || function (thisArg, _arguments,
 };
 const logger$f = new Logger(version$a);
 const allowedTransactionKeys = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
+    "nodeId"
 ];
 ;
 ;
@@ -86386,15 +86425,13 @@ class Signer {
             return Promise.resolve("");
         });
     }
-    // Populates all fields in a transaction, signs it and sends it to the network
+    /**
+     * Composes a transaction which is signed and sent to the provider's network.
+     * @param transaction - the actual tx
+     */
     sendTransaction(transaction) {
         return __awaiter$2(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(transaction);
-            // to - sign & send
-            // no `to` - file create and appends and contract create;
-            // create TransactionRequest objects and pass them down to the sign fn
-            // sign & send on each tx
-            // contract create would be the expected result of create + append + contract create
             if (tx.to) {
                 const signed = yield this.signTransaction(tx);
                 return yield this.provider.sendTransaction(signed);
@@ -86440,15 +86477,11 @@ class Signer {
             return network.chainId;
         });
     }
-    // Checks a transaction does not contain invalid keys and if
-    // no "from" is provided, populates it.
-    // - does NOT require a provider
-    // - adds "from" is not present
-    // - returns a COPY (safe to mutate the result)
-    // By default called from: (overriding these prevents it)
-    //   - call
-    //   - estimateGas
-    //   - populateTransaction (and therefor sendTransaction)
+    /**
+     * Checks if the given transaction is usable.
+     * Properties - `from`, `nodeId`, `gasLimit`
+     * @param transaction - the tx to be checked
+     */
     checkTransaction(transaction) {
         for (const key in transaction) {
             if (allowedTransactionKeys.indexOf(key) === -1) {
@@ -86457,22 +86490,15 @@ class Signer {
         }
         const tx = shallowCopy(transaction);
         if (!tx.nodeId) {
-            let nodeID;
-            if (transaction.nodeId) {
-                nodeID = transaction.nodeId;
+            this._checkProvider();
+            // provider present, we can go on
+            const submittableNodeIDs = this.provider.getHederaNetworkConfig();
+            if (submittableNodeIDs.length > 0) {
+                tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length - 1)].toString();
             }
             else {
-                this._checkProvider();
-                // provider present, we can go on
-                const submittableNodeIDs = this.provider.getHederaNetworkConfig();
-                if (submittableNodeIDs.length > 0) {
-                    nodeID = submittableNodeIDs[0];
-                }
-                else {
-                    logger$f.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
-                }
+                logger$f.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
-            tx.nodeId = nodeID;
         }
         if (tx.from == null) {
             tx.from = this.getAddress();
@@ -86492,13 +86518,11 @@ class Signer {
         tx.gasLimit = transaction.gasLimit;
         return tx;
     }
-    // Populates ALL keys for a transaction and checks that "from" matches
-    // this Signer. Should be used by signTransaction.
-    // By default called from: (overriding these prevents it)
-    //   - signTransaciton
-    //
-    // Notes:
-    //  - We allow gasPrice for EIP-1559 as long as it matches maxFeePerGas
+    /**
+     * Populates any missing properties in a transaction request.
+     * Properties affected - `to`, `chainId`
+     * @param transaction
+     */
     populateTransaction(transaction) {
         return __awaiter$2(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(this.checkTransaction(transaction));
@@ -86582,6 +86606,16 @@ function splitInChunks(data, chunkSize) {
         chunks.push(slice);
     }
     return chunks;
+}
+/**
+ * Generates a random integer in the given range
+ * @param min - range start
+ * @param max - range end
+ */
+function randomNumBetween(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 var commonjsGlobal$1 = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -97204,9 +97238,9 @@ RedirectableRequest.prototype._processResponse = function (response) {
     var redirectUrlParts = url.parse(redirectUrl);
     Object.assign(this._options, redirectUrlParts);
 
-    // Drop the Authorization header if redirecting to another domain
+    // Drop the confidential headers when redirecting to another domain
     if (!(redirectUrlParts.host === currentHost || isSubdomainOf(redirectUrlParts.host, currentHost))) {
-      removeMatchingHeaders(/^authorization$/i, this._options.headers);
+      removeMatchingHeaders(/^(?:authorization|cookie)$/i, this._options.headers);
     }
 
     // Evaluate the beforeRedirect callback

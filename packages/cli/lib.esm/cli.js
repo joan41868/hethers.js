@@ -163,13 +163,13 @@ class WrappedSigner extends ethers.Signer {
         return __awaiter(this, void 0, void 0, function* () {
             transactionRequest = ethers.utils.shallowCopy(transactionRequest);
             if (this.plugin.gasPrice != null) {
-                transactionRequest.gasPrice = this.plugin.gasPrice;
+                // transactionRequest.gasPrice = this.plugin.gasPrice;
             }
             if (this.plugin.gasLimit != null) {
                 transactionRequest.gasLimit = this.plugin.gasLimit;
             }
             if (this.plugin.nonce != null) {
-                transactionRequest.nonce = this.plugin.nonce;
+                // transactionRequest.nonce = this.plugin.nonce;
             }
             let signer = yield getSigner(this);
             return signer.populateTransaction(transactionRequest);
@@ -188,13 +188,11 @@ class WrappedSigner extends ethers.Signer {
                 info["From"] = tx.from;
             }
             info["Value"] = (ethers.utils.formatEther(tx.value || 0) + " ether");
-            if (tx.nonce != null) {
-                info["Nonce"] = tx.nonce;
-            }
+            // if (tx.nonce != null) { info["Nonce"] = tx.nonce; }
             info["Data"] = tx.data;
             info["Gas Limit"] = ethers.BigNumber.from(tx.gasLimit || 0).toString();
-            info["Gas Price"] = (ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
-                info["Chain ID"] = (tx.chainId || 0);
+            // info["Gas Price"] = (ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
+            info["Chain ID"] = (tx.chainId || 0);
             info["Network"] = network.name;
             dump("Transaction:", info);
             yield isAllowed(this, "Sign Transaction?");
@@ -531,11 +529,11 @@ export class Plugin {
                         }
                         break;
                     case "account-void": {
-                        // let addressPromise = this.provider.resolveName(account.value);
-                        // let signerPromise = addressPromise.then((addr) => {
-                        //     return new ethers.VoidSigner(addr, this.provider);
-                        // });
-                        // accounts.push(new WrappedSigner(addressPromise, () => signerPromise, this));
+                        let addressPromise = this.provider.resolveName(account.value);
+                        let signerPromise = addressPromise.then((addr) => {
+                            return new ethers.VoidSigner(addr, this.provider);
+                        });
+                        accounts.push(new WrappedSigner(addressPromise, () => signerPromise, this));
                         break;
                     }
                 }
@@ -589,18 +587,15 @@ export class Plugin {
             return Promise.resolve(ethers.utils.getAddress(addressOrName));
         }
         catch (error) { }
-        return Promise.resolve("");
-        // return this.provider.resolveName(addressOrName).then((address) => {
-        //     if (address == null) {
-        //         this.throwError("ENS name not configured - " + addressOrName);
-        //     }
-        //
-        //     if (address === ethers.constants.AddressZero && !allowZero) {
-        //         this.throwError(message || "cannot use the zero address");
-        //     }
-        //
-        //     return address;
-        // });
+        return this.provider.resolveName(addressOrName).then((address) => {
+            if (address == null) {
+                this.throwError("ENS name not configured - " + addressOrName);
+            }
+            if (address === ethers.constants.AddressZero && !allowZero) {
+                this.throwError(message || "cannot use the zero address");
+            }
+            return address;
+        });
     }
     // Dumps formatted data
     dump(header, info) {

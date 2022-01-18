@@ -51,7 +51,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.VoidSigner = exports.Signer = void 0;
+exports.randomNumBetween = exports.VoidSigner = exports.Signer = void 0;
 var properties_1 = require("@ethersproject/properties");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
@@ -59,7 +59,8 @@ var address_1 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var logger = new logger_1.Logger(_version_1.version);
 var allowedTransactionKeys = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
+    "nodeId"
 ];
 ;
 ;
@@ -124,7 +125,10 @@ var Signer = /** @class */ (function () {
             });
         });
     };
-    // Populates all fields in a transaction, signs it and sends it to the network
+    /**
+     * Composes a transaction which is signed and sent to the provider's network.
+     * @param transaction - the actual tx
+     */
     Signer.prototype.sendTransaction = function (transaction) {
         return __awaiter(this, void 0, void 0, function () {
             var tx, signed, contractByteCode, chunks, fileCreate, signedFileCreate, resp, _i, _a, chunk, fileAppend, signedFileAppend, contractCreate, signedContractCreate;
@@ -208,15 +212,11 @@ var Signer = /** @class */ (function () {
             });
         });
     };
-    // Checks a transaction does not contain invalid keys and if
-    // no "from" is provided, populates it.
-    // - does NOT require a provider
-    // - adds "from" is not present
-    // - returns a COPY (safe to mutate the result)
-    // By default called from: (overriding these prevents it)
-    //   - call
-    //   - estimateGas
-    //   - populateTransaction (and therefor sendTransaction)
+    /**
+     * Checks if the given transaction is usable.
+     * Properties - `from`, `nodeId`, `gasLimit`
+     * @param transaction - the tx to be checked
+     */
     Signer.prototype.checkTransaction = function (transaction) {
         for (var key in transaction) {
             if (allowedTransactionKeys.indexOf(key) === -1) {
@@ -225,22 +225,15 @@ var Signer = /** @class */ (function () {
         }
         var tx = (0, properties_1.shallowCopy)(transaction);
         if (!tx.nodeId) {
-            var nodeID = void 0;
-            if (transaction.nodeId) {
-                nodeID = transaction.nodeId;
+            this._checkProvider();
+            // provider present, we can go on
+            var submittableNodeIDs = this.provider.getHederaNetworkConfig();
+            if (submittableNodeIDs.length > 0) {
+                tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length - 1)].toString();
             }
             else {
-                this._checkProvider();
-                // provider present, we can go on
-                var submittableNodeIDs = this.provider.getHederaNetworkConfig();
-                if (submittableNodeIDs.length > 0) {
-                    nodeID = submittableNodeIDs[0];
-                }
-                else {
-                    logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
-                }
+                logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
-            tx.nodeId = nodeID;
         }
         if (tx.from == null) {
             tx.from = this.getAddress();
@@ -260,13 +253,11 @@ var Signer = /** @class */ (function () {
         tx.gasLimit = transaction.gasLimit;
         return tx;
     };
-    // Populates ALL keys for a transaction and checks that "from" matches
-    // this Signer. Should be used by signTransaction.
-    // By default called from: (overriding these prevents it)
-    //   - signTransaciton
-    //
-    // Notes:
-    //  - We allow gasPrice for EIP-1559 as long as it matches maxFeePerGas
+    /**
+     * Populates any missing properties in a transaction request.
+     * Properties affected - `to`, `chainId`
+     * @param transaction
+     */
     Signer.prototype.populateTransaction = function (transaction) {
         return __awaiter(this, void 0, void 0, function () {
             var tx;
@@ -370,4 +361,15 @@ function splitInChunks(data, chunkSize) {
     }
     return chunks;
 }
+/**
+ * Generates a random integer in the given range
+ * @param min - range start
+ * @param max - range end
+ */
+function randomNumBetween(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+exports.randomNumBetween = randomNumBetween;
 //# sourceMappingURL=index.js.map
