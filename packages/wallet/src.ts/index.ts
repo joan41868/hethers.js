@@ -265,7 +265,8 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 					value: name
 				});
 			}
-			return this.provider.resolveName(name);
+			return Promise.resolve(name);
+			// return this.provider.resolveName(name);
 		});
 
 		return joinSignature(this._signingKey().signDigest(_TypedDataEncoder.hash(populated.domain, types, populated.value)));

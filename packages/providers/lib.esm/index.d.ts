@@ -5,6 +5,7 @@ import { BaseProvider, EnsProvider, EnsResolver, Resolver } from "./base-provide
 import { FallbackProviderConfig } from "./fallback-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
 import { CommunityResourcable, Formatter, isCommunityResourcable, isCommunityResource, showThrottleMessage } from "./formatter";
+import HederaProvider from "./hedera-provider";
 declare function getDefaultProvider(network?: Networkish, options?: any): BaseProvider;
-export { Provider, BaseProvider, Resolver, DefaultHederaProvider, getDefaultProvider, getNetwork, isCommunityResource, isCommunityResourcable, showThrottleMessage, Formatter, Block, BlockTag, EventType, FeeData, Filter, Log, Listener, TransactionReceipt, TransactionRequest, TransactionResponse, FallbackProviderConfig, Network, Networkish, EnsProvider, EnsResolver, CommunityResourcable };
+export { Provider, BaseProvider, Resolver, DefaultHederaProvider, HederaProvider, getDefaultProvider, getNetwork, isCommunityResource, isCommunityResourcable, showThrottleMessage, Formatter, Block, BlockTag, EventType, FeeData, Filter, Log, Listener, TransactionReceipt, TransactionRequest, TransactionResponse, FallbackProviderConfig, Network, Networkish, EnsProvider, EnsResolver, CommunityResourcable };
 //# sourceMappingURL=index.d.ts.map

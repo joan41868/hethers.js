@@ -81,6 +81,7 @@ var allowedTransactionKeys = {
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true
 };
+// TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function () {
         var name, address;
@@ -102,9 +103,7 @@ function resolveName(resolver, nameOrPromise) {
                             operation: "resolveName"
                         });
                     }
-                    return [4 /*yield*/, resolver.resolveName(name)];
-                case 2:
-                    address = _a.sent();
+                    address = "";
                     if (address == null) {
                         logger.throwArgumentError("resolver or addr is not configured for ENS name", "name", name);
                     }
@@ -352,7 +351,7 @@ function addContractWait(contract, tx) {
     };
 }
 function buildCall(contract, fragment, collapseSimple) {
-    var signerOrProvider = (contract.signer || contract.provider);
+    var signer = contract.signer;
     return function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
@@ -384,7 +383,7 @@ function buildCall(contract, fragment, collapseSimple) {
                     case 5: return [4 /*yield*/, populateTransaction(contract, fragment, args)];
                     case 6:
                         tx = _a.sent();
-                        return [4 /*yield*/, signerOrProvider.call(tx, blockTag)];
+                        return [4 /*yield*/, signer.call(tx, blockTag)];
                     case 7:
                         result = _a.sent();
                         try {

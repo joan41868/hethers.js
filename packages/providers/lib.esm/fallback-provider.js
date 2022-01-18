@@ -307,7 +307,6 @@ function getRunner(config, currentBlockNumber, method, params) {
             case "getBalance":
             case "getCode":
                 return provider[method](params.address);
-            case "call":
             case "estimateGas":
                 return provider[method](params.transaction);
             case "getTransaction":

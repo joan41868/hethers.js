@@ -354,7 +354,7 @@ class InfoPlugin extends Plugin {
             } else {
                 this.queries.push(`ENS Name: ${arg}`);
             }
-            runners.push(this.provider.resolveName(arg));
+            // runners.push(this.provider.resolveName(arg));
         })
 
         this.addresses = await Promise.all(runners);
@@ -367,7 +367,7 @@ class InfoPlugin extends Plugin {
                 balance: this.provider.getBalance(address),
                 nonce: 0, // FIXME
                 code: this.provider.getCode(address),
-                reverse: this.provider.lookupAddress(address)
+                reverse: ""//this.provider.lookupAddress(address)
             });
 
             let info: any = {

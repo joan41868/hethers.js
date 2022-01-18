@@ -11,10 +11,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
 const logger = new Logger(version);
 const allowedTransactionKeys = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value", "nodeId", "nodeIds"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "nonce", "to", "type", "value"
 ];
 const forwardErrors = [
     Logger.errors.INSUFFICIENT_FUNDS,
@@ -52,69 +51,19 @@ export class Signer {
             return yield this.provider.estimateGas(tx);
         });
     }
-    /**
-     * TODO: attempt hacking the hedera sdk to get a costAnswer query.
-     *  The dry run of the query should have returned the answer as well
-     *  This may be bad for hedera but is good for ethers
-     *  It may also be necessary to re-create the provider.call method in order to send those queries
-     *
-     *
-     * @param unsignedRawTransaction - the unsigned raw query to be sent against the smart contract
-     * @param blockTag - currently unused
-     */
-    call(unsignedRawTransaction, blockTag) {
+    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
+    call(transaction, blockTag) {
         return __awaiter(this, void 0, void 0, function* () {
-            return logger.throwArgumentError("call not implemented", Logger.errors.NOT_IMPLEMENTED, {
-                operation: "call"
-            });
+            return Promise.resolve("");
         });
     }
     // Populates all fields in a transaction, signs it and sends it to the network
     sendTransaction(transaction) {
         return __awaiter(this, void 0, void 0, function* () {
-            const tx = yield resolveProperties(transaction);
-            // to - sign & send
-            // no `to` - file create and appends and contract create;
-            // create TransactionRequest objects and pass them down to the sign fn
-            // sign & send on each tx
-            // contract create would be the expected result of create + append + contract create
-            if (tx.to) {
-                const signed = yield this.signTransaction(tx);
-                return yield this.provider.sendTransaction(signed);
-            }
-            else {
-                const contractByteCode = tx.data;
-                let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
-                const fileCreate = {
-                    customData: {
-                        fileChunk: chunks[0],
-                        fileKey: HederaPubKey.fromString(this._signingKey().compressedPublicKey)
-                    }
-                };
-                const signedFileCreate = yield this.signTransaction(fileCreate);
-                const resp = yield this.provider.sendTransaction(signedFileCreate);
-                for (let chunk of chunks.slice(1)) {
-                    const fileAppend = {
-                        customData: {
-                            // @ts-ignore
-                            fileId: resp.customData.fileId.toString(),
-                            fileChunk: chunk
-                        }
-                    };
-                    const signedFileAppend = yield this.signTransaction(fileAppend);
-                    yield this.provider.sendTransaction(signedFileAppend);
-                }
-                // @ts-ignore
-                const contractCreate = {
-                    gasLimit: tx.gasLimit,
-                    customData: {
-                        // @ts-ignore
-                        bytecodeFileId: resp.customData.fileId.toString()
-                    }
-                };
-                const signedContractCreate = yield this.signTransaction(contractCreate);
-                return yield this.provider.sendTransaction(signedContractCreate);
-            }
+            this._checkProvider("sendTransaction");
+            const tx = yield this.populateTransaction(transaction);
+            const signedTx = yield this.signTransaction(tx);
+            return yield this.provider.sendTransaction(signedTx);
         });
     }
     getChainId() {
@@ -124,10 +73,11 @@ export class Signer {
             return network.chainId;
         });
     }
+    // TODO FIXME
     resolveName(name) {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("resolveName");
-            return yield this.provider.resolveName(name);
+            return "";
         });
     }
     // Checks a transaction does not contain invalid keys and if
@@ -155,7 +105,7 @@ export class Signer {
                 Promise.resolve(tx.from),
                 this.getAddress()
             ]).then((result) => {
-                if (result[0].toString().toLowerCase() !== result[1].toLowerCase()) {
+                if (result[0].toLowerCase() !== result[1].toLowerCase()) {
                     logger.throwArgumentError("from address mismatch", "transaction", transaction);
                 }
                 return result[0];
@@ -178,7 +128,7 @@ export class Signer {
                     if (to == null) {
                         return null;
                     }
-                    const address = yield this.resolveName(to.toString());
+                    const address = yield this.resolveName(to);
                     if (address == null) {
                         logger.throwArgumentError("provided ENS name resolves to null", "tx.to", to);
                     }
@@ -188,12 +138,13 @@ export class Signer {
                 tx.to.catch((error) => { });
             }
             // Do not allow mixing pre-eip-1559 and eip-1559 properties
-            // const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
-            // if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
-            //     logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
-            // } else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
-            //     logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
-            // }
+            const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
+            if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
+                logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
+            }
+            else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
+                logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
+            }
             if ((tx.type === 2 || tx.type == null) && (tx.maxFeePerGas != null && tx.maxPriorityFeePerGas != null)) {
                 // Fully-formed EIP-1559 transaction (skip getFeeData)
                 tx.type = 2;
@@ -219,19 +170,19 @@ export class Signer {
                         // Upgrade transaction from null to eip-1559
                         tx.type = 2;
     
-                        // if (tx.gasPrice != null) {
+                        if (tx.gasPrice != null) {
                             // Using legacy gasPrice property on an eip-1559 network,
                             // so use gasPrice as both fee properties
-                            // const gasPrice = tx.gasPrice;
-                            // delete tx.gasPrice;
-                            // tx.maxFeePerGas = gasPrice;
-                            // tx.maxPriorityFeePerGas = gasPrice;
+                            const gasPrice = tx.gasPrice;
+                            delete tx.gasPrice;
+                            tx.maxFeePerGas = gasPrice;
+                            tx.maxPriorityFeePerGas = gasPrice;
     
-                        // } else {
-                        //     Populate missing fee data
-                            // if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
-                            // if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
-                        // }
+                        } else {
+                            // Populate missing fee data
+                            if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
+                            if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
+                        }
     
                     } else if (feeData.gasPrice != null) {
                         // Network doesn't support EIP-1559...
@@ -244,7 +195,7 @@ export class Signer {
                         }
     
                         // Populate missing fee data
-                        // if (tx.gasPrice == null) { tx.gasPrice = feeData.gasPrice; }
+                        if (tx.gasPrice == null) { tx.gasPrice = feeData.gasPrice; }
     
                         // Explicitly set untyped transaction to legacy
                         tx.type = 0;
@@ -334,15 +285,5 @@ export class VoidSigner extends Signer {
     connect(provider) {
         return new VoidSigner(this.address, provider);
     }
-}
-function splitInChunks(data, chunkSize) {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
 }
 //# sourceMappingURL=index.js.map

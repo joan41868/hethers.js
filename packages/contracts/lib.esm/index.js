@@ -28,6 +28,7 @@ const allowedTransactionKeys = {
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true
 };
+// TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function* () {
         const name = yield nameOrPromise;
@@ -44,7 +45,7 @@ function resolveName(resolver, nameOrPromise) {
                 operation: "resolveName"
             });
         }
-        const address = yield resolver.resolveName(name);
+        const address = ""; //await resolver.resolveName(name);
         if (address == null) {
             logger.throwArgumentError("resolver or addr is not configured for ENS name", "name", name);
         }
@@ -265,7 +266,7 @@ function addContractWait(contract, tx) {
     };
 }
 function buildCall(contract, fragment, collapseSimple) {
-    const signerOrProvider = (contract.signer || contract.provider);
+    const signer = contract.signer;
     return function (...args) {
         return __awaiter(this, void 0, void 0, function* () {
             // Extract the "blockTag" override if present
@@ -284,7 +285,7 @@ function buildCall(contract, fragment, collapseSimple) {
             }
             // Call a node and get the result
             const tx = yield populateTransaction(contract, fragment, args);
-            const result = yield signerOrProvider.call(tx, blockTag);
+            const result = yield signer.call(tx, blockTag);
             try {
                 let value = contract.interface.decodeFunctionResult(fragment, result);
                 if (collapseSimple && fragment.outputs.length === 1) {

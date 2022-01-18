@@ -233,7 +233,6 @@ export abstract class Provider {
 
     // Execution
     abstract sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
-    abstract call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     abstract estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
 
     abstract getTransaction(transactionHash: string): Promise<TransactionResponse>;
@@ -241,10 +240,6 @@ export abstract class Provider {
 
     // Bloom-filter Queries
     abstract getLogs(filter: Filter): Promise<Array<Log>>;
-
-    // ENS
-    abstract resolveName(name: string | Promise<string>): Promise<null | string>;
-    abstract lookupAddress(address: string | Promise<string>): Promise<null | string>;
 
     // Event Emitter (ish)
     abstract on(eventName: EventType, listener: Listener): Provider;
