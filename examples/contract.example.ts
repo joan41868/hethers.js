@@ -28,14 +28,23 @@ const account = {
 
 // main
 (async () => {
+	/**
+	 * Start the client
+	 */
 	const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
 	const client = Client.forName("testnet");
 	const nodeIds = client._network.getNodeAccountIdsForExecute();
 	const generatedWallet = hethers.Wallet.createRandom();
 	const provider = hethers.providers.getDefaultProvider('testnet');
+	/**
+	 * Create an ECDSA key protobuf from the generated wallet
+	 */
 	const protoKey = Key.create({
 		ECDSASecp256k1: arrayify(generatedWallet._signingKey().compressedPublicKey)
 	});
+	/**
+	 * Create the new account with the ECDSA key
+	 */
 	const newAccountKey = HederaKey._fromProtobufKey(protoKey);
 	const accountCreate = await (await new AccountCreateTransaction()
 		.setKey(newAccountKey)
@@ -47,7 +56,11 @@ const account = {
 		.execute(client);
 	const receipt = await accountCreate.getReceipt(client);
 	console.log('New account', receipt);
-	// @ts-ignore
+
+	/**
+	 * Re-initialize the wallet in order to have the new accountId
+	 */
+		// @ts-ignore
 	const newAccountId = receipt.accountId.toString();
 	const hederaEoa = {
 		account: newAccountId,
@@ -55,114 +68,63 @@ const account = {
 	};
 	// @ts-ignore
 	const wallet = new hethers.Wallet(hederaEoa, provider);
-	// const walletPrivateKey = PrivateKey.fromBytes(arrayify(wallet._signingKey().privateKey));
 
+	/**
+	 * Deploy a contract - OZ ERC20
+	 */
 	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
 	const contractCreateResponse = await wallet.sendTransaction({
 		data: contractByteCode,
 		gasLimit: 300000,
 		nodeId: nodeIds[0].toString()
 	});
-	console.log(contractCreateResponse);
+	console.log('contractCreate response:', contractCreateResponse);
+
+	/**
+	 * Instantiate the contract locally in order to interact with it
+	 */
 	const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
 	// @ts-ignore
 	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData.contractId, abi, wallet);
-	// const approveParams = contract.interface.encodeFunctionData('approve', [
-	// 	getAddressFromAccount(account.operator.accountId),
-	// 	1000
-	// ]);
-	// const approveResponse = await wallet.sendTransaction({
-	// 	to: contract.address,
-	// 	data: approveParams,
-	// 	gasLimit: 100000
-	// });
-	// console.log(approveResponse);
-	//
-	// const mintParams = contract.interface.encodeFunctionData('mint', [
-	// 	1000
-	// ]);
-	// const mintResponse = await wallet.sendTransaction({
-	// 	to: contract.address,
-	// 	data: mintParams,
-	// 	gasLimit: 100000
-	// });
-	// console.log(mintResponse);
-	//
+
+	/**
+	 * The following lines call:
+	 * - approve function for 1000 tokens
+	 * - mint function for 1000 tokens
+	 * - balanceOf function for the wallet's address
+	 */
+	const approveParams = contract.interface.encodeFunctionData('approve', [
+		getAddressFromAccount(account.operator.accountId),
+		1000
+	]);
+	const approveResponse = await wallet.sendTransaction({
+		to: contract.address,
+		data: approveParams,
+		gasLimit: 100000
+	});
+	console.log('approve response: ', approveResponse);
+
+	const mintParams = contract.interface.encodeFunctionData('mint', [
+		1000
+	]);
+	const mintResponse = await wallet.sendTransaction({
+		to: contract.address,
+		data: mintParams,
+		gasLimit: 100000
+	});
+	console.log('mint response:', mintResponse);
+
 	const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
 		await wallet.getAddress()
 	]);
-	// const balanceOfResponse = await wallet.call({
-	// 	to: contract.address,
-	// 	data: balanceOfParams,
-	// });
-	// console.log(balanceOfResponse);
-	//
-	//
 	const nodeID = nodeIds[0];
-	const transfer = new TransferTransaction()
-		.addHbarTransfer(nodeID.toString(), 3)
-		.addHbarTransfer(hederaEoa.account, -3)
-		.setTransactionId(TransactionId.generate(hederaEoa.account))
-		.setNodeAccountIds([ nodeID ])
-		.freeze();
 
-	const contractAccountID = getAccountFromAddress(contract.address);
-	const contractID = `${contractAccountID.shard}.${contractAccountID.realm}.${contractAccountID.num}`;
-
-	const paymentTxID = transfer.transactionId;
-
-	const cc = new ContractCallQuery()
-		.setContractId(contractID)
-		.setFunctionParameters(arrayify(balanceOfParams))
-		.setNodeAccountIds([ nodeID ])
-		.setGas(10000)
-		.setPaymentTransactionId(paymentTxID);
-
-	const body = {
-		transactionID: paymentTxID._toProtobuf(),
-		nodeAccountID: nodeID._toProtobuf(),
-		transactionFee: new Hbar(1).toTinybars(),
-		transactionValidDuration: {
-			seconds: Long.fromInt(120),
-		},
-		cryptoTransfer: {
-			transfers: {
-				accountAmounts: [
-					{
-						accountID: AccountId.fromString(hederaEoa.account)._toProtobuf(),
-						amount: new Hbar(3).negated().toTinybars()
-					},
-					{
-						accountID: nodeID._toProtobuf(),
-						amount: new Hbar(3).toTinybars()
-					}
-				],
-			},
-		},
-	};
-	const signed = {
-		bodyBytes: TransactionBody.encode(body).finish(),
-		sigMap: {}
-	};
-	const walletKey = PrivateKey.fromStringECDSA(wallet._signingKey().privateKey);
-	const signature = walletKey.sign(signed.bodyBytes);
-	signed.sigMap = {
-		sigPair: [ walletKey.publicKey._toProtobufSignature(signature) ]
-	}
-	const transferSignedTransactionBytes = SignedTransaction.encode(signed).finish();
-	cc._paymentTransactions.push({
-		signedTransactionBytes: transferSignedTransactionBytes
-	});
-	const resp = await cc.execute(client);
-	console.log(resp);
-
-
-	// TODO: use when done with fixing the payment tx issues
-	const cc2 = {
+	const balanceOfTx = {
 		to: contract.address,
 		gasLimit: 10000,
 		data: arrayify(balanceOfParams),
 		nodeId: nodeID.toString()
 	};
-	await wallet.call(cc2);
+	const balanceOfResponse = await wallet.call(balanceOfTx);
+	console.log('balanceOf response: ', balanceOfResponse);
 })();

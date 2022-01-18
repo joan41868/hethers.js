@@ -14,15 +14,17 @@ import { arrayify, concat, hexDataSlice, hexlify, isHexString, joinSignature } f
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import { defineReadOnly } from "@ethersproject/properties";
+import { defineReadOnly, resolveProperties } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethersproject/json-wallets";
 import { computeAlias, recoverAddress } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { AccountId, ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, TransactionId, PrivateKey as HederaPrivKey, PublicKey as HederaPubKey } from "@hashgraph/sdk";
+import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, PrivateKey as HederaPrivKey, PublicKey as HederaPubKey, ContractCallQuery, TransactionId, Hbar, AccountId, PrivateKey } from "@hashgraph/sdk";
+import { TransactionBody, SignedTransaction } from '@hashgraph/proto';
 import { numberify } from "@ethersproject/bignumber";
+import * as Long from 'long';
 const logger = new Logger(version);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
@@ -220,6 +222,62 @@ export class Wallet extends Signer {
             options = {};
         }
         return encryptKeystore(this, password, options, progressCallback);
+    }
+    call(txRequest, blockTag) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._checkProvider("call");
+            const tx = yield resolveProperties(this.checkTransaction(txRequest));
+            const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
+            const contractId = `${contractAccountLikeID.shard}.${contractAccountLikeID.realm}.${contractAccountLikeID.num}`;
+            const thisAcc = getAccountFromAddress(yield this.getAddress());
+            const thisAccId = `${thisAcc.shard}.${thisAcc.realm}.${thisAcc.num}`;
+            const nodeID = AccountId.fromString(tx.nodeId.toString());
+            const paymentTxId = TransactionId.generate(thisAccId);
+            const hederaTx = new ContractCallQuery()
+                .setContractId(contractId)
+                .setFunctionParameters(arrayify(tx.data))
+                .setNodeAccountIds([nodeID])
+                .setGas(Long.fromString(tx.gasLimit.toString()))
+                .setPaymentTransactionId(paymentTxId);
+            const paymentBody = {
+                transactionID: paymentTxId._toProtobuf(),
+                nodeAccountID: nodeID._toProtobuf(),
+                transactionFee: new Hbar(1).toTinybars(),
+                transactionValidDuration: {
+                    seconds: Long.fromInt(120),
+                },
+                cryptoTransfer: {
+                    transfers: {
+                        accountAmounts: [
+                            {
+                                accountID: AccountId.fromString(thisAccId)._toProtobuf(),
+                                amount: new Hbar(3).negated().toTinybars()
+                            },
+                            {
+                                accountID: nodeID._toProtobuf(),
+                                amount: new Hbar(3).toTinybars()
+                            }
+                        ],
+                    },
+                },
+            };
+            const signed = {
+                bodyBytes: TransactionBody.encode(paymentBody).finish(),
+                sigMap: {}
+            };
+            const walletKey = PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+            const signature = walletKey.sign(signed.bodyBytes);
+            signed.sigMap = {
+                sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
+            };
+            const transferSignedTransactionBytes = SignedTransaction.encode(signed).finish();
+            hederaTx._paymentTransactions.push({
+                signedTransactionBytes: transferSignedTransactionBytes
+            });
+            const response = yield hederaTx.execute(this.provider.getHederaClient());
+            // TODO: this may not be the best thing to return but it should work for testing
+            return hexlify(response.asBytes());
+        });
     }
     /**
      *  Static methods to create Wallet instances.

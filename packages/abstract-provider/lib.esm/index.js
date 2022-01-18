@@ -63,6 +63,11 @@ export class Provider {
         logger.checkAbstract(new.target, Provider);
         defineReadOnly(this, "_isProvider", true);
     }
+    getHederaClient() {
+        return logger.throwError("getHederaClient not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaClient'
+        });
+    }
     // Latest State
     getGasPrice() {
         return logger.throwArgumentError("getGasPrice not implemented", Logger.errors.NOT_IMPLEMENTED, {

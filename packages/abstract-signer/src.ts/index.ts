@@ -2,15 +2,13 @@
 
 import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { arrayify, Bytes, BytesLike, hexlify } from "@ethersproject/bytes";
+import { Bytes, BytesLike} from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { Account, getAccountFromAddress } from "@ethersproject/address";
+import { Account} from "@ethersproject/address";
 import { SigningKey } from "@ethersproject/signing-key";
-import { PublicKey as HederaPubKey, ContractCallQuery, TransactionId, Hbar, AccountId, PrivateKey } from "@hashgraph/sdk";
-import { TransactionBody, SignedTransaction } from '@hashgraph/proto'
-import * as Long from 'long';
+import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
 const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
@@ -132,65 +130,9 @@ export abstract class Signer {
      * @param blockTag - currently unused
      */
     async call(unsignedRawTransaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string> {
-        this._checkProvider("call");
-        const tx = await resolveProperties(this.checkTransaction(unsignedRawTransaction));
-        const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
-        const contractId = `${contractAccountLikeID.shard}.${contractAccountLikeID.realm}.${contractAccountLikeID.num}`;
-
-        const thisAcc = getAccountFromAddress(await this.getAddress());
-        const thisAccId = `${thisAcc.shard}.${thisAcc.realm}.${thisAcc.num}`;
-
-        const nodeID = AccountId.fromString(tx.nodeId.toString());
-        const paymentTxId = TransactionId.generate(thisAccId);
-
-        const hederaTx = new ContractCallQuery()
-            .setContractId(contractId)
-            .setFunctionParameters(arrayify(tx.data))
-            .setNodeAccountIds([nodeID])
-            .setGas(Long.fromString(tx.gasLimit.toString()))
-            .setPaymentTransactionId(paymentTxId);
-
-        const paymentBody = {
-            transactionID: paymentTxId._toProtobuf(),
-            nodeAccountID: nodeID._toProtobuf(),
-            transactionFee: new Hbar(1).toTinybars(),
-            transactionValidDuration: {
-                seconds: Long.fromInt(120),
-            },
-            cryptoTransfer: {
-                transfers: {
-                    accountAmounts:[
-                        {
-                            accountID: AccountId.fromString(thisAccId)._toProtobuf(),
-                            amount: new Hbar(3).negated().toTinybars()
-                        },
-                        {
-                            accountID: nodeID._toProtobuf(),
-                            amount: new Hbar(3).toTinybars()
-                        }
-                    ],
-                },
-            },
-        };
-
-        const signed = {
-            bodyBytes: TransactionBody.encode(paymentBody).finish(),
-            sigMap: {}
-        };
-
-        const walletKey = PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-        const signature = walletKey.sign(signed.bodyBytes);
-        signed.sigMap ={
-            sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
-        }
-
-        const transferSignedTransactionBytes =  SignedTransaction.encode(signed).finish();
-        hederaTx._paymentTransactions.push({
-            signedTransactionBytes: transferSignedTransactionBytes
-        });
-        console.log('HederaTX in signer:', hederaTx);
-        const response =  await this.provider.sendTransaction(hexlify(hederaTx.toBytes()));
-        return response.data;
+        return logger.throwArgumentError("call not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: "call"
+        })
     }
 
     // Populates all fields in a transaction, signs it and sends it to the network

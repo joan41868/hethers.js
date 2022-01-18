@@ -1,5 +1,5 @@
 import { Account, AccountLike, getAccountFromAddress, getAddress, getAddressFromAccount } from "@ethersproject/address";
-import {Provider, TransactionRequest} from "@ethersproject/abstract-provider";
+import { BlockTag, Provider, TransactionRequest } from "@ethersproject/abstract-provider";
 import {
 	ExternallyOwnedAccount,
 	Signer,
@@ -20,7 +20,7 @@ import {
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import {defineReadOnly} from "@ethersproject/properties";
+import { Deferrable, defineReadOnly, resolveProperties } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import {
@@ -35,15 +35,22 @@ import { Wordlist } from "@ethersproject/wordlists";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import {
-	AccountId,
 	ContractCreateTransaction,
 	ContractExecuteTransaction,
 	ContractId,
 	FileAppendTransaction, FileCreateTransaction,
-	Transaction, TransactionId,
-	PrivateKey as HederaPrivKey, PublicKey as HederaPubKey
+	Transaction,
+	PrivateKey as HederaPrivKey,
+	PublicKey as HederaPubKey,
+	ContractCallQuery,
+	TransactionId,
+	Hbar,
+	AccountId,
+	PrivateKey
 } from "@hashgraph/sdk";
+import { TransactionBody, SignedTransaction } from '@hashgraph/proto'
 import {numberify} from "@ethersproject/bignumber";
+import * as Long from 'long';
 
 const logger = new Logger(version);
 
@@ -279,6 +286,68 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		}
 
 		return encryptKeystore(this, password, options, progressCallback);
+	}
+
+	async call(txRequest : Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
+		this._checkProvider("call");
+		const tx = await resolveProperties(this.checkTransaction(txRequest));
+		const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
+		const contractId = `${contractAccountLikeID.shard}.${contractAccountLikeID.realm}.${contractAccountLikeID.num}`;
+
+		const thisAcc = getAccountFromAddress(await this.getAddress());
+		const thisAccId = `${thisAcc.shard}.${thisAcc.realm}.${thisAcc.num}`;
+
+		const nodeID = AccountId.fromString(tx.nodeId.toString());
+		const paymentTxId = TransactionId.generate(thisAccId);
+
+		const hederaTx = new ContractCallQuery()
+			.setContractId(contractId)
+			.setFunctionParameters(arrayify(tx.data))
+			.setNodeAccountIds([nodeID])
+			.setGas(Long.fromString(tx.gasLimit.toString()))
+			.setPaymentTransactionId(paymentTxId);
+
+		const paymentBody = {
+			transactionID: paymentTxId._toProtobuf(),
+			nodeAccountID: nodeID._toProtobuf(),
+			transactionFee: new Hbar(1).toTinybars(),
+			transactionValidDuration: {
+				seconds: Long.fromInt(120),
+			},
+			cryptoTransfer: {
+				transfers: {
+					accountAmounts:[
+						{
+							accountID: AccountId.fromString(thisAccId)._toProtobuf(),
+							amount: new Hbar(3).negated().toTinybars()
+						},
+						{
+							accountID: nodeID._toProtobuf(),
+							amount: new Hbar(3).toTinybars()
+						}
+					],
+				},
+			},
+		};
+
+		const signed = {
+			bodyBytes: TransactionBody.encode(paymentBody).finish(),
+			sigMap: {}
+		};
+
+		const walletKey = PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+		const signature = walletKey.sign(signed.bodyBytes);
+		signed.sigMap ={
+			sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
+		}
+
+		const transferSignedTransactionBytes =  SignedTransaction.encode(signed).finish();
+		hederaTx._paymentTransactions.push({
+			signedTransactionBytes: transferSignedTransactionBytes
+		});
+		const response = await hederaTx.execute(this.provider.getHederaClient());
+		// TODO: this may not be the best thing to return but it should work for testing
+		return hexlify(response.asBytes());
 	}
 
 	/**

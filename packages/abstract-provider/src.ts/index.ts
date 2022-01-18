@@ -9,8 +9,8 @@ import { AccessListish, Transaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { AccountLike } from "@ethersproject/address";
+import { Client } from '@hashgraph/sdk';
 const logger = new Logger(version);
-
 ///////////////////////////////
 // Exported Types
 
@@ -214,6 +214,11 @@ export abstract class Provider {
 
     // Network
     abstract getNetwork(): Promise<Network>;
+    getHederaClient() : Client {
+        return logger.throwError("getHederaClient not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaClient'
+        })
+    }
 
     // Latest State
     getGasPrice(): Promise<BigNumber> {

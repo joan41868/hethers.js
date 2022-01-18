@@ -1045,6 +1045,10 @@ export class BaseProvider extends Provider implements EnsProvider {
         return result;
     }
 
+    public getHederaClient() : Client {
+        return this.hederaClient;
+    }
+
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
         await this.getNetwork();
         signedTransaction = await signedTransaction;

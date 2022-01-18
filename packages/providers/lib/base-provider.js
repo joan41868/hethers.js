@@ -1110,6 +1110,9 @@ var BaseProvider = /** @class */ (function (_super) {
         }); };
         return result;
     };
+    BaseProvider.prototype.getHederaClient = function () {
+        return this.hederaClient;
+    };
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {

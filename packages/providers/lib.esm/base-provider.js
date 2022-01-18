@@ -894,6 +894,9 @@ export class BaseProvider extends Provider {
         });
         return result;
     }
+    getHederaClient() {
+        return this.hederaClient;
+    }
     sendTransaction(signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
@@ -906,9 +909,12 @@ export class BaseProvider extends Provider {
             }
             catch (ignore) {
                 // It's a query
+                // FIXME: ser/des is not working properly - it's losing the payment tx id + node ids
                 hederaTx = ContractCallQuery.fromBytes(txBytes);
+                console.log('HederaTX in provider:', hederaTx);
                 const resp = yield hederaTx.execute(this.hederaClient);
                 console.log('QueryResponse', resp);
+                // TODO: map and return something
                 return null;
             }
             const ethersTx = yield this.formatter.transaction(signedTransaction);
