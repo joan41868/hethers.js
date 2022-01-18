@@ -578,6 +578,9 @@ export class BaseProvider extends Provider {
     getHederaClient() {
         return this.hederaClient;
     }
+    getHederaNetworkConfig() {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    }
     sendTransaction(signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {

@@ -4,7 +4,7 @@ import { Network } from "@ethersproject/networks";
 import { Deferrable, Description } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@ethersproject/transactions";
 import { AccountLike } from "@ethersproject/address";
-import { Client } from '@hashgraph/sdk';
+import { AccountId, Client } from '@hashgraph/sdk';
 export declare type TransactionRequest = {
     to?: AccountLike;
     from?: AccountLike;
@@ -124,6 +124,7 @@ export declare type Listener = (...args: Array<any>) => void;
 export declare abstract class Provider {
     abstract getNetwork(): Promise<Network>;
     getHederaClient(): Client;
+    getHederaNetworkConfig(): AccountId[];
     getGasPrice(): Promise<BigNumber>;
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
     abstract getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;

@@ -107,6 +107,11 @@ var Provider = /** @class */ (function () {
             operation: 'getHederaClient'
         });
     };
+    Provider.prototype.getHederaNetworkConfig = function () {
+        return logger.throwError("getHederaNetworkConfig not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaNetworkConfig'
+        });
+    };
     // Latest State
     Provider.prototype.getGasPrice = function () {
         return logger.throwArgumentError("getGasPrice not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {

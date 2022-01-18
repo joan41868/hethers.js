@@ -667,6 +667,10 @@ export class BaseProvider extends Provider {
         return this.hederaClient;
     }
 
+    public getHederaNetworkConfig(): AccountId[] {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    }
+
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
         signedTransaction = await signedTransaction;
         let hederaTx: HederaTransaction | any;

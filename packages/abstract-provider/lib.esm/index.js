@@ -68,6 +68,11 @@ export class Provider {
             operation: 'getHederaClient'
         });
     }
+    getHederaNetworkConfig() {
+        return logger.throwError("getHederaNetworkConfig not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaNetworkConfig'
+        });
+    }
     // Latest State
     getGasPrice() {
         return logger.throwArgumentError("getGasPrice not implemented", Logger.errors.NOT_IMPLEMENTED, {

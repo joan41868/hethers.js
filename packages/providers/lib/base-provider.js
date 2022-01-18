@@ -731,6 +731,9 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.getHederaClient = function () {
         return this.hederaClient;
     };
+    BaseProvider.prototype.getHederaNetworkConfig = function () {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    };
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {

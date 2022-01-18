@@ -5,7 +5,7 @@ import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
 import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
-import { Client } from "@hashgraph/sdk";
+import { AccountId, Client } from "@hashgraph/sdk";
 export declare class Event {
     readonly listener: Listener;
     readonly once: boolean;
@@ -91,6 +91,7 @@ export declare class BaseProvider extends Provider {
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
     getHederaClient(): Client;
+    getHederaNetworkConfig(): AccountId[];
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;
     call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
