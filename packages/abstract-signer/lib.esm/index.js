@@ -71,7 +71,6 @@ export class Signer {
                 const contractByteCode = tx.data;
                 let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
                 const fileCreate = {
-                    gasLimit: tx.gasLimit,
                     customData: {
                         fileChunk: chunks[0],
                         fileKey: HederaPubKey.fromString(this._signingKey().compressedPublicKey)
@@ -81,7 +80,6 @@ export class Signer {
                 const resp = yield this.provider.sendTransaction(signedFileCreate);
                 for (let chunk of chunks.slice(1)) {
                     const fileAppend = {
-                        gasLimit: tx.gasLimit,
                         customData: {
                             fileId: resp.customData.fileId.toString(),
                             fileChunk: chunk
@@ -167,7 +165,10 @@ export class Signer {
                 // Prevent this error from causing an UnhandledPromiseException
                 tx.to.catch((error) => { });
             }
-            if (tx.gasLimit == null) {
+            // won't modify the present custom data
+            const customData = yield tx.customData;
+            // FileCreate and FileAppend always carry a customData.fileChunk object
+            if (customData && !customData.fileChunk && tx.gasLimit == null) {
                 return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
             }
             if (tx.chainId == null) {
