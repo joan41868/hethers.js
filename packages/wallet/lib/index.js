@@ -66,6 +66,7 @@ var json_wallets_1 = require("@ethersproject/json-wallets");
 var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
+var sdk_1 = require("@hashgraph/sdk");
 var logger = new logger_1.Logger(_version_1.version);
 function isAccount(value) {
     return value != null && (0, bytes_1.isHexString)(value.privateKey, 32);
@@ -184,19 +185,24 @@ var Wallet = /** @class */ (function (_super) {
         };
         return new Wallet(eoa, this.provider);
     };
-    // TODO to be revised
     Wallet.prototype.signTransaction = function (transaction) {
         var _this = this;
-        return (0, properties_1.resolveProperties)(transaction).then(function (tx) {
-            if (tx.from != null) {
-                if ((0, address_1.getAddress)(tx.from) !== _this.address) {
-                    logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
+        this._checkAddress('signTransaction');
+        this.checkTransaction(transaction);
+        return this.populateTransaction(transaction).then(function (readyTx) { return __awaiter(_this, void 0, void 0, function () {
+            var tx, pkey, signed;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        tx = (0, transactions_1.serializeHederaTransaction)(readyTx);
+                        pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+                        return [4 /*yield*/, tx.sign(pkey)];
+                    case 1:
+                        signed = _a.sent();
+                        return [2 /*return*/, (0, bytes_1.hexlify)(signed.toBytes())];
                 }
-                delete tx.from;
-            }
-            var signature = _this._signingKey().signDigest((0, keccak256_1.keccak256)((0, transactions_1.serialize)(tx)));
-            return (0, transactions_1.serialize)(tx, signature);
-        });
+            });
+        }); });
     };
     Wallet.prototype.signMessage = function (message) {
         return __awaiter(this, void 0, void 0, function () {
@@ -269,6 +275,13 @@ var Wallet = /** @class */ (function (_super) {
             path = hdnode_1.defaultPath;
         }
         return new Wallet(hdnode_1.HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+    };
+    Wallet.prototype._checkAddress = function (operation) {
+        if (!this.address) {
+            logger.throwError("missing address", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: (operation || "_checkAddress")
+            });
+        }
     };
     return Wallet;
 }(abstract_signer_1.Signer));

@@ -1,8 +1,16 @@
 "use strict";
 
 import {
-    BlockTag, EventType, Filter, FilterByBlockHash,
-    Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
+    BlockTag,
+    EventType,
+    Filter,
+    FilterByBlockHash,
+    Listener,
+    Log,
+    Provider,
+    TransactionReceipt,
+    TransactionRequest,
+    TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
@@ -18,12 +26,19 @@ import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-const logger = new Logger(version);
-
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
+import {
+    AccountId,
+    Client,
+    TransactionReceipt as HederaTransactionReceipt,
+    AccountBalanceQuery,
+    NetworkName,
+    Transaction as HederaTransaction
+} from "@hashgraph/sdk";
+
+const logger = new Logger(version);
 
 //////////////////////////////
 // Event Serializeing
@@ -466,6 +481,10 @@ export class BaseProvider extends Provider {
         }
     }
 
+    getHederaNetworkConfig(): AccountId[] {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    }
+
     async _ready(): Promise<Network> {
         if (this._network == null) {
             let network: Network = null;
@@ -614,11 +633,17 @@ export class BaseProvider extends Provider {
     }
 
     // This should be called by any subclass wrapping a TransactionResponse
-    _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse {
+    _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse {
         if (hash != null && hexDataLength(hash) !== 48) { throw new Error("invalid response - sendTransaction"); }
 
         const result = <TransactionResponse>tx;
-
+        if (!result.customData) result.customData = {};
+        if (receipt && receipt.fileId) {
+            result.customData.fileId = receipt.fileId.toString();
+        }
+        if (receipt && receipt.contractId) {
+            result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
@@ -630,14 +655,14 @@ export class BaseProvider extends Provider {
 
             // Get the details to detect replacement
             let replacement = undefined;
-            if (confirms !== 0 && startBlock != null) {
+            if (confirms !== 0) {
                 replacement = {
                     data: tx.data,
                     from: tx.from,
                     nonce: tx.nonce,
                     to: tx.to,
                     value: tx.value,
-                    startBlock
+                    startBlock: 0
                 };
             }
 
@@ -667,8 +692,9 @@ export class BaseProvider extends Provider {
         try {
             // TODO once we have fallback provider use `provider.perform("sendTransaction")`
             // TODO Before submission verify that the nodeId is the one that the provider is connected to
-            await hederaTx.execute(this.hederaClient);
-            return this._wrapTransaction(ethersTx, txHash);
+            const resp = await hederaTx.execute(this.hederaClient);
+            const receipt = await resp.getReceipt(this.hederaClient);
+            return this._wrapTransaction(ethersTx, txHash, receipt);
         } catch (error) {
             const err = logger.makeError(error.message, error.status?.toString());
             (<any>err).transaction = ethersTx;

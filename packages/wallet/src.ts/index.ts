@@ -1,6 +1,4 @@
-"use strict";
-
-import {Account, AccountLike, getAccountFromAddress, getAddress, getAddressFromAccount} from "@ethersproject/address";
+import { Account, AccountLike, getAccountFromAddress, getAddress, getAddressFromAccount } from "@ethersproject/address";
 import {Provider, TransactionRequest} from "@ethersproject/abstract-provider";
 import {
 	ExternallyOwnedAccount,
@@ -14,23 +12,31 @@ import {
 	Bytes,
 	BytesLike,
 	concat,
-	hexDataSlice,
+	hexDataSlice, hexlify,
 	isHexString,
 	joinSignature,
 	SignatureLike
 } from "@ethersproject/bytes";
-import {_TypedDataEncoder, hashMessage} from "@ethersproject/hash";
-import {defaultPath, entropyToMnemonic, HDNode, Mnemonic} from "@ethersproject/hdnode";
-import {keccak256} from "@ethersproject/keccak256";
-import {defineReadOnly, resolveProperties} from "@ethersproject/properties";
-import {randomBytes} from "@ethersproject/random";
-import {SigningKey} from "@ethersproject/signing-key";
-import {decryptJsonWallet, decryptJsonWalletSync, encryptKeystore, ProgressCallback} from "@ethersproject/json-wallets";
-import {computeAlias, recoverAddress, serialize, UnsignedTransaction} from "@ethersproject/transactions";
-import {Wordlist} from "@ethersproject/wordlists";
+import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
+import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@ethersproject/hdnode";
+import { keccak256 } from "@ethersproject/keccak256";
+import {defineReadOnly} from "@ethersproject/properties";
+import { randomBytes } from "@ethersproject/random";
+import { SigningKey } from "@ethersproject/signing-key";
+import {
+	decryptJsonWallet,
+	decryptJsonWalletSync,
+	encryptKeystore,
+	ProgressCallback
+} from "@ethersproject/json-wallets";
+import { computeAlias, recoverAddress, serializeHederaTransaction } from "@ethersproject/transactions";
+import { Wordlist } from "@ethersproject/wordlists";
 
-import {Logger} from "@ethersproject/logger";
-import {version} from "./_version";
+import { Logger } from "@ethersproject/logger";
+import { version } from "./_version";
+import {
+	PrivateKey as HederaPrivKey,
+} from "@hashgraph/sdk";
 
 const logger = new Logger(version);
 
@@ -167,18 +173,14 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		return new Wallet(eoa, this.provider);
 	}
 
-	// TODO to be revised
 	signTransaction(transaction: TransactionRequest): Promise<string> {
-		return resolveProperties(transaction).then((tx) => {
-			if (tx.from != null) {
-				if (getAddress(tx.from) !== this.address) {
-					logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-				}
-				delete tx.from;
-			}
-
-			const signature = this._signingKey().signDigest(keccak256(serialize(<UnsignedTransaction>tx)));
-			return serialize(<UnsignedTransaction>tx, signature);
+		this._checkAddress('signTransaction');
+		this.checkTransaction(transaction);
+		return this.populateTransaction(transaction).then(async readyTx => {
+			const tx = serializeHederaTransaction(readyTx);
+			const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
+			const signed = await tx.sign(pkey);
+			return hexlify(signed.toBytes());
 		});
 	}
 
@@ -231,7 +233,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		}
 
 		if (options.extraEntropy) {
-			entropy = arrayify(hexDataSlice(keccak256(concat([entropy, options.extraEntropy])), 0, 16));
+			entropy = arrayify(hexDataSlice(keccak256(concat([ entropy, options.extraEntropy ])), 0, 16));
 		}
 
 		const mnemonic = entropyToMnemonic(entropy, options.locale);
@@ -253,6 +255,12 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 			path = defaultPath;
 		}
 		return new Wallet(HDNode.fromMnemonic(mnemonic, null, wordlist).derivePath(path));
+	}
+
+	_checkAddress(operation?: string): void {
+		if (!this.address) { logger.throwError("missing address", Logger.errors.UNSUPPORTED_OPERATION, {
+			operation: (operation || "_checkAddress") });
+		}
 	}
 }
 

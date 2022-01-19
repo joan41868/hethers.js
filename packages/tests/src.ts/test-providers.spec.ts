@@ -1097,7 +1097,6 @@ describe("Test Hedera Provider", function () {
     }).timeout(timeout * 4);
 
     it('should submit signed transaction', async function() {
-
         // TODO: this test may be flaky
         // The initial balance part is commented out as of the current non-payable constructor.
         // In the future, this test should be changed to use testnet and pre-deployed
@@ -1122,6 +1121,7 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(txResponse.gasLimit.toNumber(), 100000);
         assert.strictEqual(txResponse.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
         assert.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
+        // assert.strictEqual(txResponse.value.toNumber(), 100000000000);
     }).timeout(timeout*4);
 
     /* This test is skipped because the local network won't be started in the CI */

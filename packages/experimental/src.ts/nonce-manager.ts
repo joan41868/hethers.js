@@ -3,6 +3,7 @@
 import { ethers } from "ethers";
 
 import { version } from "./_version";
+import { TransactionRequest } from "@ethersproject/abstract-provider";
 
 const logger = new ethers.utils.Logger(version);
 
@@ -51,11 +52,13 @@ export class NonceManager extends ethers.Signer {
         return this.signer.signMessage(message);;
     }
 
-    signTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<string> {
+    signTransaction(transaction: TransactionRequest): Promise<string> {
         return this.signer.signTransaction(transaction);
     }
 
-    sendTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<ethers.providers.TransactionResponse> {
-       return null;
+    sendTransaction(transaction: TransactionRequest): Promise<ethers.providers.TransactionResponse> {
+        return this.signer.sendTransaction(transaction).then((tx) => {
+            return tx;
+        });
     }
 }

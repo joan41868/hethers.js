@@ -4,21 +4,24 @@ import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@et
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
-
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import {Account} from "@ethersproject/address";
+import { Account, getAddressFromAccount, getChecksumAddress } from "@ethersproject/address";
+import { SigningKey } from "@ethersproject/signing-key";
+import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
+
 const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "gasPrice", "maxFeePerGas", "maxPriorityFeePerGas", "nonce", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
+    "nodeId"
 ];
 
-const forwardErrors = [
-    Logger.errors.INSUFFICIENT_FUNDS,
-    Logger.errors.NONCE_EXPIRED,
-    Logger.errors.REPLACEMENT_UNDERPRICED,
-];
+// const forwardErrors = [
+//     Logger.errors.INSUFFICIENT_FUNDS,
+//     Logger.errors.NONCE_EXPIRED,
+//     Logger.errors.REPLACEMENT_UNDERPRICED,
+// ];
 
 // EIP-712 Typed Data
 // See: https://eips.ethereum.org/EIPS/eip-712
@@ -60,7 +63,7 @@ export interface TypedDataSigner {
 
 export abstract class Signer {
     readonly provider?: Provider;
-
+    readonly _signingKey: () => SigningKey;
     ///////////////////
     // Sub-classes MUST implement these
 
@@ -73,11 +76,17 @@ export abstract class Signer {
     // i.e. "0x1234" is a SIX (6) byte string, NOT 2 bytes of data
     abstract signMessage(message: Bytes | string): Promise<string>;
 
-    // Signs a transaction and returns the fully serialized, signed transaction.
-    // The EXACT transaction MUST be signed, and NO additional properties to be added.
-    // - This MAY throw if signing transactions is not supports, but if
-    //   it does, sentTransaction MUST be overridden.
-    abstract signTransaction(transaction: Deferrable<TransactionRequest>): Promise<string>;
+    /**
+     * Signs a transaction with the key given upon creation.
+     * The transaction can be:
+     * - FileCreate - when there is only `fileChunk` field in the `transaction.customData` object
+     * - FileAppend - when there is both `fileChunk` and a `fileId` fields
+     * - ContractCreate - when there is a `bytecodeFileId` field
+     * - ContractCall - when there is a `to` field present. Ignores the other fields
+     *
+     * @param transaction - the transaction to be signed.
+     */
+    abstract signTransaction(transaction: TransactionRequest): Promise<string>;
 
     // Returns a new instance of the Signer, connected to provider.
     // This MAY throw if changing providers is not supported.
@@ -109,6 +118,7 @@ export abstract class Signer {
     async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
         this._checkProvider("estimateGas");
         const tx = await resolveProperties(this.checkTransaction(transaction));
+        // cost-answer query on hedera
         return await this.provider.estimateGas(tx);
     }
 
@@ -117,12 +127,46 @@ export abstract class Signer {
         return Promise.resolve("");
     }
 
-    // Populates all fields in a transaction, signs it and sends it to the network
+    /**
+     * Composes a transaction which is signed and sent to the provider's network.
+     * @param transaction - the actual tx
+     */
     async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
-        this._checkProvider("sendTransaction");
-        const tx = await this.populateTransaction(transaction);
-        const signedTx = await this.signTransaction(tx);
-        return await this.provider.sendTransaction(signedTx);
+        const tx = await resolveProperties(transaction);
+        if (tx.to) {
+            const signed = await this.signTransaction(tx);
+            return await this.provider.sendTransaction(signed);
+        } else {
+            const contractByteCode = tx.data;
+            let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
+            const fileCreate = {
+                customData: {
+                    fileChunk: chunks[0],
+                    fileKey: HederaPubKey.fromString(this._signingKey().compressedPublicKey)
+                }
+            };
+            const signedFileCreate = await this.signTransaction(fileCreate);
+            const resp =  await this.provider.sendTransaction(signedFileCreate);
+            for (let chunk of chunks.slice(1)) {
+                const fileAppend = {
+                    customData: {
+                        fileId: resp.customData.fileId.toString(),
+                        fileChunk: chunk
+                    }
+                };
+                const signedFileAppend = await this.signTransaction(fileAppend);
+                await this.provider.sendTransaction(signedFileAppend);
+            }
+
+            const contractCreate = {
+                gasLimit: tx.gasLimit,
+                customData: {
+                    bytecodeFileId: resp.customData.fileId.toString()
+                }
+            };
+            const signedContractCreate = await this.signTransaction(contractCreate);
+            return await this.provider.sendTransaction(signedContractCreate);
+        }
     }
 
     async getChainId(): Promise<number> {
@@ -131,21 +175,11 @@ export abstract class Signer {
         return network.chainId;
     }
 
-    // TODO FIXME
-    async resolveName(name: string): Promise<string> {
-        this._checkProvider("resolveName");
-        return "";
-    }
-
-    // Checks a transaction does not contain invalid keys and if
-    // no "from" is provided, populates it.
-    // - does NOT require a provider
-    // - adds "from" is not present
-    // - returns a COPY (safe to mutate the result)
-    // By default called from: (overriding these prevents it)
-    //   - call
-    //   - estimateGas
-    //   - populateTransaction (and therefor sendTransaction)
+    /**
+     * Checks if the given transaction is usable.
+     * Properties - `from`, `nodeId`, `gasLimit`
+     * @param transaction - the tx to be checked
+     */
     checkTransaction(transaction: Deferrable<TransactionRequest>): Deferrable<TransactionRequest> {
         for (const key in transaction) {
             if (allowedTransactionKeys.indexOf(key) === -1) {
@@ -154,6 +188,16 @@ export abstract class Signer {
         }
 
         const tx = shallowCopy(transaction);
+        if (!tx.nodeId) {
+            this._checkProvider();
+            // provider present, we can go on
+            const submittableNodeIDs = this.provider.getHederaNetworkConfig();
+            if (submittableNodeIDs.length > 0) {
+                tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length-1)].toString();
+            } else {
+                logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
+            }
+        }
 
         if (tx.from == null) {
             tx.from = this.getAddress();
@@ -164,149 +208,38 @@ export abstract class Signer {
                 Promise.resolve(tx.from),
                 this.getAddress()
             ]).then((result) => {
-                if (result[0].toLowerCase() !== result[1].toLowerCase()) {
+                if (result[0].toString().toLowerCase() !== result[1].toLowerCase()) {
                     logger.throwArgumentError("from address mismatch", "transaction", transaction);
                 }
                 return result[0];
             });
         }
-
+        tx.gasLimit = transaction.gasLimit;
         return tx;
     }
 
-    // Populates ALL keys for a transaction and checks that "from" matches
-    // this Signer. Should be used by sendTransaction but NOT by signTransaction.
-    // By default called from: (overriding these prevents it)
-    //   - sendTransaction
-    //
-    // Notes:
-    //  - We allow gasPrice for EIP-1559 as long as it matches maxFeePerGas
+    /**
+     * Populates any missing properties in a transaction request.
+     * Properties affected - `to`, `chainId`
+     * @param transaction
+     */
     async populateTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionRequest> {
-
         const tx: Deferrable<TransactionRequest> = await resolveProperties(this.checkTransaction(transaction))
 
         if (tx.to != null) {
             tx.to = Promise.resolve(tx.to).then(async (to) => {
                 if (to == null) { return null; }
-                const address = await this.resolveName(to);
-                if (address == null) {
-                    logger.throwArgumentError("provided ENS name resolves to null", "tx.to", to);
-                }
-                return address;
+                return getChecksumAddress(getAddressFromAccount(to));
             });
 
             // Prevent this error from causing an UnhandledPromiseException
             tx.to.catch((error) => {  });
         }
 
-        // Do not allow mixing pre-eip-1559 and eip-1559 properties
-        const hasEip1559 = (tx.maxFeePerGas != null || tx.maxPriorityFeePerGas != null);
-        if (tx.gasPrice != null && (tx.type === 2 || hasEip1559)) {
-            logger.throwArgumentError("eip-1559 transaction do not support gasPrice", "transaction", transaction);
-        } else if ((tx.type === 0 || tx.type === 1) && hasEip1559) {
-            logger.throwArgumentError("pre-eip-1559 transaction do not support maxFeePerGas/maxPriorityFeePerGas", "transaction", transaction);
-        }
-
-        if ((tx.type === 2 || tx.type == null) && (tx.maxFeePerGas != null && tx.maxPriorityFeePerGas != null)) {
-            // Fully-formed EIP-1559 transaction (skip getFeeData)
-            tx.type = 2;
-
-        } else if (tx.type === 0 || tx.type === 1) {
-            // Explicit Legacy or EIP-2930 transaction
-
-            // Populate missing gasPrice
-            // TODO: gas price
-            // if (tx.gasPrice == null) { tx.gasPrice = this.getGasPrice(); }
-
-        } else {
-            /*
-            // We need to get fee data to determine things
-            // TODO: get the fee data somehow ( probably fee schedule in the hedera context )
-            // const feeData = await this.getFeeData();
-
-            if (tx.type == null) {
-                // We need to auto-detect the intended type of this transaction...
-
-                if (feeData.maxFeePerGas != null && feeData.maxPriorityFeePerGas != null) {
-                    // The network supports EIP-1559!
-
-                    // Upgrade transaction from null to eip-1559
-                    tx.type = 2;
-
-                    if (tx.gasPrice != null) {
-                        // Using legacy gasPrice property on an eip-1559 network,
-                        // so use gasPrice as both fee properties
-                        const gasPrice = tx.gasPrice;
-                        delete tx.gasPrice;
-                        tx.maxFeePerGas = gasPrice;
-                        tx.maxPriorityFeePerGas = gasPrice;
-
-                    } else {
-                        // Populate missing fee data
-                        if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
-                        if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
-                    }
-
-                } else if (feeData.gasPrice != null) {
-                    // Network doesn't support EIP-1559...
-
-                    // ...but they are trying to use EIP-1559 properties
-                    if (hasEip1559) {
-                        logger.throwError("network does not support EIP-1559", Logger.errors.UNSUPPORTED_OPERATION, {
-                            operation: "populateTransaction"
-                        });
-                    }
-
-                    // Populate missing fee data
-                    if (tx.gasPrice == null) { tx.gasPrice = feeData.gasPrice; }
-
-                    // Explicitly set untyped transaction to legacy
-                    tx.type = 0;
-
-                } else {
-                    // getFeeData has failed us.
-                    logger.throwError("failed to get consistent fee data", Logger.errors.UNSUPPORTED_OPERATION, {
-                        operation: "signer.getFeeData"
-                    });
-                }
-
-            } else if (tx.type === 2) {
-                // Explicitly using EIP-1559
-
-                // Populate missing fee data
-                if (tx.maxFeePerGas == null) { tx.maxFeePerGas = feeData.maxFeePerGas; }
-                if (tx.maxPriorityFeePerGas == null) { tx.maxPriorityFeePerGas = feeData.maxPriorityFeePerGas; }
-            }
-            */
-        }
-
-        // if (tx.nonce == null) { tx.nonce = this.getTransactionCount("pending"); }
-
-        if (tx.gasLimit == null) {
-            tx.gasLimit = this.estimateGas(tx).catch((error) => {
-                if (forwardErrors.indexOf(error.code) >= 0) {
-                    throw error;
-                }
-
-                return logger.throwError("cannot estimate gas; transaction may fail or may require manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, {
-                    error: error,
-                    tx: tx
-                });
-            });
-        }
-
-        if (tx.chainId == null) {
-            tx.chainId = this.getChainId();
-        } else {
-            tx.chainId = Promise.all([
-                Promise.resolve(tx.chainId),
-                this.getChainId()
-            ]).then((results) => {
-                if (results[1] !== 0 && results[0] !== results[1]) {
-                    logger.throwArgumentError("chainId address mismatch", "transaction", transaction);
-                }
-                return results[0];
-            });
+        const customData = await tx.customData;
+        // FileCreate and FileAppend always carry a customData.fileChunk object
+        if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
+            return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
         }
 
         return await resolveProperties(tx);
@@ -364,3 +297,26 @@ export class VoidSigner extends Signer implements TypedDataSigner {
     }
 }
 
+
+function splitInChunks(data: string, chunkSize: number): string[] {
+    const chunks = [];
+    let num = 0;
+    while (num <= data.length) {
+        const slice = data.slice(num, chunkSize + num);
+        num += chunkSize;
+        chunks.push(slice);
+    }
+    return chunks;
+}
+
+
+/**
+ * Generates a random integer in the given range
+ * @param min - range start
+ * @param max - range end
+ */
+export function randomNumBetween(min: number, max: number): number {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}

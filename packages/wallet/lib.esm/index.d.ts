@@ -33,6 +33,7 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     static fromEncryptedJson(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<Wallet>;
     static fromEncryptedJsonSync(json: string, password: Bytes | string): Wallet;
     static fromMnemonic(mnemonic: string, path?: string, wordlist?: Wordlist): Wallet;
+    _checkAddress(operation?: string): void;
 }
 export declare function verifyMessage(message: Bytes | string, signature: SignatureLike): string;
 export declare function verifyTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, signature: SignatureLike): string;

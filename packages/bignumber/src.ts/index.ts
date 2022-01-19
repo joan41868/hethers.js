@@ -1,4 +1,4 @@
-export { BigNumber, BigNumberish } from "./bignumber";
+export { BigNumber, BigNumberish, numberify } from "./bignumber";
 export { formatFixed, FixedFormat, FixedNumber, parseFixed } from "./fixednumber";
 
 // Internal methods used by address

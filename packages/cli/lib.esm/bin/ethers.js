@@ -340,7 +340,7 @@ class InfoPlugin extends Plugin {
                 else {
                     this.queries.push(`ENS Name: ${arg}`);
                 }
-                // runners.push(this.provider.resolveName(arg));
+                runners.push(this.provider.resolveName(arg));
             });
             this.addresses = yield Promise.all(runners);
         });
@@ -353,7 +353,7 @@ class InfoPlugin extends Plugin {
                     balance: this.provider.getBalance(address),
                     nonce: 0,
                     code: this.provider.getCode(address),
-                    reverse: "" //this.provider.lookupAddress(address)
+                    reverse: this.provider.lookupAddress(address)
                 });
                 let info = {
                     "Address": address,
@@ -477,7 +477,7 @@ class SweepPlugin extends Plugin {
             yield this.accounts[0].sendTransaction({
                 to: this.toAddress,
                 gasLimit: 21000,
-                gasPrice: gasPrice,
+                // gasPrice: gasPrice,
                 value: maxSpendable
             });
         });

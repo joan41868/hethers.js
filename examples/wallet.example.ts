@@ -61,7 +61,7 @@ const hethers = require("ethers");
 	 */
 	const connected1 = fromPk.connectAccount("0.0.1")
 	const connected2 = fromPk.connectAccount("0x0000000000000000000000000000000000000001")
-	const connected3 = fromPk.connectAccount({shard: BigInt(0), realm: BigInt(0), num: BigInt(1)})
+	const connected3 = fromPk.connectAccount({ shard: BigInt(0), realm: BigInt(0), num: BigInt(1) })
 	console.log(connected1);
 	console.log(connected2);
 	console.log(connected3);
@@ -86,4 +86,16 @@ const hethers = require("ethers");
 	console.log(`Decrypted Wallet Sync:`);
 	console.log(decryptedWalletSync);
 
+	let wallet = hethers.Wallet.createRandom();
+	wallet = wallet.connectAccount("0.0.98");
+	const data = Buffer.from(`"abi":{},"values":{}`).toString('hex');
+	const tx = {
+		to: hethers.utils.getAddressFromAccount("0.0.12999"),
+		from: wallet.address,
+		data: '0x'+data,
+		gasLimit: 100000,
+		nodeId: "0.0.1"
+	};
+	const signed = await wallet.signTransaction(tx);
+	console.log(signed);
 })()

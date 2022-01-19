@@ -1,5 +1,8 @@
+import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike, SignatureLike } from "@ethersproject/bytes";
+import { Transaction as HederaTransaction } from "@hashgraph/sdk";
+import { TransactionRequest } from "@ethersproject/abstract-provider";
 export declare type AccessList = Array<{
     address: string;
     storageKeys: Array<string>;
@@ -11,7 +14,7 @@ export declare enum TransactionTypes {
     eip1559 = 2
 }
 export declare type UnsignedTransaction = {
-    to?: string;
+    to?: AccountLike;
     nonce?: number;
     gasLimit?: BigNumberish;
     gasPrice?: BigNumberish;
@@ -47,5 +50,6 @@ export declare function computeAliasFromPubKey(pubKey: string): string;
 export declare function recoverAddress(digest: BytesLike, signature: SignatureLike): string;
 export declare function accessListify(value: AccessListish): AccessList;
 export declare function serialize(transaction: UnsignedTransaction, signature?: SignatureLike): string;
+export declare function serializeHederaTransaction(transaction: TransactionRequest): HederaTransaction;
 export declare function parse(rawTransaction: BytesLike): Promise<Transaction>;
 //# sourceMappingURL=index.d.ts.map
