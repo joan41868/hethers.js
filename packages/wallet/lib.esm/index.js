@@ -14,17 +14,14 @@ import { arrayify, concat, hexDataSlice, hexlify, isHexString, joinSignature } f
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import { defineReadOnly, resolveProperties } from "@ethersproject/properties";
+import { defineReadOnly } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethersproject/json-wallets";
-import { computeAlias, recoverAddress } from "@ethersproject/transactions";
+import { computeAlias, recoverAddress, serializeHederaTransaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, PrivateKey as HederaPrivKey, PublicKey as HederaPubKey, ContractCallQuery, TransactionId, Hbar, AccountId, PrivateKey } from "@hashgraph/sdk";
-import { TransactionBody, SignedTransaction } from '@hashgraph/proto';
-import { numberify } from "@ethersproject/bignumber";
-import * as Long from 'long';
+import { PrivateKey as HederaPrivKey, } from "@hashgraph/sdk";
 const logger = new Logger(version);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
@@ -128,65 +125,13 @@ export class Wallet extends Signer {
         return new Wallet(eoa, this.provider);
     }
     signTransaction(transaction) {
-        var _a, _b;
         this._checkAddress('signTransaction');
-        if (transaction.from) {
-            if (getAddressFromAccount(transaction.from) !== this.address) {
-                logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-            }
-        }
-        let tx;
-        const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-        const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new ContractExecuteTransaction()
-                .setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
-        }
-        else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
-                    .setGas(gas);
-            }
-            else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId);
-                }
-                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            HederaPubKey.fromString(this._signingKey().compressedPublicKey)]);
-                }
-                else {
-                    logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
-                }
-            }
-        }
-        const account = getAccountFromAddress(this.address);
-        tx.setTransactionId(TransactionId.generate(new AccountId({
-            shard: numberify(account.shard),
-            realm: numberify(account.realm),
-            num: numberify(account.num)
-        })))
-            // FIXME - should be taken from the network/ wallet's provider
-            .setNodeAccountIds([new AccountId(0, 0, 3)])
-            .freeze();
-        const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
-        return new Promise((resolve) => __awaiter(this, void 0, void 0, function* () {
+        this.checkTransaction(transaction);
+        return this.populateTransaction(transaction).then((readyTx) => __awaiter(this, void 0, void 0, function* () {
+            const tx = serializeHederaTransaction(readyTx);
+            const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
             const signed = yield tx.sign(pkey);
-            resolve(hexlify(signed.toBytes()));
+            return hexlify(signed.toBytes());
         }));
     }
     signMessage(message) {
@@ -223,62 +168,6 @@ export class Wallet extends Signer {
             options = {};
         }
         return encryptKeystore(this, password, options, progressCallback);
-    }
-    call(txRequest, blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            this._checkProvider("call");
-            const tx = yield resolveProperties(this.checkTransaction(txRequest));
-            const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
-            const contractId = `${contractAccountLikeID.shard}.${contractAccountLikeID.realm}.${contractAccountLikeID.num}`;
-            const thisAcc = getAccountFromAddress(yield this.getAddress());
-            const thisAccId = `${thisAcc.shard}.${thisAcc.realm}.${thisAcc.num}`;
-            const nodeID = AccountId.fromString(tx.nodeId.toString());
-            const paymentTxId = TransactionId.generate(thisAccId);
-            const hederaTx = new ContractCallQuery()
-                .setContractId(contractId)
-                .setFunctionParameters(arrayify(tx.data))
-                .setNodeAccountIds([nodeID])
-                .setGas(Long.fromString(tx.gasLimit.toString()))
-                .setPaymentTransactionId(paymentTxId);
-            const paymentBody = {
-                transactionID: paymentTxId._toProtobuf(),
-                nodeAccountID: nodeID._toProtobuf(),
-                transactionFee: new Hbar(1).toTinybars(),
-                transactionValidDuration: {
-                    seconds: Long.fromInt(120),
-                },
-                cryptoTransfer: {
-                    transfers: {
-                        accountAmounts: [
-                            {
-                                accountID: AccountId.fromString(thisAccId)._toProtobuf(),
-                                amount: new Hbar(3).negated().toTinybars()
-                            },
-                            {
-                                accountID: nodeID._toProtobuf(),
-                                amount: new Hbar(3).toTinybars()
-                            }
-                        ],
-                    },
-                },
-            };
-            const signed = {
-                bodyBytes: TransactionBody.encode(paymentBody).finish(),
-                sigMap: {}
-            };
-            const walletKey = PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-            const signature = walletKey.sign(signed.bodyBytes);
-            signed.sigMap = {
-                sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
-            };
-            const transferSignedTransactionBytes = SignedTransaction.encode(signed).finish();
-            hederaTx._paymentTransactions.push({
-                signedTransactionBytes: transferSignedTransactionBytes
-            });
-            const response = yield hederaTx.execute(this.provider.getHederaClient());
-            // TODO: this may not be the best thing to return but it should work for testing
-            return hexlify(response.asBytes());
-        });
     }
     /**
      *  Static methods to create Wallet instances.

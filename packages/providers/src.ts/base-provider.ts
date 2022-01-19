@@ -1,8 +1,16 @@
 "use strict";
 
 import {
-    BlockTag, EventType, Filter, FilterByBlockHash,
-    Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
+    BlockTag,
+    EventType,
+    Filter,
+    FilterByBlockHash,
+    Listener,
+    Log,
+    Provider,
+    TransactionReceipt,
+    TransactionRequest,
+    TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
@@ -18,12 +26,12 @@ import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-const logger = new Logger(version);
-
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction, ContractCallQuery } from "@hashgraph/sdk";
 import axios from "axios";
+
+const logger = new Logger(version);
 
 //////////////////////////////
 // Event Serializeing

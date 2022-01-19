@@ -225,7 +225,6 @@ var Signer = /** @class */ (function () {
         if (!tx.nodeId) {
             this._checkProvider();
             // provider present, we can go on
-            // @ts-ignore
             var submittableNodeIDs = this.provider.getHederaNetworkConfig();
             if (submittableNodeIDs.length > 0) {
                 tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length - 1)].toString();
@@ -282,22 +281,8 @@ var Signer = /** @class */ (function () {
                     case 2:
                         customData = _a.sent();
                         // FileCreate and FileAppend always carry a customData.fileChunk object
-                        if (customData && !customData.fileChunk && tx.gasLimit == null) {
+                        if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
                             return [2 /*return*/, logger.throwError("cannot estimate gas; transaction requires manual gas limit", logger_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx })];
-                        }
-                        if (tx.chainId == null) {
-                            tx.chainId = this.getChainId();
-                        }
-                        else {
-                            tx.chainId = Promise.all([
-                                Promise.resolve(tx.chainId),
-                                this.getChainId()
-                            ]).then(function (results) {
-                                if (results[1] !== 0 && results[0] !== results[1]) {
-                                    logger.throwArgumentError("chainId address mismatch", "transaction", transaction);
-                                }
-                                return results[0];
-                            });
                         }
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(tx)];
                     case 3: return [2 /*return*/, _a.sent()];

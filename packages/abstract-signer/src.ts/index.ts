@@ -191,7 +191,6 @@ export abstract class Signer {
         if (!tx.nodeId) {
             this._checkProvider();
             // provider present, we can go on
-            // @ts-ignore
             const submittableNodeIDs = this.provider.getHederaNetworkConfig();
             if (submittableNodeIDs.length > 0) {
                 tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length-1)].toString();
@@ -236,26 +235,13 @@ export abstract class Signer {
             // Prevent this error from causing an UnhandledPromiseException
             tx.to.catch((error) => {  });
         }
-        // won't modify the present custom data
+
         const customData = await tx.customData;
         // FileCreate and FileAppend always carry a customData.fileChunk object
-        if (customData && !customData.fileChunk && tx.gasLimit == null) {
+        if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
             return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
         }
 
-        if (tx.chainId == null) {
-            tx.chainId = this.getChainId();
-        } else {
-            tx.chainId = Promise.all([
-                Promise.resolve(tx.chainId),
-                this.getChainId()
-            ]).then((results) => {
-                if (results[1] !== 0 && results[0] !== results[1]) {
-                    logger.throwArgumentError("chainId address mismatch", "transaction", transaction);
-                }
-                return results[0];
-            });
-        }
         return await resolveProperties(tx);
     }
 
