@@ -86537,7 +86537,7 @@ class Signer {
             // won't modify the present custom data
             const customData = yield tx.customData;
             // FileCreate and FileAppend always carry a customData.fileChunk object
-            if (customData && !customData.fileChunk && tx.gasLimit == null) {
+            if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
                 return logger$f.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
             }
             if (tx.chainId == null) {
