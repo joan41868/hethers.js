@@ -612,7 +612,7 @@ var BaseProvider = /** @class */ (function (_super) {
                 remainingTimeout = timeout;
                 intervalMs = 1000;
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
-                        var txResponse, result;
+                        var txResponse;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
@@ -622,16 +622,15 @@ var BaseProvider = /** @class */ (function (_super) {
                                     txResponse = _a.sent();
                                     if (!(txResponse == null)) return [3 /*break*/, 3];
                                     console.log("waiting " + intervalMs + " ms for transaction finality...");
-                                    return [4 /*yield*/, this.sleep(intervalMs)];
+                                    return [4 /*yield*/, new Promise(function (resolve) {
+                                            setTimeout(resolve, intervalMs);
+                                        })];
                                 case 2:
                                     _a.sent();
-                                    if (remainingTimeout != null) {
+                                    if (remainingTimeout != null)
                                         remainingTimeout -= intervalMs;
-                                    }
                                     return [3 /*break*/, 4];
-                                case 3:
-                                    result = this.formatter.txRecordToTxReceipt(txResponse);
-                                    return [2 /*return*/, resolve(result)];
+                                case 3: return [2 /*return*/, resolve(this.formatter.txRecordToTxReceipt(txResponse))];
                                 case 4: return [3 /*break*/, 0];
                                 case 5:
                                     reject(logger.makeError("timeout exceeded", logger_1.Logger.errors.TIMEOUT, { timeout: timeout }));
@@ -639,15 +638,6 @@ var BaseProvider = /** @class */ (function (_super) {
                             }
                         });
                     }); })];
-            });
-        });
-    };
-    BaseProvider.prototype.sleep = function (ms) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                return [2 /*return*/, new Promise(function (resolve) {
-                        setTimeout(resolve, ms);
-                    })];
             });
         });
     };

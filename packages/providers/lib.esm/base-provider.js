@@ -484,25 +484,18 @@ export class BaseProvider extends Provider {
                     const txResponse = yield this.getTransaction(parseTransactionId(transactionId));
                     if (txResponse == null) {
                         console.log(`waiting ${intervalMs} ms for transaction finality...`);
-                        yield this.sleep(intervalMs);
-                        if (remainingTimeout != null) {
+                        yield new Promise((resolve) => {
+                            setTimeout(resolve, intervalMs);
+                        });
+                        if (remainingTimeout != null)
                             remainingTimeout -= intervalMs;
-                        }
                     }
                     else {
-                        const result = this.formatter.txRecordToTxReceipt(txResponse);
-                        return resolve(result);
+                        return resolve(this.formatter.txRecordToTxReceipt(txResponse));
                     }
                 }
                 reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
             }));
-        });
-    }
-    sleep(ms) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return new Promise((resolve) => {
-                setTimeout(resolve, ms);
-            });
         });
     }
     /**
