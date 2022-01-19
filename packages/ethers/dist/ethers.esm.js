@@ -86534,25 +86534,10 @@ class Signer {
                 // Prevent this error from causing an UnhandledPromiseException
                 tx.to.catch((error) => { });
             }
-            // won't modify the present custom data
             const customData = yield tx.customData;
             // FileCreate and FileAppend always carry a customData.fileChunk object
             if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
                 return logger$f.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
-            }
-            if (tx.chainId == null) {
-                tx.chainId = this.getChainId();
-            }
-            else {
-                tx.chainId = Promise.all([
-                    Promise.resolve(tx.chainId),
-                    this.getChainId()
-                ]).then((results) => {
-                    if (results[1] !== 0 && results[0] !== results[1]) {
-                        logger$f.throwArgumentError("chainId address mismatch", "transaction", transaction);
-                    }
-                    return results[0];
-                });
             }
             return yield resolveProperties(tx);
         });
@@ -93072,6 +93057,9 @@ function parse$2(rawTransaction) {
         else if (parsed instanceof FileAppendTransaction) {
             parsed = parsed;
             contents.data = hexlify(Buffer.from(parsed.contents));
+        }
+        else if (parsed instanceof TransferTransaction) {
+            // TODO populate value / to?
         }
         else {
             return logger$r.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });

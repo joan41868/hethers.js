@@ -281,7 +281,7 @@ var Signer = /** @class */ (function () {
                     case 2:
                         customData = _a.sent();
                         // FileCreate and FileAppend always carry a customData.fileChunk object
-                        if ((!customData || (customData && !customData.fileChunk)) && tx.gasLimit == null) {
+                        if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
                             return [2 /*return*/, logger.throwError("cannot estimate gas; transaction requires manual gas limit", logger_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx })];
                         }
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(tx)];
