@@ -67,11 +67,11 @@ var web_1 = require("@ethersproject/web");
 var bech32_1 = __importDefault(require("bech32"));
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
+var logger = new logger_1.Logger(_version_1.version);
 var formatter_1 = require("./formatter");
 var address_1 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
-var logger = new logger_1.Logger(_version_1.version);
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore

@@ -18,6 +18,14 @@ import {version} from "./_version";
 
 const logger = new Logger(version);
 
+export function asAccountString(acc :AccountLike): string {
+    if (typeof acc === "string") {
+        return acc;
+    } else {
+        return `${acc.shard}${acc.realm}${acc.num}`;
+    }
+}
+
 export function getChecksumAddress(address: string): string {
     if (!isHexString(address, 20)) {
         logger.throwArgumentError("invalid address", "address", address);

@@ -117,11 +117,13 @@ var Signer = /** @class */ (function () {
             });
         });
     };
-    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
-    Signer.prototype.call = function (transaction, blockTag) {
+    // super classes should override this for now
+    Signer.prototype.call = function (transaction) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, Promise.resolve("")];
+                return [2 /*return*/, logger.throwError("not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+                        operation: 'call'
+                    })];
             });
         });
     };

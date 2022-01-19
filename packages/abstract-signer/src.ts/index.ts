@@ -122,9 +122,11 @@ export abstract class Signer {
         return await this.provider.estimateGas(tx);
     }
 
-    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
-    async call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string> {
-        return Promise.resolve("");
+    // super classes should override this for now
+    async call(transaction: Deferrable<TransactionRequest>): Promise<string> {
+        return logger.throwError("not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'call'
+        })
     }
 
     /**

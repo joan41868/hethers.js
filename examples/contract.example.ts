@@ -127,4 +127,6 @@ const account = {
 	};
 	const balanceOfResponse = await wallet.call(balanceOfTx);
 	console.log('balanceOf response: ', balanceOfResponse);
+	// nothing meaningful for now
+	console.log('balanceOf response: ', Buffer.from(balanceOfResponse, 'hex').toString('utf8'))
 })();
