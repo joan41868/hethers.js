@@ -580,26 +580,25 @@ export class BaseProvider extends Provider {
         return this._waitForTransaction(transactionId, timeout);
     }
 
-    async _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt> {
-        if (timeoutMs == null) {
-            return await this.waitOrReturn(transactionId);
-        }
-        if (timeoutMs <= 0) { 
-            //TODO fix timeoutMs value is always 0!
-            logger.throwError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeoutMs });
-        }      
-        return await this.waitOrReturn(transactionId, timeoutMs - 1000);
-    }
-
-    async waitOrReturn(transactionId: string, timeoutMs?: number): Promise<TransactionReceipt> {
-        const txResponse = await this.getTransaction(parseTransactionId(transactionId));
-        if (txResponse != null) {
-            return this.formatter.txRecordToTxReceipt(txResponse);
-        } else {
-            console.log('waiting 1000 ms..');
-            await this.sleep(1000);
-            return this._waitForTransaction(transactionId, timeoutMs);
-        }
+    async _waitForTransaction(transactionId: string, timeout: number): Promise<TransactionReceipt> {
+        let remainingTimeout = timeout;
+        const intervalMs = 1000;
+        return new Promise(async (resolve, reject) => {
+            while (remainingTimeout == null || remainingTimeout > 0) {
+                const txResponse = await this.getTransaction(parseTransactionId(transactionId));
+                if (txResponse == null) {
+                    console.log(`waiting ${intervalMs} ms for transaction finality...`);
+                    await this.sleep(intervalMs);
+                    if (remainingTimeout != null) {
+                        remainingTimeout -= intervalMs;
+                    }
+                } else {
+                    const result = this.formatter.txRecordToTxReceipt(txResponse);
+                    return resolve(result);
+                }
+            }
+            reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
+        });
     }
 
     async sleep(ms: number): Promise<void> {
@@ -666,6 +665,7 @@ export class BaseProvider extends Provider {
 
         result.wait = async (timeout?: number) => {
             const txReceipt = await this._waitForTransaction(tx.transactionId, timeout);
+            //TODO do we need this extra check?
             if (txReceipt.status === 0) {
                 logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
@@ -749,6 +749,7 @@ export class BaseProvider extends Provider {
      * @param txId - id of the transaction to search for
      */
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
+        //currently considers only previewnet!
         await this.getNetwork();
         if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
         transactionId = await transactionId;
@@ -766,7 +767,7 @@ export class BaseProvider extends Provider {
                         axios.get(this._mirrorNodeUrl + epContracts)
                     ])
                         .then(async ([contracts]) => {
-                            const mergedData = { ...contracts.data, transaction: res };
+                            const mergedData = { ...contracts.data, transaction: { transaction_id: res.transaction_id, result: res.result }};
                             return this.formatter.txRecordToTxResponse(mergedData);
                         })
                         .catch(error => {
@@ -787,6 +788,7 @@ export class BaseProvider extends Provider {
         }
     }
 
+    //TODO this will not be supported? 
     async getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt> {
         await this.getNetwork();
         transactionId = await transactionId;

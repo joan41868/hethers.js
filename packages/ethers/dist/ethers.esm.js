@@ -94945,7 +94945,7 @@ class Formatter {
             from: txRecord.from,
             gasLimit: BigNumber.from(txRecord.gas_limit),
             hash: txRecord.hash,
-            transactionId: '',
+            transactionId: txRecord.transaction.transaction_id,
             r: '',
             s: '',
             to: txRecord.to,
@@ -99164,29 +99164,27 @@ class BaseProvider extends Provider {
             return this._waitForTransaction(transactionId, timeout);
         });
     }
-    _waitForTransaction(transactionId, timeoutMs) {
+    _waitForTransaction(transactionId, timeout) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            if (timeoutMs == null) {
-                return yield this.waitOrReturn(transactionId);
-            }
-            if (timeoutMs <= 0) {
-                //TODO fix timeoutMs value is always 0!
-                logger$v.throwError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeoutMs });
-            }
-            return yield this.waitOrReturn(transactionId, timeoutMs - 1000);
-        });
-    }
-    waitOrReturn(transactionId, timeoutMs) {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            const txResponse = yield this.getTransaction(parseTransactionId(transactionId));
-            if (txResponse != null) {
-                return this.formatter.txRecordToTxReceipt(txResponse);
-            }
-            else {
-                console.log('waiting 1000 ms..');
-                yield this.sleep(1000);
-                return this._waitForTransaction(transactionId, timeoutMs);
-            }
+            let remainingTimeout = timeout;
+            const intervalMs = 1000;
+            return new Promise((resolve, reject) => __awaiter$9(this, void 0, void 0, function* () {
+                while (remainingTimeout == null || remainingTimeout > 0) {
+                    const txResponse = yield this.getTransaction(parseTransactionId(transactionId));
+                    if (txResponse == null) {
+                        console.log(`waiting ${intervalMs} ms for transaction finality...`);
+                        yield this.sleep(intervalMs);
+                        if (remainingTimeout != null) {
+                            remainingTimeout -= intervalMs;
+                        }
+                    }
+                    else {
+                        const result = this.formatter.txRecordToTxReceipt(txResponse);
+                        return resolve(result);
+                    }
+                }
+                reject(logger$v.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
+            }));
         });
     }
     sleep(ms) {
@@ -99256,6 +99254,7 @@ class BaseProvider extends Provider {
         }
         result.wait = (timeout) => __awaiter$9(this, void 0, void 0, function* () {
             const txReceipt = yield this._waitForTransaction(tx.transactionId, timeout);
+            //TODO do we need this extra check?
             if (txReceipt.status === 0) {
                 logger$v.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
@@ -99342,6 +99341,7 @@ class BaseProvider extends Provider {
      */
     getTransaction(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
+            //currently considers only previewnet!
             yield this.getNetwork();
             if (!this._mirrorNodeUrl)
                 logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
@@ -99360,7 +99360,7 @@ class BaseProvider extends Provider {
                             axios$1.get(this._mirrorNodeUrl + epContracts)
                         ])
                             .then(([contracts]) => __awaiter$9(this, void 0, void 0, function* () {
-                            const mergedData = Object.assign(Object.assign({}, contracts.data), { transaction: res });
+                            const mergedData = Object.assign(Object.assign({}, contracts.data), { transaction: { transaction_id: res.transaction_id, result: res.result } });
                             return this.formatter.txRecordToTxResponse(mergedData);
                         }))
                             .catch(error => {
@@ -99382,6 +99382,7 @@ class BaseProvider extends Provider {
             }
         });
     }
+    //TODO this will not be supported? 
     getTransactionReceipt(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
             yield this.getNetwork();

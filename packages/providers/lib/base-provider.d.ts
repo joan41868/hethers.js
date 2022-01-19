@@ -73,8 +73,7 @@ export declare class BaseProvider extends Provider {
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
     waitForTransaction(transactionId: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
-    _waitForTransaction(transactionId: string, timeoutMs: number): Promise<TransactionReceipt>;
-    waitOrReturn(transactionId: string, timeoutMs?: number): Promise<TransactionReceipt>;
+    _waitForTransaction(transactionId: string, timeout: number): Promise<TransactionReceipt>;
     sleep(ms: number): Promise<void>;
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.

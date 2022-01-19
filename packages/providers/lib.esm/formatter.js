@@ -334,7 +334,7 @@ export class Formatter {
             from: txRecord.from,
             gasLimit: BigNumber.from(txRecord.gas_limit),
             hash: txRecord.hash,
-            transactionId: '',
+            transactionId: txRecord.transaction.transaction_id,
             r: '',
             s: '',
             to: txRecord.to,

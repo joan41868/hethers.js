@@ -338,7 +338,7 @@ var Formatter = /** @class */ (function () {
             from: txRecord.from,
             gasLimit: bignumber_1.BigNumber.from(txRecord.gas_limit),
             hash: txRecord.hash,
-            transactionId: '',
+            transactionId: txRecord.transaction.transaction_id,
             r: '',
             s: '',
             to: txRecord.to,

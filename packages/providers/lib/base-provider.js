@@ -604,42 +604,41 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype._waitForTransaction = function (transactionId, timeoutMs) {
+    BaseProvider.prototype._waitForTransaction = function (transactionId, timeout) {
         return __awaiter(this, void 0, void 0, function () {
+            var remainingTimeout, intervalMs;
+            var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (!(timeoutMs == null)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, this.waitOrReturn(transactionId)];
-                    case 1: return [2 /*return*/, _a.sent()];
-                    case 2:
-                        if (timeoutMs <= 0) {
-                            //TODO fix timeoutMs value is always 0!
-                            logger.throwError("timeout exceeded", logger_1.Logger.errors.TIMEOUT, { timeout: timeoutMs });
-                        }
-                        return [4 /*yield*/, this.waitOrReturn(transactionId, timeoutMs - 1000)];
-                    case 3: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
-    BaseProvider.prototype.waitOrReturn = function (transactionId, timeoutMs) {
-        return __awaiter(this, void 0, void 0, function () {
-            var txResponse;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getTransaction((0, transactions_1.parseTransactionId)(transactionId))];
-                    case 1:
-                        txResponse = _a.sent();
-                        if (!(txResponse != null)) return [3 /*break*/, 2];
-                        return [2 /*return*/, this.formatter.txRecordToTxReceipt(txResponse)];
-                    case 2:
-                        console.log('waiting 1000 ms..');
-                        return [4 /*yield*/, this.sleep(1000)];
-                    case 3:
-                        _a.sent();
-                        return [2 /*return*/, this._waitForTransaction(transactionId, timeoutMs)];
-                }
+                remainingTimeout = timeout;
+                intervalMs = 1000;
+                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+                        var txResponse, result;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    if (!(remainingTimeout == null || remainingTimeout > 0)) return [3 /*break*/, 5];
+                                    return [4 /*yield*/, this.getTransaction((0, transactions_1.parseTransactionId)(transactionId))];
+                                case 1:
+                                    txResponse = _a.sent();
+                                    if (!(txResponse == null)) return [3 /*break*/, 3];
+                                    console.log("waiting " + intervalMs + " ms for transaction finality...");
+                                    return [4 /*yield*/, this.sleep(intervalMs)];
+                                case 2:
+                                    _a.sent();
+                                    if (remainingTimeout != null) {
+                                        remainingTimeout -= intervalMs;
+                                    }
+                                    return [3 /*break*/, 4];
+                                case 3:
+                                    result = this.formatter.txRecordToTxReceipt(txResponse);
+                                    return [2 /*return*/, resolve(result)];
+                                case 4: return [3 /*break*/, 0];
+                                case 5:
+                                    reject(logger.makeError("timeout exceeded", logger_1.Logger.errors.TIMEOUT, { timeout: timeout }));
+                                    return [2 /*return*/];
+                            }
+                        });
+                    }); })];
             });
         });
     };
@@ -743,6 +742,7 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, this._waitForTransaction(tx.transactionId, timeout)];
                     case 1:
                         txReceipt = _a.sent();
+                        //TODO do we need this extra check?
                         if (txReceipt.status === 0) {
                             logger.throwError("transaction failed", logger_1.Logger.errors.CALL_EXCEPTION, {
                                 transactionHash: tx.hash,
@@ -870,8 +870,11 @@ var BaseProvider = /** @class */ (function (_super) {
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 0: 
+                    //currently considers only previewnet!
+                    return [4 /*yield*/, this.getNetwork()];
                     case 1:
+                        //currently considers only previewnet!
                         _a.sent();
                         if (!this._mirrorNodeUrl)
                             logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
@@ -899,7 +902,7 @@ var BaseProvider = /** @class */ (function (_super) {
                                     return __awaiter(_this, void 0, void 0, function () {
                                         var mergedData;
                                         return __generator(this, function (_b) {
-                                            mergedData = __assign(__assign({}, contracts.data), { transaction: res_1 });
+                                            mergedData = __assign(__assign({}, contracts.data), { transaction: { transaction_id: res_1.transaction_id, result: res_1.result } });
                                             return [2 /*return*/, this.formatter.txRecordToTxResponse(mergedData)];
                                         });
                                     });
@@ -925,6 +928,7 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    //TODO this will not be supported? 
     BaseProvider.prototype.getTransactionReceipt = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
             var receipt, error_5;

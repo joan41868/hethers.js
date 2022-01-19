@@ -47,7 +47,10 @@ export type HederaTransactionResponse = {
     block_number: number,
     hash: string,
     logs: {},
-    transaction: {}
+    transaction: {
+        transaction_id: string,
+        result: string
+    }
 }
   
 export interface TransactionResponse extends Transaction {
