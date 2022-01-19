@@ -1035,20 +1035,126 @@ describe("Test Hedera Provider", function () {
             });
         });
     }).timeout(timeout);
-    it("Gets txn record", function () {
+    //TODO add formatter tests ->
+    it("Schould populate txn receipt", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var privateKey, txID, tx, txBytes, signedTx, provider, txResponse, receipt;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        privateKey = sdk_1.PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
+                        txID = sdk_1.TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
+                        return [4 /*yield*/, new sdk_1.ContractCreateTransaction()
+                                .setContractMemo("memo")
+                                .setGas(100000)
+                                .setBytecodeFileId("0.0.26562254")
+                                .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
+                                .setConstructorParameters(new sdk_1.ContractFunctionParameters().addUint256(100))
+                                .setTransactionId(txID)
+                                .freeze()
+                                .sign(privateKey)];
+                    case 1:
+                        tx = _a.sent();
+                        txBytes = tx.toBytes();
+                        signedTx = ethers_1.ethers.utils.hexlify(txBytes);
+                        provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                        return [4 /*yield*/, provider.sendTransaction(signedTx)];
+                    case 2:
+                        txResponse = _a.sent();
+                        return [4 /*yield*/, txResponse.wait(timeout)];
+                    case 3:
+                        receipt = _a.sent();
+                        // assert.strict(receipt.logs.length > 0);
+                        assert_1.default.strictEqual(receipt.to, null);
+                        // assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
+                        assert_1.default.strictEqual(txResponse.hash, receipt.transactionHash);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should throw timeout exceeded", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var time;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        time = 500;
+                        return [4 /*yield*/, assert_1.default.rejects(function () { return __awaiter(_this, void 0, void 0, function () {
+                                var privateKey, txID, tx, txBytes, signedTx, provider, txResponse;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            privateKey = sdk_1.PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
+                                            txID = sdk_1.TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
+                                            return [4 /*yield*/, new sdk_1.ContractCreateTransaction()
+                                                    .setContractMemo("memo")
+                                                    .setGas(100000)
+                                                    .setBytecodeFileId("0.0.26562254")
+                                                    .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
+                                                    .setConstructorParameters(new sdk_1.ContractFunctionParameters().addUint256(100))
+                                                    .setTransactionId(txID)
+                                                    .freeze()
+                                                    .sign(privateKey)];
+                                        case 1:
+                                            tx = _a.sent();
+                                            txBytes = tx.toBytes();
+                                            signedTx = ethers_1.ethers.utils.hexlify(txBytes);
+                                            provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                                            return [4 /*yield*/, provider.sendTransaction(signedTx)];
+                                        case 2:
+                                            txResponse = _a.sent();
+                                            return [4 /*yield*/, txResponse.wait(time)];
+                                        case 3:
+                                            _a.sent();
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            }); }, function (err) {
+                                console.log("err:", err);
+                                assert_1.default.strictEqual(err.name, 'Error');
+                                assert_1.default.strictEqual(err.reason, 'timeout exceeded');
+                                assert_1.default.strictEqual(err.code, 'TIMEOUT');
+                                assert_1.default.strictEqual(err.timeout, time);
+                                return true;
+                            })];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    /* xThis test is skipped because the previewnet will be resetted */
+    xit("Schould populate txn response", function () {
         return __awaiter(this, void 0, void 0, function () {
             var record;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, provider.getTransaction("0.0.15680048-1638189529-145876922")];
+                    case 0: return [4 /*yield*/, provider.getTransaction("0.0.1546615-1641987871-235099329")];
                     case 1:
                         record = _a.sent();
                         // @ts-ignore
-                        assert_1.default.strictEqual(record.transaction_id, "0.0.15680048-1638189529-145876922");
+                        assert_1.default.strictEqual(record.transactionId, "0.0.1546615-1641987871-235099329");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    /* This test is skipped because the previewnet will be resetted */
+    xit("Schould return null on record not found", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var fakeTransactionId, record;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        fakeTransactionId = "0.0.0-0000000000-000000000";
+                        return [4 /*yield*/, provider.getTransaction(fakeTransactionId)];
+                    case 1:
+                        record = _a.sent();
                         // @ts-ignore
-                        assert_1.default.strictEqual(record.transfers.length, 3);
-                        // @ts-ignore
-                        assert_1.default.strictEqual(record.valid_duration_seconds, '120');
+                        assert_1.default.strictEqual(record, null);
                         return [2 /*return*/];
                 }
             });
@@ -1169,7 +1275,7 @@ describe("Test Hedera Provider", function () {
                     case 1:
                         balance2 = _a.sent();
                         assert_1.default.strictEqual(true, balance2.gte(0));
-                        txId = "0.0.15680048-1638189529-145876922";
+                        txId = "0.0.1546615-1641987871-235099329";
                         return [4 /*yield*/, provider2.getTransaction(txId)];
                     case 2:
                         record2 = _a.sent();
