@@ -46,6 +46,7 @@ var providers_1 = require("@ethersproject/providers");
 var utils_1 = require("ethers/lib/utils");
 var default_hedera_provider_1 = require("@ethersproject/providers/lib/default-hedera-provider");
 var sdk_1 = require("@hashgraph/sdk");
+// import { TransactionResponse } from "@ethersproject/abstract-provider";
 var bnify = ethers_1.ethers.BigNumber.from;
 var hederaTestnetOperableAccount = {
     "operator": {
@@ -1036,9 +1037,12 @@ describe("Test Hedera Provider", function () {
         });
     }).timeout(timeout);
     //TODO add formatter tests ->
-    it("Schould populate txn receipt", function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var privateKey, txID, tx, txBytes, signedTx, provider, txResponse, receipt;
+    describe("Sign & Send Transacton, Wait for receipt", function () {
+        var _this = this;
+        // let sendTransactionResponse: ethers.providers.TransactionResponse;
+        var signedTx;
+        beforeEach(function () { return __awaiter(_this, void 0, void 0, function () {
+            var privateKey, txID, tx, txBytes;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1057,93 +1061,118 @@ describe("Test Hedera Provider", function () {
                         tx = _a.sent();
                         txBytes = tx.toBytes();
                         signedTx = ethers_1.ethers.utils.hexlify(txBytes);
-                        provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
-                        return [4 /*yield*/, provider.sendTransaction(signedTx)];
-                    case 2:
-                        txResponse = _a.sent();
-                        return [4 /*yield*/, txResponse.wait(timeout)];
-                    case 3:
-                        receipt = _a.sent();
-                        // assert.strict(receipt.logs.length > 0);
-                        assert_1.default.strictEqual(receipt.to, null);
-                        // assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
-                        assert_1.default.strictEqual(txResponse.hash, receipt.transactionHash);
                         return [2 /*return*/];
                 }
             });
-        });
-    }).timeout(timeout);
-    it("Should throw timeout exceeded", function () {
+        }); });
+        it.only("Schould populate transaction receipt", function () {
+            return __awaiter(this, void 0, void 0, function () {
+                var sendTransactionResponse, _a, _b, receipt;
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
+                        case 0:
+                            _b = (_a = provider).sendTransaction;
+                            return [4 /*yield*/, signedTx];
+                        case 1: return [4 /*yield*/, _b.apply(_a, [_c.sent()])];
+                        case 2:
+                            sendTransactionResponse = _c.sent();
+                            return [4 /*yield*/, sendTransactionResponse.wait()];
+                        case 3:
+                            receipt = _c.sent();
+                            // assert.strict(receipt.logs.length > 0);
+                            assert_1.default.strictEqual(receipt.to, null);
+                            assert_1.default.strictEqual(receipt.contractAddress, '0x' + sendTransactionResponse.customData.contractId);
+                            assert_1.default.strictEqual(receipt.from, (0, utils_1.getAddressFromAccount)(hederaTestnetOperableAccount.operator.accountId));
+                            assert_1.default.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        }).timeout(timeout);
+        it.only("Schould populate transaction receipt with timeout", function () {
+            return __awaiter(this, void 0, void 0, function () {
+                var sendTransactionResponse, _a, _b, receipt;
+                return __generator(this, function (_c) {
+                    switch (_c.label) {
+                        case 0:
+                            _b = (_a = provider).sendTransaction;
+                            return [4 /*yield*/, signedTx];
+                        case 1: return [4 /*yield*/, _b.apply(_a, [_c.sent()])];
+                        case 2:
+                            sendTransactionResponse = _c.sent();
+                            return [4 /*yield*/, sendTransactionResponse.wait(timeout)];
+                        case 3:
+                            receipt = _c.sent();
+                            // assert.strict(receipt.logs.length > 0);
+                            assert_1.default.strictEqual(receipt.to, null);
+                            assert_1.default.strictEqual(receipt.contractAddress, '0x' + sendTransactionResponse.customData.contractId);
+                            assert_1.default.strictEqual(receipt.from, (0, utils_1.getAddressFromAccount)(hederaTestnetOperableAccount.operator.accountId));
+                            assert_1.default.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        }).timeout(timeout);
+        it.only("Should throw timeout exceeded", function () {
+            return __awaiter(this, void 0, void 0, function () {
+                var insufficientTimeout;
+                var _this = this;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            insufficientTimeout = 500;
+                            return [4 /*yield*/, assert_1.default.rejects(function () { return __awaiter(_this, void 0, void 0, function () {
+                                    var sendTransactionResponse, _a, _b;
+                                    return __generator(this, function (_c) {
+                                        switch (_c.label) {
+                                            case 0:
+                                                _b = (_a = provider).sendTransaction;
+                                                return [4 /*yield*/, signedTx];
+                                            case 1: return [4 /*yield*/, _b.apply(_a, [_c.sent()])];
+                                            case 2:
+                                                sendTransactionResponse = _c.sent();
+                                                return [4 /*yield*/, sendTransactionResponse.wait(insufficientTimeout)];
+                                            case 3:
+                                                _c.sent();
+                                                return [2 /*return*/];
+                                        }
+                                    });
+                                }); }, function (err) {
+                                    console.log("err:", err);
+                                    assert_1.default.strictEqual(err.name, 'Error');
+                                    assert_1.default.strictEqual(err.reason, 'timeout exceeded');
+                                    assert_1.default.strictEqual(err.code, 'TIMEOUT');
+                                    assert_1.default.strictEqual(err.timeout, insufficientTimeout);
+                                    return true;
+                                })];
+                        case 1:
+                            _a.sent();
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        }).timeout(timeout);
+    });
+    /* This test is skipped because the previewnet will be resetted */
+    it("Schould populate txn response", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var time;
-            var _this = this;
+            var existingId, record;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        time = 500;
-                        return [4 /*yield*/, assert_1.default.rejects(function () { return __awaiter(_this, void 0, void 0, function () {
-                                var privateKey, txID, tx, txBytes, signedTx, provider, txResponse;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0:
-                                            privateKey = sdk_1.PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
-                                            txID = sdk_1.TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
-                                            return [4 /*yield*/, new sdk_1.ContractCreateTransaction()
-                                                    .setContractMemo("memo")
-                                                    .setGas(100000)
-                                                    .setBytecodeFileId("0.0.26562254")
-                                                    .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
-                                                    .setConstructorParameters(new sdk_1.ContractFunctionParameters().addUint256(100))
-                                                    .setTransactionId(txID)
-                                                    .freeze()
-                                                    .sign(privateKey)];
-                                        case 1:
-                                            tx = _a.sent();
-                                            txBytes = tx.toBytes();
-                                            signedTx = ethers_1.ethers.utils.hexlify(txBytes);
-                                            provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
-                                            return [4 /*yield*/, provider.sendTransaction(signedTx)];
-                                        case 2:
-                                            txResponse = _a.sent();
-                                            return [4 /*yield*/, txResponse.wait(time)];
-                                        case 3:
-                                            _a.sent();
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); }, function (err) {
-                                console.log("err:", err);
-                                assert_1.default.strictEqual(err.name, 'Error');
-                                assert_1.default.strictEqual(err.reason, 'timeout exceeded');
-                                assert_1.default.strictEqual(err.code, 'TIMEOUT');
-                                assert_1.default.strictEqual(err.timeout, time);
-                                return true;
-                            })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    }).timeout(timeout);
-    /* xThis test is skipped because the previewnet will be resetted */
-    xit("Schould populate txn response", function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var record;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, provider.getTransaction("0.0.1546615-1641987871-235099329")];
+                        existingId = "0.0.1546615-1641987871-235099329";
+                        return [4 /*yield*/, provider.getTransaction(existingId)];
                     case 1:
                         record = _a.sent();
                         // @ts-ignore
-                        assert_1.default.strictEqual(record.transactionId, "0.0.1546615-1641987871-235099329");
+                        assert_1.default.strictEqual(record.transactionId, existingId);
                         return [2 /*return*/];
                 }
             });
         });
     }).timeout(timeout);
     /* This test is skipped because the previewnet will be resetted */
-    xit("Schould return null on record not found", function () {
+    it("Schould return null on record not found", function () {
         return __awaiter(this, void 0, void 0, function () {
             var fakeTransactionId, record;
             return __generator(this, function (_a) {
@@ -1155,6 +1184,39 @@ describe("Test Hedera Provider", function () {
                         record = _a.sent();
                         // @ts-ignore
                         assert_1.default.strictEqual(record, null);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    /* This test is skipped because the previewnet will be resetted */
+    it("Schould throw backend error", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var badRequestId;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        badRequestId = "0.0.0";
+                        return [4 /*yield*/, assert_1.default.rejects(function () { return __awaiter(_this, void 0, void 0, function () {
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, provider.getTransaction(badRequestId)];
+                                        case 1:
+                                            _a.sent();
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            }); }, function (err) {
+                                assert_1.default.strictEqual(err.name, 'Error');
+                                assert_1.default.strictEqual(err.reason, 'bad result from backend');
+                                assert_1.default.strictEqual(err.method, 'TransactionResponseQuery');
+                                assert_1.default.strictEqual(err.error.response.status, 400);
+                                assert_1.default.strictEqual(err.error.response.statusText, 'Bad Request');
+                                return true;
+                            })];
+                    case 1:
+                        _a.sent();
                         return [2 /*return*/];
                 }
             });

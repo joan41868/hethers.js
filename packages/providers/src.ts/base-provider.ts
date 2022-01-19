@@ -592,7 +592,7 @@ export class BaseProvider extends Provider {
             while (remainingTimeout == null || remainingTimeout > 0) {
                 const txResponse = await this.getTransaction(parseTransactionId(transactionId));
                 if (txResponse == null) {
-                    console.log(`waiting ${intervalMs} ms for transaction finality...`);
+                    // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                     await new Promise((resolve) => {
                         setTimeout(resolve, intervalMs);
                     });

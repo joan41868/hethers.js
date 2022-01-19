@@ -621,11 +621,12 @@ var BaseProvider = /** @class */ (function (_super) {
                                 case 1:
                                     txResponse = _a.sent();
                                     if (!(txResponse == null)) return [3 /*break*/, 3];
-                                    console.log("waiting " + intervalMs + " ms for transaction finality...");
+                                    // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                                     return [4 /*yield*/, new Promise(function (resolve) {
                                             setTimeout(resolve, intervalMs);
                                         })];
                                 case 2:
+                                    // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                                     _a.sent();
                                     if (remainingTimeout != null)
                                         remainingTimeout -= intervalMs;
