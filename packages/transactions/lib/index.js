@@ -497,6 +497,9 @@ function parse(rawTransaction) {
                         parsed = parsed;
                         contents.data = (0, bytes_1.hexlify)(Buffer.from(parsed.contents));
                     }
+                    else if (parsed instanceof sdk_1.TransferTransaction) {
+                        // TODO populate value / to?
+                    }
                     else {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];
                     }

@@ -86,14 +86,15 @@ const hethers = require("ethers");
 	console.log(`Decrypted Wallet Sync:`);
 	console.log(decryptedWalletSync);
 
-	const wallet = hethers.Wallet.createRandom();
+	let wallet = hethers.Wallet.createRandom();
+	wallet = wallet.connectAccount("0.0.98");
 	const data = Buffer.from(`"abi":{},"values":{}`).toString('hex');
 	const tx = {
 		to: hethers.utils.getAddressFromAccount("0.0.12999"),
 		from: wallet.address,
 		data: '0x'+data,
-		gasLimit: 100000
-
+		gasLimit: 100000,
+		nodeId: "0.0.1"
 	};
 	const signed = await wallet.signTransaction(tx);
 	console.log(signed);

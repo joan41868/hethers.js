@@ -30,7 +30,7 @@ import {
     ContractExecuteTransaction, ContractId, FileAppendTransaction,
     FileCreateTransaction,
     Transaction as HederaTransaction,
-    PublicKey as HederaPubKey, TransactionId, AccountId
+    PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction
 } from "@hashgraph/sdk";
 import { TransactionRequest } from "@ethersproject/abstract-provider";
 
@@ -541,6 +541,8 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     } else if (parsed instanceof FileAppendTransaction) {
         parsed = parsed as FileAppendTransaction;
         contents.data = hexlify(Buffer.from(parsed.contents));
+    } else if (parsed instanceof TransferTransaction) {
+        // TODO populate value / to?
     } else {
         return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, {operation: "parse"});
     }
