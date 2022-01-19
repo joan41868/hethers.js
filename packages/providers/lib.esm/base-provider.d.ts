@@ -82,7 +82,7 @@ export declare class BaseProvider extends Provider {
      */
     getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
-    _wrapTransaction(tx: Transaction, receipt?: HederaTransactionReceipt): TransactionResponse;
+    _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;

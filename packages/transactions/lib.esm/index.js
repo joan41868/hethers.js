@@ -21,7 +21,7 @@ import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { base64, getAddressFromAccount } from "ethers/lib/utils";
-import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, PublicKey as HederaPubKey, TransactionId, AccountId } from "@hashgraph/sdk";
+import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction } from "@hashgraph/sdk";
 const logger = new Logger(version);
 export var TransactionTypes;
 (function (TransactionTypes) {
@@ -436,6 +436,9 @@ export function parse(rawTransaction) {
         else if (parsed instanceof FileAppendTransaction) {
             parsed = parsed;
             contents.data = hexlify(Buffer.from(parsed.contents));
+        }
+        else if (parsed instanceof TransferTransaction) {
+            // TODO populate value / to?
         }
         else {
             return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });

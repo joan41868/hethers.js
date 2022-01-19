@@ -12,15 +12,15 @@ import { Key } from "@hashgraph/proto";
 
 const account = {
 	"operator": {
-		"accountId": "0.0.1391",
-		"publicKey": "302a300506032b6570032100659152a5ced818eb7cbfe0e778f5b967c892963c0be798039857b8f5ace324dd",
-		"privateKey": "302e020100300506032b6570042204209310582ff3b50e295ce3322ef98d92a4cc25bad5a857db7eb3481eaa3e77b249"
+		"accountId": "0.0.19041642",
+		"publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
+		"privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
 	},
 	"network": {
-		"35.231.208.148:50211": "0.0.3",
-		"35.199.15.177:50211": "0.0.4",
-		"35.225.201.195:50211": "0.0.5",
-		"35.247.109.135:50211": "0.0.6"
+		"0.testnet.hedera.com:50211": "0.0.3",
+		"1.testnet.hedera.com:50211": "0.0.4",
+		"2.testnet.hedera.com:50211": "0.0.5",
+		"3.testnet.hedera.com:50211": "0.0.6"
 	}
 };
 
@@ -29,7 +29,7 @@ const account = {
 	const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
 	const client = Client.forNetwork(account.network);
 	const generatedWallet = hethers.Wallet.createRandom();
-	const provider = hethers.providers.getDefaultProvider('previewnet');
+	const provider = hethers.providers.getDefaultProvider('testnet');
 	const protoKey = Key.create({
 		ECDSASecp256k1: arrayify(generatedWallet._signingKey().compressedPublicKey)
 	});

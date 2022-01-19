@@ -80,8 +80,8 @@ var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var formatter_1 = require("./formatter");
 var address_1 = require("@ethersproject/address");
-var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
+var sdk_1 = require("@hashgraph/sdk");
 var logger = new logger_1.Logger(_version_1.version);
 //////////////////////////////
 // Event Serializeing
@@ -713,17 +713,23 @@ var BaseProvider = /** @class */ (function (_super) {
         });
     };
     // This should be called by any subclass wrapping a TransactionResponse
-    BaseProvider.prototype._wrapTransaction = function (tx, receipt) {
+    BaseProvider.prototype._wrapTransaction = function (tx, hash, receipt) {
         var _this = this;
-        var result = tx;
-        if (!result.customData) {
-            result.customData = {};
+        if (hash != null && (0, bytes_1.hexDataLength)(hash) !== 48) {
+            throw new Error("invalid response - sendTransaction");
         }
-        if (receipt.fileId) {
+        var result = tx;
+        if (!result.customData)
+            result.customData = {};
+        if (receipt && receipt.fileId) {
             result.customData.fileId = receipt.fileId.toString();
         }
-        if (receipt.contractId) {
+        if (receipt && receipt.contractId) {
             result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
+        // Check the hash we expect is the same as the hash the server reported
+        if (hash != null && tx.hash !== hash) {
+            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", logger_1.Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
         result.wait = function (timeout) { return __awaiter(_this, void 0, void 0, function () {
             var txReceipt;
@@ -773,7 +779,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, resp.getReceipt(this.hederaClient)];
                     case 6:
                         receipt = _c.sent();
-                        return [2 /*return*/, this._wrapTransaction(ethersTx, receipt)];
+                        return [2 /*return*/, this._wrapTransaction(ethersTx, txHash, receipt)];
                     case 7:
                         error_3 = _c.sent();
                         err = logger.makeError(error_3.message, (_a = error_3.status) === null || _a === void 0 ? void 0 : _a.toString());

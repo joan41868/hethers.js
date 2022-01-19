@@ -527,11 +527,11 @@ export class Plugin {
                         }
                         break;
                     case "account-void": {
-                        // let addressPromise = this.provider.resolveName(account.value);
-                        // let signerPromise = addressPromise.then((addr) => {
-                        //     return new ethers.VoidSigner(addr, this.provider);
-                        // });
-                        // accounts.push(new WrappedSigner(addressPromise, () => signerPromise, this));
+                        let addressPromise = this.provider.resolveName(account.value);
+                        let signerPromise = addressPromise.then((addr) => {
+                            return new ethers.VoidSigner(addr, this.provider);
+                        });
+                        accounts.push(new WrappedSigner(addressPromise, () => signerPromise, this));
                         break;
                     }
                 }
@@ -585,18 +585,15 @@ export class Plugin {
             return Promise.resolve(ethers.utils.getAddress(addressOrName));
         }
         catch (error) { }
-        return Promise.resolve("");
-        // return this.provider.resolveName(addressOrName).then((address) => {
-        //     if (address == null) {
-        //         this.throwError("ENS name not configured - " + addressOrName);
-        //     }
-        //
-        //     if (address === ethers.constants.AddressZero && !allowZero) {
-        //         this.throwError(message || "cannot use the zero address");
-        //     }
-        //
-        //     return address;
-        // });
+        return this.provider.resolveName(addressOrName).then((address) => {
+            if (address == null) {
+                this.throwError("ENS name not configured - " + addressOrName);
+            }
+            if (address === ethers.constants.AddressZero && !allowZero) {
+                this.throwError(message || "cannot use the zero address");
+            }
+            return address;
+        });
     }
     // Dumps formatted data
     dump(header, info) {

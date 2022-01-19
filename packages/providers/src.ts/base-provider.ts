@@ -27,11 +27,16 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
-import {
-    AccountBalanceQuery, TransactionReceiptQuery, AccountId, Client, NetworkName,
-    Transaction as HederaTransaction, TransactionReceipt as HederaTransactionReceipt
-} from "@hashgraph/sdk";
 import axios from "axios";
+import {
+    AccountId,
+    Client,
+    TransactionReceipt as HederaTransactionReceipt,
+    TransactionReceiptQuery,
+    AccountBalanceQuery,
+    NetworkName,
+    Transaction as HederaTransaction
+} from "@hashgraph/sdk";
 
 const logger = new Logger(version);
 
@@ -644,16 +649,20 @@ export class BaseProvider extends Provider {
     }
 
     // This should be called by any subclass wrapping a TransactionResponse
-    _wrapTransaction(tx: Transaction, receipt?: HederaTransactionReceipt): TransactionResponse {
+    _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse {
+        if (hash != null && hexDataLength(hash) !== 48) { throw new Error("invalid response - sendTransaction"); }
+
         const result = <TransactionResponse>tx;
-        if (!result.customData) {
-            result.customData = {};
-        }
-        if (receipt.fileId) {
+        if (!result.customData) result.customData = {};
+        if (receipt && receipt.fileId) {
             result.customData.fileId = receipt.fileId.toString();
         }
-        if (receipt.contractId) {
+        if (receipt && receipt.contractId) {
             result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
+        // Check the hash we expect is the same as the hash the server reported
+        if (hash != null && tx.hash !== hash) {
+            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
 
         result.wait = async (timeout?: number) => {
@@ -683,7 +692,7 @@ export class BaseProvider extends Provider {
             // TODO Before submission verify that the nodeId is the one that the provider is connected to
             const resp = await hederaTx.execute(this.hederaClient);
             const receipt = await resp.getReceipt(this.hederaClient);
-            return this._wrapTransaction(ethersTx, receipt);
+            return this._wrapTransaction(ethersTx, txHash, receipt);
         } catch (error) {
             //check where err is thrown
             const err = logger.makeError(error.message, error.status?.toString());

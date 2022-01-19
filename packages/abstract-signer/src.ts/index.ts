@@ -13,7 +13,8 @@ import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
 const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
+    "nodeId"
 ];
 
 // const forwardErrors = [
@@ -126,15 +127,12 @@ export abstract class Signer {
         return Promise.resolve("");
     }
 
-    // Populates all fields in a transaction, signs it and sends it to the network
+    /**
+     * Composes a transaction which is signed and sent to the provider's network.
+     * @param transaction - the actual tx
+     */
     async sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse> {
         const tx = await resolveProperties(transaction);
-        // to - sign & send
-        // no `to` - file create and appends and contract create;
-        // create TransactionRequest objects and pass them down to the sign fn
-        // sign & send on each tx
-        // contract create would be the expected result of create + append + contract create
-
         if (tx.to) {
             const signed = await this.signTransaction(tx);
             return await this.provider.sendTransaction(signed);
@@ -142,7 +140,6 @@ export abstract class Signer {
             const contractByteCode = tx.data;
             let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
             const fileCreate = {
-                gasLimit: tx.gasLimit,
                 customData: {
                     fileChunk: chunks[0],
                     fileKey: HederaPubKey.fromString(this._signingKey().compressedPublicKey)
@@ -152,7 +149,6 @@ export abstract class Signer {
             const resp =  await this.provider.sendTransaction(signedFileCreate);
             for (let chunk of chunks.slice(1)) {
                 const fileAppend = {
-                    gasLimit: tx.gasLimit,
                     customData: {
                         fileId: resp.customData.fileId.toString(),
                         fileChunk: chunk
@@ -167,7 +163,7 @@ export abstract class Signer {
                 customData: {
                     bytecodeFileId: resp.customData.fileId.toString()
                 }
-            }
+            };
             const signedContractCreate = await this.signTransaction(contractCreate);
             return await this.provider.sendTransaction(signedContractCreate);
         }
@@ -179,15 +175,11 @@ export abstract class Signer {
         return network.chainId;
     }
 
-    // Checks a transaction does not contain invalid keys and if
-    // no "from" is provided, populates it.
-    // - does NOT require a provider
-    // - adds "from" is not present
-    // - returns a COPY (safe to mutate the result)
-    // By default called from: (overriding these prevents it)
-    //   - call
-    //   - estimateGas
-    //   - populateTransaction (and therefor sendTransaction)
+    /**
+     * Checks if the given transaction is usable.
+     * Properties - `from`, `nodeId`, `gasLimit`
+     * @param transaction - the tx to be checked
+     */
     checkTransaction(transaction: Deferrable<TransactionRequest>): Deferrable<TransactionRequest> {
         for (const key in transaction) {
             if (allowedTransactionKeys.indexOf(key) === -1) {
@@ -197,20 +189,14 @@ export abstract class Signer {
 
         const tx = shallowCopy(transaction);
         if (!tx.nodeId) {
-            let nodeID : any;
-            if (transaction.nodeId) {
-                nodeID = transaction.nodeId;
+            this._checkProvider();
+            // provider present, we can go on
+            const submittableNodeIDs = this.provider.getHederaNetworkConfig();
+            if (submittableNodeIDs.length > 0) {
+                tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length-1)].toString();
             } else {
-                this._checkProvider();
-                // provider present, we can go on
-                const submittableNodeIDs = this.provider.getHederaNetworkConfig();
-                if (submittableNodeIDs.length > 0) {
-                    nodeID = submittableNodeIDs[0];
-                } else {
-                    logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
-                }
+                logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
-            tx.nodeId = nodeID;
         }
 
         if (tx.from == null) {
@@ -232,13 +218,11 @@ export abstract class Signer {
         return tx;
     }
 
-    // Populates ALL keys for a transaction and checks that "from" matches
-    // this Signer. Should be used by signTransaction.
-    // By default called from: (overriding these prevents it)
-    //   - signTransaciton
-    //
-    // Notes:
-    //  - We allow gasPrice for EIP-1559 as long as it matches maxFeePerGas
+    /**
+     * Populates any missing properties in a transaction request.
+     * Properties affected - `to`, `chainId`
+     * @param transaction
+     */
     async populateTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionRequest> {
         const tx: Deferrable<TransactionRequest> = await resolveProperties(this.checkTransaction(transaction))
 
@@ -252,24 +236,12 @@ export abstract class Signer {
             tx.to.catch((error) => {  });
         }
 
-
-        if (tx.gasLimit == null) {
+        const customData = await tx.customData;
+        // FileCreate and FileAppend always carry a customData.fileChunk object
+        if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
             return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
         }
 
-        if (tx.chainId == null) {
-            tx.chainId = this.getChainId();
-        } else {
-            tx.chainId = Promise.all([
-                Promise.resolve(tx.chainId),
-                this.getChainId()
-            ]).then((results) => {
-                if (results[1] !== 0 && results[0] !== results[1]) {
-                    logger.throwArgumentError("chainId address mismatch", "transaction", transaction);
-                }
-                return results[0];
-            });
-        }
         return await resolveProperties(tx);
     }
 
@@ -335,4 +307,16 @@ function splitInChunks(data: string, chunkSize: number): string[] {
         chunks.push(slice);
     }
     return chunks;
+}
+
+
+/**
+ * Generates a random integer in the given range
+ * @param min - range start
+ * @param max - range end
+ */
+export function randomNumBetween(min: number, max: number): number {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }

@@ -47,9 +47,23 @@ export declare abstract class Signer {
     getBalance(blockTag?: BlockTag): Promise<BigNumber>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag): Promise<string>;
+    /**
+     * Composes a transaction which is signed and sent to the provider's network.
+     * @param transaction - the actual tx
+     */
     sendTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionResponse>;
     getChainId(): Promise<number>;
+    /**
+     * Checks if the given transaction is usable.
+     * Properties - `from`, `nodeId`, `gasLimit`
+     * @param transaction - the tx to be checked
+     */
     checkTransaction(transaction: Deferrable<TransactionRequest>): Deferrable<TransactionRequest>;
+    /**
+     * Populates any missing properties in a transaction request.
+     * Properties affected - `to`, `chainId`
+     * @param transaction
+     */
     populateTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionRequest>;
     _checkProvider(operation?: string): void;
     static isSigner(value: any): value is Signer;
@@ -64,4 +78,10 @@ export declare class VoidSigner extends Signer implements TypedDataSigner {
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;
     connect(provider: Provider): VoidSigner;
 }
+/**
+ * Generates a random integer in the given range
+ * @param min - range start
+ * @param max - range end
+ */
+export declare function randomNumBetween(min: number, max: number): number;
 //# sourceMappingURL=index.d.ts.map

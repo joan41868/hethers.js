@@ -86452,7 +86452,8 @@ var __awaiter$2 = (window && window.__awaiter) || function (thisArg, _arguments,
 };
 const logger$f = new Logger(version$a);
 const allowedTransactionKeys = [
-    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value"
+    "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
+    "nodeId"
 ];
 ;
 ;
@@ -86492,15 +86493,13 @@ class Signer {
             return Promise.resolve("");
         });
     }
-    // Populates all fields in a transaction, signs it and sends it to the network
+    /**
+     * Composes a transaction which is signed and sent to the provider's network.
+     * @param transaction - the actual tx
+     */
     sendTransaction(transaction) {
         return __awaiter$2(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(transaction);
-            // to - sign & send
-            // no `to` - file create and appends and contract create;
-            // create TransactionRequest objects and pass them down to the sign fn
-            // sign & send on each tx
-            // contract create would be the expected result of create + append + contract create
             if (tx.to) {
                 const signed = yield this.signTransaction(tx);
                 return yield this.provider.sendTransaction(signed);
@@ -86509,7 +86508,6 @@ class Signer {
                 const contractByteCode = tx.data;
                 let chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
                 const fileCreate = {
-                    gasLimit: tx.gasLimit,
                     customData: {
                         fileChunk: chunks[0],
                         fileKey: PublicKey$1.fromString(this._signingKey().compressedPublicKey)
@@ -86519,7 +86517,6 @@ class Signer {
                 const resp = yield this.provider.sendTransaction(signedFileCreate);
                 for (let chunk of chunks.slice(1)) {
                     const fileAppend = {
-                        gasLimit: tx.gasLimit,
                         customData: {
                             fileId: resp.customData.fileId.toString(),
                             fileChunk: chunk
@@ -86546,15 +86543,11 @@ class Signer {
             return network.chainId;
         });
     }
-    // Checks a transaction does not contain invalid keys and if
-    // no "from" is provided, populates it.
-    // - does NOT require a provider
-    // - adds "from" is not present
-    // - returns a COPY (safe to mutate the result)
-    // By default called from: (overriding these prevents it)
-    //   - call
-    //   - estimateGas
-    //   - populateTransaction (and therefor sendTransaction)
+    /**
+     * Checks if the given transaction is usable.
+     * Properties - `from`, `nodeId`, `gasLimit`
+     * @param transaction - the tx to be checked
+     */
     checkTransaction(transaction) {
         for (const key in transaction) {
             if (allowedTransactionKeys.indexOf(key) === -1) {
@@ -86563,22 +86556,15 @@ class Signer {
         }
         const tx = shallowCopy(transaction);
         if (!tx.nodeId) {
-            let nodeID;
-            if (transaction.nodeId) {
-                nodeID = transaction.nodeId;
+            this._checkProvider();
+            // provider present, we can go on
+            const submittableNodeIDs = this.provider.getHederaNetworkConfig();
+            if (submittableNodeIDs.length > 0) {
+                tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length - 1)].toString();
             }
             else {
-                this._checkProvider();
-                // provider present, we can go on
-                const submittableNodeIDs = this.provider.getHederaNetworkConfig();
-                if (submittableNodeIDs.length > 0) {
-                    nodeID = submittableNodeIDs[0];
-                }
-                else {
-                    logger$f.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
-                }
+                logger$f.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
-            tx.nodeId = nodeID;
         }
         if (tx.from == null) {
             tx.from = this.getAddress();
@@ -86598,13 +86584,11 @@ class Signer {
         tx.gasLimit = transaction.gasLimit;
         return tx;
     }
-    // Populates ALL keys for a transaction and checks that "from" matches
-    // this Signer. Should be used by signTransaction.
-    // By default called from: (overriding these prevents it)
-    //   - signTransaciton
-    //
-    // Notes:
-    //  - We allow gasPrice for EIP-1559 as long as it matches maxFeePerGas
+    /**
+     * Populates any missing properties in a transaction request.
+     * Properties affected - `to`, `chainId`
+     * @param transaction
+     */
     populateTransaction(transaction) {
         return __awaiter$2(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(this.checkTransaction(transaction));
@@ -86618,22 +86602,10 @@ class Signer {
                 // Prevent this error from causing an UnhandledPromiseException
                 tx.to.catch((error) => { });
             }
-            if (tx.gasLimit == null) {
+            const customData = yield tx.customData;
+            // FileCreate and FileAppend always carry a customData.fileChunk object
+            if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
                 return logger$f.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
-            }
-            if (tx.chainId == null) {
-                tx.chainId = this.getChainId();
-            }
-            else {
-                tx.chainId = Promise.all([
-                    Promise.resolve(tx.chainId),
-                    this.getChainId()
-                ]).then((results) => {
-                    if (results[1] !== 0 && results[0] !== results[1]) {
-                        logger$f.throwArgumentError("chainId address mismatch", "transaction", transaction);
-                    }
-                    return results[0];
-                });
             }
             return yield resolveProperties(tx);
         });
@@ -86688,6 +86660,16 @@ function splitInChunks(data, chunkSize) {
         chunks.push(slice);
     }
     return chunks;
+}
+/**
+ * Generates a random integer in the given range
+ * @param min - range start
+ * @param max - range end
+ */
+function randomNumBetween(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 var commonjsGlobal$1 = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -93156,6 +93138,9 @@ function parse$2(rawTransaction) {
             parsed = parsed;
             contents.data = hexlify(Buffer.from(parsed.contents));
         }
+        else if (parsed instanceof TransferTransaction) {
+            // TODO populate value / to?
+        }
         else {
             return logger$r.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
@@ -99234,16 +99219,22 @@ class BaseProvider extends Provider {
         });
     }
     // This should be called by any subclass wrapping a TransactionResponse
-    _wrapTransaction(tx, receipt) {
-        const result = tx;
-        if (!result.customData) {
-            result.customData = {};
+    _wrapTransaction(tx, hash, receipt) {
+        if (hash != null && hexDataLength(hash) !== 48) {
+            throw new Error("invalid response - sendTransaction");
         }
-        if (receipt.fileId) {
+        const result = tx;
+        if (!result.customData)
+            result.customData = {};
+        if (receipt && receipt.fileId) {
             result.customData.fileId = receipt.fileId.toString();
         }
-        if (receipt.contractId) {
+        if (receipt && receipt.contractId) {
             result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
+        // Check the hash we expect is the same as the hash the server reported
+        if (hash != null && tx.hash !== hash) {
+            logger$v.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
         result.wait = (timeout) => __awaiter$9(this, void 0, void 0, function* () {
             const txReceipt = yield this._waitForTransaction(tx.transactionId, timeout);
@@ -99272,7 +99263,7 @@ class BaseProvider extends Provider {
                 // TODO Before submission verify that the nodeId is the one that the provider is connected to
                 const resp = yield hederaTx.execute(this.hederaClient);
                 const receipt = yield resp.getReceipt(this.hederaClient);
-                return this._wrapTransaction(ethersTx, receipt);
+                return this._wrapTransaction(ethersTx, txHash, receipt);
             }
             catch (error) {
                 //check where err is thrown
