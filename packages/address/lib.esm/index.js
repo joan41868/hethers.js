@@ -6,6 +6,14 @@ import { encode } from "@ethersproject/rlp";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
+export function asAccountString(acc) {
+    if (typeof acc === "string") {
+        return acc;
+    }
+    else {
+        return `${acc.shard}${acc.realm}${acc.num}`;
+    }
+}
 export function getChecksumAddress(address) {
     if (!isHexString(address, 20)) {
         logger.throwArgumentError("invalid address", "address", address);

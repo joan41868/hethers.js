@@ -50,10 +50,12 @@ export class Signer {
             return yield this.provider.estimateGas(tx);
         });
     }
-    // TODO: this should perform a LocalCall, sign and submit with provider.sendTransaction
-    call(transaction, blockTag) {
+    // super classes should override this for now
+    call(transaction) {
         return __awaiter(this, void 0, void 0, function* () {
-            return Promise.resolve("");
+            return logger.throwError("not implemented", Logger.errors.NOT_IMPLEMENTED, {
+                operation: 'call'
+            });
         });
     }
     /**

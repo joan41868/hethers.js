@@ -2,7 +2,7 @@
 
 import assert from "assert";
 
-import  {  ethers } from "ethers";
+import { ethers } from "ethers";
 import { loadTests, TestCase } from "@ethersproject/testcases";
 import * as utils from './utils';
 import { arrayify, getAddressFromAccount } from "ethers/lib/utils";
@@ -439,5 +439,20 @@ describe("Wallet tx signing", function () {
         const fa = fromBytes as FileAppendTransaction;
         assert.ok(Buffer.from(fa.contents).toString() == tx.customData.fileChunk, "Contents mismatch");
         assert.ok(fa.fileId.toString() == tx.customData.fileId, "FileId mismatch");
+    });
+});
+
+
+describe("Wallet local calls", async function () {
+    // account: 0.0.28527751 | private key:  0x40717ff6dc7a38f19c3a21c5727dd273e6744c8e78942881bfd6f1526c0a17cb
+    // contract addr 0000000000000000000000000000000001b34cbb
+    // wallet addr 0x0000000000000000000000000000000001b34cb9 - for balanceOf query
+
+    // @ts-ignore
+    const hederaEoa = {
+
+    };
+    it("Should be able to perform local call", async function () {
+
     });
 });

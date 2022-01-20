@@ -67,11 +67,11 @@ var web_1 = require("@ethersproject/web");
 var bech32_1 = __importDefault(require("bech32"));
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
+var logger = new logger_1.Logger(_version_1.version);
 var formatter_1 = require("./formatter");
 var address_1 = require("@ethersproject/address");
-var axios_1 = __importDefault(require("axios"));
 var sdk_1 = require("@hashgraph/sdk");
-var logger = new logger_1.Logger(_version_1.version);
+var axios_1 = __importDefault(require("axios"));
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -470,9 +470,6 @@ var BaseProvider = /** @class */ (function (_super) {
         }
         return _this;
     }
-    BaseProvider.prototype.getHederaNetworkConfig = function () {
-        return this.hederaClient._network.getNodeAccountIdsForExecute();
-    };
     BaseProvider.prototype._ready = function () {
         return __awaiter(this, void 0, void 0, function () {
             var network, error_1;
@@ -731,41 +728,63 @@ var BaseProvider = /** @class */ (function (_super) {
         }); };
         return result;
     };
+    BaseProvider.prototype.getHederaClient = function () {
+        return this.hederaClient;
+    };
+    BaseProvider.prototype.getHederaNetworkConfig = function () {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    };
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, hederaTx, ethersTx, txHash, _b, resp, receipt, error_3, err;
+            var hederaTx, txBytes, ignore_1, resp, ethersTx, txHash, _b, resp, receipt, error_3, err;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, signedTransaction];
                     case 1:
                         signedTransaction = _c.sent();
                         txBytes = (0, bytes_1.arrayify)(signedTransaction);
-                        hederaTx = sdk_1.Transaction.fromBytes(txBytes);
-                        return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
+                        _c.label = 2;
                     case 2:
+                        _c.trys.push([2, 3, , 5]);
+                        hederaTx = sdk_1.Transaction.fromBytes(txBytes);
+                        return [3 /*break*/, 5];
+                    case 3:
+                        ignore_1 = _c.sent();
+                        // It's a query
+                        // FIXME: ser/des is not working properly - it's losing the payment tx id + node ids
+                        hederaTx = sdk_1.ContractCallQuery.fromBytes(txBytes);
+                        console.log('HederaTX in provider:', hederaTx);
+                        return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
+                    case 4:
+                        resp = _c.sent();
+                        console.log('QueryResponse', resp);
+                        // TODO: map and return something
+                        return [2 /*return*/, null];
+                    case 5: return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
+                    case 6:
                         ethersTx = _c.sent();
                         _b = bytes_1.hexlify;
                         return [4 /*yield*/, hederaTx.getTransactionHash()];
-                    case 3:
+                    case 7:
                         txHash = _b.apply(void 0, [_c.sent()]);
-                        _c.label = 4;
-                    case 4:
-                        _c.trys.push([4, 7, , 8]);
+                        _c.label = 8;
+                    case 8:
+                        _c.trys.push([8, 11, , 12]);
                         return [4 /*yield*/, hederaTx.execute(this.hederaClient)];
-                    case 5:
+                    case 9:
                         resp = _c.sent();
                         return [4 /*yield*/, resp.getReceipt(this.hederaClient)];
-                    case 6:
+                    case 10:
                         receipt = _c.sent();
                         return [2 /*return*/, this._wrapTransaction(ethersTx, txHash, receipt)];
-                    case 7:
+                    case 11:
                         error_3 = _c.sent();
                         err = logger.makeError(error_3.message, (_a = error_3.status) === null || _a === void 0 ? void 0 : _a.toString());
                         err.transaction = ethersTx;
                         err.transactionHash = txHash;
                         throw err;
-                    case 8: return [2 /*return*/];
+                    case 12: return [2 /*return*/];
                 }
             });
         });
@@ -797,6 +816,13 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(result)];
                     case 2: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
                 }
+            });
+        });
+    };
+    BaseProvider.prototype.call = function (transaction, blockTag) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, ""];
             });
         });
     };

@@ -1,16 +1,8 @@
 "use strict";
 
 import {
-    BlockTag,
-    EventType,
-    Filter,
-    FilterByBlockHash,
-    Listener,
-    Log,
-    Provider,
-    TransactionReceipt,
-    TransactionRequest,
-    TransactionResponse
+    BlockTag, EventType, Filter, FilterByBlockHash,
+    Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
@@ -21,24 +13,17 @@ import { Transaction } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import { poll } from "@ethersproject/web";
-
+import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+const logger = new Logger(version);
+
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction, ContractCallQuery } from "@hashgraph/sdk";
 import axios from "axios";
-import {
-    AccountId,
-    Client,
-    TransactionReceipt as HederaTransactionReceipt,
-    AccountBalanceQuery,
-    NetworkName,
-    Transaction as HederaTransaction
-} from "@hashgraph/sdk";
-
-const logger = new Logger(version);
 
 //////////////////////////////
 // Event Serializeing
@@ -136,9 +121,9 @@ export class Event {
     get event(): EventType {
         switch (this.type) {
             case "tx":
-               return this.hash;
+                return this.hash;
             case "filter":
-               return this.filter;
+                return this.filter;
         }
         return this.tag;
     }
@@ -481,10 +466,6 @@ export class BaseProvider extends Provider {
         }
     }
 
-    getHederaNetworkConfig(): AccountId[] {
-        return this.hederaClient._network.getNodeAccountIdsForExecute();
-    }
-
     async _ready(): Promise<Network> {
         if (this._network == null) {
             let network: Network = null;
@@ -682,11 +663,30 @@ export class BaseProvider extends Provider {
         return result;
     }
 
+    public getHederaClient() : Client {
+        return this.hederaClient;
+    }
+
+    public getHederaNetworkConfig(): AccountId[] {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    }
+
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
         signedTransaction = await signedTransaction;
-
+        let hederaTx: HederaTransaction | any;
         const txBytes = arrayify(signedTransaction);
-        const hederaTx = HederaTransaction.fromBytes(txBytes);
+        try {
+            hederaTx = HederaTransaction.fromBytes(txBytes);
+        } catch (ignore) {
+            // It's a query
+            // FIXME: ser/des is not working properly - it's losing the payment tx id + node ids
+            hederaTx = ContractCallQuery.fromBytes(txBytes);
+            console.log('HederaTX in provider:', hederaTx);
+            const resp = await hederaTx.execute(this.hederaClient);
+            console.log('QueryResponse', resp);
+            // TODO: map and return something
+            return null;
+        }
         const ethersTx = await this.formatter.transaction(signedTransaction);
         const txHash = hexlify(await hederaTx.getTransactionHash());
         try {
@@ -722,6 +722,11 @@ export class BaseProvider extends Provider {
         });
 
         return this.formatter.filter(await resolveProperties(result));
+    }
+
+    async call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
+
+        return "";
     }
 
     async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
@@ -893,7 +898,7 @@ export class BaseProvider extends Provider {
     }
 
     listeners(eventName?: EventType): Array<Listener> {
-       return null;
+        return null;
     }
 
     off(eventName: EventType, listener?: Listener): this {

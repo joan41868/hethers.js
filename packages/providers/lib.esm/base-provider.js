@@ -20,11 +20,11 @@ import { poll } from "@ethersproject/web";
 import bech32 from "bech32";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+const logger = new Logger(version);
 import { Formatter } from "./formatter";
 import { getAccountFromAddress } from "@ethersproject/address";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction, ContractCallQuery } from "@hashgraph/sdk";
 import axios from "axios";
-import { AccountId, Client, AccountBalanceQuery, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
-const logger = new Logger(version);
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -379,9 +379,6 @@ export class BaseProvider extends Provider {
             }
         }
     }
-    getHederaNetworkConfig() {
-        return this.hederaClient._network.getNodeAccountIdsForExecute();
-    }
     _ready() {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._network == null) {
@@ -578,12 +575,31 @@ export class BaseProvider extends Provider {
         });
         return result;
     }
+    getHederaClient() {
+        return this.hederaClient;
+    }
+    getHederaNetworkConfig() {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    }
     sendTransaction(signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             signedTransaction = yield signedTransaction;
+            let hederaTx;
             const txBytes = arrayify(signedTransaction);
-            const hederaTx = HederaTransaction.fromBytes(txBytes);
+            try {
+                hederaTx = HederaTransaction.fromBytes(txBytes);
+            }
+            catch (ignore) {
+                // It's a query
+                // FIXME: ser/des is not working properly - it's losing the payment tx id + node ids
+                hederaTx = ContractCallQuery.fromBytes(txBytes);
+                console.log('HederaTX in provider:', hederaTx);
+                const resp = yield hederaTx.execute(this.hederaClient);
+                console.log('QueryResponse', resp);
+                // TODO: map and return something
+                return null;
+            }
             const ethersTx = yield this.formatter.transaction(signedTransaction);
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
@@ -620,6 +636,11 @@ export class BaseProvider extends Provider {
                 }
             });
             return this.formatter.filter(yield resolveProperties(result));
+        });
+    }
+    call(transaction, blockTag) {
+        return __awaiter(this, void 0, void 0, function* () {
+            return "";
         });
     }
     estimateGas(transaction) {
