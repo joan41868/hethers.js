@@ -12,6 +12,8 @@ import {
     FileAppendTransaction,
     FileCreateTransaction, PublicKey, Transaction
 } from "@hashgraph/sdk";
+import { readFileSync } from "fs";
+import * as hethers from "ethers";
 
 describe('Test JSON Wallets', function() {
 
@@ -448,11 +450,28 @@ describe("Wallet local calls", async function () {
     // contract addr 0000000000000000000000000000000001b34cbb
     // wallet addr 0x0000000000000000000000000000000001b34cb9 - for balanceOf query
 
-    // @ts-ignore
     const hederaEoa = {
-
+        account: '0.0.28527751',
+        privateKey: '0x40717ff6dc7a38f19c3a21c5727dd273e6744c8e78942881bfd6f1526c0a17cb'
     };
+    const provider = ethers.providers.getDefaultProvider('testnet');
+    // @ts-ignore
+    const wallet = new ethers.Wallet(hederaEoa, provider);
     it("Should be able to perform local call", async function () {
+        const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
+        // @ts-ignore
+        const contract = hethers.ContractFactory.getContract('0000000000000000000000000000000001b34cbb', abi, wallet);
 
+        const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
+            '0x0000000000000000000000000000000001b34cb9'
+        ]);
+
+        const balanceOfTx = {
+            to: '0000000000000000000000000000000001b34cbb',
+            gasLimit: 10000,
+            data: arrayify(balanceOfParams),
+        };
+        const response = await wallet.call(balanceOfTx);
+        assert.notStrictEqual(response, null);
     });
 });

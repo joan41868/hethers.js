@@ -10,10 +10,14 @@ var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 function asAccountString(acc) {
     if (typeof acc === "string") {
+        if (acc.startsWith("0x")) {
+            acc = getAccountFromAddress(acc);
+            return acc.shard + "." + acc.realm + "." + acc.num;
+        }
         return acc;
     }
     else {
-        return "" + acc.shard + acc.realm + acc.num;
+        return acc.shard + "." + acc.realm + "." + acc.num;
     }
 }
 exports.asAccountString = asAccountString;

@@ -6850,10 +6850,14 @@ const version$6 = "address/5.5.0";
 const logger$7 = new Logger(version$6);
 function asAccountString(acc) {
     if (typeof acc === "string") {
+        if (acc.startsWith("0x")) {
+            acc = getAccountFromAddress(acc);
+            return `${acc.shard}.${acc.realm}.${acc.num}`;
+        }
         return acc;
     }
     else {
-        return `${acc.shard}${acc.realm}${acc.num}`;
+        return `${acc.shard}.${acc.realm}.${acc.num}`;
     }
 }
 function getChecksumAddress(address) {
@@ -91877,6 +91881,8 @@ function hasMnemonic$1(value) {
 function hasAlias(value) {
     return isAccount(value) && value.alias != null;
 }
+function checkError(call1, error, txRequest) {
+}
 class Wallet extends Signer {
     constructor(identity, provider) {
         logger$p.checkNew(new.target, Wallet);
@@ -92125,6 +92131,7 @@ class Wallet extends Signer {
                 return hexlify(response.asBytes());
             }
             catch (error) {
+                checkError('call', error, txRequest);
                 return logger$p.throwError("error during call", Logger.errors.CALL_EXCEPTION, error);
             }
         });

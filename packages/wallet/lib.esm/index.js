@@ -36,6 +36,8 @@ function hasMnemonic(value) {
 function hasAlias(value) {
     return isAccount(value) && value.alias != null;
 }
+function checkError(call1, error, txRequest) {
+}
 export class Wallet extends Signer {
     constructor(identity, provider) {
         logger.checkNew(new.target, Wallet);
@@ -284,6 +286,7 @@ export class Wallet extends Signer {
                 return hexlify(response.asBytes());
             }
             catch (error) {
+                checkError('call', error, txRequest);
                 return logger.throwError("error during call", Logger.errors.CALL_EXCEPTION, error);
             }
         });

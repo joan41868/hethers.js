@@ -100,6 +100,8 @@ function hasMnemonic(value) {
 function hasAlias(value) {
     return isAccount(value) && value.alias != null;
 }
+function checkError(call1, error, txRequest) {
+}
 var Wallet = /** @class */ (function (_super) {
     __extends(Wallet, _super);
     function Wallet(identity, provider) {
@@ -394,6 +396,7 @@ var Wallet = /** @class */ (function (_super) {
                         return [2 /*return*/, (0, bytes_1.hexlify)(response.asBytes())];
                     case 5:
                         error_1 = _b.sent();
+                        checkError('call', error_1, txRequest);
                         return [2 /*return*/, logger.throwError("error during call", logger_1.Logger.errors.CALL_EXCEPTION, error_1)];
                     case 6: return [2 /*return*/];
                 }

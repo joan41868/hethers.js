@@ -74,6 +74,10 @@ function hasAlias(value: any): value is ExternallyOwnedAccount {
 	return isAccount(value) && value.alias != null;
 }
 
+function checkError(call1: string, error: any, txRequest: Deferrable<TransactionRequest>) {
+
+}
+
 export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
 
 	// EVM Address format
@@ -360,6 +364,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 			// TODO: this may not be the best thing to return but it should work for testing
 			return hexlify(response.asBytes());
 		} catch (error) {
+			checkError('call', error, txRequest);
 			return logger.throwError("error during call", Logger.errors.CALL_EXCEPTION, error);
 		}
 	}

@@ -8,10 +8,14 @@ import { version } from "./_version";
 const logger = new Logger(version);
 export function asAccountString(acc) {
     if (typeof acc === "string") {
+        if (acc.startsWith("0x")) {
+            acc = getAccountFromAddress(acc);
+            return `${acc.shard}.${acc.realm}.${acc.num}`;
+        }
         return acc;
     }
     else {
-        return `${acc.shard}${acc.realm}${acc.num}`;
+        return `${acc.shard}.${acc.realm}.${acc.num}`;
     }
 }
 export function getChecksumAddress(address) {
