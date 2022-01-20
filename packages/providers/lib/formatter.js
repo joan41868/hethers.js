@@ -7,6 +7,7 @@ var bytes_1 = require("@ethersproject/bytes");
 var constants_1 = require("@ethersproject/constants");
 var properties_1 = require("@ethersproject/properties");
 var transactions_1 = require("@ethersproject/transactions");
+// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
@@ -220,7 +221,7 @@ var Formatter = /** @class */ (function () {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     Formatter.prototype.hash = function (value, strict) {
         var result = this.hex(value, strict);
-        if ((0, bytes_1.hexDataLength)(result) !== 32) {
+        if ((0, bytes_1.hexDataLength)(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
         }
         return result;
@@ -313,10 +314,6 @@ var Formatter = /** @class */ (function () {
             }
             result.chainId = chainId;
         }
-        // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
         return result;
     };
     Formatter.prototype.transaction = function (value) {
@@ -325,34 +322,69 @@ var Formatter = /** @class */ (function () {
     Formatter.prototype.receiptLog = function (value) {
         return Formatter.check(this.formats.receiptLog, value);
     };
+    //fill the txReceipt obj
     Formatter.prototype.receipt = function (value) {
         var result = Formatter.check(this.formats.receipt, value);
-        // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                var value_1 = bignumber_1.BigNumber.from(result.root).toNumber();
-                if (value_1 === 0 || value_1 === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value_1)) {
-                        logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value_1;
-                    delete result.root;
-                }
-                else {
-                    logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            }
-            else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
         if (result.status != null) {
             result.byzantium = true;
         }
         return result;
+    };
+    Formatter.prototype.txRecordToTxResponse = function (txRecord) {
+        return {
+            accessList: null,
+            chainId: 1,
+            data: '',
+            from: txRecord.from,
+            gasLimit: bignumber_1.BigNumber.from(txRecord.gas_limit),
+            hash: txRecord.hash,
+            transactionId: txRecord.transaction.transaction_id,
+            r: '',
+            s: '',
+            to: txRecord.to,
+            v: 0,
+            value: null,
+            customData: {
+                gas_used: txRecord.gas_used,
+                call_result: txRecord.call_result,
+                logs: txRecord.logs,
+                transaction: txRecord.transaction
+            },
+            wait: null
+        };
+    };
+    Formatter.prototype.txRecordToTxReceipt = function (txRecord) {
+        var to = null;
+        var contractAddress = null;
+        if (txRecord.customData.call_result != '0x') { //is not contract_create
+            contractAddress = txRecord.to;
+        }
+        else {
+            to = txRecord.to;
+        }
+        var logs = [];
+        txRecord.customData.logs.forEach(function (log) {
+            var values = {
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                transactionHash: txRecord.hash,
+                logIndex: log.index
+            };
+            logs.push(values);
+        });
+        return {
+            to: to,
+            from: txRecord.from,
+            contractAddress: contractAddress,
+            gasUsed: txRecord.customData.gas_used,
+            logsBloom: null,
+            transactionHash: txRecord.hash,
+            logs: logs,
+            cumulativeGasUsed: txRecord.customData.gas_used,
+            byzantium: false,
+            status: txRecord.customData.transaction.result === 'SUCCESS' ? 1 : 0
+        };
     };
     Formatter.prototype.topics = function (value) {
         var _this = this;

@@ -66,7 +66,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parse = exports.serializeHederaTransaction = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
+exports.parse = exports.serializeHederaTransaction = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.parseTransactionId = exports.TransactionTypes = void 0;
 var address_1 = require("@ethersproject/address");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
@@ -86,6 +86,14 @@ var TransactionTypes;
     TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes = exports.TransactionTypes || (exports.TransactionTypes = {}));
+//TODO handle possible exception
+function parseTransactionId(transactionId) {
+    var accountId = transactionId.split('@');
+    var txValidStart = accountId[1].split('.');
+    var result = accountId[0] + '-' + txValidStart.join('-');
+    return result;
+}
+exports.parseTransactionId = parseTransactionId;
 ///////////////////////////////
 function handleNumber(value) {
     if (value === "0x") {
@@ -451,6 +459,11 @@ exports.serializeHederaTransaction = serializeHederaTransaction;
 //
 //     return tx;
 // }
+function parseHederaTransactionId(obj) {
+    //TODO cleaner implementation
+    var parsedString = obj.accountId.realm + '.' + obj.accountId.shard + '.' + obj.accountId.num + '@' + obj.validStart.seconds + '.' + obj.validStart.nanos;
+    return parsedString;
+}
 function parse(rawTransaction) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
@@ -504,7 +517,7 @@ function parse(rawTransaction) {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];
                     }
                     // TODO populate r, s ,v
-                    return [2 /*return*/, __assign(__assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null })];
+                    return [2 /*return*/, __assign(__assign({ transactionId: parseHederaTransactionId(parsed.transactionId) }, contents), { chainId: 0, r: '', s: '', v: 0 })];
             }
         });
     });

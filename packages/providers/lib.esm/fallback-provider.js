@@ -247,7 +247,7 @@ function getProcessFunc(provider, method, params) {
                     block = shallowCopy(block);
                     block.transactions = block.transactions.map((tx) => {
                         tx = shallowCopy(tx);
-                        tx.confirmations = -1;
+                        // tx.confirmations = -1;
                         return tx;
                     });
                     return serialize(block);

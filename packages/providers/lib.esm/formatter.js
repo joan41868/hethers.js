@@ -5,6 +5,7 @@ import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "
 import { AddressZero } from "@ethersproject/constants";
 import { shallowCopy } from "@ethersproject/properties";
 import { accessListify, parse as parseTransaction } from "@ethersproject/transactions";
+// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
@@ -216,7 +217,7 @@ export class Formatter {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash(value, strict) {
         const result = this.hex(value, strict);
-        if (hexDataLength(result) !== 32) {
+        if (hexDataLength(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
         }
         return result;
@@ -309,10 +310,6 @@ export class Formatter {
             }
             result.chainId = chainId;
         }
-        // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
         return result;
     }
     transaction(value) {
@@ -321,34 +318,69 @@ export class Formatter {
     receiptLog(value) {
         return Formatter.check(this.formats.receiptLog, value);
     }
+    //fill the txReceipt obj
     receipt(value) {
         const result = Formatter.check(this.formats.receipt, value);
-        // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                const value = BigNumber.from(result.root).toNumber();
-                if (value === 0 || value === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value)) {
-                        logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value;
-                    delete result.root;
-                }
-                else {
-                    logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            }
-            else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
         if (result.status != null) {
             result.byzantium = true;
         }
         return result;
+    }
+    txRecordToTxResponse(txRecord) {
+        return {
+            accessList: null,
+            chainId: 1,
+            data: '',
+            from: txRecord.from,
+            gasLimit: BigNumber.from(txRecord.gas_limit),
+            hash: txRecord.hash,
+            transactionId: txRecord.transaction.transaction_id,
+            r: '',
+            s: '',
+            to: txRecord.to,
+            v: 0,
+            value: null,
+            customData: {
+                gas_used: txRecord.gas_used,
+                call_result: txRecord.call_result,
+                logs: txRecord.logs,
+                transaction: txRecord.transaction
+            },
+            wait: null
+        };
+    }
+    txRecordToTxReceipt(txRecord) {
+        let to = null;
+        let contractAddress = null;
+        if (txRecord.customData.call_result != '0x') { //is not contract_create
+            contractAddress = txRecord.to;
+        }
+        else {
+            to = txRecord.to;
+        }
+        let logs = [];
+        txRecord.customData.logs.forEach(function (log) {
+            const values = {
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                transactionHash: txRecord.hash,
+                logIndex: log.index
+            };
+            logs.push(values);
+        });
+        return {
+            to: to,
+            from: txRecord.from,
+            contractAddress: contractAddress,
+            gasUsed: txRecord.customData.gas_used,
+            logsBloom: null,
+            transactionHash: txRecord.hash,
+            logs: logs,
+            cumulativeGasUsed: txRecord.customData.gas_used,
+            byzantium: false,
+            status: txRecord.customData.transaction.result === 'SUCCESS' ? 1 : 0
+        };
     }
     topics(value) {
         if (Array.isArray(value)) {

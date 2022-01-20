@@ -58,18 +58,36 @@ const account = {
 		data: contractByteCode,
 		gasLimit: 300000
 	});
-	console.log(contractCreateResponse);
+	console.log("contractCreateResponse", contractCreateResponse);
+	const contractCreateReceipt = await contractCreateResponse.wait();
+	console.log("contractCreateResponse.wait() mined receipt: ");
+    console.dir(contractCreateReceipt, {depth: null});
+
 	const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
 	// @ts-ignore
 	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData.contractId, abi, wallet);
-	const params = contract.interface.encodeFunctionData('approve', [
+	const approveParams = contract.interface.encodeFunctionData('approve', [
 		getAddressFromAccount(account.operator.accountId),
 		1000
 	]);
 	const approveResponse = await wallet.sendTransaction({
 		to: contract.address,
-		data: params,
+		data: approveParams,
 		gasLimit: 100000
 	});
-	console.log(approveResponse);
+	console.log("approveResponse", approveResponse);
+	const approveReceipt = await approveResponse.wait();
+	console.log("approveResponse.wait() mined receipt: ");
+    console.dir(approveReceipt, {depth: null});
+
+	const mintParams = contract.interface.encodeFunctionData('mint', [ 1000000000 ]);
+	const mintResponse = await wallet.sendTransaction({
+		to: contract.address,
+		data: mintParams,
+		gasLimit: 100000
+	});
+	console.log("mintResponse", mintResponse);
+	const mintReceipt = await mintResponse.wait();
+	console.log("mintResponse.wait() mined receipt: ");
+    console.dir(mintReceipt, {depth: null});
 })();

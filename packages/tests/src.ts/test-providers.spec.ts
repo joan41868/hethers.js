@@ -12,7 +12,7 @@ import {
     AccountId,
     ContractCreateTransaction, ContractFunctionParameters,
     PrivateKey,
-    TransactionId,
+    TransactionId
 } from "@hashgraph/sdk";
 
 const bnify = ethers.BigNumber.from;
@@ -650,9 +650,6 @@ Object.keys(blockchainData).forEach((network) => {
         addObjectTest(`fetches transaction ${ hash }`, async (provider: ethers.providers.Provider) => {
             const tx = await provider.getTransaction(hash);
 
-            // This changes with every block
-            assert.equal(typeof(tx.confirmations), "number", "confirmations is a number");
-            delete tx.confirmations;
 
             assert.equal(typeof(tx.wait), "function", "wait is a function");
             delete tx.wait
@@ -676,8 +673,8 @@ Object.keys(blockchainData).forEach((network) => {
             }
 
             // This changes with every block; so just make sure it is a number
-            assert.equal(typeof(receipt.confirmations), "number", "confirmations is a number");
-            delete receipt.confirmations;
+            // assert.equal(typeof(receipt.confirmations), "number", "confirmations is a number");
+            // delete receipt.confirmations;
 
             return receipt;
         }, test, (provider: string, network: string, test: TestDescription) => {
@@ -1063,15 +1060,105 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(true, balance.gte(0));
     }).timeout(timeout);
 
-    it("Gets txn record", async function (){
+    //TODO add formatter tests ->
+
+    describe("Sign & Send Transacton, Wait for receipt", function () {
+
+        // let sendTransactionResponse: ethers.providers.TransactionResponse;
+        let signedTx: string | Promise<string>;
+        beforeEach(async () => {
+            const privateKey = PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
+            // 1. Sign TX -> `sign-transaction.ts`
+            const txID = TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
+            const tx = await new ContractCreateTransaction()
+                .setContractMemo("memo")
+                .setGas(100000)
+                .setBytecodeFileId("0.0.26562254")
+                .setNodeAccountIds([new AccountId(0,0,3)])
+                .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
+                .setTransactionId(txID)
+                .freeze()
+                .sign(privateKey);
+            const txBytes = tx.toBytes();
+            signedTx = ethers.utils.hexlify(txBytes);
+            // const provider = ethers.providers.getDefaultProvider('testnet');
+            // sendTransactionResponse = await provider.sendTransaction(signedTx);
+        });
+
+        it.only("Schould populate transaction receipt", async function (){
+            const sendTransactionResponse = await provider.sendTransaction(await signedTx);
+            const receipt = await sendTransactionResponse.wait();
+            // assert.strict(receipt.logs.length > 0);
+            assert.strictEqual(receipt.to, null);
+            assert.strictEqual(receipt.contractAddress, '0x'+sendTransactionResponse.customData.contractId);
+            assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
+            assert.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
+        }).timeout(timeout);
+
+        it.only("Schould populate transaction receipt with timeout", async function (){
+            const sendTransactionResponse = await provider.sendTransaction(await signedTx);
+            const receipt = await sendTransactionResponse.wait(timeout);
+            // assert.strict(receipt.logs.length > 0);
+            assert.strictEqual(receipt.to, null);
+            assert.strictEqual(receipt.contractAddress, '0x'+sendTransactionResponse.customData.contractId);
+            assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
+            assert.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
+        }).timeout(timeout);
+    
+        it.only("Should throw timeout exceeded", async function () {
+            const insufficientTimeout = 500;
+            await assert.rejects(
+                async () => {
+                    //TODO construct signedTx -> beforeEach() in nested describe
+                    const sendTransactionResponse = await provider.sendTransaction(await signedTx);
+                    await sendTransactionResponse.wait(insufficientTimeout);
+                },
+                (err) => {
+                    console.log("err:",err);
+                    assert.strictEqual(err.name, 'Error');
+                    assert.strictEqual(err.reason, 'timeout exceeded');
+                    assert.strictEqual(err.code, 'TIMEOUT');
+                    assert.strictEqual(err.timeout, insufficientTimeout);    
+                    return true;
+                }
+            );
+        }).timeout(timeout);
+    });
+
+    /* This test is skipped because the previewnet will be resetted */
+    it("Schould populate txn response", async function (){
         /* the test contains ignores as of the not yet refactored BaseProvider */
-        const record = await provider.getTransaction(`0.0.15680048-1638189529-145876922`);
+        const existingId = `0.0.1546615-1641987871-235099329`;
+        const record = await provider.getTransaction(existingId);
         // @ts-ignore
-        assert.strictEqual(record.transaction_id, `0.0.15680048-1638189529-145876922`);
+        assert.strictEqual(record.transactionId, existingId);
+        //assert other props
+    }).timeout(timeout);
+
+    /* This test is skipped because the previewnet will be resetted */
+    it("Schould return null on record not found", async function (){
+        const fakeTransactionId = `0.0.0-0000000000-000000000`;
+        const record = await provider.getTransaction(fakeTransactionId);
         // @ts-ignore
-        assert.strictEqual(record.transfers.length, 3);
-        // @ts-ignore
-        assert.strictEqual(record.valid_duration_seconds, '120');
+        assert.strictEqual(record, null);
+    }).timeout(timeout);
+
+    /* This test is skipped because the previewnet will be resetted */
+    it("Schould throw backend error", async function (){
+        const badRequestId = `0.0.0`;
+        await assert.rejects(
+            async () => {
+                await provider.getTransaction(badRequestId);
+            },
+            (err) => {
+                assert.strictEqual(err.name, 'Error');
+                assert.strictEqual(err.reason, 'bad result from backend');
+                assert.strictEqual(err.method, 'TransactionResponseQuery');
+                assert.strictEqual(err.error.response.status, 400);
+                assert.strictEqual(err.error.response.statusText, 'Bad Request');
+                return true;
+            }
+        );
     }).timeout(timeout);
 
     it("Is able to get hedera provider as default", async function() {
@@ -1153,7 +1240,7 @@ describe("Test Hedera Provider", function () {
 
         const balance2 = await provider2.getBalance(solAddr);
         assert.strictEqual(true, balance2.gte(0));
-        const txId = `0.0.15680048-1638189529-145876922`;
+        const txId = `0.0.1546615-1641987871-235099329`;
         const record2 = await provider2.getTransaction(txId);
         assert.notStrictEqual(record2, null, "Record is null")
     });

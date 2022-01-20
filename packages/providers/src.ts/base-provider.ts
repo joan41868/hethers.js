@@ -17,10 +17,9 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { getNetwork, Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
-import { Transaction } from "@ethersproject/transactions";
+import { Transaction, parseTransactionId } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
-import { poll } from "@ethersproject/web";
 
 import bech32 from "bech32";
 
@@ -33,6 +32,7 @@ import {
     AccountId,
     Client,
     TransactionReceipt as HederaTransactionReceipt,
+    TransactionReceiptQuery,
     AccountBalanceQuery,
     NetworkName,
     Transaction as HederaTransaction
@@ -61,7 +61,7 @@ function serializeTopics(topics: Array<string | Array<string>>): string {
         if (Array.isArray(topic)) {
 
             // Only track unique OR-topics
-            const unique: { [ topic: string ]: boolean } = { }
+            const unique: { [topic: string]: boolean } = {}
             topic.forEach((topic) => {
                 unique[checkTopic(topic)] = true;
             });
@@ -79,16 +79,16 @@ function serializeTopics(topics: Array<string | Array<string>>): string {
 }
 
 function deserializeTopics(data: string): Array<string | Array<string>> {
-    if (data === "") { return [ ]; }
+    if (data === "") { return []; }
 
     return data.split(/&/g).map((topic) => {
-        if (topic === "") { return [ ]; }
+        if (topic === "") { return []; }
 
         const comps = topic.split("|").map((topic) => {
-            return ((topic === "null") ? null: topic);
+            return ((topic === "null") ? null : topic);
         });
 
-        return ((comps.length === 1) ? comps[0]: comps);
+        return ((comps.length === 1) ? comps[0] : comps);
     });
 }
 
@@ -120,7 +120,7 @@ function stall(duration: number): Promise<void> {
  *   - transaction hash
  */
 
-const PollableEvents = [ "block", "network", "pending", "poll" ];
+const PollableEvents = ["block", "network", "pending", "poll"];
 
 export class Event {
     readonly listener: Listener;
@@ -136,9 +136,9 @@ export class Event {
     get event(): EventType {
         switch (this.type) {
             case "tx":
-               return this.hash;
+                return this.hash;
             case "filter":
-               return this.filter;
+                return this.filter;
         }
         return this.tag;
     }
@@ -159,7 +159,7 @@ export class Event {
         const address = comps[1];
 
         const topics = deserializeTopics(comps[2]);
-        const filter: Filter = { };
+        const filter: Filter = {};
 
         if (topics.length > 0) { filter.topics = topics; }
         if (address && address !== "*") { filter.address = address; }
@@ -208,12 +208,12 @@ type CoinInfo = {
 };
 
 // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-const coinInfos: { [ coinType: string ]: CoinInfo } = {
-    "0":   { symbol: "btc",  p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
-    "2":   { symbol: "ltc",  p2pkh: 0x30, p2sh: 0x32, prefix: "ltc" },
-    "3":   { symbol: "doge", p2pkh: 0x1e, p2sh: 0x16 },
-    "60":  { symbol: "eth",  ilk: "eth" },
-    "61":  { symbol: "etc",  ilk: "eth" },
+const coinInfos: { [coinType: string]: CoinInfo } = {
+    "0": { symbol: "btc", p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
+    "2": { symbol: "ltc", p2pkh: 0x30, p2sh: 0x32, prefix: "ltc" },
+    "3": { symbol: "doge", p2pkh: 0x1e, p2sh: 0x16 },
+    "60": { symbol: "eth", ilk: "eth" },
+    "61": { symbol: "etc", ilk: "eth" },
     "700": { symbol: "xdai", ilk: "eth" },
 };
 
@@ -223,7 +223,7 @@ function bytes32ify(value: number): string {
 
 // Compute the Base58Check encoded data (checksum is first 4 bytes of sha256d)
 function base58Encode(data: Uint8Array): string {
-    return Base58.encode(concat([ data, hexDataSlice(sha256(sha256(data)), 0, 4) ]));
+    return Base58.encode(concat([data, hexDataSlice(sha256(sha256(data)), 0, 4)]));
 }
 
 export interface Avatar {
@@ -267,8 +267,8 @@ export class Resolver implements EnsResolver {
         const coinInfo = coinInfos[String(coinType)];
 
         if (coinInfo == null) {
-            logger.throwError(`unsupported coin type: ${ coinType }`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `getAddress(${ coinType })`
+            logger.throwError(`unsupported coin type: ${coinType}`, Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: `getAddress(${coinType})`
             });
         }
 
@@ -284,7 +284,7 @@ export class Resolver implements EnsResolver {
             if (p2pkh) {
                 const length = parseInt(p2pkh[1], 16);
                 if (p2pkh[2].length === length * 2 && length >= 1 && length <= 75) {
-                    return base58Encode(concat([ [ coinInfo.p2pkh ], ("0x" + p2pkh[2]) ]));
+                    return base58Encode(concat([[coinInfo.p2pkh], ("0x" + p2pkh[2])]));
                 }
             }
         }
@@ -295,7 +295,7 @@ export class Resolver implements EnsResolver {
             if (p2sh) {
                 const length = parseInt(p2sh[1], 16);
                 if (p2sh[2].length === length * 2 && length >= 1 && length <= 75) {
-                    return base58Encode(concat([ [ coinInfo.p2sh ], ("0x" + p2sh[2]) ]));
+                    return base58Encode(concat([[coinInfo.p2sh], ("0x" + p2sh[2])]));
                 }
             }
         }
@@ -349,7 +349,7 @@ export class Resolver implements EnsResolver {
 
         if (address == null) {
             logger.throwError(`invalid or unsupported coin data`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `getAddress(${ coinType })`,
+                operation: `getAddress(${coinType})`,
                 coinType: coinType,
                 data: hexBytes
             });
@@ -396,11 +396,11 @@ export class Resolver implements EnsResolver {
 
         // The nodehash consumes the first slot, so the string pointer targets
         // offset 64, with the length at offset 64 and data starting at offset 96
-        keyBytes = concat([ bytes32ify(64), bytes32ify(keyBytes.length), keyBytes ]);
+        keyBytes = concat([bytes32ify(64), bytes32ify(keyBytes.length), keyBytes]);
 
         // Pad to word-size (32 bytes)
         if ((keyBytes.length % 32) !== 0) {
-            keyBytes = concat([ keyBytes, hexZeroPad("0x", 32 - (key.length % 32)) ])
+            keyBytes = concat([keyBytes, hexZeroPad("0x", 32 - (key.length % 32))])
         }
 
         const hexBytes = await this._fetchBytes("0x59d1d43c", hexlify(keyBytes));
@@ -530,7 +530,7 @@ export class BaseProvider extends Provider {
 
     // @TODO: Remove this and just use getNetwork
     static getNetwork(network: Networkish): Network {
-        return getNetwork((network == null) ? "mainnet": network);
+        return getNetwork((network == null) ? "mainnet" : network);
     }
 
     get network(): Network {
@@ -581,14 +581,30 @@ export class BaseProvider extends Provider {
         return network;
     }
 
-    async waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt> {
-        return this._waitForTransaction(transactionHash, (confirmations == null) ? 1: confirmations, timeout || 0, null);
+    async waitForTransaction(transactionId: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt> {
+        return this._waitForTransaction(transactionId, timeout);
     }
 
-    async _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: { data: string, from: string, nonce: number, to: string, value: BigNumber, startBlock: number }): Promise<TransactionReceipt> {
-        return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+    async _waitForTransaction(transactionId: string, timeout: number): Promise<TransactionReceipt> {
+        let remainingTimeout = timeout;
+        const intervalMs = 1000;
+        return new Promise(async (resolve, reject) => {
+            while (remainingTimeout == null || remainingTimeout > 0) {
+                const txResponse = await this.getTransaction(parseTransactionId(transactionId));
+                if (txResponse == null) {
+                    // console.log(`waiting ${intervalMs} ms for transaction finality...`);
+                    await new Promise((resolve) => {
+                        setTimeout(resolve, intervalMs);
+                    });
+                    if (remainingTimeout != null) remainingTimeout -= intervalMs;
+                } else {
+                    return resolve(this.formatter.txRecordToTxReceipt(txResponse));
+                }
+            }
+            reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
+        });
     }
-
+    
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
@@ -609,7 +625,7 @@ export class BaseProvider extends Provider {
         } catch (error) {
             return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                 method: "AccountBalanceQuery",
-                params: {address: addressOrName},
+                params: { address: addressOrName },
                 error
             });
         }
@@ -649,36 +665,18 @@ export class BaseProvider extends Provider {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
 
-        result.wait = async (confirms?: number, timeout?: number) => {
-            if (confirms == null) { confirms = 1; }
-            if (timeout == null) { timeout = 0; }
-
-            // Get the details to detect replacement
-            let replacement = undefined;
-            if (confirms !== 0) {
-                replacement = {
-                    data: tx.data,
-                    from: tx.from,
-                    nonce: tx.nonce,
-                    to: tx.to,
-                    value: tx.value,
-                    startBlock: 0
-                };
-            }
-
-            const receipt = await this._waitForTransaction(tx.hash, confirms, timeout, replacement);
-            if (receipt == null && confirms === 0) { return null; }
-
-            if (receipt.status === 0) {
+        result.wait = async (timeout?: number) => {
+            const txReceipt = await this._waitForTransaction(tx.transactionId, timeout);
+            //TODO do we need this extra check?
+            if (txReceipt.status === 0) {
                 logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
                     transaction: tx,
                     receipt: receipt
                 });
             }
-            return receipt;
+            return txReceipt;
         };
-
         return result;
     }
 
@@ -696,17 +694,18 @@ export class BaseProvider extends Provider {
             const receipt = await resp.getReceipt(this.hederaClient);
             return this._wrapTransaction(ethersTx, txHash, receipt);
         } catch (error) {
+            //check where err is thrown
             const err = logger.makeError(error.message, error.status?.toString());
             (<any>err).transaction = ethersTx;
             (<any>err).transactionHash = txHash;
-            throw  err;
+            throw err;
         }
     }
 
     async _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash> {
         filter = await filter;
 
-        const result: any = { };
+        const result: any = {};
 
         if (filter.address != null) {
             result.address = this._getAddress(filter.address);
@@ -733,14 +732,14 @@ export class BaseProvider extends Provider {
     // TODO FIX ME
     async _getAddress(addressOrName: string | Promise<string>): Promise<string> {
         addressOrName = await addressOrName;
-        if (typeof(addressOrName) !== "string") {
+        if (typeof (addressOrName) !== "string") {
             logger.throwArgumentError("invalid address or ENS name", "name", addressOrName);
         }
 
         const address = await this.resolveName(addressOrName);
         if (address == null) {
             logger.throwError("ENS name not configured", Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `resolveName(${ JSON.stringify(addressOrName) })`
+                operation: `resolveName(${JSON.stringify(addressOrName)})`
             });
         }
         return address;
@@ -751,44 +750,70 @@ export class BaseProvider extends Provider {
      *
      * @param txId - id of the transaction to search for
      */
-    async getTransaction(txId: string | Promise<string>): Promise<TransactionResponse> {
+    async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
+        //currently considers only previewnet!
         await this.getNetwork();
-        txId = await txId;
-        const ep = '/api/v1/transactions/'+txId;
-        let { data } = await axios.get(this._mirrorNodeUrl + ep);
-        const filtered = data.transactions
-            .filter((e: { result: string; }) => e.result === "SUCCESS");
-        return filtered.length > 0 ? filtered[0] : null;
+        if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+        transactionId = await transactionId;
+        //subsequent requests depend on finalized transaction
+        const epTransactions = '/api/v1/transactions/' + transactionId;
+        try {
+            let { data } = await axios.get(this._mirrorNodeUrl + epTransactions);
+            let response;
+            if (data) {
+                const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
+                const res = filtered.length > 0 ? filtered[0] : null;
+                if (res) {
+                    const epContracts = '/api/v1/contracts/results/' + transactionId;
+                    response = Promise.all([
+                        axios.get(this._mirrorNodeUrl + epContracts)
+                    ])
+                        .then(async ([contracts]) => {
+                            const mergedData = { ...contracts.data, transaction: { transaction_id: res.transaction_id, result: res.result }};
+                            return this.formatter.txRecordToTxResponse(mergedData);
+                        })
+                        .catch(error => {
+                            console.log(error);
+                            return null;
+                        });
+                }
+            } 
+            return response;
+        } catch (error) {
+            if (error.response.status != 404) {
+                logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    method: "TransactionResponseQuery",
+                    error
+                });
+            }
+            return null;
+        }
     }
 
-    async getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt> {
+    //TODO this will not be supported? 
+    async getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt> {
         await this.getNetwork();
-
-        transactionHash = await transactionHash;
-
-        const params = { transactionHash: this.formatter.hash(transactionHash, true) };
-
-        return poll(async () => {
-            const result = await this.perform("getTransactionReceipt", params);
-
-            if (result == null) {
-                return undefined;
-            }
-
-            // "geth-etc" returns receipts before they are ready
-            if (result.blockHash == null) { return undefined; }
-
-            return this.formatter.receipt(result);
-        }, { oncePoll: this });
+        transactionId = await transactionId;
+        try {
+            let receipt = await new TransactionReceiptQuery()
+                .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
+                .execute(this.hederaClient);
+            console.log("getTransactionReceipt: ", receipt);
+            //TODO parse to ethers format
+            // return this.formatter.txRecordToTxReceipt(txRecord); 
+            return null;
+        } catch (error) {
+            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                method: "TransactionGetReceiptQuery",
+                error
+            });
+        }
     }
 
     async getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>> {
         await this.getNetwork();
         const params = await resolveProperties({ filter: this._getFilter(filter) });
         const logs: Array<Log> = await this.perform("getLogs", params);
-        logs.forEach((log) => {
-            if (log.removed == null) { log.removed = false; }
-        });
         return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
     }
 
@@ -849,7 +874,7 @@ export class BaseProvider extends Provider {
             if (isHexString(name)) { throw error; }
         }
 
-        if (typeof(name) !== "string") {
+        if (typeof (name) !== "string") {
             logger.throwArgumentError("invalid ENS name", "name", name);
         }
 
