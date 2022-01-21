@@ -479,9 +479,10 @@ export class BaseProvider extends Provider {
         return __awaiter(this, void 0, void 0, function* () {
             let remainingTimeout = timeout;
             const intervalMs = 1000;
+            const parsedTransactionId = parseTransactionId(transactionId);
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 while (remainingTimeout == null || remainingTimeout > 0) {
-                    const txResponse = yield this.getTransaction(parseTransactionId(transactionId));
+                    const txResponse = yield this.getTransaction(parsedTransactionId);
                     if (txResponse == null) {
                         // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                         yield new Promise((resolve) => {
@@ -651,7 +652,6 @@ export class BaseProvider extends Provider {
      */
     getTransaction(transactionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            //currently considers only previewnet!
             yield this.getNetwork();
             if (!this._mirrorNodeUrl)
                 logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
@@ -660,22 +660,21 @@ export class BaseProvider extends Provider {
             const epTransactions = '/api/v1/transactions/' + transactionId;
             try {
                 let { data } = yield axios.get(this._mirrorNodeUrl + epTransactions);
-                let response;
+                let response = null;
                 if (data) {
                     const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
-                    const res = filtered.length > 0 ? filtered[0] : null;
-                    if (res) {
+                    if (filtered.length > 0) {
+                        const transaction = filtered[0];
                         const epContracts = '/api/v1/contracts/results/' + transactionId;
                         response = Promise.all([
                             axios.get(this._mirrorNodeUrl + epContracts)
                         ])
                             .then(([contracts]) => __awaiter(this, void 0, void 0, function* () {
-                            const mergedData = Object.assign(Object.assign({}, contracts.data), { transaction: { transaction_id: res.transaction_id, result: res.result } });
+                            const mergedData = Object.assign(Object.assign({}, contracts.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
                             return this.formatter.txRecordToTxResponse(mergedData);
                         }))
                             .catch(error => {
-                            console.log(error);
-                            return null;
+                            throw error;
                         });
                     }
                 }

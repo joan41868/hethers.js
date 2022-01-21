@@ -606,18 +606,19 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._waitForTransaction = function (transactionId, timeout) {
         return __awaiter(this, void 0, void 0, function () {
-            var remainingTimeout, intervalMs;
+            var remainingTimeout, intervalMs, parsedTransactionId;
             var _this = this;
             return __generator(this, function (_a) {
                 remainingTimeout = timeout;
                 intervalMs = 1000;
+                parsedTransactionId = (0, transactions_1.parseTransactionId)(transactionId);
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
                         var txResponse;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
                                     if (!(remainingTimeout == null || remainingTimeout > 0)) return [3 /*break*/, 5];
-                                    return [4 /*yield*/, this.getTransaction((0, transactions_1.parseTransactionId)(transactionId))];
+                                    return [4 /*yield*/, this.getTransaction(parsedTransactionId)];
                                 case 1:
                                     txResponse = _a.sent();
                                     if (!(txResponse == null)) return [3 /*break*/, 3];
@@ -863,15 +864,12 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var epTransactions, data, response, filtered, res_1, epContracts, error_4;
+            var epTransactions, data, response, filtered, transaction_1, epContracts, error_4;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: 
-                    //currently considers only previewnet!
-                    return [4 /*yield*/, this.getNetwork()];
+                    case 0: return [4 /*yield*/, this.getNetwork()];
                     case 1:
-                        //currently considers only previewnet!
                         _a.sent();
                         if (!this._mirrorNodeUrl)
                             logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
@@ -885,11 +883,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + epTransactions)];
                     case 4:
                         data = (_a.sent()).data;
-                        response = void 0;
+                        response = null;
                         if (data) {
                             filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
-                            res_1 = filtered.length > 0 ? filtered[0] : null;
-                            if (res_1) {
+                            if (filtered.length > 0) {
+                                transaction_1 = filtered[0];
                                 epContracts = '/api/v1/contracts/results/' + transactionId;
                                 response = Promise.all([
                                     axios_1.default.get(this._mirrorNodeUrl + epContracts)
@@ -899,14 +897,13 @@ var BaseProvider = /** @class */ (function (_super) {
                                     return __awaiter(_this, void 0, void 0, function () {
                                         var mergedData;
                                         return __generator(this, function (_b) {
-                                            mergedData = __assign(__assign({}, contracts.data), { transaction: { transaction_id: res_1.transaction_id, result: res_1.result } });
+                                            mergedData = __assign(__assign({}, contracts.data), { transaction: { transaction_id: transaction_1.transaction_id, result: transaction_1.result } });
                                             return [2 /*return*/, this.formatter.txRecordToTxResponse(mergedData)];
                                         });
                                     });
                                 })
                                     .catch(function (error) {
-                                    console.log(error);
-                                    return null;
+                                    throw error;
                                 });
                             }
                         }

@@ -588,9 +588,10 @@ export class BaseProvider extends Provider {
     async _waitForTransaction(transactionId: string, timeout: number): Promise<TransactionReceipt> {
         let remainingTimeout = timeout;
         const intervalMs = 1000;
+        const parsedTransactionId = parseTransactionId(transactionId);
         return new Promise(async (resolve, reject) => {
             while (remainingTimeout == null || remainingTimeout > 0) {
-                const txResponse = await this.getTransaction(parseTransactionId(transactionId));
+                const txResponse = await this.getTransaction(parsedTransactionId);
                 if (txResponse == null) {
                     // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                     await new Promise((resolve) => {
@@ -751,7 +752,6 @@ export class BaseProvider extends Provider {
      * @param txId - id of the transaction to search for
      */
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
-        //currently considers only previewnet!
         await this.getNetwork();
         if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
         transactionId = await transactionId;
@@ -759,22 +759,24 @@ export class BaseProvider extends Provider {
         const epTransactions = '/api/v1/transactions/' + transactionId;
         try {
             let { data } = await axios.get(this._mirrorNodeUrl + epTransactions);
-            let response;
+            let response = null;
             if (data) {
                 const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
-                const res = filtered.length > 0 ? filtered[0] : null;
-                if (res) {
+                if (filtered.length > 0) {
+                    const transaction = filtered[0];
                     const epContracts = '/api/v1/contracts/results/' + transactionId;
                     response = Promise.all([
                         axios.get(this._mirrorNodeUrl + epContracts)
                     ])
                         .then(async ([contracts]) => {
-                            const mergedData = { ...contracts.data, transaction: { transaction_id: res.transaction_id, result: res.result }};
+                            const mergedData = {
+                                ...contracts.data,
+                                transaction: { transaction_id: transaction.transaction_id, result: transaction.result }
+                            };
                             return this.formatter.txRecordToTxResponse(mergedData);
                         })
                         .catch(error => {
-                            console.log(error);
-                            return null;
+                            throw error;
                         });
                 }
             } 
