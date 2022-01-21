@@ -322,7 +322,6 @@ var Formatter = /** @class */ (function () {
     Formatter.prototype.receiptLog = function (value) {
         return Formatter.check(this.formats.receiptLog, value);
     };
-    //fill the txReceipt obj
     Formatter.prototype.receipt = function (value) {
         var result = Formatter.check(this.formats.receipt, value);
         if (result.status != null) {
@@ -333,7 +332,7 @@ var Formatter = /** @class */ (function () {
     Formatter.prototype.txRecordToTxResponse = function (txRecord) {
         return {
             accessList: null,
-            chainId: 1,
+            chainId: txRecord.chainId,
             data: '',
             from: txRecord.from,
             gasLimit: bignumber_1.BigNumber.from(txRecord.gas_limit),

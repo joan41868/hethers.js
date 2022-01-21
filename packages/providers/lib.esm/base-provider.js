@@ -484,7 +484,6 @@ export class BaseProvider extends Provider {
                 while (remainingTimeout == null || remainingTimeout > 0) {
                     const txResponse = yield this.getTransaction(parsedTransactionId);
                     if (txResponse == null) {
-                        // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                         yield new Promise((resolve) => {
                             setTimeout(resolve, intervalMs);
                         });
@@ -593,7 +592,6 @@ export class BaseProvider extends Provider {
                 return this._wrapTransaction(ethersTx, txHash, receipt);
             }
             catch (error) {
-                //check where err is thrown
                 const err = logger.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
                 err.transaction = ethersTx;
                 err.transactionHash = txHash;
@@ -648,11 +646,10 @@ export class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param txId - id of the transaction to search for
+     * @param transactionId - id of the transaction to search for
      */
     getTransaction(transactionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
             if (!this._mirrorNodeUrl)
                 logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
             transactionId = yield transactionId;
@@ -670,7 +667,7 @@ export class BaseProvider extends Provider {
                             axios.get(this._mirrorNodeUrl + epContracts)
                         ])
                             .then(([contracts]) => __awaiter(this, void 0, void 0, function* () {
-                            const mergedData = Object.assign(Object.assign({}, contracts.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
+                            const mergedData = Object.assign(Object.assign({ chainId: this._network.chainId }, contracts.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
                             return this.formatter.txRecordToTxResponse(mergedData);
                         }))
                             .catch(error => {
@@ -691,18 +688,15 @@ export class BaseProvider extends Provider {
             }
         });
     }
-    //TODO this will not be supported? 
     getTransactionReceipt(transactionId) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
             transactionId = yield transactionId;
             try {
                 let receipt = yield new TransactionReceiptQuery()
-                    .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
+                    .setTransactionId(transactionId)
                     .execute(this.hederaClient);
                 console.log("getTransactionReceipt: ", receipt);
-                //TODO parse to ethers format
-                // return this.formatter.txRecordToTxReceipt(txRecord); 
                 return null;
             }
             catch (error) {

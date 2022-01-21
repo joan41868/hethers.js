@@ -622,12 +622,10 @@ var BaseProvider = /** @class */ (function (_super) {
                                 case 1:
                                     txResponse = _a.sent();
                                     if (!(txResponse == null)) return [3 /*break*/, 3];
-                                    // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                                     return [4 /*yield*/, new Promise(function (resolve) {
                                             setTimeout(resolve, intervalMs);
                                         })];
                                 case 2:
-                                    // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                                     _a.sent();
                                     if (remainingTimeout != null)
                                         remainingTimeout -= intervalMs;
@@ -860,7 +858,7 @@ var BaseProvider = /** @class */ (function (_super) {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param txId - id of the transaction to search for
+     * @param transactionId - id of the transaction to search for
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
@@ -868,20 +866,18 @@ var BaseProvider = /** @class */ (function (_super) {
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
+                    case 0:
                         if (!this._mirrorNodeUrl)
                             logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
                         return [4 /*yield*/, transactionId];
-                    case 2:
+                    case 1:
                         transactionId = _a.sent();
                         epTransactions = '/api/v1/transactions/' + transactionId;
-                        _a.label = 3;
-                    case 3:
-                        _a.trys.push([3, 5, , 6]);
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + epTransactions)];
-                    case 4:
+                    case 3:
                         data = (_a.sent()).data;
                         response = null;
                         if (data) {
@@ -897,7 +893,7 @@ var BaseProvider = /** @class */ (function (_super) {
                                     return __awaiter(_this, void 0, void 0, function () {
                                         var mergedData;
                                         return __generator(this, function (_b) {
-                                            mergedData = __assign(__assign({}, contracts.data), { transaction: { transaction_id: transaction_1.transaction_id, result: transaction_1.result } });
+                                            mergedData = __assign(__assign({ chainId: this._network.chainId }, contracts.data), { transaction: { transaction_id: transaction_1.transaction_id, result: transaction_1.result } });
                                             return [2 /*return*/, this.formatter.txRecordToTxResponse(mergedData)];
                                         });
                                     });
@@ -908,7 +904,7 @@ var BaseProvider = /** @class */ (function (_super) {
                             }
                         }
                         return [2 /*return*/, response];
-                    case 5:
+                    case 4:
                         error_4 = _a.sent();
                         if (error_4.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
@@ -917,12 +913,11 @@ var BaseProvider = /** @class */ (function (_super) {
                             });
                         }
                         return [2 /*return*/, null];
-                    case 6: return [2 /*return*/];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
     };
-    //TODO this will not be supported? 
     BaseProvider.prototype.getTransactionReceipt = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
             var receipt, error_5;
@@ -938,13 +933,11 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 3:
                         _a.trys.push([3, 5, , 6]);
                         return [4 /*yield*/, new sdk_1.TransactionReceiptQuery()
-                                .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
+                                .setTransactionId(transactionId)
                                 .execute(this.hederaClient)];
                     case 4:
                         receipt = _a.sent();
                         console.log("getTransactionReceipt: ", receipt);
-                        //TODO parse to ethers format
-                        // return this.formatter.txRecordToTxReceipt(txRecord); 
                         return [2 /*return*/, null];
                     case 5:
                         error_5 = _a.sent();

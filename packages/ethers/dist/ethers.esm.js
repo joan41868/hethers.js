@@ -94909,7 +94909,6 @@ class Formatter {
     receiptLog(value) {
         return Formatter.check(this.formats.receiptLog, value);
     }
-    //fill the txReceipt obj
     receipt(value) {
         const result = Formatter.check(this.formats.receipt, value);
         if (result.status != null) {
@@ -94920,7 +94919,7 @@ class Formatter {
     txRecordToTxResponse(txRecord) {
         return {
             accessList: null,
-            chainId: 1,
+            chainId: txRecord.chainId,
             data: '',
             from: txRecord.from,
             gasLimit: BigNumber.from(txRecord.gas_limit),
@@ -99153,7 +99152,6 @@ class BaseProvider extends Provider {
                 while (remainingTimeout == null || remainingTimeout > 0) {
                     const txResponse = yield this.getTransaction(parsedTransactionId);
                     if (txResponse == null) {
-                        // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                         yield new Promise((resolve) => {
                             setTimeout(resolve, intervalMs);
                         });
@@ -99262,7 +99260,6 @@ class BaseProvider extends Provider {
                 return this._wrapTransaction(ethersTx, txHash, receipt);
             }
             catch (error) {
-                //check where err is thrown
                 const err = logger$v.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
                 err.transaction = ethersTx;
                 err.transactionHash = txHash;
@@ -99317,11 +99314,10 @@ class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param txId - id of the transaction to search for
+     * @param transactionId - id of the transaction to search for
      */
     getTransaction(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
             if (!this._mirrorNodeUrl)
                 logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
             transactionId = yield transactionId;
@@ -99339,7 +99335,7 @@ class BaseProvider extends Provider {
                             axios$1.get(this._mirrorNodeUrl + epContracts)
                         ])
                             .then(([contracts]) => __awaiter$9(this, void 0, void 0, function* () {
-                            const mergedData = Object.assign(Object.assign({}, contracts.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
+                            const mergedData = Object.assign(Object.assign({ chainId: this._network.chainId }, contracts.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
                             return this.formatter.txRecordToTxResponse(mergedData);
                         }))
                             .catch(error => {
@@ -99360,18 +99356,15 @@ class BaseProvider extends Provider {
             }
         });
     }
-    //TODO this will not be supported? 
     getTransactionReceipt(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
             yield this.getNetwork();
             transactionId = yield transactionId;
             try {
                 let receipt = yield new TransactionReceiptQuery()
-                    .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
+                    .setTransactionId(transactionId)
                     .execute(this.hederaClient);
                 console.log("getTransactionReceipt: ", receipt);
-                //TODO parse to ethers format
-                // return this.formatter.txRecordToTxReceipt(txRecord); 
                 return null;
             }
             catch (error) {

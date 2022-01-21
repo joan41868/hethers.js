@@ -32,6 +32,7 @@ export type TransactionRequest = {
 }
 
 export type HederaTransactionResponse = {
+    chainId: number,
     amount: number,
     call_result: string,
     contract_id: string,

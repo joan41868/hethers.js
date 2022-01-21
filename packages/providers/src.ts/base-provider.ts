@@ -593,7 +593,6 @@ export class BaseProvider extends Provider {
             while (remainingTimeout == null || remainingTimeout > 0) {
                 const txResponse = await this.getTransaction(parsedTransactionId);
                 if (txResponse == null) {
-                    // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                     await new Promise((resolve) => {
                         setTimeout(resolve, intervalMs);
                     });
@@ -695,7 +694,6 @@ export class BaseProvider extends Provider {
             const receipt = await resp.getReceipt(this.hederaClient);
             return this._wrapTransaction(ethersTx, txHash, receipt);
         } catch (error) {
-            //check where err is thrown
             const err = logger.makeError(error.message, error.status?.toString());
             (<any>err).transaction = ethersTx;
             (<any>err).transactionHash = txHash;
@@ -749,10 +747,9 @@ export class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param txId - id of the transaction to search for
+     * @param transactionId - id of the transaction to search for
      */
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
-        await this.getNetwork();
         if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
         transactionId = await transactionId;
         //subsequent requests depend on finalized transaction
@@ -770,6 +767,7 @@ export class BaseProvider extends Provider {
                     ])
                         .then(async ([contracts]) => {
                             const mergedData = {
+                                chainId: this._network.chainId,
                                 ...contracts.data,
                                 transaction: { transaction_id: transaction.transaction_id, result: transaction.result }
                             };
@@ -792,17 +790,14 @@ export class BaseProvider extends Provider {
         }
     }
 
-    //TODO this will not be supported? 
     async getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt> {
         await this.getNetwork();
         transactionId = await transactionId;
         try {
             let receipt = await new TransactionReceiptQuery()
-                .setTransactionId(transactionId) //0.0.11495@1639068917.934241900
+                .setTransactionId(transactionId)
                 .execute(this.hederaClient);
             console.log("getTransactionReceipt: ", receipt);
-            //TODO parse to ethers format
-            // return this.formatter.txRecordToTxReceipt(txRecord); 
             return null;
         } catch (error) {
             return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {

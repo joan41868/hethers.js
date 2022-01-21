@@ -388,7 +388,6 @@ export class Formatter {
         return Formatter.check(this.formats.receiptLog, value);
     }
 
-    //fill the txReceipt obj
     receipt(value: any): TransactionReceipt {
         const result: TransactionReceipt = Formatter.check(this.formats.receipt, value);
 
@@ -402,7 +401,7 @@ export class Formatter {
     txRecordToTxResponse(txRecord: HederaTransactionResponse): TransactionResponse {
         return {
             accessList: null,
-            chainId: 1, // get from provider for "mainnet", "testnet", "previewnet"?
+            chainId: txRecord.chainId,
             data: '',
             from: txRecord.from,
             gasLimit: BigNumber.from(txRecord.gas_limit),

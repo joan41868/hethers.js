@@ -318,7 +318,6 @@ export class Formatter {
     receiptLog(value) {
         return Formatter.check(this.formats.receiptLog, value);
     }
-    //fill the txReceipt obj
     receipt(value) {
         const result = Formatter.check(this.formats.receipt, value);
         if (result.status != null) {
@@ -329,7 +328,7 @@ export class Formatter {
     txRecordToTxResponse(txRecord) {
         return {
             accessList: null,
-            chainId: 1,
+            chainId: txRecord.chainId,
             data: '',
             from: txRecord.from,
             gasLimit: BigNumber.from(txRecord.gas_limit),

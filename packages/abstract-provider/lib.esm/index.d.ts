@@ -20,6 +20,7 @@ export declare type TransactionRequest = {
     customData?: Record<string, any>;
 };
 export declare type HederaTransactionResponse = {
+    chainId: number;
     amount: number;
     call_result: string;
     contract_id: string;
