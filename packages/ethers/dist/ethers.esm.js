@@ -19,7 +19,6 @@ import tty from 'tty';
 var lib_esm$k = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	get TransactionTypes () { return TransactionTypes; },
-	get parseTransactionId () { return parseTransactionId; },
 	get computeAddress () { return computeAddress; },
 	get computeAlias () { return computeAlias; },
 	get computeAliasFromPubKey () { return computeAliasFromPubKey; },
@@ -92730,12 +92729,6 @@ var TransactionTypes;
     TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes || (TransactionTypes = {}));
-//TODO handle possible exception
-function parseTransactionId(transactionId) {
-    const accountId = transactionId.split('@');
-    const txValidStart = accountId[1].split('.');
-    return accountId[0] + '-' + txValidStart.join('-');
-}
 ///////////////////////////////
 function handleNumber(value) {
     if (value === "0x") {
@@ -93104,7 +93097,9 @@ function parse$2(rawTransaction) {
         catch (error) {
             logger$r.throwArgumentError(error.message, "rawTransaction", rawTransaction);
         }
+        const tx = parsed.transactionId;
         let contents = {
+            transactionId: tx.accountId.toString() + '-' + tx.validStart.seconds + '-' + tx.validStart.nanos,
             hash: hexlify(yield parsed.getTransactionHash()),
             from: utils$1.getAddressFromAccount(parsed.transactionId.accountId.toString()),
         };
@@ -93139,8 +93134,7 @@ function parse$2(rawTransaction) {
             return logger$r.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
-        const transactionId = parsed.transactionId.toString().split('/');
-        return Object.assign(Object.assign({ transactionId: transactionId[0] }, contents), { chainId: 0, r: '', s: '', v: 0 });
+        return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
 
@@ -99147,10 +99141,9 @@ class BaseProvider extends Provider {
         return __awaiter$9(this, void 0, void 0, function* () {
             let remainingTimeout = timeout;
             const intervalMs = 1000;
-            const parsedTransactionId = parseTransactionId(transactionId);
             return new Promise((resolve, reject) => __awaiter$9(this, void 0, void 0, function* () {
                 while (remainingTimeout == null || remainingTimeout > 0) {
-                    const txResponse = yield this.getTransaction(parsedTransactionId);
+                    const txResponse = yield this.getTransaction(transactionId);
                     if (txResponse == null) {
                         yield new Promise((resolve) => {
                             setTimeout(resolve, intervalMs);
@@ -99251,6 +99244,7 @@ class BaseProvider extends Provider {
             const txBytes = arrayify(signedTransaction);
             const hederaTx = Transaction.fromBytes(txBytes);
             const ethersTx = yield this.formatter.transaction(signedTransaction);
+            ethersTx.chainId = this._network.chainId;
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
                 // TODO once we have fallback provider use `provider.perform("sendTransaction")`

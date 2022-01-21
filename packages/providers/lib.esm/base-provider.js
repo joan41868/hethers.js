@@ -14,7 +14,6 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { getNetwork } from "@ethersproject/networks";
 import { defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
-import { parseTransactionId } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import bech32 from "bech32";
@@ -479,10 +478,9 @@ export class BaseProvider extends Provider {
         return __awaiter(this, void 0, void 0, function* () {
             let remainingTimeout = timeout;
             const intervalMs = 1000;
-            const parsedTransactionId = parseTransactionId(transactionId);
             return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
                 while (remainingTimeout == null || remainingTimeout > 0) {
-                    const txResponse = yield this.getTransaction(parsedTransactionId);
+                    const txResponse = yield this.getTransaction(transactionId);
                     if (txResponse == null) {
                         yield new Promise((resolve) => {
                             setTimeout(resolve, intervalMs);
@@ -583,6 +581,7 @@ export class BaseProvider extends Provider {
             const txBytes = arrayify(signedTransaction);
             const hederaTx = HederaTransaction.fromBytes(txBytes);
             const ethersTx = yield this.formatter.transaction(signedTransaction);
+            ethersTx.chainId = this._network.chainId;
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
                 // TODO once we have fallback provider use `provider.perform("sendTransaction")`

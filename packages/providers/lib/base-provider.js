@@ -72,7 +72,6 @@ var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var networks_1 = require("@ethersproject/networks");
 var properties_1 = require("@ethersproject/properties");
-var transactions_1 = require("@ethersproject/transactions");
 var sha2_1 = require("@ethersproject/sha2");
 var strings_1 = require("@ethersproject/strings");
 var bech32_1 = __importDefault(require("bech32"));
@@ -606,19 +605,18 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._waitForTransaction = function (transactionId, timeout) {
         return __awaiter(this, void 0, void 0, function () {
-            var remainingTimeout, intervalMs, parsedTransactionId;
+            var remainingTimeout, intervalMs;
             var _this = this;
             return __generator(this, function (_a) {
                 remainingTimeout = timeout;
                 intervalMs = 1000;
-                parsedTransactionId = (0, transactions_1.parseTransactionId)(transactionId);
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
                         var txResponse;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
                                     if (!(remainingTimeout == null || remainingTimeout > 0)) return [3 /*break*/, 5];
-                                    return [4 /*yield*/, this.getTransaction(parsedTransactionId)];
+                                    return [4 /*yield*/, this.getTransaction(transactionId)];
                                 case 1:
                                     txResponse = _a.sent();
                                     if (!(txResponse == null)) return [3 /*break*/, 3];
@@ -766,6 +764,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
                     case 2:
                         ethersTx = _c.sent();
+                        ethersTx.chainId = this._network.chainId;
                         _b = bytes_1.hexlify;
                         return [4 /*yield*/, hederaTx.getTransactionHash()];
                     case 3:

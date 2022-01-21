@@ -29,12 +29,6 @@ export var TransactionTypes;
     TransactionTypes[TransactionTypes["eip2930"] = 1] = "eip2930";
     TransactionTypes[TransactionTypes["eip1559"] = 2] = "eip1559";
 })(TransactionTypes || (TransactionTypes = {}));
-//TODO handle possible exception
-export function parseTransactionId(transactionId) {
-    const accountId = transactionId.split('@');
-    const txValidStart = accountId[1].split('.');
-    return accountId[0] + '-' + txValidStart.join('-');
-}
 ///////////////////////////////
 function handleNumber(value) {
     if (value === "0x") {
@@ -403,7 +397,9 @@ export function parse(rawTransaction) {
         catch (error) {
             logger.throwArgumentError(error.message, "rawTransaction", rawTransaction);
         }
+        const tx = parsed.transactionId;
         let contents = {
+            transactionId: tx.accountId.toString() + '-' + tx.validStart.seconds + '-' + tx.validStart.nanos,
             hash: hexlify(yield parsed.getTransactionHash()),
             from: getAddressFromAccount(parsed.transactionId.accountId.toString()),
         };
@@ -438,8 +434,7 @@ export function parse(rawTransaction) {
             return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
-        const transactionId = parsed.transactionId.toString().split('/');
-        return Object.assign(Object.assign({ transactionId: transactionId[0] }, contents), { chainId: 0, r: '', s: '', v: 0 });
+        return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
 //# sourceMappingURL=index.js.map

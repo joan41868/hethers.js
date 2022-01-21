@@ -96,19 +96,13 @@ export interface Transaction {
 }
 
 type HederaTransactionContents = {
+    transactionId: string,
     hash: string,
     to?: string,
     from: string,
     gasLimit: BigNumber,
     value: BigNumber,
     data: string
-}
-
-//TODO handle possible exception
-export function parseTransactionId(transactionId: string): string {
-    const accountId = transactionId.split('@');
-    const txValidStart = accountId[1].split('.');
-    return accountId[0] + '-' + txValidStart.join('-');
 }
 
 ///////////////////////////////
@@ -513,8 +507,9 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     } catch (error) {
         logger.throwArgumentError(error.message, "rawTransaction", rawTransaction);
     }
-
+    const tx = parsed.transactionId;
     let contents = {
+        transactionId: tx.accountId.toString() + '-' + tx.validStart.seconds + '-' + tx.validStart.nanos,
         hash: hexlify(await parsed.getTransactionHash()), //stringify?
         from: getAddressFromAccount(parsed.transactionId.accountId.toString()),
     } as HederaTransactionContents;
@@ -546,9 +541,7 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     }
 
     // TODO populate r, s ,v
-    const transactionId = parsed.transactionId.toString().split('/');
     return {
-        transactionId: transactionId[0],
         ...contents,
         chainId: 0,
         r: '',
