@@ -108,9 +108,7 @@ type HederaTransactionContents = {
 export function parseTransactionId(transactionId: string): string {
     const accountId = transactionId.split('@');
     const txValidStart = accountId[1].split('.');
-    const result = accountId[0] + '-' + txValidStart.join('-');
-
-    return result;
+    return accountId[0] + '-' + txValidStart.join('-');
 }
 
 ///////////////////////////////
@@ -506,12 +504,6 @@ export function serializeHederaTransaction(transaction: TransactionRequest) : He
 //     return tx;
 // }
 
-function parseHederaTransactionId(obj: TransactionId): string {
-    //TODO cleaner implementation
-    const parsedString = obj.accountId.realm+'.'+obj.accountId.shard+'.'+obj.accountId.num+'@'+obj.validStart.seconds+'.'+obj.validStart.nanos;
-    return parsedString;
-}
-
 export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     const payload = arrayify(rawTransaction);
 
@@ -554,9 +546,9 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     }
 
     // TODO populate r, s ,v
-
+    const transactionId = parsed.transactionId.toString().split('/');
     return {
-        transactionId: parseHederaTransactionId(parsed.transactionId),
+        transactionId: transactionId[0],
         ...contents,
         chainId: 0,
         r: '',

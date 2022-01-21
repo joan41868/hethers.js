@@ -23,7 +23,7 @@ export declare type HederaTransactionResponse = {
     amount: number;
     call_result: string;
     contract_id: string;
-    created_contract_ids: [];
+    created_contract_ids: string[];
     error_message: string;
     from: string;
     function_parameters: string;

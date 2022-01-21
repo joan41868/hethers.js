@@ -92734,8 +92734,7 @@ var TransactionTypes;
 function parseTransactionId(transactionId) {
     const accountId = transactionId.split('@');
     const txValidStart = accountId[1].split('.');
-    const result = accountId[0] + '-' + txValidStart.join('-');
-    return result;
+    return accountId[0] + '-' + txValidStart.join('-');
 }
 ///////////////////////////////
 function handleNumber(value) {
@@ -93094,11 +93093,6 @@ function serializeHederaTransaction(transaction) {
 //
 //     return tx;
 // }
-function parseHederaTransactionId(obj) {
-    //TODO cleaner implementation
-    const parsedString = obj.accountId.realm + '.' + obj.accountId.shard + '.' + obj.accountId.num + '@' + obj.validStart.seconds + '.' + obj.validStart.nanos;
-    return parsedString;
-}
 function parse$2(rawTransaction) {
     var _a;
     return __awaiter$7(this, void 0, void 0, function* () {
@@ -93145,7 +93139,8 @@ function parse$2(rawTransaction) {
             return logger$r.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
-        return Object.assign(Object.assign({ transactionId: parseHederaTransactionId(parsed.transactionId) }, contents), { chainId: 0, r: '', s: '', v: 0 });
+        const transactionId = parsed.transactionId.toString().split('/');
+        return Object.assign(Object.assign({ transactionId: transactionId[0] }, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
 
@@ -99153,9 +99148,10 @@ class BaseProvider extends Provider {
         return __awaiter$9(this, void 0, void 0, function* () {
             let remainingTimeout = timeout;
             const intervalMs = 1000;
+            const parsedTransactionId = parseTransactionId(transactionId);
             return new Promise((resolve, reject) => __awaiter$9(this, void 0, void 0, function* () {
                 while (remainingTimeout == null || remainingTimeout > 0) {
-                    const txResponse = yield this.getTransaction(parseTransactionId(transactionId));
+                    const txResponse = yield this.getTransaction(parsedTransactionId);
                     if (txResponse == null) {
                         // console.log(`waiting ${intervalMs} ms for transaction finality...`);
                         yield new Promise((resolve) => {
@@ -99325,7 +99321,6 @@ class BaseProvider extends Provider {
      */
     getTransaction(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            //currently considers only previewnet!
             yield this.getNetwork();
             if (!this._mirrorNodeUrl)
                 logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
@@ -99334,22 +99329,21 @@ class BaseProvider extends Provider {
             const epTransactions = '/api/v1/transactions/' + transactionId;
             try {
                 let { data } = yield axios$1.get(this._mirrorNodeUrl + epTransactions);
-                let response;
+                let response = null;
                 if (data) {
                     const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
-                    const res = filtered.length > 0 ? filtered[0] : null;
-                    if (res) {
+                    if (filtered.length > 0) {
+                        const transaction = filtered[0];
                         const epContracts = '/api/v1/contracts/results/' + transactionId;
                         response = Promise.all([
                             axios$1.get(this._mirrorNodeUrl + epContracts)
                         ])
                             .then(([contracts]) => __awaiter$9(this, void 0, void 0, function* () {
-                            const mergedData = Object.assign(Object.assign({}, contracts.data), { transaction: { transaction_id: res.transaction_id, result: res.result } });
+                            const mergedData = Object.assign(Object.assign({}, contracts.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
                             return this.formatter.txRecordToTxResponse(mergedData);
                         }))
                             .catch(error => {
-                            console.log(error);
-                            return null;
+                            throw error;
                         });
                     }
                 }
