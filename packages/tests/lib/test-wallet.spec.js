@@ -311,8 +311,9 @@ describe('Test Signing Messages', function () {
     tests.forEach(function (test) {
         it(('verifies a message "' + test.name + '"'), function () {
             this.timeout(120000);
-            var address = ethers_1.ethers.utils.verifyMessage(test.message, test.signature);
-            assert_1.default.equal(address, test.address, 'verifies message signature');
+            var wallet = new ethers_1.ethers.Wallet(test.privateKey);
+            var publicKey = ethers_1.ethers.utils.verifyMessage(test.message, test.signature);
+            assert_1.default.strictEqual(wallet.publicKey, publicKey);
         });
     });
     tests.forEach(function (test) {
@@ -482,6 +483,59 @@ describe("Wallet tx signing", function () {
                         fa = fromBytes;
                         assert_1.default.ok(Buffer.from(fa.contents).toString() == tx.customData.fileChunk, "Contents mismatch");
                         assert_1.default.ok(fa.fileId.toString() == tx.customData.fileId, "FileId mismatch");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
+});
+describe("Wallet getters", function () {
+    it("Should get proper mainnet chainId", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var provider, wallet, chainId;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        provider = ethers_1.ethers.providers.getDefaultProvider("mainnet");
+                        wallet = ethers_1.ethers.Wallet.createRandom().connect(provider);
+                        return [4 /*yield*/, wallet.getChainId()];
+                    case 1:
+                        chainId = _a.sent();
+                        assert_1.default.strictEqual(chainId, 290);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
+    it("Should get proper testnet chainId", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var provider, wallet, chainId;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        provider = ethers_1.ethers.providers.getDefaultProvider("testnet");
+                        wallet = ethers_1.ethers.Wallet.createRandom().connect(provider);
+                        return [4 /*yield*/, wallet.getChainId()];
+                    case 1:
+                        chainId = _a.sent();
+                        assert_1.default.strictEqual(chainId, 291);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
+    it("Should get proper previewnet chainId", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var provider, wallet, chainId;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        provider = ethers_1.ethers.providers.getDefaultProvider("previewnet");
+                        wallet = ethers_1.ethers.Wallet.createRandom().connect(provider);
+                        return [4 /*yield*/, wallet.getChainId()];
+                    case 1:
+                        chainId = _a.sent();
+                        assert_1.default.strictEqual(chainId, 292);
                         return [2 /*return*/];
                 }
             });
