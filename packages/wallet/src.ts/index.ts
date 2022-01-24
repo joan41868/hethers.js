@@ -190,19 +190,7 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 
 	// TODO to be revised
 	async _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
-		// Populate any ENS names
-		const populated = await _TypedDataEncoder.resolveNames(domain, types, value, (name: string) => {
-			if (this.provider == null) {
-				logger.throwError("cannot resolve ENS names without a provider", Logger.errors.UNSUPPORTED_OPERATION, {
-					operation: "resolveName",
-					value: name
-				});
-			}
-			return Promise.resolve(name);
-			// return this.provider.resolveName(name);
-		});
-
-		return joinSignature(this._signingKey().signDigest(_TypedDataEncoder.hash(populated.domain, types, populated.value)));
+		return logger.throwError("not supported");
 	}
 
 	encrypt(password: Bytes | string, options?: any, progressCallback?: ProgressCallback): Promise<string> {
@@ -269,7 +257,6 @@ export function verifyMessage(message: Bytes | string, signature: SignatureLike)
 	return recoverAddress(hashMessage(message), signature);
 }
 
-// TODO to be revised
 export function verifyTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, signature: SignatureLike): string {
-	return recoverAddress(_TypedDataEncoder.hash(domain, types, value), signature);
+	return logger.throwError("not supported");
 }
