@@ -1068,8 +1068,7 @@ describe("Test Hedera Provider", function () {
             const privateKey = PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
             const txID = TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
             const tx = await new ContractCreateTransaction()
-                .setContractMemo("memo")
-                .setGas(100000)
+                .setGas(300000)
                 .setBytecodeFileId("0.0.26562254")
                 .setNodeAccountIds([new AccountId(0,0,3)])
                 .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
@@ -1088,7 +1087,7 @@ describe("Test Hedera Provider", function () {
             assert.strictEqual(receipt.contractAddress, '0x'+sendTransactionResponse.customData.contractId);
             assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
             assert.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
-        }).timeout(timeout);
+        }).timeout(timeout * 4);
 
         it("Should populate transaction receipt with timeout", async function (){
             const sendTransactionResponse = await provider.sendTransaction(await signedTx);
@@ -1098,7 +1097,7 @@ describe("Test Hedera Provider", function () {
             assert.strictEqual(receipt.contractAddress, '0x'+sendTransactionResponse.customData.contractId);
             assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
             assert.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
-        }).timeout(timeout);
+        }).timeout(timeout * 4);
     
         it("Should throw timeout exceeded", async function () {
             const insufficientTimeout = 500;
@@ -1108,7 +1107,6 @@ describe("Test Hedera Provider", function () {
                     await sendTransactionResponse.wait(insufficientTimeout);
                 },
                 (err) => {
-                    console.log("err:",err);
                     assert.strictEqual(err.name, 'Error');
                     assert.strictEqual(err.reason, 'timeout exceeded');
                     assert.strictEqual(err.code, 'TIMEOUT');
@@ -1116,7 +1114,7 @@ describe("Test Hedera Provider", function () {
                     return true;
                 }
             );
-        }).timeout(timeout);
+        }).timeout(timeout * 4);
     });
 
     it("Should populate txn response", async function (){
@@ -1125,13 +1123,13 @@ describe("Test Hedera Provider", function () {
         const network = await provider.getNetwork();
         assert.strictEqual(record.transactionId, existingId);
         assert.strictEqual(record.chainId, network.chainId);
-    }).timeout(timeout);
+    }).timeout(timeout * 4);
 
     it("Should return null on record not found", async function (){
         const fakeTransactionId = `0.0.0-0000000000-000000000`;
         const record = await provider.getTransaction(fakeTransactionId);
         assert.strictEqual(record, null);
-    }).timeout(timeout);
+    }).timeout(timeout * 4);
 
     it("Should throw backend error", async function (){
         const badRequestId = `0.0.0`;
@@ -1148,7 +1146,7 @@ describe("Test Hedera Provider", function () {
                 return true;
             }
         );
-    }).timeout(timeout);
+    }).timeout(timeout * 4);
 
     it("Is able to get hedera provider as default", async function() {
         let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
@@ -1182,7 +1180,7 @@ describe("Test Hedera Provider", function () {
         const txID = TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
         const tx = await new ContractCreateTransaction()
             .setContractMemo("memo")
-            .setGas(100000)
+            .setGas(300000)
             // .setInitialBalance(1000)
             .setBytecodeFileId("0.0.26562254")
             .setNodeAccountIds([new AccountId(0,0,3)])
@@ -1194,7 +1192,7 @@ describe("Test Hedera Provider", function () {
         const signedTx = ethers.utils.hexlify(txBytes);
         const provider = ethers.providers.getDefaultProvider('testnet');
         const txResponse = await provider.sendTransaction(signedTx);
-        assert.strictEqual(txResponse.gasLimit.toNumber(), 100000);
+        assert.strictEqual(txResponse.gasLimit.toNumber(), 300000);
         assert.strictEqual(txResponse.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
         assert.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
         // assert.strictEqual(txResponse.value.toNumber(), 100000000000);

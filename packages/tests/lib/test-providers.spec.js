@@ -1047,8 +1047,7 @@ describe("Test Hedera Provider", function () {
                         privateKey = sdk_1.PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
                         txID = sdk_1.TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
                         return [4 /*yield*/, new sdk_1.ContractCreateTransaction()
-                                .setContractMemo("memo")
-                                .setGas(100000)
+                                .setGas(300000)
                                 .setBytecodeFileId("0.0.26562254")
                                 .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
                                 .setConstructorParameters(new sdk_1.ContractFunctionParameters().addUint256(100))
@@ -1086,7 +1085,7 @@ describe("Test Hedera Provider", function () {
                     }
                 });
             });
-        }).timeout(timeout);
+        }).timeout(timeout * 4);
         it("Should populate transaction receipt with timeout", function () {
             return __awaiter(this, void 0, void 0, function () {
                 var sendTransactionResponse, _a, _b, receipt;
@@ -1110,7 +1109,7 @@ describe("Test Hedera Provider", function () {
                     }
                 });
             });
-        }).timeout(timeout);
+        }).timeout(timeout * 4);
         it("Should throw timeout exceeded", function () {
             return __awaiter(this, void 0, void 0, function () {
                 var insufficientTimeout;
@@ -1136,7 +1135,6 @@ describe("Test Hedera Provider", function () {
                                         }
                                     });
                                 }); }, function (err) {
-                                    console.log("err:", err);
                                     assert_1.default.strictEqual(err.name, 'Error');
                                     assert_1.default.strictEqual(err.reason, 'timeout exceeded');
                                     assert_1.default.strictEqual(err.code, 'TIMEOUT');
@@ -1149,7 +1147,7 @@ describe("Test Hedera Provider", function () {
                     }
                 });
             });
-        }).timeout(timeout);
+        }).timeout(timeout * 4);
     });
     it("Should populate txn response", function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -1170,7 +1168,7 @@ describe("Test Hedera Provider", function () {
                 }
             });
         });
-    }).timeout(timeout);
+    }).timeout(timeout * 4);
     it("Should return null on record not found", function () {
         return __awaiter(this, void 0, void 0, function () {
             var fakeTransactionId, record;
@@ -1186,7 +1184,7 @@ describe("Test Hedera Provider", function () {
                 }
             });
         });
-    }).timeout(timeout);
+    }).timeout(timeout * 4);
     it("Should throw backend error", function () {
         return __awaiter(this, void 0, void 0, function () {
             var badRequestId;
@@ -1218,7 +1216,7 @@ describe("Test Hedera Provider", function () {
                 }
             });
         });
-    }).timeout(timeout);
+    }).timeout(timeout * 4);
     it("Is able to get hedera provider as default", function () {
         return __awaiter(this, void 0, void 0, function () {
             var defaultProvider, chainIDDerivedProvider, balance;
@@ -1269,7 +1267,7 @@ describe("Test Hedera Provider", function () {
                         txID = sdk_1.TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
                         return [4 /*yield*/, new sdk_1.ContractCreateTransaction()
                                 .setContractMemo("memo")
-                                .setGas(100000)
+                                .setGas(300000)
                                 // .setInitialBalance(1000)
                                 .setBytecodeFileId("0.0.26562254")
                                 .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
@@ -1285,7 +1283,7 @@ describe("Test Hedera Provider", function () {
                         return [4 /*yield*/, provider.sendTransaction(signedTx)];
                     case 2:
                         txResponse = _a.sent();
-                        assert_1.default.strictEqual(txResponse.gasLimit.toNumber(), 100000);
+                        assert_1.default.strictEqual(txResponse.gasLimit.toNumber(), 300000);
                         assert_1.default.strictEqual(txResponse.from, (0, utils_1.getAddressFromAccount)(hederaTestnetOperableAccount.operator.accountId));
                         assert_1.default.strictEqual(txResponse.to, undefined); // contract create TX should not be addressed to anything
                         return [2 /*return*/];
