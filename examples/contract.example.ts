@@ -29,49 +29,40 @@ const account = {
 // 0.0.18308
 // main
 (async () => {
-
-	// testnet
-	// account: 0.0.18394, | private key:  0x40717ff6dc7a38f19c3a21c5727dd273e6744c8e78942881bfd6f1526c0a17cb
-	// contract addr 0000000000000000000000000000000001b34cbb
-	// wallet addr 0x0000000000000000000000000000000001b34cb9 - for balanceOf query
-
-	// previewnet
-	// contractID (erc20) 000000000000000000000000000000000000484f
-
 	/**
 	 * Start the client
 	 */
-	// const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
+	const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
 	const client = Client.forName("previewnet");
 	const nodeIds = client._network.getNodeAccountIdsForExecute();
-	// const generatedWallet = hethers.Wallet.createRandom();
+	const generatedWallet = hethers.Wallet.createRandom();
 	const provider = hethers.providers.getDefaultProvider('previewnet');
 	/**
 	 * Create an ECDSA key protobuf from the generated wallet
 	 */
-	// const protoKey = Key.create({
-	// 	ECDSASecp256k1: arrayify(generatedWallet._signingKey().compressedPublicKey)
-	// });
+	const protoKey = Key.create({
+		ECDSASecp256k1: arrayify(generatedWallet._signingKey().compressedPublicKey)
+	});
 	/**
 	 * Create the new account with the ECDSA key
 	 */
-	// const newAccountKey = HederaKey._fromProtobufKey(protoKey);
-	// const accountCreate = await (await new AccountCreateTransaction()
-	// 	.setKey(newAccountKey)
-	// 	.setTransactionId(TransactionId.generate(account.operator.accountId))
-	// 	.setInitialBalance(new Hbar(100))
-	// 	.setNodeAccountIds([ nodeIds[0] ])
-	// 	.freeze()
-	// 	.sign(edPrivateKey))
-	// 	.execute(client);
-	// const receipt = await accountCreate.getReceipt(client);
+	const newAccountKey = HederaKey._fromProtobufKey(protoKey);
+	const accountCreate = await (await new AccountCreateTransaction()
+		.setKey(newAccountKey)
+		.setTransactionId(TransactionId.generate(account.operator.accountId))
+		.setInitialBalance(new Hbar(100))
+		.setNodeAccountIds([ nodeIds[0] ])
+		.freeze()
+		.sign(edPrivateKey))
+		.execute(client);
+	const receipt = await accountCreate.getReceipt(client);
 	/**
 	 * Re-initialize the wallet in order to have the new accountId
 	 */
 		// @ts-ignore
-	// const newAccountId = receipt.accountId.toString();
+	const newAccountId = receipt.accountId.toString();
 	const hederaEoa = {
-		account: '0.0.18394',
+		account: newAccountId,
 		privateKey: '0xb6d37da410d04c8725db74834fa06fe01ff25e89c48f67e7d053837f1894d87c'
 	};
 	// @ts-ignore
@@ -80,47 +71,47 @@ const account = {
 	/**
 	 * Deploy a contract - OZ ERC20
 	 */
-	// const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
-	// const contractCreateResponse = await wallet.sendTransaction({
-	// 	data: contractByteCode,
-	// 	gasLimit: 300000,
-	// 	nodeId: nodeIds[0].toString()
-	// });
-	// console.log('contractCreate response:', contractCreateResponse);
+	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+	const contractCreateResponse = await wallet.sendTransaction({
+		data: contractByteCode,
+		gasLimit: 300000,
+		nodeId: nodeIds[0].toString()
+	});
+	console.log('contractCreate response:', contractCreateResponse);
 
 	/**
 	 * Instantiate the contract locally in order to interact with it
 	 */
 	const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
 	// @ts-ignore
-	const contract = hethers.ContractFactory.getContract('000000000000000000000000000000000000484f', abi, wallet);
-
+	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData.contractId, abi, wallet);
+	// hethers.
 	/**
 	 * The following lines call:
 	 * - approve function for 1000 tokens
 	 * - mint function for 1000 tokens
 	 * - balanceOf function for the wallet's address
 	 */
-	// const approveParams = contract.interface.encodeFunctionData('approve', [
-	// 	getAddressFromAccount(account.operator.accountId),
-	// 	1000
-	// ]);
-	// const approveResponse = await wallet.sendTransaction({
-	// 	to: contract.address,
-	// 	data: approveParams,
-	// 	gasLimit: 100000
-	// });
-	// console.log('approve response: ', approveResponse);
-	//
-	// const mintParams = contract.interface.encodeFunctionData('mint', [
-	// 	1000
-	// ]);
-	// const mintResponse = await wallet.sendTransaction({
-	// 	to: contract.address,
-	// 	data: mintParams,
-	// 	gasLimit: 100000
-	// });
-	// console.log('mint response:', mintResponse);
+	const approveParams = contract.interface.encodeFunctionData('approve', [
+		getAddressFromAccount(account.operator.accountId),
+		1000
+	]);
+	const approveResponse = await wallet.sendTransaction({
+		to: contract.address,
+		data: approveParams,
+		gasLimit: 100000
+	});
+	console.log('approve response: ', approveResponse);
+
+	const mintParams = contract.interface.encodeFunctionData('mint', [
+		1000
+	]);
+	const mintResponse = await wallet.sendTransaction({
+		to: contract.address,
+		data: mintParams,
+		gasLimit: 100000
+	});
+	console.log('mint response:', mintResponse);
 
 	const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
 		await wallet.getAddress()
@@ -137,3 +128,11 @@ const account = {
 	console.log('balanceOf response: ', balanceOfResponse);
 	console.log(hethers.BigNumber.from(balanceOfResponse).toNumber());
 })();
+
+// testnet
+// account: 0.0.18394, | private key:  0x40717ff6dc7a38f19c3a21c5727dd273e6744c8e78942881bfd6f1526c0a17cb
+// contract addr 0000000000000000000000000000000001b34cbb
+// wallet addr 0x0000000000000000000000000000000001b34cb9 - for balanceOf query
+
+// previewnet
+// contractID (erc20) 000000000000000000000000000000000000484f

@@ -1,14 +1,29 @@
 "use strict";
 
 import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { Bytes, BytesLike } from "@ethersproject/bytes";
+import { BigNumber, BigNumberish, numberify } from "@ethersproject/bignumber";
+import { arrayify, Bytes, BytesLike, hexStripZeros } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { Account, getAddressFromAccount, getChecksumAddress } from "@ethersproject/address";
+import {
+    Account,
+    asAccountString,
+    getAccountFromAddress,
+    getAddressFromAccount,
+    getChecksumAddress
+} from "@ethersproject/address";
 import { SigningKey } from "@ethersproject/signing-key";
-import { PublicKey as HederaPubKey } from "@hashgraph/sdk";
+import {
+    AccountId,
+    ContractCallQuery,
+    Hbar,
+    PrivateKey,
+    PublicKey as HederaPubKey,
+    TransactionId
+} from "@hashgraph/sdk";
+import * as Long from "long";
+import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
 
 const logger = new Logger(version);
 
@@ -60,6 +75,32 @@ export interface ExternallyOwnedAccount {
 export interface TypedDataSigner {
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;
 }
+
+function checkError(call1: string, error: any, txRequest: Deferrable<TransactionRequest>) {
+    switch (error.status._code) {
+        // insufficient gas
+        case 30:
+            return logger.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS);
+        // insufficient payer balance
+        case 10:
+            return logger.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS);
+        // insufficient tx fee
+        case 9:
+            return logger.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS)
+        // invalid signature
+        case 7:
+            return logger.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR);
+        // invalid contract id
+        case 16:
+            return logger.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT);
+        // contract revert
+        case 33:
+            // is this the right thing to return for hedera? CALL_EXCEPTION ?
+            return logger.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT);
+    }
+    throw error;
+}
+
 
 export abstract class Signer {
     readonly provider?: Provider;
@@ -123,10 +164,70 @@ export abstract class Signer {
     }
 
     // super classes should override this for now
-    async call(transaction: Deferrable<TransactionRequest>): Promise<string> {
-        return logger.throwError("not implemented", Logger.errors.NOT_IMPLEMENTED, {
-            operation: 'call'
-        })
+    async call(txRequest: Deferrable<TransactionRequest>): Promise<string> {
+        this._checkProvider("call");
+        const tx = await resolveProperties(this.checkTransaction(txRequest));
+        const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
+        const contractId = asAccountString(contractAccountLikeID);
+        const thisAcc = getAccountFromAddress(await this.getAddress());
+        const thisAccId = asAccountString(thisAcc);
+        const nodeID = AccountId.fromString(asAccountString(tx.nodeId));
+        const paymentTxId = TransactionId.generate(thisAccId);
+
+        const hederaTx = new ContractCallQuery()
+            .setContractId(contractId)
+            .setFunctionParameters(arrayify(tx.data))
+            .setNodeAccountIds([nodeID])
+            .setGas(numberify(tx.gasLimit))
+            .setPaymentTransactionId(paymentTxId);
+
+        // TODO: the exact amount here will be computed using getCost when it's implemented
+        const cost = 3;
+        const paymentBody = {
+            transactionID: paymentTxId._toProtobuf(),
+            nodeAccountID: nodeID._toProtobuf(),
+            // TODO: check if 1 Hbar is optimal for tx fee
+            transactionFee: new Hbar(1).toTinybars(),
+            transactionValidDuration: {
+                seconds: Long.fromInt(120),
+            },
+            cryptoTransfer: {
+                transfers: {
+                    accountAmounts:[
+                        {
+                            accountID: AccountId.fromString(thisAccId)._toProtobuf(),
+                            amount: new Hbar(cost).negated().toTinybars()
+                        },
+                        {
+                            accountID: nodeID._toProtobuf(),
+                            amount: new Hbar(cost).toTinybars()
+                        }
+                    ],
+                },
+            },
+        };
+
+        const signed = {
+            bodyBytes: TransactionBody.encode(paymentBody).finish(),
+            sigMap: {}
+        };
+
+        const walletKey = PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+        const signature = walletKey.sign(signed.bodyBytes);
+        signed.sigMap ={
+            sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
+        }
+
+        const transferSignedTransactionBytes =  SignedTransaction.encode(signed).finish();
+        hederaTx._paymentTransactions.push({
+            signedTransactionBytes: transferSignedTransactionBytes
+        });
+        try{
+            const response = await hederaTx.execute(this.provider.getHederaClient());
+            return hexStripZeros(response.bytes);
+        } catch (error) {
+            return checkError('call', error, txRequest);
+        }
     }
 
     /**

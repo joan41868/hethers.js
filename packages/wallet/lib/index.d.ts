@@ -3,7 +3,6 @@ import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
 import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@ethersproject/abstract-signer";
 import { Bytes, BytesLike, SignatureLike } from "@ethersproject/bytes";
 import { Mnemonic } from "@ethersproject/hdnode";
-import { Deferrable } from "@ethersproject/properties";
 import { SigningKey } from "@ethersproject/signing-key";
 import { ProgressCallback } from "@ethersproject/json-wallets";
 import { Wordlist } from "@ethersproject/wordlists";
@@ -34,7 +33,6 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
      *
      * @param txRequest - the call request to be submitted
      */
-    call(txRequest: Deferrable<TransactionRequest>): Promise<string>;
     /**
      *  Static methods to create Wallet instances.
      */

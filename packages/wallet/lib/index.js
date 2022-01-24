@@ -14,25 +14,6 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -86,9 +67,6 @@ var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var sdk_1 = require("@hashgraph/sdk");
-var proto_1 = require("@hashgraph/proto");
-var bignumber_1 = require("@ethersproject/bignumber");
-var Long = __importStar(require("long"));
 var logger = new logger_1.Logger(_version_1.version);
 function isAccount(value) {
     return value != null && (0, bytes_1.isHexString)(value.privateKey, 32);
@@ -99,30 +77,6 @@ function hasMnemonic(value) {
 }
 function hasAlias(value) {
     return isAccount(value) && value.alias != null;
-}
-function checkError(call1, error, txRequest) {
-    switch (error.status._code) {
-        // insufficient gas
-        case 30:
-            return logger.throwError("insufficient funds for gas cost", logger_1.Logger.errors.INSUFFICIENT_FUNDS);
-        // insufficient payer balance
-        case 10:
-            return logger.throwError("insufficient funds in payer account", logger_1.Logger.errors.INSUFFICIENT_FUNDS);
-        // insufficient tx fee
-        case 9:
-            return logger.throwError("transaction fee too low", logger_1.Logger.errors.INSUFFICIENT_FUNDS);
-        // invalid signature
-        case 7:
-            return logger.throwError("invalid transaction signature", logger_1.Logger.errors.UNKNOWN_ERROR);
-        // invalid contract id
-        case 16:
-            return logger.throwError("invalid contract address", logger_1.Logger.errors.INVALID_ARGUMENT);
-        // contract revert
-        case 33:
-            // is this the right thing to return for hedera? CALL_EXCEPTION ?
-            return logger.throwError("contract execution reverted", logger_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT);
-    }
-    throw error;
 }
 var Wallet = /** @class */ (function (_super) {
     __extends(Wallet, _super);
@@ -233,71 +187,19 @@ var Wallet = /** @class */ (function (_super) {
     };
     Wallet.prototype.signTransaction = function (transaction) {
         var _this = this;
-        var _a, _b;
         this._checkAddress('signTransaction');
-        if (transaction.from) {
-            if ((0, address_1.getAddressFromAccount)(transaction.from) !== this.address) {
-                logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-            }
-        }
-        var tx;
-        var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
-        var gas = (0, bignumber_1.numberify)(transaction.gasLimit ? transaction.gasLimit : 0);
-        if (transaction.to) {
-            tx = new sdk_1.ContractExecuteTransaction()
-                .setContractId(sdk_1.ContractId.fromSolidityAddress((0, address_1.getAddressFromAccount)(transaction.to)))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
-        }
-        else {
-            if (transaction.customData.bytecodeFileId) {
-                tx = new sdk_1.ContractCreateTransaction()
-                    .setBytecodeFileId(transaction.customData.bytecodeFileId)
-                    .setConstructorParameters(arrayifiedData)
-                    .setInitialBalance((_b = transaction.value) === null || _b === void 0 ? void 0 : _b.toString())
-                    .setGas(gas);
-            }
-            else {
-                if (transaction.customData.fileChunk && transaction.customData.fileId) {
-                    tx = new sdk_1.FileAppendTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setFileId(transaction.customData.fileId);
-                }
-                else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-                    // only a chunk, thus the first one
-                    tx = new sdk_1.FileCreateTransaction()
-                        .setContents(transaction.customData.fileChunk)
-                        .setKeys([transaction.customData.fileKey ?
-                            transaction.customData.fileKey :
-                            sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)]);
-                }
-                else {
-                    logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
-                }
-            }
-        }
-        var account = (0, address_1.getAccountFromAddress)(this.address);
-        tx.setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
-            shard: (0, bignumber_1.numberify)(account.shard),
-            realm: (0, bignumber_1.numberify)(account.realm),
-            num: (0, bignumber_1.numberify)(account.num)
-        })))
-            // FIXME - should be taken from the network/ wallet's provider
-            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
-            .freeze();
-        var pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-        return new Promise(function (resolve) { return __awaiter(_this, void 0, void 0, function () {
-            var signed;
+        this.checkTransaction(transaction);
+        return this.populateTransaction(transaction).then(function (readyTx) { return __awaiter(_this, void 0, void 0, function () {
+            var tx, pkey, signed;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, tx.sign(pkey)];
+                    case 0:
+                        tx = (0, transactions_1.serializeHederaTransaction)(readyTx);
+                        pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+                        return [4 /*yield*/, tx.sign(pkey)];
                     case 1:
                         signed = _a.sent();
-                        resolve((0, bytes_1.hexlify)(signed.toBytes()));
-                        return [2 /*return*/];
+                        return [2 /*return*/, (0, bytes_1.hexlify)(signed.toBytes())];
                 }
             });
         }); });
@@ -353,83 +255,6 @@ var Wallet = /** @class */ (function (_super) {
      *
      * @param txRequest - the call request to be submitted
      */
-    Wallet.prototype.call = function (txRequest) {
-        return __awaiter(this, void 0, void 0, function () {
-            var tx, contractAccountLikeID, contractId, thisAcc, _a, thisAccId, nodeID, paymentTxId, hederaTx, cost, paymentBody, signed, walletKey, signature, transferSignedTransactionBytes, response, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        this._checkProvider("call");
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)(this.checkTransaction(txRequest))];
-                    case 1:
-                        tx = _b.sent();
-                        contractAccountLikeID = (0, address_1.getAccountFromAddress)(tx.to.toString());
-                        contractId = (0, address_1.asAccountString)(contractAccountLikeID);
-                        _a = address_1.getAccountFromAddress;
-                        return [4 /*yield*/, this.getAddress()];
-                    case 2:
-                        thisAcc = _a.apply(void 0, [_b.sent()]);
-                        thisAccId = (0, address_1.asAccountString)(thisAcc);
-                        nodeID = sdk_1.AccountId.fromString((0, address_1.asAccountString)(tx.nodeId));
-                        paymentTxId = sdk_1.TransactionId.generate(thisAccId);
-                        hederaTx = new sdk_1.ContractCallQuery()
-                            .setContractId(contractId)
-                            .setFunctionParameters((0, bytes_1.arrayify)(tx.data))
-                            .setNodeAccountIds([nodeID])
-                            .setGas((0, bignumber_1.numberify)(tx.gasLimit))
-                            .setPaymentTransactionId(paymentTxId);
-                        cost = 3;
-                        paymentBody = {
-                            transactionID: paymentTxId._toProtobuf(),
-                            nodeAccountID: nodeID._toProtobuf(),
-                            // TODO: check if 1 Hbar is optimal for tx fee
-                            transactionFee: new sdk_1.Hbar(1).toTinybars(),
-                            transactionValidDuration: {
-                                seconds: Long.fromInt(120),
-                            },
-                            cryptoTransfer: {
-                                transfers: {
-                                    accountAmounts: [
-                                        {
-                                            accountID: sdk_1.AccountId.fromString(thisAccId)._toProtobuf(),
-                                            amount: new sdk_1.Hbar(cost).negated().toTinybars()
-                                        },
-                                        {
-                                            accountID: nodeID._toProtobuf(),
-                                            amount: new sdk_1.Hbar(cost).toTinybars()
-                                        }
-                                    ],
-                                },
-                            },
-                        };
-                        signed = {
-                            bodyBytes: proto_1.TransactionBody.encode(paymentBody).finish(),
-                            sigMap: {}
-                        };
-                        walletKey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-                        signature = walletKey.sign(signed.bodyBytes);
-                        signed.sigMap = {
-                            sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
-                        };
-                        transferSignedTransactionBytes = proto_1.SignedTransaction.encode(signed).finish();
-                        hederaTx._paymentTransactions.push({
-                            signedTransactionBytes: transferSignedTransactionBytes
-                        });
-                        _b.label = 3;
-                    case 3:
-                        _b.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, hederaTx.execute(this.provider.getHederaClient())];
-                    case 4:
-                        response = _b.sent();
-                        return [2 /*return*/, (0, bytes_1.hexStripZeros)(response.bytes)];
-                    case 5:
-                        error_1 = _b.sent();
-                        return [2 /*return*/, checkError('call', error_1, txRequest)];
-                    case 6: return [2 /*return*/];
-                }
-            });
-        });
-    };
     /**
      *  Static methods to create Wallet instances.
      */

@@ -724,11 +724,6 @@ export class BaseProvider extends Provider {
         return this.formatter.filter(await resolveProperties(result));
     }
 
-    async call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
-
-        return "";
-    }
-
     async estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber> {
         return logger.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
             operation: "estimateGas"

@@ -638,11 +638,6 @@ export class BaseProvider extends Provider {
             return this.formatter.filter(yield resolveProperties(result));
         });
     }
-    call(transaction, blockTag) {
-        return __awaiter(this, void 0, void 0, function* () {
-            return "";
-        });
-    }
     estimateGas(transaction) {
         return __awaiter(this, void 0, void 0, function* () {
             return logger.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {

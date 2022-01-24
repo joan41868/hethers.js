@@ -1,7 +1,6 @@
 import {
 	Account,
 	AccountLike,
-	asAccountString,
 	getAccountFromAddress,
 	getAddress,
 	getAddressFromAccount
@@ -19,7 +18,7 @@ import {
 	Bytes,
 	BytesLike,
 	concat,
-	hexDataSlice, hexlify, hexStripZeros,
+	hexDataSlice, hexlify,
 	isHexString,
 	joinSignature,
 	SignatureLike
@@ -27,7 +26,7 @@ import {
 import { _TypedDataEncoder, hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import { Deferrable, defineReadOnly, resolveProperties } from "@ethersproject/properties";
+import { defineReadOnly } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey } from "@ethersproject/signing-key";
 import {
@@ -36,28 +35,14 @@ import {
 	encryptKeystore,
 	ProgressCallback
 } from "@ethersproject/json-wallets";
-import { computeAlias, recoverAddress } from "@ethersproject/transactions";
+import { computeAlias, recoverAddress, serializeHederaTransaction } from "@ethersproject/transactions";
 import { Wordlist } from "@ethersproject/wordlists";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import {
-	ContractCreateTransaction,
-	ContractExecuteTransaction,
-	ContractId,
-	FileAppendTransaction, FileCreateTransaction,
-	Transaction,
 	PrivateKey as HederaPrivKey,
-	PublicKey as HederaPubKey,
-	ContractCallQuery,
-	TransactionId,
-	Hbar,
-	AccountId,
-	PrivateKey
 } from "@hashgraph/sdk";
-import { TransactionBody, SignedTransaction } from '@hashgraph/proto'
-import {numberify} from "@ethersproject/bignumber";
-import * as Long from 'long';
 
 const logger = new Logger(version);
 
@@ -72,31 +57,6 @@ function hasMnemonic(value: any): value is { mnemonic: Mnemonic } {
 
 function hasAlias(value: any): value is ExternallyOwnedAccount {
 	return isAccount(value) && value.alias != null;
-}
-
-function checkError(call1: string, error: any, txRequest: Deferrable<TransactionRequest>) {
-	switch (error.status._code) {
-		// insufficient gas
-		case 30:
-			return logger.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS);
-		// insufficient payer balance
-		case 10:
-			return logger.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS);
-		// insufficient tx fee
-		case 9:
-			return logger.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS)
-		// invalid signature
-		case 7:
-			return logger.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR);
-		// invalid contract id
-		case 16:
-			return logger.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT);
-		// contract revert
-		case 33:
-			// is this the right thing to return for hedera? CALL_EXCEPTION ?
-			return logger.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT);
-	}
-	throw error;
 }
 
 export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
@@ -221,65 +181,12 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 
 	signTransaction(transaction: TransactionRequest): Promise<string> {
 		this._checkAddress('signTransaction');
-		if (transaction.from) {
-			if (getAddressFromAccount(transaction.from) !== this.address) {
-				logger.throwArgumentError("transaction from address mismatch", "transaction.from", transaction.from);
-			}
-		}
-
-		let tx: Transaction;
-		const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
-		const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-		if (transaction.to) {
-			tx = new ContractExecuteTransaction()
-				.setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
-				.setFunctionParameters(arrayifiedData)
-				.setGas(gas);
-			if (transaction.value) {
-				(tx as ContractExecuteTransaction).setPayableAmount(transaction.value?.toString())
-			}
-		} else {
-			if (transaction.customData.bytecodeFileId) {
-				tx = new ContractCreateTransaction()
-					.setBytecodeFileId(transaction.customData.bytecodeFileId)
-					.setConstructorParameters(arrayifiedData)
-					.setInitialBalance(transaction.value?.toString())
-					.setGas(gas);
-			} else {
-				if (transaction.customData.fileChunk && transaction.customData.fileId) {
-					tx = new FileAppendTransaction()
-						.setContents(transaction.customData.fileChunk)
-						.setFileId(transaction.customData.fileId)
-				} else if (!transaction.customData.fileId && transaction.customData.fileChunk) {
-					// only a chunk, thus the first one
-					tx = new FileCreateTransaction()
-						.setContents(transaction.customData.fileChunk)
-						.setKeys([ transaction.customData.fileKey ?
-							transaction.customData.fileKey :
-							HederaPubKey.fromString(this._signingKey().compressedPublicKey) ])
-				} else {
-					logger.throwArgumentError(
-						"Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`",
-						Logger.errors.INVALID_ARGUMENT,
-						transaction);
-				}
-			}
-		}
-		const account = getAccountFromAddress(this.address);
-		tx.setTransactionId(
-			TransactionId.generate(new AccountId({
-				shard: numberify(account.shard),
-				realm: numberify(account.realm),
-				num: numberify(account.num)
-			})))
-			// FIXME - should be taken from the network/ wallet's provider
-			.setNodeAccountIds([ new AccountId(0, 0, 3) ])
-			.freeze();
-
-		const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
-		return new Promise<string>(async (resolve) => {
+		this.checkTransaction(transaction);
+		return this.populateTransaction(transaction).then(async readyTx => {
+			const tx = serializeHederaTransaction(readyTx);
+			const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
 			const signed = await tx.sign(pkey);
-			resolve(hexlify(signed.toBytes()));
+			return hexlify(signed.toBytes());
 		});
 	}
 
@@ -328,72 +235,6 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 	 *
 	 * @param txRequest - the call request to be submitted
 	 */
-	async call(txRequest : Deferrable<TransactionRequest>): Promise<string> {
-		this._checkProvider("call");
-		const tx = await resolveProperties(this.checkTransaction(txRequest));
-		const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
-		const contractId = asAccountString(contractAccountLikeID);
-		const thisAcc = getAccountFromAddress(await this.getAddress());
-		const thisAccId = asAccountString(thisAcc);
-
-		const nodeID = AccountId.fromString(asAccountString(tx.nodeId));
-		const paymentTxId = TransactionId.generate(thisAccId);
-
-		const hederaTx = new ContractCallQuery()
-			.setContractId(contractId)
-			.setFunctionParameters(arrayify(tx.data))
-			.setNodeAccountIds([nodeID])
-			.setGas(numberify(tx.gasLimit))
-			.setPaymentTransactionId(paymentTxId);
-
-		// TODO: the exact amount here will be computed using getCost when it's implemented
-		const cost = 3;
-		const paymentBody = {
-			transactionID: paymentTxId._toProtobuf(),
-			nodeAccountID: nodeID._toProtobuf(),
-			// TODO: check if 1 Hbar is optimal for tx fee
-			transactionFee: new Hbar(1).toTinybars(),
-			transactionValidDuration: {
-				seconds: Long.fromInt(120),
-			},
-			cryptoTransfer: {
-				transfers: {
-					accountAmounts:[
-						{
-							accountID: AccountId.fromString(thisAccId)._toProtobuf(),
-							amount: new Hbar(cost).negated().toTinybars()
-						},
-						{
-							accountID: nodeID._toProtobuf(),
-							amount: new Hbar(cost).toTinybars()
-						}
-					],
-				},
-			},
-		};
-
-		const signed = {
-			bodyBytes: TransactionBody.encode(paymentBody).finish(),
-			sigMap: {}
-		};
-
-		const walletKey = PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-		const signature = walletKey.sign(signed.bodyBytes);
-		signed.sigMap ={
-			sigPair: [walletKey.publicKey._toProtobufSignature(signature)]
-		}
-
-		const transferSignedTransactionBytes =  SignedTransaction.encode(signed).finish();
-		hederaTx._paymentTransactions.push({
-			signedTransactionBytes: transferSignedTransactionBytes
-		});
-		try{
-			const response = await hederaTx.execute(this.provider.getHederaClient());
-			return hexStripZeros(response.bytes);
-		} catch (error) {
-			return checkError('call', error, txRequest);
-		}
-	}
 
 	/**
 	 *  Static methods to create Wallet instances.
