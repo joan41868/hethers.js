@@ -24,6 +24,7 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     connectAccount(accountLike: AccountLike): Wallet;
     signTransaction(transaction: TransactionRequest): Promise<string>;
     signMessage(message: Bytes | string): Promise<string>;
+    verifyMessage(message: Bytes | string, signature: SignatureLike): string;
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;
     encrypt(password: Bytes | string, options?: any, progressCallback?: ProgressCallback): Promise<string>;
     /**
@@ -35,6 +36,5 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     static fromMnemonic(mnemonic: string, path?: string, wordlist?: Wordlist): Wallet;
     _checkAddress(operation?: string): void;
 }
-export declare function verifyMessage(message: Bytes | string, signature: SignatureLike): string;
 export declare function verifyTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, signature: SignatureLike): string;
 //# sourceMappingURL=index.d.ts.map

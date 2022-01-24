@@ -22,7 +22,7 @@ import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@ethersproject
 import { keccak256 } from "@ethersproject/keccak256";
 import {defineReadOnly} from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
-import { SigningKey } from "@ethersproject/signing-key";
+import { SigningKey, recoverPublicKey } from "@ethersproject/signing-key";
 import {
 	decryptJsonWallet,
 	decryptJsonWalletSync,
@@ -188,6 +188,10 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		return joinSignature(this._signingKey().signDigest(hashMessage(message)));
 	}
 
+	verifyMessage(message: Bytes | string, signature: SignatureLike): string {
+		return recoverPublicKey(arrayify(hashMessage(message)), signature);
+	}
+
 	// TODO to be revised
 	async _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
 		// Populate any ENS names
@@ -262,11 +266,6 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 			operation: (operation || "_checkAddress") });
 		}
 	}
-}
-
-// TODO to be revised
-export function verifyMessage(message: Bytes | string, signature: SignatureLike): string {
-	return recoverAddress(hashMessage(message), signature);
 }
 
 // TODO to be revised
