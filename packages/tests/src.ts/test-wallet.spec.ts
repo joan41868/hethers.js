@@ -453,34 +453,28 @@ describe("Wallet local calls", async function () {
     const provider = ethers.providers.getDefaultProvider('testnet');
     // @ts-ignore
     const wallet = new ethers.Wallet(hederaEoa, provider);
-
+    const contractAddr = '0000000000000000000000000000000001b34cbb';
+    const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
+    const contract = hethers.ContractFactory.getContract(contractAddr, abi, wallet);
+    const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
+        await wallet.getAddress()
+    ]);
     it("Should be able to perform local call", async function () {
-        const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
-        // @ts-ignore
-        const contract = hethers.ContractFactory.getContract('0000000000000000000000000000000001b34cbb', abi, wallet);
-
-        const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
-            '0x0000000000000000000000000000000001b34cb9'
-        ]);
-
         const balanceOfTx = {
-            to: '0000000000000000000000000000000001b34cbb',
+            to: contractAddr,
             gasLimit: 30000,
             data: arrayify(balanceOfParams),
         };
         const response = await wallet.call(balanceOfTx);
         assert.notStrictEqual(response, null);
     });
-    const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
-    const contract = hethers.ContractFactory.getContract('000000000000000000000000000000000000484f', abi, wallet);
-    const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
-        await wallet.getAddress()
-    ]);
+
 
     it('should fail on contract revert', async function () {
+        this.timeout(60000);
         const balanceOfTx = {
-            to: contract.address,
-            gasLimit: 30000,
+            to: contractAddr,
+            gasLimit: 50000,
             data: "0x",
             nodeId: "0.0.3"
         };
@@ -492,8 +486,9 @@ describe("Wallet local calls", async function () {
     });
 
     it('should fail on insufficient gas', async function() {
+        this.timeout(60000);
         const balanceOfTx = {
-            to: contract.address,
+            to: contractAddr,
             gasLimit: 100,
             data: arrayify(balanceOfParams),
             nodeId: "0.0.3"
@@ -506,8 +501,10 @@ describe("Wallet local calls", async function () {
     });
 
     it('should fail on invalid contract', async function() {
+        this.timeout(60000);
         const balanceOfTx = {
-            to: contract.address.replace("0", "1"),
+            // incorrect addr
+            to: 'z000000000000000000000000000000001b34cbb',
             gasLimit: 30000,
             data: arrayify(balanceOfParams),
             nodeId: "0.0.3"
