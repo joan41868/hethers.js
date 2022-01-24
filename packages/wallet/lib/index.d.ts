@@ -20,7 +20,6 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     getAddress(): Promise<string>;
     getAccount(): Promise<Account>;
     getAlias(): Promise<string>;
-    getChainId(): Promise<number>;
     connect(provider: Provider): Wallet;
     connectAccount(accountLike: AccountLike): Wallet;
     signTransaction(transaction: TransactionRequest): Promise<string>;

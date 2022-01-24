@@ -173,9 +173,6 @@ var Wallet = /** @class */ (function (_super) {
     Wallet.prototype.getAlias = function () {
         return Promise.resolve(this.alias);
     };
-    Wallet.prototype.getChainId = function () {
-        return _super.prototype.getChainId.call(this);
-    };
     Wallet.prototype.connect = function (provider) {
         return new Wallet(this, provider);
     };
