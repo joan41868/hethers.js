@@ -311,8 +311,9 @@ describe('Test Signing Messages', function () {
     tests.forEach(function (test) {
         it(('verifies a message "' + test.name + '"'), function () {
             this.timeout(120000);
-            var address = ethers_1.ethers.utils.verifyMessage(test.message, test.signature);
-            assert_1.default.equal(address, test.address, 'verifies message signature');
+            var wallet = new ethers_1.ethers.Wallet(test.privateKey);
+            var publicKey = ethers_1.ethers.utils.verifyMessage(test.message, test.signature);
+            assert_1.default.strictEqual(wallet.publicKey, publicKey);
         });
     });
     tests.forEach(function (test) {
