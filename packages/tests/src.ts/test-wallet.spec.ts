@@ -5,7 +5,7 @@ import assert from "assert";
 import { ethers } from "ethers";
 import { loadTests, TestCase } from "@ethersproject/testcases";
 import * as utils from './utils';
-import { arrayify, getAddressFromAccount } from "ethers/lib/utils";
+import { arrayify, getAddressFromAccount, Logger } from "ethers/lib/utils";
 import {
     ContractCreateTransaction,
     ContractExecuteTransaction,
@@ -446,17 +446,14 @@ describe("Wallet tx signing", function () {
 
 
 describe("Wallet local calls", async function () {
-    // account: 0.0.28527751 | private key:  0x40717ff6dc7a38f19c3a21c5727dd273e6744c8e78942881bfd6f1526c0a17cb
-    // contract addr 0000000000000000000000000000000001b34cbb
-    // wallet addr 0x0000000000000000000000000000000001b34cb9 - for balanceOf query
-
     const hederaEoa = {
-        account: '0.0.28527751',
-        privateKey: '0x40717ff6dc7a38f19c3a21c5727dd273e6744c8e78942881bfd6f1526c0a17cb'
+        account: '0.0.29511337',
+        privateKey: '0x409836c5c296fe800fcac721093c68c78c4c03a1f88cb10bbdf01ecc49247132'
     };
     const provider = ethers.providers.getDefaultProvider('testnet');
     // @ts-ignore
     const wallet = new ethers.Wallet(hederaEoa, provider);
+
     it("Should be able to perform local call", async function () {
         const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
         // @ts-ignore
@@ -468,10 +465,57 @@ describe("Wallet local calls", async function () {
 
         const balanceOfTx = {
             to: '0000000000000000000000000000000001b34cbb',
-            gasLimit: 10000,
+            gasLimit: 30000,
             data: arrayify(balanceOfParams),
         };
         const response = await wallet.call(balanceOfTx);
         assert.notStrictEqual(response, null);
     });
+    const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
+    const contract = hethers.ContractFactory.getContract('000000000000000000000000000000000000484f', abi, wallet);
+    const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
+        await wallet.getAddress()
+    ]);
+
+    it('should fail on contract revert', async function () {
+        const balanceOfTx = {
+            to: contract.address,
+            gasLimit: 30000,
+            data: "0x",
+            nodeId: "0.0.3"
+        };
+        try {
+            await wallet.call(balanceOfTx);
+        } catch (err) {
+            assert.strictEqual(err.code, Logger.errors.UNPREDICTABLE_GAS_LIMIT)
+        }
+    });
+
+    it('should fail on insufficient gas', async function() {
+        const balanceOfTx = {
+            to: contract.address,
+            gasLimit: 100,
+            data: arrayify(balanceOfParams),
+            nodeId: "0.0.3"
+        };
+        try {
+            await wallet.call(balanceOfTx);
+        } catch (err) {
+            assert.strictEqual(err.code, Logger.errors.INSUFFICIENT_FUNDS)
+        }
+    });
+
+    it('should fail on invalid contract', async function() {
+        const balanceOfTx = {
+            to: contract.address.replace("0", "1"),
+            gasLimit: 30000,
+            data: arrayify(balanceOfParams),
+            nodeId: "0.0.3"
+        };
+        try {
+            await wallet.call(balanceOfTx);
+        } catch (err) {
+            assert.strictEqual(err.code, Logger.errors.INVALID_ARGUMENT)
+        }
+    })
 });

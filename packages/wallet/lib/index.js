@@ -101,6 +101,28 @@ function hasAlias(value) {
     return isAccount(value) && value.alias != null;
 }
 function checkError(call1, error, txRequest) {
+    switch (error.status._code) {
+        // insufficient gas
+        case 30:
+            return logger.throwError("insufficient funds for gas cost", logger_1.Logger.errors.INSUFFICIENT_FUNDS);
+        // insufficient payer balance
+        case 10:
+            return logger.throwError("insufficient funds in payer account", logger_1.Logger.errors.INSUFFICIENT_FUNDS);
+        // insufficient tx fee
+        case 9:
+            return logger.throwError("transaction fee too low", logger_1.Logger.errors.INSUFFICIENT_FUNDS);
+        // invalid signature
+        case 7:
+            return logger.throwError("invalid transaction signature", logger_1.Logger.errors.UNKNOWN_ERROR);
+        // invalid contract id
+        case 16:
+            return logger.throwError("invalid contract address", logger_1.Logger.errors.INVALID_ARGUMENT);
+        // contract revert
+        case 33:
+            // is this the right thing to return for hedera? CALL_EXCEPTION ?
+            return logger.throwError("contract execution reverted", logger_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT);
+    }
+    throw error;
 }
 var Wallet = /** @class */ (function (_super) {
     __extends(Wallet, _super);
@@ -392,12 +414,10 @@ var Wallet = /** @class */ (function (_super) {
                         return [4 /*yield*/, hederaTx.execute(this.provider.getHederaClient())];
                     case 4:
                         response = _b.sent();
-                        // TODO: this may not be the best thing to return but it should work for testing
-                        return [2 /*return*/, (0, bytes_1.hexlify)(response.asBytes())];
+                        return [2 /*return*/, (0, bytes_1.hexStripZeros)(response.bytes)];
                     case 5:
                         error_1 = _b.sent();
-                        checkError('call', error_1, txRequest);
-                        return [2 /*return*/, logger.throwError("error during call", logger_1.Logger.errors.CALL_EXCEPTION, error_1)];
+                        return [2 /*return*/, checkError('call', error_1, txRequest)];
                     case 6: return [2 /*return*/];
                 }
             });

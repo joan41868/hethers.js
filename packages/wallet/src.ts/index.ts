@@ -19,7 +19,7 @@ import {
 	Bytes,
 	BytesLike,
 	concat,
-	hexDataSlice, hexlify,
+	hexDataSlice, hexlify, hexStripZeros,
 	isHexString,
 	joinSignature,
 	SignatureLike
@@ -75,7 +75,28 @@ function hasAlias(value: any): value is ExternallyOwnedAccount {
 }
 
 function checkError(call1: string, error: any, txRequest: Deferrable<TransactionRequest>) {
-
+	switch (error.status._code) {
+		// insufficient gas
+		case 30:
+			return logger.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS);
+		// insufficient payer balance
+		case 10:
+			return logger.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS);
+		// insufficient tx fee
+		case 9:
+			return logger.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS)
+		// invalid signature
+		case 7:
+			return logger.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR);
+		// invalid contract id
+		case 16:
+			return logger.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT);
+		// contract revert
+		case 33:
+			// is this the right thing to return for hedera? CALL_EXCEPTION ?
+			return logger.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT);
+	}
+	throw error;
 }
 
 export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {
@@ -361,11 +382,9 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		});
 		try{
 			const response = await hederaTx.execute(this.provider.getHederaClient());
-			// TODO: this may not be the best thing to return but it should work for testing
-			return hexlify(response.asBytes());
+			return hexStripZeros(response.bytes);
 		} catch (error) {
-			checkError('call', error, txRequest);
-			return logger.throwError("error during call", Logger.errors.CALL_EXCEPTION, error);
+			return checkError('call', error, txRequest);
 		}
 	}
 

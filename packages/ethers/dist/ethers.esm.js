@@ -91882,6 +91882,28 @@ function hasAlias(value) {
     return isAccount(value) && value.alias != null;
 }
 function checkError(call1, error, txRequest) {
+    switch (error.status._code) {
+        // insufficient gas
+        case 30:
+            return logger$p.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS);
+        // insufficient payer balance
+        case 10:
+            return logger$p.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS);
+        // insufficient tx fee
+        case 9:
+            return logger$p.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS);
+        // invalid signature
+        case 7:
+            return logger$p.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR);
+        // invalid contract id
+        case 16:
+            return logger$p.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT);
+        // contract revert
+        case 33:
+            // is this the right thing to return for hedera? CALL_EXCEPTION ?
+            return logger$p.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT);
+    }
+    throw error;
 }
 class Wallet extends Signer {
     constructor(identity, provider) {
@@ -92127,12 +92149,10 @@ class Wallet extends Signer {
             });
             try {
                 const response = yield hederaTx.execute(this.provider.getHederaClient());
-                // TODO: this may not be the best thing to return but it should work for testing
-                return hexlify(response.asBytes());
+                return hexStripZeros(response.bytes);
             }
             catch (error) {
-                checkError('call', error, txRequest);
-                return logger$p.throwError("error during call", Logger.errors.CALL_EXCEPTION, error);
+                return checkError('call', error, txRequest);
             }
         });
     }
@@ -94246,82 +94266,6 @@ const logger$t = new Logger(version$p);
 function isRenetworkable(value) {
     return (value && typeof (value.renetwork) === "function");
 }
-function ethDefaultProvider(network) {
-    const func = function (providers, options) {
-        if (options == null) {
-            options = {};
-        }
-        const providerList = [];
-        if (providers.InfuraProvider) {
-            try {
-                providerList.push(new providers.InfuraProvider(network, options.infura));
-            }
-            catch (error) { }
-        }
-        if (providers.EtherscanProvider) {
-            try {
-                providerList.push(new providers.EtherscanProvider(network, options.etherscan));
-            }
-            catch (error) { }
-        }
-        if (providers.AlchemyProvider) {
-            try {
-                providerList.push(new providers.AlchemyProvider(network, options.alchemy));
-            }
-            catch (error) { }
-        }
-        if (providers.PocketProvider) {
-            // These networks are currently faulty on Pocket as their
-            // network does not handle the Berlin hardfork, which is
-            // live on these ones.
-            // @TODO: This goes away once Pocket has upgraded their nodes
-            const skip = ["goerli", "ropsten", "rinkeby"];
-            try {
-                const provider = new providers.PocketProvider(network);
-                if (provider.network && skip.indexOf(provider.network.name) === -1) {
-                    providerList.push(provider);
-                }
-            }
-            catch (error) { }
-        }
-        if (providers.CloudflareProvider) {
-            try {
-                providerList.push(new providers.CloudflareProvider(network));
-            }
-            catch (error) { }
-        }
-        if (providerList.length === 0) {
-            return null;
-        }
-        if (providers.FallbackProvider) {
-            let quorum = 1;
-            if (options.quorum != null) {
-                quorum = options.quorum;
-            }
-            else if (network === "homestead") {
-                quorum = 2;
-            }
-            return new providers.FallbackProvider(providerList, quorum);
-        }
-        return providerList[0];
-    };
-    func.renetwork = function (network) {
-        return ethDefaultProvider(network);
-    };
-    return func;
-}
-function etcDefaultProvider(url, network) {
-    const func = function (providers, options) {
-        if (providers.JsonRpcProvider) {
-            return new providers.JsonRpcProvider(url, network);
-        }
-        return null;
-    };
-    func.renetwork = function (network) {
-        return etcDefaultProvider(url, network);
-    };
-    return func;
-}
 function hederaDefaultProvider(network) {
     const func = function (providers, options) {
         if (options == null) {
@@ -94342,64 +94286,7 @@ function hederaDefaultProvider(network) {
     };
     return func;
 }
-const homestead = {
-    chainId: 1,
-    ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    name: "homestead",
-    _defaultProvider: ethDefaultProvider("homestead")
-};
-const ropsten = {
-    chainId: 3,
-    ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-    name: "ropsten",
-    _defaultProvider: ethDefaultProvider("ropsten")
-};
-const classicMordor = {
-    chainId: 63,
-    name: "classicMordor",
-    _defaultProvider: etcDefaultProvider("https://www.ethercluster.com/mordor", "classicMordor")
-};
 const networks = {
-    unspecified: { chainId: 0, name: "unspecified" },
-    homestead: homestead,
-    morden: { chainId: 2, name: "morden" },
-    ropsten: ropsten,
-    rinkeby: {
-        chainId: 4,
-        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-        name: "rinkeby",
-        _defaultProvider: ethDefaultProvider("rinkeby")
-    },
-    kovan: {
-        chainId: 42,
-        name: "kovan",
-        _defaultProvider: ethDefaultProvider("kovan")
-    },
-    goerli: {
-        chainId: 5,
-        ensAddress: "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e",
-        name: "goerli",
-        _defaultProvider: ethDefaultProvider("goerli")
-    },
-    // ETC (See: #351)
-    classic: {
-        chainId: 61,
-        name: "classic",
-        _defaultProvider: etcDefaultProvider("https:/\/www.ethercluster.com/etc", "classic")
-    },
-    classicMorden: { chainId: 62, name: "classicMorden" },
-    classicMordor: classicMordor,
-    classicTestnet: classicMordor,
-    classicKotti: {
-        chainId: 6,
-        name: "classicKotti",
-        _defaultProvider: etcDefaultProvider("https:/\/www.ethercluster.com/kotti", "classicKotti")
-    },
-    xdai: { chainId: 100, name: "xdai" },
-    matic: { chainId: 137, name: "matic" },
-    maticmum: { chainId: 80001, name: "maticmum" },
-    bnb: { chainId: 56, name: "bnb" },
-    bnbt: { chainId: 97, name: "bnbt" },
     // hedera networks
     mainnet: {
         chainId: 290,
