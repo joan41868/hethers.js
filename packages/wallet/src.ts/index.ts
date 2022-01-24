@@ -188,10 +188,6 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		return joinSignature(this._signingKey().signDigest(hashMessage(message)));
 	}
 
-	verifyMessage(message: Bytes | string, signature: SignatureLike): string {
-		return recoverPublicKey(arrayify(hashMessage(message)), signature);
-	}
-
 	// TODO to be revised
 	async _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
 		// Populate any ENS names
@@ -266,6 +262,10 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 			operation: (operation || "_checkAddress") });
 		}
 	}
+}
+
+export function verifyMessage(message: Bytes | string, signature: SignatureLike): string {
+	return recoverPublicKey(arrayify(hashMessage(message)), signature);
 }
 
 // TODO to be revised

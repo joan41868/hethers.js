@@ -297,7 +297,7 @@ describe('Test Signing Messages', function() {
         it(('verifies a message "' + test.name + '"'), function() {
             this.timeout(120000);
             let wallet = new ethers.Wallet(test.privateKey);
-            const publicKey = wallet.verifyMessage(test.message, test.signature);
+            const publicKey = ethers.utils.verifyMessage(test.message, test.signature);
             assert.strictEqual(wallet.publicKey, publicKey);
         });
     });

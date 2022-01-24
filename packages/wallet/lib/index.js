@@ -51,7 +51,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.verifyTypedData = exports.Wallet = void 0;
+exports.verifyTypedData = exports.verifyMessage = exports.Wallet = void 0;
 var address_1 = require("@ethersproject/address");
 var abstract_provider_1 = require("@ethersproject/abstract-provider");
 var abstract_signer_1 = require("@ethersproject/abstract-signer");
@@ -211,9 +211,6 @@ var Wallet = /** @class */ (function (_super) {
             });
         });
     };
-    Wallet.prototype.verifyMessage = function (message, signature) {
-        return (0, signing_key_1.recoverPublicKey)((0, bytes_1.arrayify)((0, hash_1.hashMessage)(message)), signature);
-    };
     // TODO to be revised
     Wallet.prototype._signTypedData = function (domain, types, value) {
         return __awaiter(this, void 0, void 0, function () {
@@ -289,6 +286,10 @@ var Wallet = /** @class */ (function (_super) {
     return Wallet;
 }(abstract_signer_1.Signer));
 exports.Wallet = Wallet;
+function verifyMessage(message, signature) {
+    return (0, signing_key_1.recoverPublicKey)((0, bytes_1.arrayify)((0, hash_1.hashMessage)(message)), signature);
+}
+exports.verifyMessage = verifyMessage;
 // TODO to be revised
 function verifyTypedData(domain, types, value, signature) {
     return (0, transactions_1.recoverAddress)(hash_1._TypedDataEncoder.hash(domain, types, value), signature);
