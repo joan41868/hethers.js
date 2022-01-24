@@ -321,6 +321,13 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		return encryptKeystore(this, password, options, progressCallback);
 	}
 
+	/**
+	 * Performs a contract local call (ContractCallQuery) against the given contract in the provider's network.
+	 * In the future, this method should automatically perform getCost and apply the results for gasLimit/txFee.
+	 * TODO: utilize getCost when implemented
+	 *
+	 * @param txRequest - the call request to be submitted
+	 */
 	async call(txRequest : Deferrable<TransactionRequest>): Promise<string> {
 		this._checkProvider("call");
 		const tx = await resolveProperties(this.checkTransaction(txRequest));
