@@ -346,6 +346,13 @@ var Wallet = /** @class */ (function (_super) {
         }
         return (0, json_wallets_1.encryptKeystore)(this, password, options, progressCallback);
     };
+    /**
+     * Performs a contract local call (ContractCallQuery) against the given contract in the provider's network.
+     * In the future, this method should automatically perform getCost and apply the results for gasLimit/txFee.
+     * TODO: utilize getCost when implemented
+     *
+     * @param txRequest - the call request to be submitted
+     */
     Wallet.prototype.call = function (txRequest) {
         return __awaiter(this, void 0, void 0, function () {
             var tx, contractAccountLikeID, contractId, thisAcc, _a, thisAccId, nodeID, paymentTxId, hederaTx, cost, paymentBody, signed, walletKey, signature, transferSignedTransactionBytes, response, error_1;

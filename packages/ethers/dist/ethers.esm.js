@@ -92093,6 +92093,13 @@ class Wallet extends Signer {
         }
         return encrypt(this, password, options, progressCallback);
     }
+    /**
+     * Performs a contract local call (ContractCallQuery) against the given contract in the provider's network.
+     * In the future, this method should automatically perform getCost and apply the results for gasLimit/txFee.
+     * TODO: utilize getCost when implemented
+     *
+     * @param txRequest - the call request to be submitted
+     */
     call(txRequest) {
         return __awaiter$4(this, void 0, void 0, function* () {
             this._checkProvider("call");
