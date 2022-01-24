@@ -441,3 +441,25 @@ describe("Wallet tx signing", function () {
         assert.ok(fa.fileId.toString() == tx.customData.fileId, "FileId mismatch");
     });
 });
+
+describe("Wallet getters", function () {
+    it("Should get proper mainnet chainId", async function () {
+        const provider = ethers.providers.getDefaultProvider("mainnet");
+        const wallet = ethers.Wallet.createRandom().connect(provider);
+        const chainId = await wallet.getChainId();
+        assert.strictEqual(chainId, 290);
+    });
+    it("Should get proper testnet chainId", async function () {
+        const provider = ethers.providers.getDefaultProvider("testnet");
+        const wallet = ethers.Wallet.createRandom().connect(provider);
+        const chainId = await wallet.getChainId();
+        assert.strictEqual(chainId, 291)
+    });
+
+    it("Should get proper previewnet chainId", async function () {
+        const provider = ethers.providers.getDefaultProvider("previewnet");
+        const wallet = ethers.Wallet.createRandom().connect(provider);
+        const chainId = await wallet.getChainId();
+        assert.strictEqual(chainId, 292);
+    });
+});
