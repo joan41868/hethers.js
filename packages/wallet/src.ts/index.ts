@@ -159,6 +159,10 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		return Promise.resolve(this.alias);
 	}
 
+	getChainId(): Promise<number> {
+		return super.getChainId();
+	}
+
 	connect(provider: Provider): Wallet {
 		return new Wallet(this, provider);
 	}
