@@ -697,7 +697,7 @@ describe("Account like to string", function () {
         const contractAddr = '0000000000000000000000000000000001b34cbb';
         const accStr = asAccountString(contractAddr);
         // should not be touched
-        assert.strictEqual(accStr, contractAddr);
+        assert.strictEqual(accStr, '0.0.28527803');
     })
 
     it('Is able to convert hedera account to string', async function() {

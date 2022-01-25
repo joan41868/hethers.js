@@ -23,7 +23,7 @@ import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
 import { asAccountString } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction, ContractCallQuery } from "@hashgraph/sdk";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
 //////////////////////////////
 // Event Serializeing
@@ -582,21 +582,8 @@ export class BaseProvider extends Provider {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             signedTransaction = yield signedTransaction;
-            let hederaTx;
             const txBytes = arrayify(signedTransaction);
-            try {
-                hederaTx = HederaTransaction.fromBytes(txBytes);
-            }
-            catch (ignore) {
-                // It's a query
-                // FIXME: ser/des is not working properly - it's losing the payment tx id + node ids
-                hederaTx = ContractCallQuery.fromBytes(txBytes);
-                console.log('HederaTX in provider:', hederaTx);
-                const resp = yield hederaTx.execute(this.hederaClient);
-                console.log('QueryResponse', resp);
-                // TODO: map and return something
-                return null;
-            }
+            const hederaTx = HederaTransaction.fromBytes(txBytes);
             const ethersTx = yield this.formatter.transaction(signedTransaction);
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
