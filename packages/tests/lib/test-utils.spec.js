@@ -710,7 +710,7 @@ describe("EIP-712", function () {
                     switch (_a.label) {
                         case 0:
                             wallet = new ethers_1.ethers.Wallet(test.privateKey);
-                            return [4 /*yield*/, assert_1.default.rejects(wallet._signTypedData(test.domain, test.types, test.data), 'not supported')];
+                            return [4 /*yield*/, assert_1.default.rejects(wallet._signTypedData(test.domain, test.types, test.data), '_signTypedData not supported')];
                         case 1:
                             _a.sent();
                             return [2 /*return*/];

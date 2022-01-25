@@ -188,9 +188,10 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 		return joinSignature(this._signingKey().signDigest(hashMessage(message)));
 	}
 
-	// TODO to be revised
 	async _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
-		return logger.throwError("not supported");
+		return logger.throwError("_signTypedData not supported", Logger.errors.UNSUPPORTED_OPERATION, {
+			operation: '_signTypedData'
+		});
 	}
 
 	encrypt(password: Bytes | string, options?: any, progressCallback?: ProgressCallback): Promise<string> {
@@ -257,5 +258,7 @@ export function verifyMessage(message: Bytes | string, signature: SignatureLike)
 }
 
 export function verifyTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, signature: SignatureLike): string {
-	return logger.throwError("not supported");
+	return logger.throwError("verifyTypedData not supported", Logger.errors.UNSUPPORTED_OPERATION, {
+		operation: 'verifyTypedData'
+	});
 }

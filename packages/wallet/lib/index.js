@@ -211,11 +211,12 @@ var Wallet = /** @class */ (function (_super) {
             });
         });
     };
-    // TODO to be revised
     Wallet.prototype._signTypedData = function (domain, types, value) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, logger.throwError("not supported")];
+                return [2 /*return*/, logger.throwError("_signTypedData not supported", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
+                        operation: '_signTypedData'
+                    })];
             });
         });
     };
@@ -275,7 +276,9 @@ function verifyMessage(message, signature) {
 }
 exports.verifyMessage = verifyMessage;
 function verifyTypedData(domain, types, value, signature) {
-    return logger.throwError("not supported");
+    return logger.throwError("verifyTypedData not supported", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
+        operation: 'verifyTypedData'
+    });
 }
 exports.verifyTypedData = verifyTypedData;
 //# sourceMappingURL=index.js.map
