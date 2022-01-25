@@ -58,11 +58,9 @@ const account = {
 	 * Deploy a contract - OZ ERC20
 	 */
 	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
-	const contractCreateResponse = await wallet.sendTransaction({
-		data: contractByteCode,
-		gasLimit: 300000
-	}).wait();
-	console.log('contractCreate response:', contractCreateResponse);
+	const deploymentTx = await wallet.sendTransaction({ data: contractByteCode, gasLimit: 300000 });
+	const deployment = await deploymentTx.wait();
+	console.log('ContractCreate:', deployment);
 
 	/**
 	 * Instantiate the contract locally in order to interact with it
@@ -80,22 +78,24 @@ const account = {
 		getAddressFromAccount(account.operator.accountId),
 		1000
 	]);
-	const approveResponse = await wallet.sendTransaction({
+	const approveTx = await wallet.sendTransaction({
 		to: contract.address,
 		data: approveParams,
 		gasLimit: 100000
 	});
-	console.log('approve response: ', approveResponse);
+	const approve = await approveTx.wait();
+	console.log('approve response: ', approve);
 
 	const mintParams = contract.interface.encodeFunctionData('mint', [
 		1000
 	]);
-	const mintResponse = await wallet.sendTransaction({
+	const mintTx = await wallet.sendTransaction({
 		to: contract.address,
 		data: mintParams,
 		gasLimit: 100000
 	});
-	console.log('mint response:', mintResponse);
+	const mint = await mintTx.wait();
+	console.log('mint response:', mint);
 
 	const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
 		await wallet.getAddress()
