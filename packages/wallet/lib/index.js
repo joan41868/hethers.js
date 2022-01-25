@@ -293,9 +293,8 @@ var Wallet = /** @class */ (function (_super) {
     return Wallet;
 }(abstract_signer_1.Signer));
 exports.Wallet = Wallet;
-// TODO to be revised
 function verifyMessage(message, signature) {
-    return (0, transactions_1.recoverAddress)((0, hash_1.hashMessage)(message), signature);
+    return (0, signing_key_1.recoverPublicKey)((0, bytes_1.arrayify)((0, hash_1.hashMessage)(message)), signature);
 }
 exports.verifyMessage = verifyMessage;
 // TODO to be revised

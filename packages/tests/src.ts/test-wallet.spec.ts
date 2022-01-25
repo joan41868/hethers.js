@@ -298,8 +298,9 @@ describe('Test Signing Messages', function() {
     tests.forEach(function(test) {
         it(('verifies a message "' + test.name + '"'), function() {
             this.timeout(120000);
-            let address = ethers.utils.verifyMessage(test.message, test.signature);
-            assert.equal(address, test.address, 'verifies message signature');
+            let wallet = new ethers.Wallet(test.privateKey);
+            const publicKey = ethers.utils.verifyMessage(test.message, test.signature);
+            assert.strictEqual(wallet.publicKey, publicKey);
         });
     });
 
@@ -444,6 +445,27 @@ describe("Wallet tx signing", function () {
     });
 });
 
+describe("Wallet getters", function () {
+    it("Should get proper mainnet chainId", async function () {
+        const provider = ethers.providers.getDefaultProvider("mainnet");
+        const wallet = ethers.Wallet.createRandom().connect(provider);
+        const chainId = await wallet.getChainId();
+        assert.strictEqual(chainId, 290);
+    });
+    it("Should get proper testnet chainId", async function () {
+        const provider = ethers.providers.getDefaultProvider("testnet");
+        const wallet = ethers.Wallet.createRandom().connect(provider);
+        const chainId = await wallet.getChainId();
+        assert.strictEqual(chainId, 291)
+    });
+
+    it("Should get proper previewnet chainId", async function () {
+        const provider = ethers.providers.getDefaultProvider("previewnet");
+        const wallet = ethers.Wallet.createRandom().connect(provider);
+        const chainId = await wallet.getChainId();
+        assert.strictEqual(chainId, 292);
+    });
+});
 
 describe("Wallet local calls", async function () {
     const hederaEoa = {
