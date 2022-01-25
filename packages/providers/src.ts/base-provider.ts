@@ -21,7 +21,7 @@ import { version } from "./_version";
 const logger = new Logger(version);
 
 import { Formatter } from "./formatter";
-import { getAccountFromAddress } from "@ethersproject/address";
+import {AccountLike, asAccountString} from "@ethersproject/address";
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction, ContractCallQuery } from "@hashgraph/sdk";
 import axios from "axios";
 
@@ -574,23 +574,20 @@ export class BaseProvider extends Provider {
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
      *
-     * @param addressOrName The address to check balance of
+     * @param accountLike The address to check balance of
      */
-    async getBalance(addressOrName: string | Promise<string>): Promise<BigNumber> {
-        addressOrName = await addressOrName;
-        const { shard, realm, num } = getAccountFromAddress(addressOrName);
-        const shardNum = BigNumber.from(shard).toNumber();
-        const realmNum = BigNumber.from(realm).toNumber();
-        const accountNum = BigNumber.from(num).toNumber();
+    async getBalance(accountLike: AccountLike | Promise<AccountLike>): Promise<BigNumber> {
+        accountLike = await accountLike;
+        const account = asAccountString(accountLike);
         try {
             const balance = await new AccountBalanceQuery()
-                .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                .setAccountId(AccountId.fromString(account))
                 .execute(this.hederaClient);
             return BigNumber.from(balance.hbars.toTinybars().toNumber());
         } catch (error) {
             return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                 method: "AccountBalanceQuery",
-                params: {address: addressOrName},
+                params: {address: accountLike},
                 error
             });
         }

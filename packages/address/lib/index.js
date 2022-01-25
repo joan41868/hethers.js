@@ -8,24 +8,9 @@ var rlp_1 = require("@ethersproject/rlp");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
-function asAccountString(acc) {
-    if (typeof acc === "string") {
-        if (acc.startsWith("0x")) {
-            acc = getAccountFromAddress(acc);
-            return acc.shard + "." + acc.realm + "." + acc.num;
-        }
-        else if (!isNaN(parseInt(acc[0]))) {
-        }
-        else {
-            return logger.throwArgumentError("provided argument is not account-like", logger_1.Logger.errors.INVALID_ARGUMENT, {
-                acc: acc
-            });
-        }
-        return acc;
-    }
-    else {
-        return acc.shard + "." + acc.realm + "." + acc.num;
-    }
+function asAccountString(accountLike) {
+    var parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
+    return parsedAccount.shard + "." + parsedAccount.realm + "." + parsedAccount.num;
 }
 exports.asAccountString = asAccountString;
 function getChecksumAddress(address) {
