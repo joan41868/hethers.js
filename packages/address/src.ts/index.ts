@@ -23,6 +23,12 @@ export function asAccountString(acc :AccountLike): string {
         if (acc.startsWith("0x")) {
             acc = getAccountFromAddress(acc);
             return `${acc.shard}.${acc.realm}.${acc.num}`;
+        } else if (!isNaN(parseInt(acc[0]))) {
+
+        } else {
+            return logger.throwArgumentError("provided argument is not account-like", Logger.errors.INVALID_ARGUMENT, {
+                acc
+            });
         }
         return acc;
     } else {

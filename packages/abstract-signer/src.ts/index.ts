@@ -76,27 +76,27 @@ export interface TypedDataSigner {
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;
 }
 
-function checkError(call1: string, error: any, txRequest: Deferrable<TransactionRequest>) {
+function checkError(method: string, error: any, txRequest: Deferrable<TransactionRequest>) {
     switch (error.status._code) {
         // insufficient gas
         case 30:
-            return logger.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS);
+            return logger.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS, {tx: txRequest});
         // insufficient payer balance
         case 10:
-            return logger.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS);
+            return logger.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS, {tx: txRequest});
         // insufficient tx fee
         case 9:
-            return logger.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS)
+            return logger.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS, {tx: txRequest})
         // invalid signature
         case 7:
-            return logger.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR);
+            return logger.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR, {tx: txRequest});
         // invalid contract id
         case 16:
-            return logger.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT);
+            return logger.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT, {tx: txRequest});
         // contract revert
         case 33:
             // is this the right thing to return for hedera? CALL_EXCEPTION ?
-            return logger.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT);
+            return logger.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT, {tx: txRequest});
     }
     throw error;
 }

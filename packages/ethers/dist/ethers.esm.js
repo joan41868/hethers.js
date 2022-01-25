@@ -6854,6 +6854,13 @@ function asAccountString(acc) {
             acc = getAccountFromAddress(acc);
             return `${acc.shard}.${acc.realm}.${acc.num}`;
         }
+        else if (!isNaN(parseInt(acc[0]))) {
+        }
+        else {
+            return logger$7.throwArgumentError("provided argument is not account-like", Logger.errors.INVALID_ARGUMENT, {
+                acc
+            });
+        }
         return acc;
     }
     else {
@@ -86419,27 +86426,27 @@ const allowedTransactionKeys = [
 ];
 ;
 ;
-function checkError(call1, error, txRequest) {
+function checkError(method, error, txRequest) {
     switch (error.status._code) {
         // insufficient gas
         case 30:
-            return logger$f.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS);
+            return logger$f.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
         // insufficient payer balance
         case 10:
-            return logger$f.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS);
+            return logger$f.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
         // insufficient tx fee
         case 9:
-            return logger$f.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS);
+            return logger$f.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
         // invalid signature
         case 7:
-            return logger$f.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR);
+            return logger$f.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR, { tx: txRequest });
         // invalid contract id
         case 16:
-            return logger$f.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT);
+            return logger$f.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT, { tx: txRequest });
         // contract revert
         case 33:
             // is this the right thing to return for hedera? CALL_EXCEPTION ?
-            return logger$f.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT);
+            return logger$f.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: txRequest });
     }
     throw error;
 }
