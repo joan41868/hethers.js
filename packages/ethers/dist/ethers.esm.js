@@ -22364,12 +22364,6 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$1 = keccak(256);
 
-var _args = [
-	[
-		"elliptic@6.5.4",
-		"/home/nikolay/Desktop/hethers.js"
-	]
-];
 var _from = "elliptic@6.5.4";
 var _id = "elliptic@6.5.4";
 var _inBundle = false;
@@ -22392,8 +22386,9 @@ var _requiredBy = [
 	"/@hashgraph/cryptography"
 ];
 var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
-var _spec = "6.5.4";
-var _where = "/home/nikolay/Desktop/hethers.js";
+var _shasum = "da37cebd31e79a1367e941b592ed1fbebd58abbb";
+var _spec = "elliptic@6.5.4";
+var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
 var author = {
 	name: "Fedor Indutny",
 	email: "fedor@indutny.com"
@@ -22401,6 +22396,7 @@ var author = {
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
+var bundleDependencies = false;
 var dependencies = {
 	"bn.js": "^4.11.9",
 	brorand: "^1.1.0",
@@ -22410,6 +22406,7 @@ var dependencies = {
 	"minimalistic-assert": "^1.0.1",
 	"minimalistic-crypto-utils": "^1.0.1"
 };
+var deprecated = false;
 var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
@@ -22452,7 +22449,6 @@ var scripts = {
 };
 var version$b = "6.5.4";
 var require$$0 = {
-	_args: _args,
 	_from: _from,
 	_id: _id,
 	_inBundle: _inBundle,
@@ -22462,11 +22458,14 @@ var require$$0 = {
 	_requested: _requested,
 	_requiredBy: _requiredBy,
 	_resolved: _resolved,
+	_shasum: _shasum,
 	_spec: _spec,
 	_where: _where,
 	author: author,
 	bugs: bugs,
+	bundleDependencies: bundleDependencies,
 	dependencies: dependencies,
+	deprecated: deprecated,
 	description: description,
 	devDependencies: devDependencies,
 	files: files,
@@ -80717,13 +80716,7 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var _args$1 = [
-	[
-		"@grpc/grpc-js@1.5.1",
-		"/home/nikolay/Desktop/hethers.js"
-	]
-];
-var _from$1 = "@grpc/grpc-js@1.5.1";
+var _from$1 = "@grpc/grpc-js@^1.4.4";
 var _id$1 = "@grpc/grpc-js@1.5.1";
 var _inBundle$1 = false;
 var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
@@ -80731,25 +80724,27 @@ var _location$1 = "/@grpc/grpc-js";
 var _phantomChildren$1 = {
 };
 var _requested$1 = {
-	type: "version",
+	type: "range",
 	registry: true,
-	raw: "@grpc/grpc-js@1.5.1",
+	raw: "@grpc/grpc-js@^1.4.4",
 	name: "@grpc/grpc-js",
 	escapedName: "@grpc%2fgrpc-js",
 	scope: "@grpc",
-	rawSpec: "1.5.1",
+	rawSpec: "^1.4.4",
 	saveSpec: null,
-	fetchSpec: "1.5.1"
+	fetchSpec: "^1.4.4"
 };
 var _requiredBy$1 = [
 	"/@hashgraph/sdk"
 ];
 var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
-var _spec$1 = "1.5.1";
-var _where$1 = "/home/nikolay/Desktop/hethers.js";
+var _shasum$1 = "934571ae351e868e61d2bd1d56249b79ce8bd1f5";
+var _spec$1 = "@grpc/grpc-js@^1.4.4";
+var _where$1 = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js\\node_modules\\@hashgraph\\sdk";
 var author$1 = {
 	name: "Google Inc."
 };
+var bundleDependencies$1 = false;
 var contributors = [
 	{
 		name: "Google Inc."
@@ -80759,6 +80754,7 @@ var dependencies$1 = {
 	"@grpc/proto-loader": "^0.6.4",
 	"@types/node": ">=12.12.47"
 };
+var deprecated$1 = false;
 var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
@@ -80828,7 +80824,6 @@ var scripts$1 = {
 var types = "build/src/index.d.ts";
 var version$c = "1.5.1";
 var require$$0$2 = {
-	_args: _args$1,
 	_from: _from$1,
 	_id: _id$1,
 	_inBundle: _inBundle$1,
@@ -80838,11 +80833,14 @@ var require$$0$2 = {
 	_requested: _requested$1,
 	_requiredBy: _requiredBy$1,
 	_resolved: _resolved$1,
+	_shasum: _shasum$1,
 	_spec: _spec$1,
 	_where: _where$1,
 	author: author$1,
+	bundleDependencies: bundleDependencies$1,
 	contributors: contributors,
 	dependencies: dependencies$1,
+	deprecated: deprecated$1,
 	description: description$1,
 	devDependencies: devDependencies$1,
 	engines: engines,
@@ -94609,6 +94607,7 @@ class Formatter {
         const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
+        const timestamp = this.timestamp.bind(this);
         const strictData = (v) => { return this.data(v, true); };
         formats.transaction = {
             hash: hash,
@@ -94696,22 +94695,27 @@ class Formatter {
         formats.filter = {
             fromBlock: Formatter.allowNull(blockTag, undefined),
             toBlock: Formatter.allowNull(blockTag, undefined),
+            fromTimestamp: Formatter.allowNull(timestamp, undefined),
+            toTimestamp: Formatter.allowNull(timestamp, undefined),
             blockHash: Formatter.allowNull(hash, undefined),
             address: Formatter.allowNull(address, undefined),
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
         formats.filterLog = {
-            blockNumber: Formatter.allowNull(number),
-            blockHash: Formatter.allowNull(hash),
-            transactionIndex: number,
-            removed: Formatter.allowNull(this.boolean.bind(this)),
+            // blockNumber: Formatter.allowNull(number),
+            // blockHash: Formatter.allowNull(hash),
+            // transactionIndex: number,
+            // removed: Formatter.allowNull(this.boolean.bind(this)),
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
             topics: Formatter.arrayOf(hash),
-            transactionHash: hash,
-            logIndex: number,
+            // transactionHash: hash,
+            // logIndex: number,
         };
         return formats;
+    }
+    timestamp(value) {
+        return value;
     }
     accessList(accessList) {
         return accessListify(accessList || []);
@@ -94896,9 +94900,9 @@ class Formatter {
             result.chainId = chainId;
         }
         // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
+        // if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
+        //     result.blockHash = null;
+        // }
         return result;
     }
     transaction(value) {
@@ -94910,27 +94914,25 @@ class Formatter {
     receipt(value) {
         const result = Formatter.check(this.formats.receipt, value);
         // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                const value = BigNumber.from(result.root).toNumber();
-                if (value === 0 || value === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value)) {
-                        logger$u.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value;
-                    delete result.root;
-                }
-                else {
-                    logger$u.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            }
-            else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger$u.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
+        // if (result.root != null) {
+        //     if (result.root.length <= 4) {
+        //         // Could be 0x00, 0x0, 0x01 or 0x1
+        //         const value = BigNumber.from(result.root).toNumber();
+        //         if (value === 0 || value === 1) {
+        //             // Make sure if both are specified, they match
+        //             if (result.status != null && (result.status !== value)) {
+        //                 logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
+        //             }
+        //             result.status = value;
+        //             delete result.root;
+        //         } else {
+        //             logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
+        //         }
+        //     } else if (result.root.length !== 66) {
+        //         // Must be a valid bytes32
+        //         logger.throwArgumentError("invalid root hash", "value.root", result.root);
+        //     }
+        // }
         if (result.status != null) {
             result.byzantium = true;
         }
@@ -99239,6 +99241,7 @@ class BaseProvider extends Provider {
             const result = {};
             if (filter.address != null) {
                 result.address = this._getAddress(filter.address);
+                // result.address = filter.address;
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -99246,10 +99249,14 @@ class BaseProvider extends Provider {
                 }
                 result[key] = filter[key];
             });
-            ["fromBlock", "toBlock"].forEach((key) => {
+            // ["fromBlock", "toBlock"].forEach((key) => {
+            //     if ((<any>filter)[key] == null) { return; }
+            // });
+            ["fromTimestamp", "toTimestamp"].forEach((key) => {
                 if (filter[key] == null) {
                     return;
                 }
+                result[key] = filter[key];
             });
             return this.formatter.filter(yield resolveProperties(result));
         });
@@ -99313,15 +99320,40 @@ class BaseProvider extends Provider {
     }
     getLogs(filter) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
+            if (!this._mirrorNodeUrl)
+                logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
-            const logs = yield this.perform("getLogs", params);
-            logs.forEach((log) => {
-                if (log.removed == null) {
-                    log.removed = false;
+            let toTimestampFilter = "";
+            let fromTimestampFilter = "";
+            const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
+            //@ts-ignore
+            if (params.filter.toTimestamp) {
+                //@ts-ignore
+                toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
+            }
+            //@ts-ignore
+            if (params.filter.fromTimestamp) {
+                //@ts-ignore
+                fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+            }
+            const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+            try {
+                let { data } = yield axios$1.get(requestUrl);
+                let logs = null;
+                if (data) {
+                    logs = Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
                 }
-            });
-            return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
+                return logs;
+            }
+            catch (error) {
+                if (error && error.response && error.response.status != 404) {
+                    logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "ContractLogsQuery",
+                        error
+                    });
+                }
+                return null;
+            }
         });
     }
     getHbarPrice() {

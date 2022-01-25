@@ -781,6 +781,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         result = {};
                         if (filter.address != null) {
                             result.address = this._getAddress(filter.address);
+                            // result.address = filter.address;
                         }
                         ["blockHash", "topics"].forEach(function (key) {
                             if (filter[key] == null) {
@@ -788,10 +789,14 @@ var BaseProvider = /** @class */ (function (_super) {
                             }
                             result[key] = filter[key];
                         });
-                        ["fromBlock", "toBlock"].forEach(function (key) {
+                        // ["fromBlock", "toBlock"].forEach((key) => {
+                        //     if ((<any>filter)[key] == null) { return; }
+                        // });
+                        ["fromTimestamp", "toTimestamp"].forEach(function (key) {
                             if (filter[key] == null) {
                                 return;
                             }
+                            result[key] = filter[key];
                         });
                         _b = (_a = this.formatter).filter;
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(result)];
@@ -898,24 +903,50 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, logs;
+            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, logs, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
+                    case 0:
+                        if (!this._mirrorNodeUrl)
+                            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({ filter: this._getFilter(filter) })];
-                    case 2:
+                    case 1:
                         params = _a.sent();
-                        return [4 /*yield*/, this.perform("getLogs", params)];
+                        toTimestampFilter = "";
+                        fromTimestampFilter = "";
+                        epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
+                        //@ts-ignore
+                        if (params.filter.toTimestamp) {
+                            //@ts-ignore
+                            toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
+                        }
+                        //@ts-ignore
+                        if (params.filter.fromTimestamp) {
+                            //@ts-ignore
+                            fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+                        }
+                        requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, axios_1.default.get(requestUrl)];
                     case 3:
-                        logs = _a.sent();
-                        logs.forEach(function (log) {
-                            if (log.removed == null) {
-                                log.removed = false;
-                            }
-                        });
-                        return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs)];
+                        data = (_a.sent()).data;
+                        logs = null;
+                        if (data) {
+                            logs = formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
+                        }
+                        return [2 /*return*/, logs];
+                    case 4:
+                        error_4 = _a.sent();
+                        if (error_4 && error_4.response && error_4.response.status != 404) {
+                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                method: "ContractLogsQuery",
+                                error: error_4
+                            });
+                        }
+                        return [2 /*return*/, null];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -930,7 +961,7 @@ var BaseProvider = /** @class */ (function (_super) {
     // TODO FIXME
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_4;
+            var address, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -943,8 +974,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_4 = _a.sent();
-                        if (error_4.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_5 = _a.sent();
+                        if (error_5.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];

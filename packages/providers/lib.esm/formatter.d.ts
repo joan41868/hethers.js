@@ -19,6 +19,7 @@ export declare class Formatter {
     readonly formats: Formats;
     constructor();
     getDefaultFormats(): Formats;
+    timestamp(value: any): string;
     accessList(accessList: Array<any>): AccessList;
     number(number: any): number;
     type(number: any): number;

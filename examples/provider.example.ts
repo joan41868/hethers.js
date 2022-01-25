@@ -46,5 +46,19 @@ const hethers = require("ethers");
     console.log(record2);
 
 
+    /**
+     * Example 5: Filtering contract logs
+     */
+    const filterParams = {
+        // address: "0.0.25623322",
+        address: "0x000000000000000000000000000000000186fb1A",
+        fromTimestamp: "1642065156.264170833",
+        toTimestamp: "1642080642.176149864"
+    }
+
+    let logs = await provider.getLogs(filterParams);
+    console.log(`Contract ${filterParams.address} logs:`);
+    console.dir(logs, {depth: null});
+
 })();
 

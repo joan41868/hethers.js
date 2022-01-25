@@ -4,7 +4,7 @@ import {
     BlockTag,
     EventType,
     Filter,
-    FilterByBlockHash,
+    // FilterByBlockHash,
     Listener,
     Log,
     Provider,
@@ -703,13 +703,14 @@ export class BaseProvider extends Provider {
         }
     }
 
-    async _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash> {
+    async _getFilter(filter: Filter | Promise<Filter>): Promise<Filter> {
         filter = await filter;
 
         const result: any = { };
 
         if (filter.address != null) {
             result.address = this._getAddress(filter.address);
+            // result.address = filter.address;
         }
 
         ["blockHash", "topics"].forEach((key) => {
@@ -717,8 +718,13 @@ export class BaseProvider extends Provider {
             result[key] = (<any>filter)[key];
         });
 
-        ["fromBlock", "toBlock"].forEach((key) => {
+        // ["fromBlock", "toBlock"].forEach((key) => {
+        //     if ((<any>filter)[key] == null) { return; }
+        // });
+
+        ["fromTimestamp", "toTimestamp"].forEach((key) => {
             if ((<any>filter)[key] == null) { return; }
+            result[key] = (<any>filter)[key];
         });
 
         return this.formatter.filter(await resolveProperties(result));
@@ -782,14 +788,39 @@ export class BaseProvider extends Provider {
         }, { oncePoll: this });
     }
 
-    async getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>> {
-        await this.getNetwork();
+    async getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>> {
+        if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
         const params = await resolveProperties({ filter: this._getFilter(filter) });
-        const logs: Array<Log> = await this.perform("getLogs", params);
-        logs.forEach((log) => {
-            if (log.removed == null) { log.removed = false; }
-        });
-        return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
+        let toTimestampFilter = "";
+        let fromTimestampFilter = "";
+        const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
+        //@ts-ignore
+        if (params.filter.toTimestamp) {
+            //@ts-ignore
+            toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
+        }
+        //@ts-ignore
+        if (params.filter.fromTimestamp) {
+            //@ts-ignore
+            fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+        }
+        const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+        try {
+            let { data } = await axios.get(requestUrl);
+            let logs: Array<Log> = null;
+            if (data) {
+                logs = Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
+            }
+            return logs;
+        } catch (error) {
+            if (error && error.response && error.response.status != 404) {
+                logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    method: "ContractLogsQuery",
+                    error
+                });
+            }
+            return null;
+        } 
     }
 
     async getHbarPrice(): Promise<number> {

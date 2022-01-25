@@ -607,6 +607,7 @@ export class BaseProvider extends Provider {
             const result = {};
             if (filter.address != null) {
                 result.address = this._getAddress(filter.address);
+                // result.address = filter.address;
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -614,10 +615,14 @@ export class BaseProvider extends Provider {
                 }
                 result[key] = filter[key];
             });
-            ["fromBlock", "toBlock"].forEach((key) => {
+            // ["fromBlock", "toBlock"].forEach((key) => {
+            //     if ((<any>filter)[key] == null) { return; }
+            // });
+            ["fromTimestamp", "toTimestamp"].forEach((key) => {
                 if (filter[key] == null) {
                     return;
                 }
+                result[key] = filter[key];
             });
             return this.formatter.filter(yield resolveProperties(result));
         });
@@ -681,15 +686,40 @@ export class BaseProvider extends Provider {
     }
     getLogs(filter) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
+            if (!this._mirrorNodeUrl)
+                logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
-            const logs = yield this.perform("getLogs", params);
-            logs.forEach((log) => {
-                if (log.removed == null) {
-                    log.removed = false;
+            let toTimestampFilter = "";
+            let fromTimestampFilter = "";
+            const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
+            //@ts-ignore
+            if (params.filter.toTimestamp) {
+                //@ts-ignore
+                toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
+            }
+            //@ts-ignore
+            if (params.filter.fromTimestamp) {
+                //@ts-ignore
+                fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+            }
+            const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+            try {
+                let { data } = yield axios.get(requestUrl);
+                let logs = null;
+                if (data) {
+                    logs = Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
                 }
-            });
-            return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
+                return logs;
+            }
+            catch (error) {
+                if (error && error.response && error.response.status != 404) {
+                    logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "ContractLogsQuery",
+                        error
+                    });
+                }
+                return null;
+            }
         });
     }
     getHbarPrice() {

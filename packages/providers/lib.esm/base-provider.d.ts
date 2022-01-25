@@ -1,4 +1,4 @@
-import { BlockTag, EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { BlockTag, EventType, Filter, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
@@ -91,7 +91,7 @@ export declare class BaseProvider extends Provider {
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
-    _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;
+    _getFilter(filter: Filter | Promise<Filter>): Promise<Filter>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     _getAddress(addressOrName: string | Promise<string>): Promise<string>;
     /**
@@ -101,7 +101,7 @@ export declare class BaseProvider extends Provider {
      */
     getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
     getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt>;
-    getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
+    getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
     getResolver(name: string): Promise<null | Resolver>;
     _getResolver(name: string): Promise<string>;

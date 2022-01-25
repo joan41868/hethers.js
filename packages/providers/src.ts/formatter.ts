@@ -47,6 +47,8 @@ export class Formatter {
         const number = this.number.bind(this);
         const type = this.type.bind(this);
 
+        const timestamp = this.timestamp.bind(this);
+
         const strictData = (v: any) => { return this.data(v, true); };
 
         formats.transaction = {
@@ -155,28 +157,34 @@ export class Formatter {
         formats.filter = {
             fromBlock: Formatter.allowNull(blockTag, undefined),
             toBlock: Formatter.allowNull(blockTag, undefined),
+            fromTimestamp: Formatter.allowNull(timestamp, undefined),
+            toTimestamp: Formatter.allowNull(timestamp, undefined),
             blockHash: Formatter.allowNull(hash, undefined),
             address: Formatter.allowNull(address, undefined),
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
 
         formats.filterLog = {
-            blockNumber: Formatter.allowNull(number),
-            blockHash: Formatter.allowNull(hash),
-            transactionIndex: number,
+            // blockNumber: Formatter.allowNull(number),
+            // blockHash: Formatter.allowNull(hash),
+            // transactionIndex: number,
 
-            removed: Formatter.allowNull(this.boolean.bind(this)),
+            // removed: Formatter.allowNull(this.boolean.bind(this)),
 
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
 
             topics: Formatter.arrayOf(hash),
 
-            transactionHash: hash,
-            logIndex: number,
+            // transactionHash: hash,
+            // logIndex: number,
         };
 
         return formats;
+    }
+
+    timestamp(value: any): string {
+        return value;
     }
 
     accessList(accessList: Array<any>): AccessList {
@@ -377,9 +385,9 @@ export class Formatter {
         }
 
         // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
+        // if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
+        //     result.blockHash = null;
+        // }
 
         return result;
     }
@@ -396,25 +404,25 @@ export class Formatter {
         const result: TransactionReceipt = Formatter.check(this.formats.receipt, value);
 
         // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                const value = BigNumber.from(result.root).toNumber();
-                if (value === 0 || value === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value)) {
-                        logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value;
-                    delete result.root;
-                } else {
-                    logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            } else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
+        // if (result.root != null) {
+        //     if (result.root.length <= 4) {
+        //         // Could be 0x00, 0x0, 0x01 or 0x1
+        //         const value = BigNumber.from(result.root).toNumber();
+        //         if (value === 0 || value === 1) {
+        //             // Make sure if both are specified, they match
+        //             if (result.status != null && (result.status !== value)) {
+        //                 logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
+        //             }
+        //             result.status = value;
+        //             delete result.root;
+        //         } else {
+        //             logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
+        //         }
+        //     } else if (result.root.length !== 66) {
+        //         // Must be a valid bytes32
+        //         logger.throwArgumentError("invalid root hash", "value.root", result.root);
+        //     }
+        // }
 
         if (result.status != null) {
             result.byzantium = true;

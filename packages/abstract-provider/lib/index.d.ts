@@ -19,12 +19,31 @@ export declare type TransactionRequest = {
     nodeId?: AccountLike;
     customData?: Record<string, any>;
 };
+export declare type HederaTransactionResponse = {
+    chainId: number;
+    amount: number;
+    call_result: string;
+    contract_id: string;
+    created_contract_ids: string[];
+    error_message: string;
+    from: string;
+    function_parameters: string;
+    gas_limit: number;
+    gas_used: number;
+    timestamp: string;
+    to: string;
+    block_hash: string;
+    block_number: number;
+    hash: string;
+    logs: {};
+    transaction: {
+        transaction_id: string;
+        result: string;
+    };
+};
 export interface TransactionResponse extends Transaction {
     hash: string;
-    blockNumber?: number;
-    blockHash?: string;
     timestamp?: number;
-    confirmations: number;
     from: string;
     raw?: string;
     wait: (confirmations?: number) => Promise<TransactionReceipt>;
@@ -54,10 +73,6 @@ export interface BlockWithTransactions extends _Block {
     transactions: Array<TransactionResponse>;
 }
 export interface Log {
-    blockNumber: number;
-    blockHash: string;
-    transactionIndex: number;
-    removed: boolean;
     address: string;
     data: string;
     topics: Array<string>;
@@ -68,19 +83,12 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string;
-    transactionIndex: number;
-    root?: string;
     gasUsed: BigNumber;
     logsBloom: string;
-    blockHash: string;
     transactionHash: string;
     logs: Array<Log>;
-    blockNumber: number;
-    confirmations: number;
     cumulativeGasUsed: BigNumber;
-    effectiveGasPrice: BigNumber;
     byzantium: boolean;
-    type: number;
     status?: number;
 }
 export interface FeeData {
@@ -95,6 +103,8 @@ export interface EventFilter {
 export interface Filter extends EventFilter {
     fromBlock?: BlockTag;
     toBlock?: BlockTag;
+    fromTimestamp?: string;
+    toTimestamp?: string;
 }
 export interface FilterByBlockHash extends EventFilter {
     blockHash?: string;
