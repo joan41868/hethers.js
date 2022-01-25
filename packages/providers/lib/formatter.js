@@ -7,7 +7,6 @@ var bytes_1 = require("@ethersproject/bytes");
 var constants_1 = require("@ethersproject/constants");
 var properties_1 = require("@ethersproject/properties");
 var transactions_1 = require("@ethersproject/transactions");
-// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
@@ -329,33 +328,32 @@ var Formatter = /** @class */ (function () {
         }
         return result;
     };
-    Formatter.prototype.txRecordToTxResponse = function (txRecord) {
+    Formatter.prototype.responseFromRecord = function (record) {
         return {
+            chainId: record.chainId,
+            hash: record.hash,
+            transactionId: record.transaction.transaction_id,
+            from: record.from,
+            to: record.to,
+            data: record.call_result,
+            gasLimit: bignumber_1.BigNumber.from(record.gas_limit),
+            value: bignumber_1.BigNumber.from(record.amount),
             accessList: null,
-            chainId: txRecord.chainId,
-            data: '',
-            from: txRecord.from,
-            gasLimit: bignumber_1.BigNumber.from(txRecord.gas_limit),
-            hash: txRecord.hash,
-            transactionId: txRecord.transaction.transaction_id,
             r: '',
             s: '',
-            to: txRecord.to,
             v: 0,
-            value: null,
             customData: {
-                gas_used: txRecord.gas_used,
-                call_result: txRecord.call_result,
-                logs: txRecord.logs,
-                transaction: txRecord.transaction
+                gas_used: record.gas_used,
+                logs: record.logs,
+                result: record.transaction.result
             },
             wait: null
         };
     };
-    Formatter.prototype.txRecordToTxReceipt = function (txRecord) {
+    Formatter.prototype.receiptFromResponse = function (txRecord) {
         var to = null;
         var contractAddress = null;
-        if (txRecord.customData.call_result != '0x') { //is not contract_create
+        if (txRecord.customData.call_result != '0x') {
             contractAddress = txRecord.to;
         }
         else {
@@ -364,6 +362,7 @@ var Formatter = /** @class */ (function () {
         var logs = [];
         txRecord.customData.logs.forEach(function (log) {
             var values = {
+                timestamp: txRecord.timestamp,
                 address: log.address,
                 data: log.data,
                 topics: log.topics,
@@ -375,13 +374,15 @@ var Formatter = /** @class */ (function () {
         return {
             to: to,
             from: txRecord.from,
+            timestamp: txRecord.timestamp,
             contractAddress: contractAddress,
             gasUsed: txRecord.customData.gas_used,
             logsBloom: null,
             transactionHash: txRecord.hash,
             logs: logs,
             cumulativeGasUsed: txRecord.customData.gas_used,
-            byzantium: false,
+            type: 0,
+            byzantium: true,
             status: txRecord.customData.transaction.result === 'SUCCESS' ? 1 : 0
         };
     };

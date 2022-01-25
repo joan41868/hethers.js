@@ -478,6 +478,7 @@ var BaseProvider = /** @class */ (function (_super) {
                 });
             }
         }
+        _this._pollingInterval = 3000;
         return _this;
     }
     BaseProvider.prototype.getHederaNetworkConfig = function () {
@@ -596,7 +597,20 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.waitForTransaction = function (transactionId, confirmations, timeout) {
+    Object.defineProperty(BaseProvider.prototype, "pollingInterval", {
+        get: function () {
+            return this._pollingInterval;
+        },
+        set: function (value) {
+            if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
+                throw new Error("invalid polling interval");
+            }
+            this._pollingInterval = value;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    BaseProvider.prototype.waitForTransaction = function (transactionId, timeout) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, this._waitForTransaction(transactionId, timeout)];
@@ -605,13 +619,13 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype._waitForTransaction = function (transactionId, timeout) {
         return __awaiter(this, void 0, void 0, function () {
-            var remainingTimeout, intervalMs;
+            var remainingTimeout;
             var _this = this;
             return __generator(this, function (_a) {
                 remainingTimeout = timeout;
-                intervalMs = 1000;
                 return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
                         var txResponse;
+                        var _this = this;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
@@ -621,14 +635,14 @@ var BaseProvider = /** @class */ (function (_super) {
                                     txResponse = _a.sent();
                                     if (!(txResponse == null)) return [3 /*break*/, 3];
                                     return [4 /*yield*/, new Promise(function (resolve) {
-                                            setTimeout(resolve, intervalMs);
+                                            setTimeout(resolve, _this._pollingInterval);
                                         })];
                                 case 2:
                                     _a.sent();
                                     if (remainingTimeout != null)
-                                        remainingTimeout -= intervalMs;
+                                        remainingTimeout -= this._pollingInterval;
                                     return [3 /*break*/, 4];
-                                case 3: return [2 /*return*/, resolve(this.formatter.txRecordToTxReceipt(txResponse))];
+                                case 3: return [2 /*return*/, resolve(this.formatter.receiptFromResponse(txResponse))];
                                 case 4: return [3 /*break*/, 0];
                                 case 5:
                                     reject(logger.makeError("timeout exceeded", logger_1.Logger.errors.TIMEOUT, { timeout: timeout }));
@@ -730,21 +744,20 @@ var BaseProvider = /** @class */ (function (_super) {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", logger_1.Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
         result.wait = function (timeout) { return __awaiter(_this, void 0, void 0, function () {
-            var txReceipt;
+            var receipt;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, this._waitForTransaction(tx.transactionId, timeout)];
                     case 1:
-                        txReceipt = _a.sent();
-                        //TODO do we need this extra check?
-                        if (txReceipt.status === 0) {
+                        receipt = _a.sent();
+                        if (receipt.status === 0) {
                             logger.throwError("transaction failed", logger_1.Logger.errors.CALL_EXCEPTION, {
                                 transactionHash: tx.hash,
                                 transaction: tx,
                                 receipt: receipt
                             });
                         }
-                        return [2 /*return*/, txReceipt];
+                        return [2 /*return*/, receipt];
                 }
             });
         }); };
@@ -764,7 +777,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
                     case 2:
                         ethersTx = _c.sent();
-                        ethersTx.chainId = this._network.chainId;
                         _b = bytes_1.hexlify;
                         return [4 /*yield*/, hederaTx.getTransactionHash()];
                     case 3:
@@ -861,8 +873,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var epTransactions, data, response, filtered, transaction_1, epContracts, error_4;
-            var _this = this;
+            var transactionsEndpoint, data, response, filtered, transaction, contractsEndpoint, response_1, mergedData, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -871,39 +882,26 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, transactionId];
                     case 1:
                         transactionId = _a.sent();
-                        epTransactions = '/api/v1/transactions/' + transactionId;
+                        transactionsEndpoint = this.MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
                         _a.label = 2;
                     case 2:
-                        _a.trys.push([2, 4, , 5]);
-                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + epTransactions)];
+                        _a.trys.push([2, 6, , 7]);
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + transactionsEndpoint)];
                     case 3:
                         data = (_a.sent()).data;
                         response = null;
-                        if (data) {
-                            filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
-                            if (filtered.length > 0) {
-                                transaction_1 = filtered[0];
-                                epContracts = '/api/v1/contracts/results/' + transactionId;
-                                response = Promise.all([
-                                    axios_1.default.get(this._mirrorNodeUrl + epContracts)
-                                ])
-                                    .then(function (_a) {
-                                    var contracts = _a[0];
-                                    return __awaiter(_this, void 0, void 0, function () {
-                                        var mergedData;
-                                        return __generator(this, function (_b) {
-                                            mergedData = __assign(__assign({ chainId: this._network.chainId }, contracts.data), { transaction: { transaction_id: transaction_1.transaction_id, result: transaction_1.result } });
-                                            return [2 /*return*/, this.formatter.txRecordToTxResponse(mergedData)];
-                                        });
-                                    });
-                                })
-                                    .catch(function (error) {
-                                    throw error;
-                                });
-                            }
-                        }
-                        return [2 /*return*/, response];
+                        if (!data) return [3 /*break*/, 5];
+                        filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
+                        if (!(filtered.length > 0)) return [3 /*break*/, 5];
+                        transaction = filtered[0];
+                        contractsEndpoint = this.MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
                     case 4:
+                        response_1 = _a.sent();
+                        mergedData = __assign(__assign({ chainId: this._network.chainId }, response_1.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
+                        return [2 /*return*/, this.formatter.responseFromRecord(mergedData)];
+                    case 5: return [2 /*return*/, response];
+                    case 6:
                         error_4 = _a.sent();
                         if (error_4.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
@@ -912,40 +910,33 @@ var BaseProvider = /** @class */ (function (_super) {
                             });
                         }
                         return [2 /*return*/, null];
-                    case 5: return [2 /*return*/];
+                    case 7: return [2 /*return*/];
                 }
             });
         });
     };
+    // TODO
     BaseProvider.prototype.getTransactionReceipt = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var receipt, error_5;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, transactionId];
-                    case 2:
-                        transactionId = _a.sent();
-                        _a.label = 3;
-                    case 3:
-                        _a.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, new sdk_1.TransactionReceiptQuery()
-                                .setTransactionId(transactionId)
-                                .execute(this.hederaClient)];
-                    case 4:
-                        receipt = _a.sent();
-                        console.log("getTransactionReceipt: ", receipt);
-                        return [2 /*return*/, null];
-                    case 5:
-                        error_5 = _a.sent();
-                        return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                method: "TransactionGetReceiptQuery",
-                                error: error_5
-                            })];
-                    case 6: return [2 /*return*/];
-                }
+                return [2 /*return*/, logger.throwError("getTransactionReceipt not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+                        operation: 'getTransactionReceipt'
+                    })
+                    // await this.getNetwork();
+                    // transactionId = await transactionId;
+                    // try {
+                    //     let receipt = await new TransactionReceiptQuery()
+                    //         .setTransactionId(transactionId)
+                    //         .execute(this.hederaClient);
+                    //     console.log("getTransactionReceipt: ", receipt);
+                    //     return null;
+                    // } catch (error) {
+                    //     return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    //         method: "TransactionGetReceiptQuery",
+                    //         error
+                    //     });
+                    // }
+                ];
             });
         });
     };
@@ -978,7 +969,7 @@ var BaseProvider = /** @class */ (function (_super) {
     // TODO FIXME
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_6;
+            var address, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -991,8 +982,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_6 = _a.sent();
-                        if (error_6.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_5 = _a.sent();
+                        if (error_5.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];

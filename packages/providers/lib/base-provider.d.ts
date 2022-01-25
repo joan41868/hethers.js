@@ -51,6 +51,9 @@ export declare class BaseProvider extends Provider {
     _networkPromise: Promise<Network>;
     _network: Network;
     _events: Array<Event>;
+    _pollingInterval: number;
+    private readonly MIRROR_NODE_TRANSACTIONS_ENDPOINT;
+    private readonly MIRROR_NODE_CONTRACTS_ENDPOINT;
     formatter: Formatter;
     readonly anyNetwork: boolean;
     private readonly hederaClient;
@@ -72,7 +75,9 @@ export declare class BaseProvider extends Provider {
     get network(): Network;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
-    waitForTransaction(transactionId: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
+    get pollingInterval(): number;
+    set pollingInterval(value: number);
+    waitForTransaction(transactionId: string, timeout?: number): Promise<TransactionReceipt>;
     _waitForTransaction(transactionId: string, timeout: number): Promise<TransactionReceipt>;
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.

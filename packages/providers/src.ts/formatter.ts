@@ -1,18 +1,15 @@
 "use strict";
 
-import { Block, Log, TransactionReceipt, TransactionResponse, HederaTransactionResponse } from "@ethersproject/abstract-provider";
+import { Block, Log, TransactionReceipt, TransactionResponse, HederaTransactionRecord } from "@ethersproject/abstract-provider";
 import { getAddress, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@ethersproject/constants";
 import { shallowCopy } from "@ethersproject/properties";
 import { AccessList, accessListify, parse as parseTransaction } from "@ethersproject/transactions";
-// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
-// import { getAddressFromAccount } from "ethers/lib/utils";
-// import { TransactionResponse } from "@hashgraph/sdk";
 
 export type FormatFunc = (value: any) => any;
 
@@ -398,34 +395,33 @@ export class Formatter {
         return result;
     }
 
-    txRecordToTxResponse(txRecord: HederaTransactionResponse): TransactionResponse {
+    responseFromRecord(record: HederaTransactionRecord): TransactionResponse {
         return {
+            chainId: record.chainId,
+            hash: record.hash,
+            transactionId: record.transaction.transaction_id,
+            from: record.from,
+            to: record.to,
+            data: record.call_result,
+            gasLimit: BigNumber.from(record.gas_limit),
+            value: BigNumber.from(record.amount),
             accessList: null,
-            chainId: txRecord.chainId,
-            data: '',
-            from: txRecord.from,
-            gasLimit: BigNumber.from(txRecord.gas_limit),
-            hash: txRecord.hash,
-            transactionId: txRecord.transaction.transaction_id,
             r: '',
             s: '',
-            to: txRecord.to,
             v: 0,
-            value: null,
-            customData: { 
-                gas_used: txRecord.gas_used,
-                call_result: txRecord.call_result, 
-                logs: txRecord.logs,
-                transaction: txRecord.transaction
+            customData: {
+                gas_used: record.gas_used,
+                logs: record.logs,
+                result: record.transaction.result
             },
             wait: null
         }
     }
 
-    txRecordToTxReceipt(txRecord: TransactionResponse): TransactionReceipt {
+    receiptFromResponse(txRecord: TransactionResponse): TransactionReceipt {
         let to = null;
         let contractAddress = null;
-        if (txRecord.customData.call_result != '0x') { //is not contract_create
+        if (txRecord.customData.call_result != '0x') {
             contractAddress = txRecord.to;
         } else {
             to = txRecord.to;
@@ -433,6 +429,7 @@ export class Formatter {
         let logs: Log[] = [];
         txRecord.customData.logs.forEach(function (log: any) {
             const values = {
+                timestamp: txRecord.timestamp,
                 address: log.address,
                 data: log.data,
                 topics: log.topics,
@@ -444,13 +441,15 @@ export class Formatter {
         return {
             to: to,
             from: txRecord.from,
+            timestamp: txRecord.timestamp,
             contractAddress: contractAddress,
             gasUsed: txRecord.customData.gas_used,
             logsBloom: null, //to be provided by hedera rest api
             transactionHash: txRecord.hash,
             logs: logs,
             cumulativeGasUsed: txRecord.customData.gas_used,
-            byzantium: false,
+            type: 0,
+            byzantium: true,
             status: txRecord.customData.transaction.result === 'SUCCESS' ? 1 : 0
         }
     }

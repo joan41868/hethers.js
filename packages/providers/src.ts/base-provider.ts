@@ -32,7 +32,6 @@ import {
     AccountId,
     Client,
     TransactionReceipt as HederaTransactionReceipt,
-    TransactionReceiptQuery,
     AccountBalanceQuery,
     NetworkName,
     Transaction as HederaTransaction
@@ -418,6 +417,11 @@ export class BaseProvider extends Provider {
 
     _events: Array<Event>;
 
+    _pollingInterval: number;
+
+    private readonly MIRROR_NODE_TRANSACTIONS_ENDPOINT: '/api/v1/transactions/';
+    private readonly MIRROR_NODE_CONTRACTS_ENDPOINT: '/api/v1/contracts/results/';
+
     formatter: Formatter;
 
     readonly anyNetwork: boolean;
@@ -452,7 +456,6 @@ export class BaseProvider extends Provider {
 
             // Trigger initial network setting (async)
             this._ready().catch((error) => { });
-
         } else {
             if (!isHederaNetworkConfigLike(network)) {
                 const asDefaultNetwork = network as Network;
@@ -479,6 +482,8 @@ export class BaseProvider extends Provider {
                 });
             }
         }
+
+        this._pollingInterval = 3000;
     }
 
     getHederaNetworkConfig(): AccountId[] {
@@ -581,23 +586,33 @@ export class BaseProvider extends Provider {
         return network;
     }
 
-    async waitForTransaction(transactionId: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt> {
+    get pollingInterval(): number {
+        return this._pollingInterval;
+    }
+
+    set pollingInterval(value: number) {
+        if (typeof(value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
+            throw new Error("invalid polling interval");
+        }
+        this._pollingInterval = value;
+    }
+
+    async waitForTransaction(transactionId: string, timeout?: number): Promise<TransactionReceipt> {
         return this._waitForTransaction(transactionId, timeout);
     }
 
     async _waitForTransaction(transactionId: string, timeout: number): Promise<TransactionReceipt> {
         let remainingTimeout = timeout;
-        const intervalMs = 1000;
         return new Promise(async (resolve, reject) => {
             while (remainingTimeout == null || remainingTimeout > 0) {
                 const txResponse = await this.getTransaction(transactionId);
                 if (txResponse == null) {
                     await new Promise((resolve) => {
-                        setTimeout(resolve, intervalMs);
+                        setTimeout(resolve, this._pollingInterval);
                     });
-                    if (remainingTimeout != null) remainingTimeout -= intervalMs;
+                    if (remainingTimeout != null) remainingTimeout -= this._pollingInterval;
                 } else {
-                    return resolve(this.formatter.txRecordToTxReceipt(txResponse));
+                    return resolve(this.formatter.receiptFromResponse(txResponse));
                 }
             }
             reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
@@ -665,16 +680,15 @@ export class BaseProvider extends Provider {
         }
 
         result.wait = async (timeout?: number) => {
-            const txReceipt = await this._waitForTransaction(tx.transactionId, timeout);
-            //TODO do we need this extra check?
-            if (txReceipt.status === 0) {
+            const receipt = await this._waitForTransaction(tx.transactionId, timeout);
+            if (receipt.status === 0) {
                 logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
                     transaction: tx,
                     receipt: receipt
                 });
             }
-            return txReceipt;
+            return receipt;
         };
         return result;
     }
@@ -685,7 +699,6 @@ export class BaseProvider extends Provider {
         const txBytes = arrayify(signedTransaction);
         const hederaTx = HederaTransaction.fromBytes(txBytes);
         const ethersTx = await this.formatter.transaction(signedTransaction);
-        ethersTx.chainId = this._network.chainId;
         const txHash = hexlify(await hederaTx.getTransactionHash());
         try {
             // TODO once we have fallback provider use `provider.perform("sendTransaction")`
@@ -751,31 +764,26 @@ export class BaseProvider extends Provider {
      */
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
         if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+
         transactionId = await transactionId;
-        //subsequent requests depend on finalized transaction
-        const epTransactions = '/api/v1/transactions/' + transactionId;
+
+        const transactionsEndpoint = this.MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
         try {
-            let { data } = await axios.get(this._mirrorNodeUrl + epTransactions);
+            let { data } = await axios.get(this._mirrorNodeUrl + transactionsEndpoint);
             let response = null;
             if (data) {
                 const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
                 if (filtered.length > 0) {
                     const transaction = filtered[0];
-                    const epContracts = '/api/v1/contracts/results/' + transactionId;
-                    response = Promise.all([
-                        axios.get(this._mirrorNodeUrl + epContracts)
-                    ])
-                        .then(async ([contracts]) => {
-                            const mergedData = {
-                                chainId: this._network.chainId,
-                                ...contracts.data,
-                                transaction: { transaction_id: transaction.transaction_id, result: transaction.result }
-                            };
-                            return this.formatter.txRecordToTxResponse(mergedData);
-                        })
-                        .catch(error => {
-                            throw error;
-                        });
+                    const contractsEndpoint = this.MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+
+                    const response = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
+                    const mergedData = {
+                        chainId: this._network.chainId,
+                        ...response.data,
+                        transaction: { transaction_id: transaction.transaction_id, result: transaction.result }
+                    };
+                    return this.formatter.responseFromRecord(mergedData);
                 }
             } 
             return response;
@@ -790,21 +798,26 @@ export class BaseProvider extends Provider {
         }
     }
 
+    // TODO
     async getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt> {
-        await this.getNetwork();
-        transactionId = await transactionId;
-        try {
-            let receipt = await new TransactionReceiptQuery()
-                .setTransactionId(transactionId)
-                .execute(this.hederaClient);
-            console.log("getTransactionReceipt: ", receipt);
-            return null;
-        } catch (error) {
-            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                method: "TransactionGetReceiptQuery",
-                error
-            });
-        }
+        return logger.throwError("getTransactionReceipt not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getTransactionReceipt'
+        })
+
+        // await this.getNetwork();
+        // transactionId = await transactionId;
+        // try {
+        //     let receipt = await new TransactionReceiptQuery()
+        //         .setTransactionId(transactionId)
+        //         .execute(this.hederaClient);
+        //     console.log("getTransactionReceipt: ", receipt);
+        //     return null;
+        // } catch (error) {
+        //     return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+        //         method: "TransactionGetReceiptQuery",
+        //         error
+        //     });
+        // }
     }
 
     async getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>> {

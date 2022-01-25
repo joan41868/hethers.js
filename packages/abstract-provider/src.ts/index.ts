@@ -31,7 +31,7 @@ export type TransactionRequest = {
     customData?: Record<string, any>;
 }
 
-export type HederaTransactionResponse = {
+export type HederaTransactionRecord = {
     chainId: number,
     amount: number,
     call_result: string,
@@ -96,11 +96,10 @@ export interface BlockWithTransactions extends _Block {
 
 
 export interface Log {
+    timestamp: number;
     address: string;
     data: string;
-
     topics: Array<string>;
-
     transactionHash: string;
     logIndex: number;
 }
@@ -109,14 +108,16 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string,
+    timestamp: number,
     gasUsed: BigNumber,
     logsBloom: string,
     transactionHash: string,
     logs: Array<Log>,
     cumulativeGasUsed: BigNumber,
-    byzantium: boolean,
+    byzantium: true,
+    type: 0,
     status?: number
-};
+}
 
 export interface FeeData {
     maxFeePerGas: null | BigNumber;

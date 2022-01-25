@@ -1478,12 +1478,14 @@ describe("Test Hedera Provider Formatters", function () {
                 receipt = {
                     to: "",
                     from: "",
+                    timestamp: 0,
                     contractAddress: "",
                     gasUsed: null,
                     logsBloom: null,
                     transactionHash: "",
                     logs: [
                         {
+                            timestamp: 0,
                             address: "",
                             data: "",
                             topics: [],
@@ -1492,7 +1494,8 @@ describe("Test Hedera Provider Formatters", function () {
                         }
                     ],
                     cumulativeGasUsed: null,
-                    byzantium: false,
+                    byzantium: true,
+                    type: 0,
                     status: 0
                 };
                 receipt = provider.formatter.txRecordToTxReceipt(transactionResponse);
