@@ -9,7 +9,6 @@ import { version } from "./_version";
 import {
     Account,
     asAccountString,
-    getAccountFromAddress,
     getAddressFromAccount,
     getChecksumAddress
 } from "@ethersproject/address";
@@ -80,7 +79,7 @@ function checkError(method: string, error: any, txRequest: Deferrable<Transactio
     switch (error.status._code) {
         // insufficient gas
         case 30:
-            return logger.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS, {tx: txRequest});
+            return logger.throwError("insufficient funds for gas cost", Logger.errors.CALL_EXCEPTION, {tx: txRequest});
         // insufficient payer balance
         case 10:
             return logger.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS, {tx: txRequest});
@@ -95,8 +94,7 @@ function checkError(method: string, error: any, txRequest: Deferrable<Transactio
             return logger.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT, {tx: txRequest});
         // contract revert
         case 33:
-            // is this the right thing to return for hedera? CALL_EXCEPTION ?
-            return logger.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT, {tx: txRequest});
+            return logger.throwError("contract execution reverted", Logger.errors.CALL_EXCEPTION, {tx: txRequest});
     }
     throw error;
 }
@@ -167,15 +165,13 @@ export abstract class Signer {
     async call(txRequest: Deferrable<TransactionRequest>): Promise<string> {
         this._checkProvider("call");
         const tx = await resolveProperties(this.checkTransaction(txRequest));
-        const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
-        const contractId = asAccountString(contractAccountLikeID);
-        const thisAcc = getAccountFromAddress(await this.getAddress());
-        const thisAccId = asAccountString(thisAcc);
+        const to = asAccountString(tx.to);
+        const from = asAccountString(await this.getAddress());
         const nodeID = AccountId.fromString(asAccountString(tx.nodeId));
-        const paymentTxId = TransactionId.generate(thisAccId);
+        const paymentTxId = TransactionId.generate(from);
 
         const hederaTx = new ContractCallQuery()
-            .setContractId(contractId)
+            .setContractId(to)
             .setFunctionParameters(arrayify(tx.data))
             .setNodeAccountIds([nodeID])
             .setGas(numberify(tx.gasLimit))
@@ -195,7 +191,7 @@ export abstract class Signer {
                 transfers: {
                     accountAmounts:[
                         {
-                            accountID: AccountId.fromString(thisAccId)._toProtobuf(),
+                            accountID: AccountId.fromString(from)._toProtobuf(),
                             amount: new Hbar(cost).negated().toTinybars()
                         },
                         {
@@ -222,6 +218,7 @@ export abstract class Signer {
         hederaTx._paymentTransactions.push({
             signedTransactionBytes: transferSignedTransactionBytes
         });
+
         try{
             const response = await hederaTx.execute(this.provider.getHederaClient());
             return hexStripZeros(response.bytes);

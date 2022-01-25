@@ -723,7 +723,7 @@ describe("Account like to string", function () {
     });
 
     it("Should throw on random string", async function() {
-        const notReallyAccountLike = "kur";
+        const notReallyAccountLike = "foo";
         try {
             asAccountString(notReallyAccountLike);
         } catch (e) {
