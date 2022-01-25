@@ -16,14 +16,15 @@ import { getNetwork } from "@ethersproject/networks";
 import { defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
+import { poll } from "@ethersproject/web";
 import bech32 from "bech32";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { Formatter } from "./formatter";
-import { getAccountFromAddress } from "@ethersproject/address";
-import axios from "axios";
-import { AccountId, Client, TransactionReceiptQuery, AccountBalanceQuery, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 const logger = new Logger(version);
+import { Formatter } from "./formatter";
+import { asAccountString } from "@ethersproject/address";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
+import axios from "axios";
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -378,9 +379,6 @@ export class BaseProvider extends Provider {
             }
         }
     }
-    getHederaNetworkConfig() {
-        return this.hederaClient._network.getNodeAccountIdsForExecute();
-    }
     _ready() {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._network == null) {
@@ -469,56 +467,36 @@ export class BaseProvider extends Provider {
             return network;
         });
     }
-    waitForTransaction(transactionId, confirmations, timeout) {
+    waitForTransaction(transactionHash, confirmations, timeout) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this._waitForTransaction(transactionId, timeout);
+            return this._waitForTransaction(transactionHash, (confirmations == null) ? 1 : confirmations, timeout || 0, null);
         });
     }
-    _waitForTransaction(transactionId, timeout) {
+    _waitForTransaction(transactionHash, confirmations, timeout, replaceable) {
         return __awaiter(this, void 0, void 0, function* () {
-            let remainingTimeout = timeout;
-            const intervalMs = 1000;
-            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
-                while (remainingTimeout == null || remainingTimeout > 0) {
-                    const txResponse = yield this.getTransaction(transactionId);
-                    if (txResponse == null) {
-                        yield new Promise((resolve) => {
-                            setTimeout(resolve, intervalMs);
-                        });
-                        if (remainingTimeout != null)
-                            remainingTimeout -= intervalMs;
-                    }
-                    else {
-                        return resolve(this.formatter.txRecordToTxReceipt(txResponse));
-                    }
-                }
-                reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
-            }));
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         });
     }
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
      *
-     * @param addressOrName The address to check balance of
+     * @param accountLike The address to check balance of
      */
-    getBalance(addressOrName) {
+    getBalance(accountLike) {
         return __awaiter(this, void 0, void 0, function* () {
-            addressOrName = yield addressOrName;
-            const { shard, realm, num } = getAccountFromAddress(addressOrName);
-            const shardNum = BigNumber.from(shard).toNumber();
-            const realmNum = BigNumber.from(realm).toNumber();
-            const accountNum = BigNumber.from(num).toNumber();
+            accountLike = yield accountLike;
+            const account = asAccountString(accountLike);
             try {
                 const balance = yield new AccountBalanceQuery()
-                    .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                    .setAccountId(AccountId.fromString(account))
                     .execute(this.hederaClient);
                 return BigNumber.from(balance.hbars.toTinybars().toNumber());
             }
             catch (error) {
                 return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "AccountBalanceQuery",
-                    params: { address: addressOrName },
+                    params: { address: accountLike },
                     error
                 });
             }
@@ -560,19 +538,45 @@ export class BaseProvider extends Provider {
         if (hash != null && tx.hash !== hash) {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
-        result.wait = (timeout) => __awaiter(this, void 0, void 0, function* () {
-            const txReceipt = yield this._waitForTransaction(tx.transactionId, timeout);
-            //TODO do we need this extra check?
-            if (txReceipt.status === 0) {
+        result.wait = (confirms, timeout) => __awaiter(this, void 0, void 0, function* () {
+            if (confirms == null) {
+                confirms = 1;
+            }
+            if (timeout == null) {
+                timeout = 0;
+            }
+            // Get the details to detect replacement
+            let replacement = undefined;
+            if (confirms !== 0) {
+                replacement = {
+                    data: tx.data,
+                    from: tx.from,
+                    nonce: tx.nonce,
+                    to: tx.to,
+                    value: tx.value,
+                    startBlock: 0
+                };
+            }
+            const receipt = yield this._waitForTransaction(tx.hash, confirms, timeout, replacement);
+            if (receipt == null && confirms === 0) {
+                return null;
+            }
+            if (receipt.status === 0) {
                 logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
                     transaction: tx,
                     receipt: receipt
                 });
             }
-            return txReceipt;
+            return receipt;
         });
         return result;
+    }
+    getHederaClient() {
+        return this.hederaClient;
+    }
+    getHederaNetworkConfig() {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
     }
     sendTransaction(signedTransaction) {
         var _a;
@@ -581,7 +585,6 @@ export class BaseProvider extends Provider {
             const txBytes = arrayify(signedTransaction);
             const hederaTx = HederaTransaction.fromBytes(txBytes);
             const ethersTx = yield this.formatter.transaction(signedTransaction);
-            ethersTx.chainId = this._network.chainId;
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {
                 // TODO once we have fallback provider use `provider.perform("sendTransaction")`
@@ -645,65 +648,35 @@ export class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param transactionId - id of the transaction to search for
+     * @param txId - id of the transaction to search for
      */
-    getTransaction(transactionId) {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!this._mirrorNodeUrl)
-                logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
-            transactionId = yield transactionId;
-            //subsequent requests depend on finalized transaction
-            const epTransactions = '/api/v1/transactions/' + transactionId;
-            try {
-                let { data } = yield axios.get(this._mirrorNodeUrl + epTransactions);
-                let response = null;
-                if (data) {
-                    const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
-                    if (filtered.length > 0) {
-                        const transaction = filtered[0];
-                        const epContracts = '/api/v1/contracts/results/' + transactionId;
-                        response = Promise.all([
-                            axios.get(this._mirrorNodeUrl + epContracts)
-                        ])
-                            .then(([contracts]) => __awaiter(this, void 0, void 0, function* () {
-                            const mergedData = Object.assign(Object.assign({ chainId: this._network.chainId }, contracts.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
-                            return this.formatter.txRecordToTxResponse(mergedData);
-                        }))
-                            .catch(error => {
-                            throw error;
-                        });
-                    }
-                }
-                return response;
-            }
-            catch (error) {
-                if (error.response.status != 404) {
-                    logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                        method: "TransactionResponseQuery",
-                        error
-                    });
-                }
-                return null;
-            }
-        });
-    }
-    getTransactionReceipt(transactionId) {
+    getTransaction(txId) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
-            transactionId = yield transactionId;
-            try {
-                let receipt = yield new TransactionReceiptQuery()
-                    .setTransactionId(transactionId)
-                    .execute(this.hederaClient);
-                console.log("getTransactionReceipt: ", receipt);
-                return null;
-            }
-            catch (error) {
-                return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "TransactionGetReceiptQuery",
-                    error
-                });
-            }
+            txId = yield txId;
+            const ep = '/api/v1/transactions/' + txId;
+            let { data } = yield axios.get(this._mirrorNodeUrl + ep);
+            const filtered = data.transactions
+                .filter((e) => e.result === "SUCCESS");
+            return filtered.length > 0 ? filtered[0] : null;
+        });
+    }
+    getTransactionReceipt(transactionHash) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.getNetwork();
+            transactionHash = yield transactionHash;
+            const params = { transactionHash: this.formatter.hash(transactionHash, true) };
+            return poll(() => __awaiter(this, void 0, void 0, function* () {
+                const result = yield this.perform("getTransactionReceipt", params);
+                if (result == null) {
+                    return undefined;
+                }
+                // "geth-etc" returns receipts before they are ready
+                if (result.blockHash == null) {
+                    return undefined;
+                }
+                return this.formatter.receipt(result);
+            }), { oncePoll: this });
         });
     }
     getLogs(filter) {
@@ -711,6 +684,11 @@ export class BaseProvider extends Provider {
             yield this.getNetwork();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
             const logs = yield this.perform("getLogs", params);
+            logs.forEach((log) => {
+                if (log.removed == null) {
+                    log.removed = false;
+                }
+            });
             return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
         });
     }

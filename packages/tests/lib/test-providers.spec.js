@@ -1341,7 +1341,7 @@ describe("Test Hedera Provider", function () {
                 }
             });
         });
-    });
+    }).timeout(timeout * 4);
 });
 describe("Test Hedera Provider Formatters", function () {
     var timeout = 15000;

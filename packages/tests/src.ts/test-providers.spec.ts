@@ -1230,7 +1230,7 @@ describe("Test Hedera Provider", function () {
         const txId = `0.0.1546615-1641987871-235099329`;
         const record2 = await provider2.getTransaction(txId);
         assert.notStrictEqual(record2, null, "Record is null")
-    });
+    }).timeout(timeout*4);
 });
 
 describe("Test Hedera Provider Formatters", function () {

@@ -1,16 +1,8 @@
 "use strict";
 
 import {
-    BlockTag,
-    EventType,
-    Filter,
-    FilterByBlockHash,
-    Listener,
-    Log,
-    Provider,
-    TransactionReceipt,
-    TransactionRequest,
-    TransactionResponse
+    BlockTag, EventType, Filter, FilterByBlockHash,
+    Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
@@ -20,24 +12,17 @@ import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ether
 import { Transaction } from "@ethersproject/transactions";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
-
+import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { Formatter } from "./formatter";
-import { getAccountFromAddress } from "@ethersproject/address";
-import axios from "axios";
-import {
-    AccountId,
-    Client,
-    TransactionReceipt as HederaTransactionReceipt,
-    AccountBalanceQuery,
-    NetworkName,
-    Transaction as HederaTransaction
-} from "@hashgraph/sdk";
-
 const logger = new Logger(version);
+
+import { Formatter } from "./formatter";
+import { AccountLike, asAccountString } from "@ethersproject/address";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
+import axios from "axios";
 
 //////////////////////////////
 // Event Serializeing
@@ -60,7 +45,7 @@ function serializeTopics(topics: Array<string | Array<string>>): string {
         if (Array.isArray(topic)) {
 
             // Only track unique OR-topics
-            const unique: { [topic: string]: boolean } = {}
+            const unique: { [ topic: string ]: boolean } = { }
             topic.forEach((topic) => {
                 unique[checkTopic(topic)] = true;
             });
@@ -78,16 +63,16 @@ function serializeTopics(topics: Array<string | Array<string>>): string {
 }
 
 function deserializeTopics(data: string): Array<string | Array<string>> {
-    if (data === "") { return []; }
+    if (data === "") { return [ ]; }
 
     return data.split(/&/g).map((topic) => {
-        if (topic === "") { return []; }
+        if (topic === "") { return [ ]; }
 
         const comps = topic.split("|").map((topic) => {
-            return ((topic === "null") ? null : topic);
+            return ((topic === "null") ? null: topic);
         });
 
-        return ((comps.length === 1) ? comps[0] : comps);
+        return ((comps.length === 1) ? comps[0]: comps);
     });
 }
 
@@ -119,7 +104,7 @@ function stall(duration: number): Promise<void> {
  *   - transaction hash
  */
 
-const PollableEvents = ["block", "network", "pending", "poll"];
+const PollableEvents = [ "block", "network", "pending", "poll" ];
 
 export class Event {
     readonly listener: Listener;
@@ -135,9 +120,9 @@ export class Event {
     get event(): EventType {
         switch (this.type) {
             case "tx":
-                return this.hash;
+               return this.hash;
             case "filter":
-                return this.filter;
+               return this.filter;
         }
         return this.tag;
     }
@@ -158,7 +143,7 @@ export class Event {
         const address = comps[1];
 
         const topics = deserializeTopics(comps[2]);
-        const filter: Filter = {};
+        const filter: Filter = { };
 
         if (topics.length > 0) { filter.topics = topics; }
         if (address && address !== "*") { filter.address = address; }
@@ -207,12 +192,12 @@ type CoinInfo = {
 };
 
 // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-const coinInfos: { [coinType: string]: CoinInfo } = {
-    "0": { symbol: "btc", p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
-    "2": { symbol: "ltc", p2pkh: 0x30, p2sh: 0x32, prefix: "ltc" },
-    "3": { symbol: "doge", p2pkh: 0x1e, p2sh: 0x16 },
-    "60": { symbol: "eth", ilk: "eth" },
-    "61": { symbol: "etc", ilk: "eth" },
+const coinInfos: { [ coinType: string ]: CoinInfo } = {
+    "0":   { symbol: "btc",  p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
+    "2":   { symbol: "ltc",  p2pkh: 0x30, p2sh: 0x32, prefix: "ltc" },
+    "3":   { symbol: "doge", p2pkh: 0x1e, p2sh: 0x16 },
+    "60":  { symbol: "eth",  ilk: "eth" },
+    "61":  { symbol: "etc",  ilk: "eth" },
     "700": { symbol: "xdai", ilk: "eth" },
 };
 
@@ -222,7 +207,7 @@ function bytes32ify(value: number): string {
 
 // Compute the Base58Check encoded data (checksum is first 4 bytes of sha256d)
 function base58Encode(data: Uint8Array): string {
-    return Base58.encode(concat([data, hexDataSlice(sha256(sha256(data)), 0, 4)]));
+    return Base58.encode(concat([ data, hexDataSlice(sha256(sha256(data)), 0, 4) ]));
 }
 
 export interface Avatar {
@@ -266,8 +251,8 @@ export class Resolver implements EnsResolver {
         const coinInfo = coinInfos[String(coinType)];
 
         if (coinInfo == null) {
-            logger.throwError(`unsupported coin type: ${coinType}`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `getAddress(${coinType})`
+            logger.throwError(`unsupported coin type: ${ coinType }`, Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: `getAddress(${ coinType })`
             });
         }
 
@@ -283,7 +268,7 @@ export class Resolver implements EnsResolver {
             if (p2pkh) {
                 const length = parseInt(p2pkh[1], 16);
                 if (p2pkh[2].length === length * 2 && length >= 1 && length <= 75) {
-                    return base58Encode(concat([[coinInfo.p2pkh], ("0x" + p2pkh[2])]));
+                    return base58Encode(concat([ [ coinInfo.p2pkh ], ("0x" + p2pkh[2]) ]));
                 }
             }
         }
@@ -294,7 +279,7 @@ export class Resolver implements EnsResolver {
             if (p2sh) {
                 const length = parseInt(p2sh[1], 16);
                 if (p2sh[2].length === length * 2 && length >= 1 && length <= 75) {
-                    return base58Encode(concat([[coinInfo.p2sh], ("0x" + p2sh[2])]));
+                    return base58Encode(concat([ [ coinInfo.p2sh ], ("0x" + p2sh[2]) ]));
                 }
             }
         }
@@ -348,7 +333,7 @@ export class Resolver implements EnsResolver {
 
         if (address == null) {
             logger.throwError(`invalid or unsupported coin data`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `getAddress(${coinType})`,
+                operation: `getAddress(${ coinType })`,
                 coinType: coinType,
                 data: hexBytes
             });
@@ -395,11 +380,11 @@ export class Resolver implements EnsResolver {
 
         // The nodehash consumes the first slot, so the string pointer targets
         // offset 64, with the length at offset 64 and data starting at offset 96
-        keyBytes = concat([bytes32ify(64), bytes32ify(keyBytes.length), keyBytes]);
+        keyBytes = concat([ bytes32ify(64), bytes32ify(keyBytes.length), keyBytes ]);
 
         // Pad to word-size (32 bytes)
         if ((keyBytes.length % 32) !== 0) {
-            keyBytes = concat([keyBytes, hexZeroPad("0x", 32 - (key.length % 32))])
+            keyBytes = concat([ keyBytes, hexZeroPad("0x", 32 - (key.length % 32)) ])
         }
 
         const hexBytes = await this._fetchBytes("0x59d1d43c", hexlify(keyBytes));
@@ -484,10 +469,6 @@ export class BaseProvider extends Provider {
         }
 
         this._pollingInterval = 3000;
-    }
-
-    getHederaNetworkConfig(): AccountId[] {
-        return this.hederaClient._network.getNodeAccountIdsForExecute();
     }
 
     async _ready(): Promise<Network> {
@@ -618,28 +599,25 @@ export class BaseProvider extends Provider {
             reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
         });
     }
-    
+
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
      *
-     * @param addressOrName The address to check balance of
+     * @param accountLike The address to check balance of
      */
-    async getBalance(addressOrName: string | Promise<string>): Promise<BigNumber> {
-        addressOrName = await addressOrName;
-        const { shard, realm, num } = getAccountFromAddress(addressOrName);
-        const shardNum = BigNumber.from(shard).toNumber();
-        const realmNum = BigNumber.from(realm).toNumber();
-        const accountNum = BigNumber.from(num).toNumber();
+    async getBalance(accountLike: AccountLike | Promise<AccountLike>): Promise<BigNumber> {
+        accountLike = await accountLike;
+        const account = asAccountString(accountLike);
         try {
             const balance = await new AccountBalanceQuery()
-                .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                .setAccountId(AccountId.fromString(account))
                 .execute(this.hederaClient);
             return BigNumber.from(balance.hbars.toTinybars().toNumber());
         } catch (error) {
             return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                 method: "AccountBalanceQuery",
-                params: { address: addressOrName },
+                params: {address: accountLike},
                 error
             });
         }
@@ -693,9 +671,16 @@ export class BaseProvider extends Provider {
         return result;
     }
 
+    public getHederaClient() : Client {
+        return this.hederaClient;
+    }
+
+    public getHederaNetworkConfig(): AccountId[] {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
+    }
+
     async sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse> {
         signedTransaction = await signedTransaction;
-
         const txBytes = arrayify(signedTransaction);
         const hederaTx = HederaTransaction.fromBytes(txBytes);
         const ethersTx = await this.formatter.transaction(signedTransaction);
@@ -717,7 +702,7 @@ export class BaseProvider extends Provider {
     async _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash> {
         filter = await filter;
 
-        const result: any = {};
+        const result: any = { };
 
         if (filter.address != null) {
             result.address = this._getAddress(filter.address);
@@ -785,7 +770,7 @@ export class BaseProvider extends Provider {
                     };
                     return this.formatter.responseFromRecord(mergedData);
                 }
-            } 
+            }
             return response;
         } catch (error) {
             if (error.response.status != 404) {
@@ -928,7 +913,7 @@ export class BaseProvider extends Provider {
     }
 
     listeners(eventName?: EventType): Array<Listener> {
-       return null;
+        return null;
     }
 
     off(eventName: EventType, listener?: Listener): this {
