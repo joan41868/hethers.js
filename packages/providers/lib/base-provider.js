@@ -875,7 +875,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var transactionsEndpoint, data, response, filtered, transaction, contractsEndpoint, response_1, mergedData, error_4;
+            var transactionsEndpoint, data, result, filtered, transaction, contractsEndpoint, response, mergedData, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -891,7 +891,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + transactionsEndpoint)];
                     case 3:
                         data = (_a.sent()).data;
-                        response = null;
+                        result = null;
                         if (!data) return [3 /*break*/, 5];
                         filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
                         if (!(filtered.length > 0)) return [3 /*break*/, 5];
@@ -899,10 +899,10 @@ var BaseProvider = /** @class */ (function (_super) {
                         contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
                     case 4:
-                        response_1 = _a.sent();
-                        mergedData = __assign(__assign({ chainId: this._network.chainId }, response_1.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
+                        response = _a.sent();
+                        mergedData = __assign(__assign({ chainId: this._network.chainId }, response.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
                         return [2 /*return*/, this.formatter.responseFromRecord(mergedData)];
-                    case 5: return [2 /*return*/, response];
+                    case 5: return [2 /*return*/, result];
                     case 6:
                         error_4 = _a.sent();
                         if (error_4 && error_4.response && error_4.response.status != 404) {
@@ -917,7 +917,11 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    // TODO
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param transactionId - id of the transaction to search for
+     */
     BaseProvider.prototype.getTransactionReceipt = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {

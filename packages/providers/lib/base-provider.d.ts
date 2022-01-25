@@ -99,6 +99,11 @@ export declare class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse>;
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param transactionId - id of the transaction to search for
+     */
     getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;

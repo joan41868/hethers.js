@@ -339,10 +339,6 @@ var Formatter = /** @class */ (function () {
             data: record.call_result,
             gasLimit: bignumber_1.BigNumber.from(record.gas_limit),
             value: bignumber_1.BigNumber.from(record.amount),
-            accessList: null,
-            r: '',
-            s: '',
-            v: 0,
             customData: {
                 gas_used: record.gas_used,
                 logs: record.logs,

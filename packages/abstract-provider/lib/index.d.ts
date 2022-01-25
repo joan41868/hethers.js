@@ -46,7 +46,7 @@ export interface TransactionResponse extends Transaction {
     timestamp?: number;
     from: string;
     raw?: string;
-    wait: (confirmations?: number) => Promise<TransactionReceipt>;
+    wait: () => Promise<TransactionReceipt>;
     customData?: {
         [key: string]: any;
     };
