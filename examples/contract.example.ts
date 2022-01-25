@@ -1,33 +1,23 @@
 import * as hethers from "ethers";
-import { arrayify, getAccountFromAddress, getAddressFromAccount } from "ethers/lib/utils";
+import { arrayify, getAddressFromAccount } from "ethers/lib/utils";
 import {
 	AccountCreateTransaction,
 	PrivateKey,
 	Hbar,
 	Client,
-	Key as HederaKey, TransactionId, TransferTransaction, AccountId,
-	ContractCallQuery
+	Key as HederaKey, TransactionId
 } from "@hashgraph/sdk";
 import { readFileSync } from "fs";
-import { Key, TransactionBody, SignedTransaction } from "@hashgraph/proto";
-import * as Long from 'long';
-import { BigNumber } from "ethers";
+import { Key } from "@hashgraph/proto";
 
 const account = {
 	"operator": {
 		"accountId": "0.0.1365",
 		"publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
 		"privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
-	},
-	"network": {
-		"35.231.208.148:50211": "0.0.3",
-		"35.199.15.177:50211": "0.0.4",
-		"35.225.201.195:50211": "0.0.5",
-		"35.247.109.135:50211": "0.0.6"
 	}
 };
-// 0.0.18308
-// main
+
 (async () => {
 	/**
 	 * Start the client
@@ -35,13 +25,13 @@ const account = {
 	const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
 	const client = Client.forName("previewnet");
 	const nodeIds = client._network.getNodeAccountIdsForExecute();
-	const generatedWallet = hethers.Wallet.createRandom();
-	const provider = hethers.providers.getDefaultProvider('previewnet');
+	let wallet = hethers.Wallet.createRandom();
+
 	/**
 	 * Create an ECDSA key protobuf from the generated wallet
 	 */
 	const protoKey = Key.create({
-		ECDSASecp256k1: arrayify(generatedWallet._signingKey().compressedPublicKey)
+		ECDSASecp256k1: arrayify(wallet._signingKey().compressedPublicKey)
 	});
 	/**
 	 * Create the new account with the ECDSA key
@@ -56,17 +46,13 @@ const account = {
 		.sign(edPrivateKey))
 		.execute(client);
 	const receipt = await accountCreate.getReceipt(client);
+	const createdAcc = receipt.accountId || "0.0.0";
+
 	/**
-	 * Re-initialize the wallet in order to have the new accountId
+	 * Connect account
 	 */
-		// @ts-ignore
-	const newAccountId = receipt.accountId.toString();
-	const hederaEoa = {
-		account: newAccountId,
-		privateKey: '0xb6d37da410d04c8725db74834fa06fe01ff25e89c48f67e7d053837f1894d87c'
-	};
-	// @ts-ignore
-	const wallet = new hethers.Wallet(hederaEoa, provider);
+	wallet = wallet.connect(hethers.providers.getDefaultProvider('previewnet'))
+		.connectAccount(createdAcc.toString());
 
 	/**
 	 * Deploy a contract - OZ ERC20
@@ -74,8 +60,7 @@ const account = {
 	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
 	const contractCreateResponse = await wallet.sendTransaction({
 		data: contractByteCode,
-		gasLimit: 300000,
-		nodeId: nodeIds[0].toString()
+		gasLimit: 300000
 	});
 	console.log('contractCreate response:', contractCreateResponse);
 
@@ -83,9 +68,8 @@ const account = {
 	 * Instantiate the contract locally in order to interact with it
 	 */
 	const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
-	// @ts-ignore
-	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData.contractId, abi, wallet);
-	// hethers.
+	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData?.contractId, abi, wallet);
+
 	/**
 	 * The following lines call:
 	 * - approve function for 1000 tokens
@@ -116,13 +100,11 @@ const account = {
 	const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
 		await wallet.getAddress()
 	]);
-	const nodeID = nodeIds[0];
 
 	const balanceOfTx = {
 		to: contract.address,
 		gasLimit: 30000,
-		data: arrayify(balanceOfParams),
-		nodeId: nodeID.toString()
+		data: arrayify(balanceOfParams)
 	};
 	const balanceOfResponse = await wallet.call(balanceOfTx);
 	console.log('balanceOf response: ', balanceOfResponse);
