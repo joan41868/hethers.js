@@ -12,9 +12,9 @@ import { Key } from "@hashgraph/proto";
 
 const account = {
 	"operator": {
-		"accountId": "0.0.19041642",
-		"publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
-		"privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
+		"accountId": "0.0.1365",
+		"publicKey": "302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0",
+		"privateKey": "302e020100300506032b65700422042072874996deabc69bde7287a496295295b8129551903a79b895a9fd5ed025ece8"
 	}
 };
 
@@ -23,7 +23,7 @@ const account = {
 	 * Start the client
 	 */
 	const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
-	const client = Client.forName("testnet");
+	const client = Client.forName("previewnet");
 	const nodeIds = client._network.getNodeAccountIdsForExecute();
 	let wallet = hethers.Wallet.createRandom();
 
@@ -40,7 +40,7 @@ const account = {
 	const accountCreate = await (await new AccountCreateTransaction()
 		.setKey(newAccountKey)
 		.setTransactionId(TransactionId.generate(account.operator.accountId))
-		.setInitialBalance(new Hbar(10))
+		.setInitialBalance(new Hbar(100))
 		.setNodeAccountIds([ nodeIds[0] ])
 		.freeze()
 		.sign(edPrivateKey))
@@ -58,15 +58,18 @@ const account = {
 	 * Deploy a contract - OZ ERC20
 	 */
 	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
-	const deploymentTx = await wallet.sendTransaction({ data: contractByteCode, gasLimit: 300000 });
-	const deployment = await deploymentTx.wait();
-	console.log('ContractCreate:', deployment);
+	const deployTx = await wallet.sendTransaction({
+		data: contractByteCode,
+		gasLimit: 300000
+	});
+	const deploy = await deployTx.wait();
+	console.log('contractCreate response:', deploy);
 
 	/**
 	 * Instantiate the contract locally in order to interact with it
 	 */
 	const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
-	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData?.contractId, abi, wallet);
+	const contract = hethers.ContractFactory.getContract(deploy.contractAddress, abi, wallet);
 
 	/**
 	 * The following lines call:
@@ -84,7 +87,7 @@ const account = {
 		gasLimit: 100000
 	});
 	const approve = await approveTx.wait();
-	console.log('approve response: ', approve);
+	console.log('approve: ', approve);
 
 	const mintParams = contract.interface.encodeFunctionData('mint', [
 		1000
@@ -95,7 +98,7 @@ const account = {
 		gasLimit: 100000
 	});
 	const mint = await mintTx.wait();
-	console.log('mint response:', mint);
+	console.log('mint:', mint);
 
 	const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
 		await wallet.getAddress()

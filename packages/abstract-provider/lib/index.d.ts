@@ -87,6 +87,7 @@ export interface TransactionReceipt {
     timestamp: number;
     gasUsed: BigNumber;
     logsBloom: string;
+    transactionId: string;
     transactionHash: string;
     logs: Array<Log>;
     cumulativeGasUsed: BigNumber;

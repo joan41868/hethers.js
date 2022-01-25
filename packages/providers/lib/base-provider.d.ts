@@ -54,8 +54,6 @@ export declare class BaseProvider extends Provider {
     _network: Network;
     _events: Array<Event>;
     _pollingInterval: number;
-    private readonly MIRROR_NODE_TRANSACTIONS_ENDPOINT;
-    private readonly MIRROR_NODE_CONTRACTS_ENDPOINT;
     formatter: Formatter;
     readonly anyNetwork: boolean;
     private readonly hederaClient;

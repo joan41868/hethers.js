@@ -58,7 +58,7 @@ export interface TransactionResponse extends Transaction {
     timestamp?: number,
     from: string;
     raw?: string,
-    wait: (confirmations?: number) => Promise<TransactionReceipt>,
+    wait: () => Promise<TransactionReceipt>,
     customData?: {
         [key: string]:any;
     }
@@ -110,6 +110,7 @@ export interface TransactionReceipt {
     timestamp: number,
     gasUsed: BigNumber,
     logsBloom: string,
+    transactionId: string,
     transactionHash: string,
     logs: Array<Log>,
     cumulativeGasUsed: BigNumber,

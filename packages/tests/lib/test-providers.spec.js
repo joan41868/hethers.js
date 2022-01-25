@@ -1411,7 +1411,7 @@ describe("Test Hedera Provider Formatters", function () {
                     },
                     wait: null
                 };
-                transactionResponse = provider.formatter.txRecordToTxResponse(hederaTransactionResponse);
+                transactionResponse = provider.formatter.responseFromRecord(hederaTransactionResponse);
                 assert_1.default.strictEqual(transactionResponse.to, hederaTransactionResponse.to);
                 assert_1.default.strictEqual(transactionResponse.from, hederaTransactionResponse.from);
                 assert_1.default.strictEqual(transactionResponse.hash, hederaTransactionResponse.hash);
@@ -1498,7 +1498,7 @@ describe("Test Hedera Provider Formatters", function () {
                     type: 0,
                     status: 0
                 };
-                receipt = provider.formatter.txRecordToTxReceipt(transactionResponse);
+                receipt = provider.formatter.receiptFromResponse(transactionResponse);
                 assert_1.default.strictEqual(receipt.from, transactionResponse.from);
                 assert_1.default.strictEqual(receipt.to, transactionResponse.to);
                 assert_1.default.strictEqual(receipt.contractAddress, null);

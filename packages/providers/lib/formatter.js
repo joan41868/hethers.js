@@ -332,6 +332,7 @@ var Formatter = /** @class */ (function () {
         return {
             chainId: record.chainId,
             hash: record.hash,
+            timestamp: Number(record.timestamp),
             transactionId: record.transaction.transaction_id,
             from: record.from,
             to: record.to,
@@ -351,13 +352,10 @@ var Formatter = /** @class */ (function () {
         };
     };
     Formatter.prototype.receiptFromResponse = function (txRecord) {
-        var to = null;
+        var _a;
         var contractAddress = null;
         if (txRecord.customData.call_result != '0x') {
             contractAddress = txRecord.to;
-        }
-        else {
-            to = txRecord.to;
         }
         var logs = [];
         txRecord.customData.logs.forEach(function (log) {
@@ -372,18 +370,19 @@ var Formatter = /** @class */ (function () {
             logs.push(values);
         });
         return {
-            to: to,
+            to: txRecord.to,
             from: txRecord.from,
             timestamp: txRecord.timestamp,
             contractAddress: contractAddress,
             gasUsed: txRecord.customData.gas_used,
             logsBloom: null,
+            transactionId: txRecord.transactionId,
             transactionHash: txRecord.hash,
             logs: logs,
             cumulativeGasUsed: txRecord.customData.gas_used,
             type: 0,
             byzantium: true,
-            status: txRecord.customData.transaction.result === 'SUCCESS' ? 1 : 0
+            status: ((_a = txRecord.customData) === null || _a === void 0 ? void 0 : _a.result) === 'SUCCESS' ? 1 : 0
         };
     };
     Formatter.prototype.topics = function (value) {

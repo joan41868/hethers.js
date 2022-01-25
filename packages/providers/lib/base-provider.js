@@ -419,6 +419,8 @@ var Resolver = /** @class */ (function () {
 }());
 exports.Resolver = Resolver;
 var defaultFormatter = null;
+var MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
+var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
 var BaseProvider = /** @class */ (function (_super) {
     __extends(BaseProvider, _super);
     /**
@@ -882,7 +884,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, transactionId];
                     case 1:
                         transactionId = _a.sent();
-                        transactionsEndpoint = this.MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
+                        transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
                         _a.label = 2;
                     case 2:
                         _a.trys.push([2, 6, , 7]);
@@ -894,7 +896,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
                         if (!(filtered.length > 0)) return [3 /*break*/, 5];
                         transaction = filtered[0];
-                        contractsEndpoint = this.MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                        contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
                     case 4:
                         response_1 = _a.sent();
@@ -903,7 +905,7 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 5: return [2 /*return*/, response];
                     case 6:
                         error_4 = _a.sent();
-                        if (error_4.response.status != 404) {
+                        if (error_4 && error_4.response && error_4.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "TransactionResponseQuery",
                                 error: error_4

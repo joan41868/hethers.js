@@ -181,8 +181,8 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 
 	signTransaction(transaction: TransactionRequest): Promise<string> {
 		this._checkAddress('signTransaction');
-		this.checkTransaction(transaction);
-		return this.populateTransaction(transaction).then(async readyTx => {
+		let tx = this.checkTransaction(transaction);
+		return this.populateTransaction(tx).then(async readyTx => {
 			const tx = serializeHederaTransaction(readyTx);
 			const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
 			const signed = await tx.sign(pkey);

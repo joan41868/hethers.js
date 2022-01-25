@@ -395,6 +395,8 @@ export class Resolver implements EnsResolver {
 }
 
 let defaultFormatter: Formatter = null;
+const MIRROR_NODE_TRANSACTIONS_ENDPOINT =  '/api/v1/transactions/';
+const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
 
 export class BaseProvider extends Provider {
     _networkPromise: Promise<Network>;
@@ -404,8 +406,6 @@ export class BaseProvider extends Provider {
 
     _pollingInterval: number;
 
-    private readonly MIRROR_NODE_TRANSACTIONS_ENDPOINT: '/api/v1/transactions/';
-    private readonly MIRROR_NODE_CONTRACTS_ENDPOINT: '/api/v1/contracts/results/';
 
     formatter: Formatter;
 
@@ -752,15 +752,15 @@ export class BaseProvider extends Provider {
 
         transactionId = await transactionId;
 
-        const transactionsEndpoint = this.MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
+        const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
         try {
             let { data } = await axios.get(this._mirrorNodeUrl + transactionsEndpoint);
-            let response = null;
+            let result = null;
             if (data) {
                 const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
                 if (filtered.length > 0) {
                     const transaction = filtered[0];
-                    const contractsEndpoint = this.MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                    const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
 
                     const response = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
                     const mergedData = {
@@ -771,9 +771,9 @@ export class BaseProvider extends Provider {
                     return this.formatter.responseFromRecord(mergedData);
                 }
             }
-            return response;
+            return result;
         } catch (error) {
-            if (error.response.status != 404) {
+            if (error && error.response && error.response.status != 404) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "TransactionResponseQuery",
                     error
@@ -783,7 +783,11 @@ export class BaseProvider extends Provider {
         }
     }
 
-    // TODO
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param transactionId - id of the transaction to search for
+     */
     async getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt> {
         return logger.throwError("getTransactionReceipt not implemented", Logger.errors.NOT_IMPLEMENTED, {
             operation: 'getTransactionReceipt'

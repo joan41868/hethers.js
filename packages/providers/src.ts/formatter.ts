@@ -399,16 +399,13 @@ export class Formatter {
         return {
             chainId: record.chainId,
             hash: record.hash,
+            timestamp: Number(record.timestamp),
             transactionId: record.transaction.transaction_id,
             from: record.from,
             to: record.to,
             data: record.call_result,
             gasLimit: BigNumber.from(record.gas_limit),
             value: BigNumber.from(record.amount),
-            accessList: null,
-            r: '',
-            s: '',
-            v: 0,
             customData: {
                 gas_used: record.gas_used,
                 logs: record.logs,
@@ -419,12 +416,9 @@ export class Formatter {
     }
 
     receiptFromResponse(txRecord: TransactionResponse): TransactionReceipt {
-        let to = null;
         let contractAddress = null;
         if (txRecord.customData.call_result != '0x') {
             contractAddress = txRecord.to;
-        } else {
-            to = txRecord.to;
         }
         let logs: Log[] = [];
         txRecord.customData.logs.forEach(function (log: any) {
@@ -439,18 +433,19 @@ export class Formatter {
             logs.push(values);
         });
         return {
-            to: to,
+            to: txRecord.to,
             from: txRecord.from,
             timestamp: txRecord.timestamp,
             contractAddress: contractAddress,
             gasUsed: txRecord.customData.gas_used,
             logsBloom: null, //to be provided by hedera rest api
+            transactionId: txRecord.transactionId,
             transactionHash: txRecord.hash,
             logs: logs,
             cumulativeGasUsed: txRecord.customData.gas_used,
             type: 0,
             byzantium: true,
-            status: txRecord.customData.transaction.result === 'SUCCESS' ? 1 : 0
+            status: txRecord.customData?.result === 'SUCCESS' ? 1 : 0
         }
     }
 
