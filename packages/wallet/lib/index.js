@@ -234,6 +234,13 @@ var Wallet = /** @class */ (function (_super) {
         return (0, json_wallets_1.encryptKeystore)(this, password, options, progressCallback);
     };
     /**
+     * Performs a contract local call (ContractCallQuery) against the given contract in the provider's network.
+     * In the future, this method should automatically perform getCost and apply the results for gasLimit/txFee.
+     * TODO: utilize getCost when implemented
+     *
+     * @param txRequest - the call request to be submitted
+     */
+    /**
      *  Static methods to create Wallet instances.
      */
     Wallet.createRandom = function (options) {

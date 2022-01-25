@@ -1,5 +1,11 @@
-import { Account, AccountLike, getAccountFromAddress, getAddress, getAddressFromAccount } from "@ethersproject/address";
-import {Provider, TransactionRequest} from "@ethersproject/abstract-provider";
+import {
+	Account,
+	AccountLike,
+	getAccountFromAddress,
+	getAddress,
+	getAddressFromAccount
+} from "@ethersproject/address";
+import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
 import {
 	ExternallyOwnedAccount,
 	Signer,
@@ -20,7 +26,7 @@ import {
 import { hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@ethersproject/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
-import {defineReadOnly} from "@ethersproject/properties";
+import { defineReadOnly } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
 import { SigningKey, recoverPublicKey } from "@ethersproject/signing-key";
 import {
@@ -210,6 +216,14 @@ export class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataS
 
 		return encryptKeystore(this, password, options, progressCallback);
 	}
+
+	/**
+	 * Performs a contract local call (ContractCallQuery) against the given contract in the provider's network.
+	 * In the future, this method should automatically perform getCost and apply the results for gasLimit/txFee.
+	 * TODO: utilize getCost when implemented
+	 *
+	 * @param txRequest - the call request to be submitted
+	 */
 
 	/**
 	 *  Static methods to create Wallet instances.
