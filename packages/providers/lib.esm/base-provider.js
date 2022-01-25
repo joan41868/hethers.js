@@ -22,8 +22,8 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
-import { getAccountFromAddress } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
+import { asAccountString } from "@ethersproject/address";
+import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction, ContractCallQuery } from "@hashgraph/sdk";
 import axios from "axios";
 //////////////////////////////
 // Event Serializeing
@@ -481,25 +481,22 @@ export class BaseProvider extends Provider {
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
      *
-     * @param addressOrName The address to check balance of
+     * @param accountLike The address to check balance of
      */
-    getBalance(addressOrName) {
+    getBalance(accountLike) {
         return __awaiter(this, void 0, void 0, function* () {
-            addressOrName = yield addressOrName;
-            const { shard, realm, num } = getAccountFromAddress(addressOrName);
-            const shardNum = BigNumber.from(shard).toNumber();
-            const realmNum = BigNumber.from(realm).toNumber();
-            const accountNum = BigNumber.from(num).toNumber();
+            accountLike = yield accountLike;
+            const account = asAccountString(accountLike);
             try {
                 const balance = yield new AccountBalanceQuery()
-                    .setAccountId(new AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                    .setAccountId(AccountId.fromString(account))
                     .execute(this.hederaClient);
                 return BigNumber.from(balance.hbars.toTinybars().toNumber());
             }
             catch (error) {
                 return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "AccountBalanceQuery",
-                    params: { address: addressOrName },
+                    params: { address: accountLike },
                     error
                 });
             }
@@ -585,8 +582,21 @@ export class BaseProvider extends Provider {
         var _a;
         return __awaiter(this, void 0, void 0, function* () {
             signedTransaction = yield signedTransaction;
+            let hederaTx;
             const txBytes = arrayify(signedTransaction);
-            const hederaTx = HederaTransaction.fromBytes(txBytes);
+            try {
+                hederaTx = HederaTransaction.fromBytes(txBytes);
+            }
+            catch (ignore) {
+                // It's a query
+                // FIXME: ser/des is not working properly - it's losing the payment tx id + node ids
+                hederaTx = ContractCallQuery.fromBytes(txBytes);
+                console.log('HederaTX in provider:', hederaTx);
+                const resp = yield hederaTx.execute(this.hederaClient);
+                console.log('QueryResponse', resp);
+                // TODO: map and return something
+                return null;
+            }
             const ethersTx = yield this.formatter.transaction(signedTransaction);
             const txHash = hexlify(yield hederaTx.getTransactionHash());
             try {

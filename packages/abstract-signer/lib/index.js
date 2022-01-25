@@ -91,7 +91,7 @@ function checkError(method, error, txRequest) {
     switch (error.status._code) {
         // insufficient gas
         case 30:
-            return logger.throwError("insufficient funds for gas cost", logger_1.Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
+            return logger.throwError("insufficient funds for gas cost", logger_1.Logger.errors.CALL_EXCEPTION, { tx: txRequest });
         // insufficient payer balance
         case 10:
             return logger.throwError("insufficient funds in payer account", logger_1.Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
@@ -106,8 +106,7 @@ function checkError(method, error, txRequest) {
             return logger.throwError("invalid contract address", logger_1.Logger.errors.INVALID_ARGUMENT, { tx: txRequest });
         // contract revert
         case 33:
-            // is this the right thing to return for hedera? CALL_EXCEPTION ?
-            return logger.throwError("contract execution reverted", logger_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: txRequest });
+            return logger.throwError("contract execution reverted", logger_1.Logger.errors.CALL_EXCEPTION, { tx: txRequest });
     }
     throw error;
 }
@@ -167,7 +166,7 @@ var Signer = /** @class */ (function () {
     // super classes should override this for now
     Signer.prototype.call = function (txRequest) {
         return __awaiter(this, void 0, void 0, function () {
-            var tx, contractAccountLikeID, contractId, thisAcc, _a, thisAccId, nodeID, paymentTxId, hederaTx, cost, paymentBody, signed, walletKey, signature, transferSignedTransactionBytes, response, error_1;
+            var tx, to, from, _a, nodeID, paymentTxId, hederaTx, cost, paymentBody, signed, walletKey, signature, transferSignedTransactionBytes, response, error_1;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -175,17 +174,15 @@ var Signer = /** @class */ (function () {
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(this.checkTransaction(txRequest))];
                     case 1:
                         tx = _b.sent();
-                        contractAccountLikeID = (0, address_1.getAccountFromAddress)(tx.to.toString());
-                        contractId = (0, address_1.asAccountString)(contractAccountLikeID);
-                        _a = address_1.getAccountFromAddress;
+                        to = (0, address_1.asAccountString)(tx.to);
+                        _a = address_1.asAccountString;
                         return [4 /*yield*/, this.getAddress()];
                     case 2:
-                        thisAcc = _a.apply(void 0, [_b.sent()]);
-                        thisAccId = (0, address_1.asAccountString)(thisAcc);
+                        from = _a.apply(void 0, [_b.sent()]);
                         nodeID = sdk_1.AccountId.fromString((0, address_1.asAccountString)(tx.nodeId));
-                        paymentTxId = sdk_1.TransactionId.generate(thisAccId);
+                        paymentTxId = sdk_1.TransactionId.generate(from);
                         hederaTx = new sdk_1.ContractCallQuery()
-                            .setContractId(contractId)
+                            .setContractId(to)
                             .setFunctionParameters((0, bytes_1.arrayify)(tx.data))
                             .setNodeAccountIds([nodeID])
                             .setGas((0, bignumber_1.numberify)(tx.gasLimit))
@@ -203,7 +200,7 @@ var Signer = /** @class */ (function () {
                                 transfers: {
                                     accountAmounts: [
                                         {
-                                            accountID: sdk_1.AccountId.fromString(thisAccId)._toProtobuf(),
+                                            accountID: sdk_1.AccountId.fromString(from)._toProtobuf(),
                                             amount: new sdk_1.Hbar(cost).negated().toTinybars()
                                         },
                                         {

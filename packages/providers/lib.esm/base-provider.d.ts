@@ -5,6 +5,7 @@ import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
 import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
+import { AccountLike } from "@ethersproject/address";
 import { AccountId, Client } from "@hashgraph/sdk";
 export declare class Event {
     readonly listener: Listener;
@@ -85,9 +86,9 @@ export declare class BaseProvider extends Provider {
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
      *
-     * @param addressOrName The address to check balance of
+     * @param accountLike The address to check balance of
      */
-    getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
+    getBalance(accountLike: AccountLike | Promise<AccountLike>): Promise<BigNumber>;
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
     getHederaClient(): Client;

@@ -723,7 +723,7 @@ describe("Account like to string", function () {
     });
 
     it("Should throw on random string", async function() {
-        const notReallyAccountLike = "kur";
+        const notReallyAccountLike = "foo";
         try {
             asAccountString(notReallyAccountLike);
         } catch (e) {
@@ -762,8 +762,7 @@ describe("EIP-712", function() {
         if (!test.privateKey) { return; }
         it(`signing ${ test.name }`, async function() {
             const wallet = new ethers.Wallet(test.privateKey);
-            const signature = await wallet._signTypedData(test.domain, test.types, test.data);
-            assert.equal(signature, test.signature, "signature");
+            await assert.rejects(wallet._signTypedData(test.domain, test.types, test.data), '_signTypedData not supported');
         });
     });
 });

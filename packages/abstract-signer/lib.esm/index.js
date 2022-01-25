@@ -13,7 +13,7 @@ import { arrayify, hexStripZeros } from "@ethersproject/bytes";
 import { defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { asAccountString, getAccountFromAddress, getAddressFromAccount, getChecksumAddress } from "@ethersproject/address";
+import { asAccountString, getAddressFromAccount, getChecksumAddress } from "@ethersproject/address";
 import { AccountId, ContractCallQuery, Hbar, PrivateKey, PublicKey as HederaPubKey, TransactionId } from "@hashgraph/sdk";
 import * as Long from "long";
 import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
@@ -28,7 +28,7 @@ function checkError(method, error, txRequest) {
     switch (error.status._code) {
         // insufficient gas
         case 30:
-            return logger.throwError("insufficient funds for gas cost", Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
+            return logger.throwError("insufficient funds for gas cost", Logger.errors.CALL_EXCEPTION, { tx: txRequest });
         // insufficient payer balance
         case 10:
             return logger.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
@@ -43,8 +43,7 @@ function checkError(method, error, txRequest) {
             return logger.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT, { tx: txRequest });
         // contract revert
         case 33:
-            // is this the right thing to return for hedera? CALL_EXCEPTION ?
-            return logger.throwError("contract execution reverted", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: txRequest });
+            return logger.throwError("contract execution reverted", Logger.errors.CALL_EXCEPTION, { tx: txRequest });
     }
     throw error;
 }
@@ -83,14 +82,12 @@ export class Signer {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("call");
             const tx = yield resolveProperties(this.checkTransaction(txRequest));
-            const contractAccountLikeID = getAccountFromAddress(tx.to.toString());
-            const contractId = asAccountString(contractAccountLikeID);
-            const thisAcc = getAccountFromAddress(yield this.getAddress());
-            const thisAccId = asAccountString(thisAcc);
+            const to = asAccountString(tx.to);
+            const from = asAccountString(yield this.getAddress());
             const nodeID = AccountId.fromString(asAccountString(tx.nodeId));
-            const paymentTxId = TransactionId.generate(thisAccId);
+            const paymentTxId = TransactionId.generate(from);
             const hederaTx = new ContractCallQuery()
-                .setContractId(contractId)
+                .setContractId(to)
                 .setFunctionParameters(arrayify(tx.data))
                 .setNodeAccountIds([nodeID])
                 .setGas(numberify(tx.gasLimit))
@@ -109,7 +106,7 @@ export class Signer {
                     transfers: {
                         accountAmounts: [
                             {
-                                accountID: AccountId.fromString(thisAccId)._toProtobuf(),
+                                accountID: AccountId.fromString(from)._toProtobuf(),
                                 amount: new Hbar(cost).negated().toTinybars()
                             },
                             {

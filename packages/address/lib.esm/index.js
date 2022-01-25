@@ -6,24 +6,9 @@ import { encode } from "@ethersproject/rlp";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
-export function asAccountString(acc) {
-    if (typeof acc === "string") {
-        if (acc.startsWith("0x")) {
-            acc = getAccountFromAddress(acc);
-            return `${acc.shard}.${acc.realm}.${acc.num}`;
-        }
-        else if (!isNaN(parseInt(acc[0]))) {
-        }
-        else {
-            return logger.throwArgumentError("provided argument is not account-like", Logger.errors.INVALID_ARGUMENT, {
-                acc
-            });
-        }
-        return acc;
-    }
-    else {
-        return `${acc.shard}.${acc.realm}.${acc.num}`;
-    }
+export function asAccountString(accountLike) {
+    let parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
+    return `${parsedAccount.shard}.${parsedAccount.realm}.${parsedAccount.num}`;
 }
 export function getChecksumAddress(address) {
     if (!isHexString(address, 20)) {
