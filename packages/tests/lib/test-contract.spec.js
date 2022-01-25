@@ -43,7 +43,7 @@ var assert_1 = __importDefault(require("assert"));
 var ethers_1 = require("ethers");
 var test_contract_json_1 = __importDefault(require("./test-contract.json"));
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
-var provider = ethers_1.ethers.getDefaultProvider("rinkeby");
+var provider = ethers_1.ethers.getDefaultProvider("testnet");
 var TIMEOUT_PERIOD = 120000;
 var contract = (function () {
     return new ethers_1.ethers.Contract(test_contract_json_1.default.contractAddress, test_contract_json_1.default.interface, provider);
@@ -200,7 +200,7 @@ describe("Test Contract Transaction Population", function () {
     var testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     var fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
     var contract = new ethers_1.ethers.Contract(testAddress, abi);
-    var contractConnected = contract.connect(ethers_1.ethers.getDefaultProvider("homestead"));
+    var contractConnected = contract.connect(ethers_1.ethers.getDefaultProvider("testnet"));
     xit("standard population", function () {
         return __awaiter(this, void 0, void 0, function () {
             var tx;
