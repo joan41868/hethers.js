@@ -181,6 +181,20 @@ export class Wallet extends Signer {
         const mnemonic = entropyToMnemonic(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     }
+    createAccount(pubKey, initialBalance) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!initialBalance)
+                initialBalance = BigInt(0);
+            const signed = yield this.signTransaction({
+                customData: {
+                    publicKey: pubKey,
+                    initialBalance
+                }
+            });
+            return this.provider.sendTransaction(signed);
+        });
+    }
+    ;
     static fromEncryptedJson(json, password, progressCallback) {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
             return new Wallet(account);
