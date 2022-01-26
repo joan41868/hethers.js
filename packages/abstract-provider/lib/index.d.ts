@@ -43,10 +43,10 @@ export declare type HederaTransactionRecord = {
 };
 export interface TransactionResponse extends Transaction {
     hash: string;
-    timestamp?: number;
+    timestamp?: string;
     from: string;
     raw?: string;
-    wait: () => Promise<TransactionReceipt>;
+    wait: (timestamp?: number) => Promise<TransactionReceipt>;
     customData?: {
         [key: string]: any;
     };
@@ -73,7 +73,7 @@ export interface BlockWithTransactions extends _Block {
     transactions: Array<TransactionResponse>;
 }
 export interface Log {
-    timestamp: number;
+    timestamp: string;
     address: string;
     data: string;
     topics: Array<string>;
@@ -84,7 +84,7 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string;
-    timestamp: number;
+    timestamp: string;
     gasUsed: BigNumber;
     logsBloom: string;
     transactionId: string;

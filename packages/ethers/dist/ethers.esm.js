@@ -9178,7 +9178,6 @@ const version$9 = "abstract-provider/5.5.1";
 
 "use strict";
 const logger$e = new Logger(version$9);
-;
 //export type CallTransactionable = {
 //    call(transaction: TransactionRequest): Promise<TransactionResponse>;
 //};
@@ -22374,36 +22373,50 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$1 = keccak(256);
 
-var name = "elliptic";
-var version$b = "6.5.4";
-var description = "EC cryptography";
-var main = "lib/elliptic.js";
-var files = [
-	"lib"
-];
-var scripts = {
-	lint: "eslint lib test",
-	"lint:fix": "npm run lint -- --fix",
-	unit: "istanbul test _mocha --reporter=spec test/index.js",
-	test: "npm run lint && npm run unit",
-	version: "grunt dist && git add dist/"
+var _from = "elliptic@6.5.4";
+var _id = "elliptic@6.5.4";
+var _inBundle = false;
+var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
+var _location = "/elliptic";
+var _phantomChildren = {
 };
-var repository = {
-	type: "git",
-	url: "git@github.com:indutny/elliptic"
+var _requested = {
+	type: "version",
+	registry: true,
+	raw: "elliptic@6.5.4",
+	name: "elliptic",
+	escapedName: "elliptic",
+	rawSpec: "6.5.4",
+	saveSpec: null,
+	fetchSpec: "6.5.4"
 };
-var keywords = [
-	"EC",
-	"Elliptic",
-	"curve",
-	"Cryptography"
+var _requiredBy = [
+	"/",
+	"/@hashgraph/cryptography"
 ];
-var author = "Fedor Indutny <fedor@indutny.com>";
-var license = "MIT";
+var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
+var _shasum = "da37cebd31e79a1367e941b592ed1fbebd58abbb";
+var _spec = "elliptic@6.5.4";
+var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
+var author = {
+	name: "Fedor Indutny",
+	email: "fedor@indutny.com"
+};
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
-var homepage = "https://github.com/indutny/elliptic";
+var bundleDependencies = false;
+var dependencies = {
+	"bn.js": "^4.11.9",
+	brorand: "^1.1.0",
+	"hash.js": "^1.0.0",
+	"hmac-drbg": "^1.0.1",
+	inherits: "^2.0.4",
+	"minimalistic-assert": "^1.0.1",
+	"minimalistic-crypto-utils": "^1.0.1"
+};
+var deprecated = false;
+var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
 	coveralls: "^3.1.0",
@@ -22419,36 +22432,60 @@ var devDependencies = {
 	istanbul: "^0.4.5",
 	mocha: "^8.0.1"
 };
-var dependencies = {
-	"bn.js": "^4.11.9",
-	brorand: "^1.1.0",
-	"hash.js": "^1.0.0",
-	"hmac-drbg": "^1.0.1",
-	inherits: "^2.0.4",
-	"minimalistic-assert": "^1.0.1",
-	"minimalistic-crypto-utils": "^1.0.1"
+var files = [
+	"lib"
+];
+var homepage = "https://github.com/indutny/elliptic";
+var keywords = [
+	"EC",
+	"Elliptic",
+	"curve",
+	"Cryptography"
+];
+var license = "MIT";
+var main = "lib/elliptic.js";
+var name = "elliptic";
+var repository = {
+	type: "git",
+	url: "git+ssh://git@github.com/indutny/elliptic.git"
 };
-var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
-var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
-var _from = "elliptic@6.5.4";
+var scripts = {
+	lint: "eslint lib test",
+	"lint:fix": "npm run lint -- --fix",
+	test: "npm run lint && npm run unit",
+	unit: "istanbul test _mocha --reporter=spec test/index.js",
+	version: "grunt dist && git add dist/"
+};
+var version$b = "6.5.4";
 var require$$0 = {
-	name: name,
-	version: version$b,
-	description: description,
-	main: main,
-	files: files,
-	scripts: scripts,
-	repository: repository,
-	keywords: keywords,
-	author: author,
-	license: license,
-	bugs: bugs,
-	homepage: homepage,
-	devDependencies: devDependencies,
-	dependencies: dependencies,
-	_resolved: _resolved,
+	_from: _from,
+	_id: _id,
+	_inBundle: _inBundle,
 	_integrity: _integrity,
-	_from: _from
+	_location: _location,
+	_phantomChildren: _phantomChildren,
+	_requested: _requested,
+	_requiredBy: _requiredBy,
+	_resolved: _resolved,
+	_shasum: _shasum,
+	_spec: _spec,
+	_where: _where,
+	author: author,
+	bugs: bugs,
+	bundleDependencies: bundleDependencies,
+	dependencies: dependencies,
+	deprecated: deprecated,
+	description: description,
+	devDependencies: devDependencies,
+	files: files,
+	homepage: homepage,
+	keywords: keywords,
+	license: license,
+	main: main,
+	name: name,
+	repository: repository,
+	scripts: scripts,
+	version: version$b
 };
 
 var minimalisticAssert = assert;
@@ -39685,7 +39722,7 @@ const COST_QUERY = [];
 /**
  * The ID for a crypto-currency contract on Hedera.
  */
-class ContractId extends Key {
+class ContractId extends Key$1 {
     /**
      * @param {number | Long | import("../EntityIdHelper").IEntityId} props
      * @param {(number | Long)=} realm
@@ -40161,10 +40198,6 @@ class TokenDecimalMap extends ObjectMap {
  * @typedef {object} AccountBalanceJson
  * @property {string} hbars
  * @property {TokenBalanceJson[]} tokens
- */
-
-/**
- * @typedef {import("@hashgraph/cryptography").Key} Key
  */
 
 class AccountBalance {
@@ -43457,7 +43490,7 @@ class TransactionHashMap extends ObjectMap {
  */
 class NodeAccountIdSignatureMap extends ObjectMap {
     constructor() {
-        super((s) => PublicKey.fromString(s));
+        super((s) => PublicKey$1.fromString(s));
     }
 
     /**
@@ -43470,11 +43503,18 @@ class NodeAccountIdSignatureMap extends ObjectMap {
         const sigPairs = sigMap.sigPair != null ? sigMap.sigPair : [];
 
         for (const sigPair of sigPairs) {
-            if (sigPair.pubKeyPrefix != null && sigPair.ed25519 != null) {
-                signatures._set(
-                    PublicKey.fromBytes(sigPair.pubKeyPrefix),
-                    sigPair.ed25519
-                );
+            if (sigPair.pubKeyPrefix != null) {
+                if (sigPair.ed25519 != null) {
+                    signatures._set(
+                        PublicKey$1.fromBytesED25519(sigPair.pubKeyPrefix),
+                        sigPair.ed25519
+                    );
+                } else if (sigPair.ECDSASecp256k1 != null) {
+                    signatures._set(
+                        PublicKey$1.fromBytesECDSA(sigPair.pubKeyPrefix),
+                        sigPair.ECDSASecp256k1
+                    );
+                }
             }
         }
 
@@ -44292,7 +44332,11 @@ class Transaction extends Executable {
             this._nextTransactionIndex * this._nodeIds.length +
             this._nextNodeIndex;
 
-        await this._buildTransactionAsync(index);
+        if (this._signOnDemand) {
+            await this._buildTransactionAsync(index);
+        } else {
+            this._buildTransaction(index);
+        }
 
         return /** @type {proto.ITransaction} */ (this._transactions[index]);
     }
@@ -44376,6 +44420,8 @@ class Transaction extends Executable {
                 this._transactions.push(null);
             }
         }
+
+        // console.log(JSON.stringify(this._signedTransactions[index]));
 
         this._transactions[index] = {
             signedTransactionBytes: lib.SignedTransaction.encode(
@@ -46957,14 +47003,13 @@ QUERY_REGISTRY.set("contractGetBytecode", ContractByteCodeQuery._fromProtobuf);
 // https://github.com/MaiaVictor/eth-lib/blob/da0971f5b09964d9c8449975fa87933f0c9fef35/src/hash.js
 //  - added type declarations
 //  - switched to es6 module syntax
+//
+// Disable linting for entire file because it's nearly all pure JS
+// eslint-disable
 
-/** @type {number[]} */
+const HEX_CHARS$1 = "0123456789abcdef".split("");
 const KECCAK_PADDING$1 = [1, 256, 65536, 16777216];
-
-/** @type {number[]} */
 const SHIFT$1 = [0, 8, 16, 24];
-
-/** @type {number[]} */
 const RC$1 = [
     1, 0, 32898, 0, 32906, 2147483648, 2147516416, 2147483648, 32907, 0,
     2147483649, 0, 2147516545, 2147483648, 32777, 2147483648, 138, 0, 136, 0,
@@ -46975,7 +47020,7 @@ const RC$1 = [
 ];
 
 /**
- * @typedef {object} Keccak
+ * @typedef {object} KeccakT
  * @property {number[]} blocks
  * @property {number} blockCount
  * @property {number} outputBlocks
@@ -46983,45 +47028,23 @@ const RC$1 = [
  * @property {number} start
  * @property {number} block
  * @property {boolean} reset
- * @property {?number} lastByteIndex
+ * @property {number=} lastByteIndex
  */
 
-/**
- * @param {number} bits
- * @returns {Keccak}
- */
-function createKeccakState(bits) {
-    return {
-        blocks: [],
-        reset: true,
-        block: 0,
-        start: 0,
-        lastByteIndex: null,
-        blockCount: (1600 - (bits << 1)) >> 5,
-        outputBlocks: bits >> 5,
-        s: zeroFill(50),
-    };
-}
+/** @type {(bits: number) => KeccakT} */
+const Keccak$1 = (bits) => ({
+    blocks: [],
+    reset: true,
+    block: 0,
+    start: 0,
+    blockCount: (1600 - (bits << 1)) >> 5,
+    outputBlocks: bits >> 5,
+    // @ts-ignore
+    s: ((s) => [].concat(s, s, s, s, s))([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+});
 
-/**
- * @param {number} n
- * @returns {number[]}
- */
-function zeroFill(n) {
-    /** @type {number[]} */
-    let arr = Array(n);
-
-    for (let i = 0; i < n; ++i) arr[i] = 0;
-
-    return arr;
-}
-
-/**
- * @param {Keccak} state
- * @param {string | Uint8Array} message
- * @returns {Uint8Array}
- */
-function update$1(state, message) {
+/** @type {(state: KeccakT, message: string | number[]) => string} */
+const update$1 = (state, /** @type {string | number[]} */ message) => {
     var length = message.length,
         blocks = state.blocks,
         byteCount = state.blockCount << 2,
@@ -47029,7 +47052,7 @@ function update$1(state, message) {
         outputBlocks = state.outputBlocks,
         s = state.s,
         index = 0,
-        i = 0,
+        i,
         code;
 
     // update
@@ -47041,35 +47064,35 @@ function update$1(state, message) {
                 blocks[i] = 0;
             }
         }
-        for (i = state.start; index < length && i < byteCount; ++index) {
-            code =
-                typeof message === "string"
-                    ? message.charCodeAt(index)
-                    : message[index];
-            if (code < 0x80) {
-                blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
-            } else if (code < 0x800) {
-                blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-            } else if (code < 0xd800 || code >= 0xe000) {
-                blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |=
-                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-            } else {
-                code =
-                    0x10000 +
-                    (((code & 0x3ff) << 10) |
-                        ((typeof message === "string"
-                            ? message.charCodeAt(++index)
-                            : message[++index]) &
-                            0x3ff));
-                blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |=
-                    (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |=
-                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+        if (typeof message !== "string") {
+            for (i = state.start; index < length && i < byteCount; ++index) {
+                blocks[i >> 2] |= message[index] << SHIFT$1[i++ & 3];
+            }
+        } else {
+            for (i = state.start; index < length && i < byteCount; ++index) {
+                code = message.charCodeAt(index);
+                if (code < 0x80) {
+                    blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
+                } else if (code < 0x800) {
+                    blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+                } else if (code < 0xd800 || code >= 0xe000) {
+                    blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |=
+                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+                } else {
+                    code =
+                        0x10000 +
+                        (((code & 0x3ff) << 10) |
+                            (message.charCodeAt(++index) & 0x3ff));
+                    blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |=
+                        (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |=
+                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+                }
             }
         }
         state.lastByteIndex = i;
@@ -47087,9 +47110,9 @@ function update$1(state, message) {
     }
 
     // finalize
-    i = /** @type {number} */ (state.lastByteIndex);
+    i = state.lastByteIndex;
+    // @ts-ignore
     blocks[i >> 2] |= KECCAK_PADDING$1[i & 3];
-
     if (state.lastByteIndex === byteCount) {
         blocks[0] = blocks[blockCount];
         for (i = 1; i < blockCount + 1; ++i) {
@@ -47100,33 +47123,37 @@ function update$1(state, message) {
     for (i = 0; i < blockCount; ++i) {
         s[i] ^= blocks[i];
     }
-
     f$2(s);
 
-    const buffer = new ArrayBuffer(outputBlocks * 4);
-    const view = new DataView(buffer);
-
-    i = 0;
+    // toString
+    var hex = "";
+    var block;
     var j = 0;
-
+    i = 0;
     while (j < outputBlocks) {
         for (i = 0; i < blockCount && j < outputBlocks; ++i, ++j) {
-            view.setInt32(i * 4, s[i], true);
+            block = s[i];
+            hex +=
+                HEX_CHARS$1[(block >> 4) & 0x0f] +
+                HEX_CHARS$1[block & 0x0f] +
+                HEX_CHARS$1[(block >> 12) & 0x0f] +
+                HEX_CHARS$1[(block >> 8) & 0x0f] +
+                HEX_CHARS$1[(block >> 20) & 0x0f] +
+                HEX_CHARS$1[(block >> 16) & 0x0f] +
+                HEX_CHARS$1[(block >> 28) & 0x0f] +
+                HEX_CHARS$1[(block >> 24) & 0x0f];
         }
-
         if (j % blockCount === 0) {
             f$2(s);
             i = 0;
         }
     }
+    // @ts-ignore
+    return "0x" + hex;
+};
 
-    return new Uint8Array(buffer);
-}
-
-/**
- * @param {number[]} s
- */
-function f$2(s) {
+/** @type {(s: number[]) => void} */
+const f$2 = (s) => {
     var h,
         l,
         n,
@@ -47369,19 +47396,25 @@ function f$2(s) {
         s[0] ^= RC$1[n];
         s[1] ^= RC$1[n + 1];
     }
-}
+};
+
+const keccak$1 = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
+    var msg;
+    if (str.slice(0, 2) === "0x") {
+        msg = [];
+        for (var i = 2, l = str.length; i < l; i += 2)
+            msg.push(parseInt(str.slice(i, i + 2), 16));
+    } else {
+        msg = str;
+    }
+    // @ts-ignore
+    return update$1(Keccak$1(bits, bits), msg);
+};
 
 /**
- * @param {number} bits
- * @returns {(message: string | Uint8Array) => Uint8Array}
+ * @type {(message: string) => string}
  */
-function createKeccak(bits) {
-    return function (message) {
-        return update$1(createKeccakState(bits), message);
-    };
-}
-
-const keccak256$2 = createKeccak(256);
+const keccak256$2 = keccak$1(256);
 
 /**
  * @enum {number}
@@ -47650,7 +47683,8 @@ class ContractFunctionSelector {
             throw new Error("`name` required for ContractFunctionSelector");
         }
 
-        return new Uint8Array(keccak256$2(this.toString()).slice(0, 4));
+        const func = encode$4(encode$5(this.toString()));
+        return decode$5(keccak256$2(`0x${func}`)).slice(0, 4);
     }
 
     /**
@@ -49306,7 +49340,6 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
- * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../account/AccountId.js").default} AccountId
@@ -52719,7 +52752,6 @@ TRANSACTION_REGISTRY.set(
  */
 
 /**
- * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
@@ -57188,7 +57220,6 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
- * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
  * @typedef {import("./CustomFee.js").default} CustomFee
@@ -58687,9 +58718,6 @@ TRANSACTION_REGISTRY.set(
  * @typedef {import("@hashgraph/proto").IDuration} proto.IDuration
  */
 
-/**
- * @typedef {import("@hashgraph/cryptography").Key} Key
- */
 class TokenNftInfo {
     /**
      * @private
@@ -80697,22 +80725,46 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var name$1 = "@grpc/grpc-js";
-var version$c = "1.5.1";
-var description$1 = "gRPC Library for Node - pure JS implementation";
-var homepage$1 = "https://grpc.io/";
-var repository$1 = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
-var main$1 = "build/src/index.js";
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var _from$1 = "@grpc/grpc-js@^1.4.4";
+var _id$1 = "@grpc/grpc-js@1.5.1";
+var _inBundle$1 = false;
+var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
+var _location$1 = "/@grpc/grpc-js";
+var _phantomChildren$1 = {
 };
-var keywords$1 = [
+var _requested$1 = {
+	type: "range",
+	registry: true,
+	raw: "@grpc/grpc-js@^1.4.4",
+	name: "@grpc/grpc-js",
+	escapedName: "@grpc%2fgrpc-js",
+	scope: "@grpc",
+	rawSpec: "^1.4.4",
+	saveSpec: null,
+	fetchSpec: "^1.4.4"
+};
+var _requiredBy$1 = [
+	"/@hashgraph/sdk"
 ];
+var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
+var _shasum$1 = "934571ae351e868e61d2bd1d56249b79ce8bd1f5";
+var _spec$1 = "@grpc/grpc-js@^1.4.4";
+var _where$1 = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js\\node_modules\\@hashgraph\\sdk";
 var author$1 = {
 	name: "Google Inc."
 };
-var types = "build/src/index.d.ts";
-var license$1 = "Apache-2.0";
+var bundleDependencies$1 = false;
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var dependencies$1 = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
+};
+var deprecated$1 = false;
+var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -80736,29 +80788,8 @@ var devDependencies$1 = {
 	"ts-node": "^8.3.0",
 	typescript: "^3.7.2"
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var scripts$1 = {
-	build: "npm run compile",
-	clean: "rimraf ./build",
-	compile: "tsc -p .",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	lint: "npm run check",
-	prepare: "npm run generate-types && npm run compile",
-	test: "gulp test",
-	check: "gts check src/**/*.ts",
-	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
-	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
-	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto"
-};
-var dependencies$1 = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
 var files$1 = [
 	"src/**/*.ts",
@@ -80774,29 +80805,64 @@ var files$1 = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
-var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
-var _from$1 = "@grpc/grpc-js@1.5.1";
+var homepage$1 = "https://grpc.io/";
+var keywords$1 = [
+];
+var license$1 = "Apache-2.0";
+var main$1 = "build/src/index.js";
+var name$1 = "@grpc/grpc-js";
+var repository$1 = {
+	type: "git",
+	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
+};
+var scripts$1 = {
+	build: "npm run compile",
+	check: "gts check src/**/*.ts",
+	clean: "rimraf ./build",
+	compile: "tsc -p .",
+	fix: "gts fix src/*.ts",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
+	lint: "npm run check",
+	posttest: "npm run check && madge -c ./build/src",
+	prepare: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
+	test: "gulp test"
+};
+var types = "build/src/index.d.ts";
+var version$c = "1.5.1";
 var require$$0$2 = {
-	name: name$1,
-	version: version$c,
-	description: description$1,
-	homepage: homepage$1,
-	repository: repository$1,
-	main: main$1,
-	engines: engines,
-	keywords: keywords$1,
-	author: author$1,
-	types: types,
-	license: license$1,
-	devDependencies: devDependencies$1,
-	contributors: contributors,
-	scripts: scripts$1,
-	dependencies: dependencies$1,
-	files: files$1,
-	_resolved: _resolved$1,
+	_from: _from$1,
+	_id: _id$1,
+	_inBundle: _inBundle$1,
 	_integrity: _integrity$1,
-	_from: _from$1
+	_location: _location$1,
+	_phantomChildren: _phantomChildren$1,
+	_requested: _requested$1,
+	_requiredBy: _requiredBy$1,
+	_resolved: _resolved$1,
+	_shasum: _shasum$1,
+	_spec: _spec$1,
+	_where: _where$1,
+	author: author$1,
+	bundleDependencies: bundleDependencies$1,
+	contributors: contributors,
+	dependencies: dependencies$1,
+	deprecated: deprecated$1,
+	description: description$1,
+	devDependencies: devDependencies$1,
+	engines: engines,
+	files: files$1,
+	homepage: homepage$1,
+	keywords: keywords$1,
+	license: license$1,
+	main: main$1,
+	name: name$1,
+	repository: repository$1,
+	scripts: scripts$1,
+	types: types,
+	version: version$c
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -93128,7 +93194,9 @@ function parse$2(rawTransaction) {
         catch (error) {
             logger$r.throwArgumentError(error.message, "rawTransaction", rawTransaction);
         }
+        const tx = parsed.transactionId;
         let contents = {
+            transactionId: tx.accountId.toString() + '-' + tx.validStart.seconds + '-' + tx.validStart.nanos,
             hash: hexlify(yield parsed.getTransactionHash()),
             from: utils$1.getAddressFromAccount(parsed.transactionId.accountId.toString()),
         };
@@ -93163,7 +93231,7 @@ function parse$2(rawTransaction) {
             return logger$r.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
-        return Object.assign(Object.assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null });
+        return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
 
@@ -94698,7 +94766,7 @@ class Formatter {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash(value, strict) {
         const result = this.hex(value, strict);
-        if (hexDataLength(result) !== 32) {
+        if (hexDataLength(result) !== 48) {
             return logger$u.throwArgumentError("invalid hash", "value", value);
         }
         return result;
@@ -94791,10 +94859,6 @@ class Formatter {
             }
             result.chainId = chainId;
         }
-        // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
         return result;
     }
     transaction(value) {
@@ -94805,32 +94869,67 @@ class Formatter {
     }
     receipt(value) {
         const result = Formatter.check(this.formats.receipt, value);
-        // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                const value = BigNumber.from(result.root).toNumber();
-                if (value === 0 || value === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value)) {
-                        logger$u.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value;
-                    delete result.root;
-                }
-                else {
-                    logger$u.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            }
-            else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger$u.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
         if (result.status != null) {
             result.byzantium = true;
         }
         return result;
+    }
+    responseFromRecord(record) {
+        return {
+            chainId: record.chainId,
+            hash: record.hash,
+            timestamp: record.timestamp,
+            transactionId: record.transaction.transaction_id,
+            from: record.from,
+            to: record.to,
+            data: record.call_result,
+            gasLimit: BigNumber.from(record.gas_limit),
+            value: BigNumber.from(record.amount),
+            customData: {
+                gas_used: record.gas_used,
+                logs: record.logs,
+                result: record.transaction.result
+            },
+            wait: null
+        };
+    }
+    receiptFromResponse(response) {
+        var _a, _b, _c, _d;
+        let contractAddress = null;
+        let to = null;
+        if (response.data != '0x') {
+            contractAddress = response.to;
+        }
+        else {
+            to = response.to;
+        }
+        let logs = [];
+        (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
+            const values = {
+                timestamp: response.timestamp,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                transactionHash: response.hash,
+                logIndex: log.index
+            };
+            logs.push(values);
+        });
+        return {
+            to: to,
+            from: response.from,
+            timestamp: response.timestamp,
+            contractAddress: contractAddress,
+            gasUsed: (_b = response.customData) === null || _b === void 0 ? void 0 : _b.gas_used,
+            logsBloom: null,
+            transactionId: response.transactionId,
+            transactionHash: response.hash,
+            logs: logs,
+            cumulativeGasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
+            type: 0,
+            byzantium: true,
+            status: ((_d = response.customData) === null || _d === void 0 ? void 0 : _d.result) === 'SUCCESS' ? 1 : 0
+        };
     }
     topics(value) {
         if (Array.isArray(value)) {
@@ -98850,6 +98949,8 @@ class Resolver {
     }
 }
 let defaultFormatter = null;
+const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
+const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
 class BaseProvider extends Provider {
     /**
      *  ready
@@ -98906,6 +99007,7 @@ class BaseProvider extends Provider {
                 });
             }
         }
+        this._pollingInterval = 3000;
     }
     _ready() {
         return __awaiter$9(this, void 0, void 0, function* () {
@@ -98995,14 +99097,39 @@ class BaseProvider extends Provider {
             return network;
         });
     }
-    waitForTransaction(transactionHash, confirmations, timeout) {
+    get pollingInterval() {
+        return this._pollingInterval;
+    }
+    set pollingInterval(value) {
+        if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
+            throw new Error("invalid polling interval");
+        }
+        this._pollingInterval = value;
+    }
+    waitForTransaction(transactionId, timeout) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            return this._waitForTransaction(transactionHash, (confirmations == null) ? 1 : confirmations, timeout || 0, null);
+            return this._waitForTransaction(transactionId, timeout);
         });
     }
-    _waitForTransaction(transactionHash, confirmations, timeout, replaceable) {
+    _waitForTransaction(transactionId, timeout) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            return logger$v.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+            let remainingTimeout = timeout;
+            return new Promise((resolve, reject) => __awaiter$9(this, void 0, void 0, function* () {
+                while (remainingTimeout == null || remainingTimeout > 0) {
+                    const txResponse = yield this.getTransaction(transactionId);
+                    if (txResponse == null) {
+                        yield new Promise((resolve) => {
+                            setTimeout(resolve, this._pollingInterval);
+                        });
+                        if (remainingTimeout != null)
+                            remainingTimeout -= this._pollingInterval;
+                    }
+                    else {
+                        return resolve(this.formatter.receiptFromResponse(txResponse));
+                    }
+                }
+                reject(logger$v.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
+            }));
         });
     }
     /**
@@ -99066,29 +99193,8 @@ class BaseProvider extends Provider {
         if (hash != null && tx.hash !== hash) {
             logger$v.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
-        result.wait = (confirms, timeout) => __awaiter$9(this, void 0, void 0, function* () {
-            if (confirms == null) {
-                confirms = 1;
-            }
-            if (timeout == null) {
-                timeout = 0;
-            }
-            // Get the details to detect replacement
-            let replacement = undefined;
-            if (confirms !== 0) {
-                replacement = {
-                    data: tx.data,
-                    from: tx.from,
-                    nonce: tx.nonce,
-                    to: tx.to,
-                    value: tx.value,
-                    startBlock: 0
-                };
-            }
-            const receipt = yield this._waitForTransaction(tx.hash, confirms, timeout, replacement);
-            if (receipt == null && confirms === 0) {
-                return null;
-            }
+        result.wait = (timeout) => __awaiter$9(this, void 0, void 0, function* () {
+            const receipt = yield this._waitForTransaction(tx.transactionId, timeout);
             if (receipt.status === 0) {
                 logger$v.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
@@ -99176,35 +99282,64 @@ class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param txId - id of the transaction to search for
+     * @param transactionId - id of the transaction to search for
      */
-    getTransaction(txId) {
+    getTransaction(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            txId = yield txId;
-            const ep = '/api/v1/transactions/' + txId;
-            let { data } = yield axios$1.get(this._mirrorNodeUrl + ep);
-            const filtered = data.transactions
-                .filter((e) => e.result === "SUCCESS");
-            return filtered.length > 0 ? filtered[0] : null;
+            if (!this._mirrorNodeUrl)
+                logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            transactionId = yield transactionId;
+            const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
+            try {
+                let { data } = yield axios$1.get(this._mirrorNodeUrl + transactionsEndpoint);
+                let result = null;
+                if (data) {
+                    const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
+                    if (filtered.length > 0) {
+                        const transaction = filtered[0];
+                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                        const response = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
+                        const mergedData = Object.assign(Object.assign({ chainId: this._network.chainId }, response.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
+                        return this.formatter.responseFromRecord(mergedData);
+                    }
+                }
+                return result;
+            }
+            catch (error) {
+                if (error && error.response && error.response.status != 404) {
+                    logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "TransactionResponseQuery",
+                        error
+                    });
+                }
+                return null;
+            }
         });
     }
-    getTransactionReceipt(transactionHash) {
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param transactionId - id of the transaction to search for
+     */
+    getTransactionReceipt(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            transactionHash = yield transactionHash;
-            const params = { transactionHash: this.formatter.hash(transactionHash, true) };
-            return poll(() => __awaiter$9(this, void 0, void 0, function* () {
-                const result = yield this.perform("getTransactionReceipt", params);
-                if (result == null) {
-                    return undefined;
-                }
-                // "geth-etc" returns receipts before they are ready
-                if (result.blockHash == null) {
-                    return undefined;
-                }
-                return this.formatter.receipt(result);
-            }), { oncePoll: this });
+            return logger$v.throwError("getTransactionReceipt not implemented", Logger.errors.NOT_IMPLEMENTED, {
+                operation: 'getTransactionReceipt'
+            });
+            // await this.getNetwork();
+            // transactionId = await transactionId;
+            // try {
+            //     let receipt = await new TransactionReceiptQuery()
+            //         .setTransactionId(transactionId)
+            //         .execute(this.hederaClient);
+            //     console.log("getTransactionReceipt: ", receipt);
+            //     return null;
+            // } catch (error) {
+            //     return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+            //         method: "TransactionGetReceiptQuery",
+            //         error
+            //     });
+            // }
         });
     }
     getLogs(filter) {
@@ -99212,11 +99347,6 @@ class BaseProvider extends Provider {
             yield this.getNetwork();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
             const logs = yield this.perform("getLogs", params);
-            logs.forEach((log) => {
-                if (log.removed == null) {
-                    log.removed = false;
-                }
-            });
             return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
         });
     }

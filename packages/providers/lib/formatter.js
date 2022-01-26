@@ -332,7 +332,7 @@ var Formatter = /** @class */ (function () {
         return {
             chainId: record.chainId,
             hash: record.hash,
-            timestamp: Number(record.timestamp),
+            timestamp: record.timestamp,
             transactionId: record.transaction.transaction_id,
             from: record.from,
             to: record.to,
@@ -347,38 +347,42 @@ var Formatter = /** @class */ (function () {
             wait: null
         };
     };
-    Formatter.prototype.receiptFromResponse = function (txRecord) {
-        var _a;
+    Formatter.prototype.receiptFromResponse = function (response) {
+        var _a, _b, _c, _d;
         var contractAddress = null;
-        if (txRecord.customData.call_result != '0x') {
-            contractAddress = txRecord.to;
+        var to = null;
+        if (response.data != '0x') {
+            contractAddress = response.to;
+        }
+        else {
+            to = response.to;
         }
         var logs = [];
-        txRecord.customData.logs.forEach(function (log) {
+        (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
             var values = {
-                timestamp: txRecord.timestamp,
+                timestamp: response.timestamp,
                 address: log.address,
                 data: log.data,
                 topics: log.topics,
-                transactionHash: txRecord.hash,
+                transactionHash: response.hash,
                 logIndex: log.index
             };
             logs.push(values);
         });
         return {
-            to: txRecord.to,
-            from: txRecord.from,
-            timestamp: txRecord.timestamp,
+            to: to,
+            from: response.from,
+            timestamp: response.timestamp,
             contractAddress: contractAddress,
-            gasUsed: txRecord.customData.gas_used,
+            gasUsed: (_b = response.customData) === null || _b === void 0 ? void 0 : _b.gas_used,
             logsBloom: null,
-            transactionId: txRecord.transactionId,
-            transactionHash: txRecord.hash,
+            transactionId: response.transactionId,
+            transactionHash: response.hash,
             logs: logs,
-            cumulativeGasUsed: txRecord.customData.gas_used,
+            cumulativeGasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
             type: 0,
             byzantium: true,
-            status: ((_a = txRecord.customData) === null || _a === void 0 ? void 0 : _a.result) === 'SUCCESS' ? 1 : 0
+            status: ((_d = response.customData) === null || _d === void 0 ? void 0 : _d.result) === 'SUCCESS' ? 1 : 0
         };
     };
     Formatter.prototype.topics = function (value) {

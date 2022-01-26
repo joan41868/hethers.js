@@ -42,7 +42,7 @@ export declare class Formatter {
     receiptLog(value: any): any;
     receipt(value: any): TransactionReceipt;
     responseFromRecord(record: HederaTransactionRecord): TransactionResponse;
-    receiptFromResponse(txRecord: TransactionResponse): TransactionReceipt;
+    receiptFromResponse(response: TransactionResponse): TransactionReceipt;
     topics(value: any): any;
     filter(value: any): any;
     filterLog(value: any): any;

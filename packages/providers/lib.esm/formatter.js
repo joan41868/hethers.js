@@ -5,7 +5,6 @@ import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "
 import { AddressZero } from "@ethersproject/constants";
 import { shallowCopy } from "@ethersproject/properties";
 import { accessListify, parse as parseTransaction } from "@ethersproject/transactions";
-// import { TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
@@ -325,60 +324,61 @@ export class Formatter {
         }
         return result;
     }
-    txRecordToTxResponse(txRecord) {
+    responseFromRecord(record) {
         return {
-            accessList: null,
-            chainId: txRecord.chainId,
-            data: '',
-            from: txRecord.from,
-            gasLimit: BigNumber.from(txRecord.gas_limit),
-            hash: txRecord.hash,
-            transactionId: txRecord.transaction.transaction_id,
-            r: '',
-            s: '',
-            to: txRecord.to,
-            v: 0,
-            value: null,
+            chainId: record.chainId,
+            hash: record.hash,
+            timestamp: record.timestamp,
+            transactionId: record.transaction.transaction_id,
+            from: record.from,
+            to: record.to,
+            data: record.call_result,
+            gasLimit: BigNumber.from(record.gas_limit),
+            value: BigNumber.from(record.amount),
             customData: {
-                gas_used: txRecord.gas_used,
-                call_result: txRecord.call_result,
-                logs: txRecord.logs,
-                transaction: txRecord.transaction
+                gas_used: record.gas_used,
+                logs: record.logs,
+                result: record.transaction.result
             },
             wait: null
         };
     }
-    txRecordToTxReceipt(txRecord) {
-        let to = null;
+    receiptFromResponse(response) {
+        var _a, _b, _c, _d;
         let contractAddress = null;
-        if (txRecord.customData.call_result != '0x') { //is not contract_create
-            contractAddress = txRecord.to;
+        let to = null;
+        if (response.data != '0x') {
+            contractAddress = response.to;
         }
         else {
-            to = txRecord.to;
+            to = response.to;
         }
         let logs = [];
-        txRecord.customData.logs.forEach(function (log) {
+        (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
             const values = {
+                timestamp: response.timestamp,
                 address: log.address,
                 data: log.data,
                 topics: log.topics,
-                transactionHash: txRecord.hash,
+                transactionHash: response.hash,
                 logIndex: log.index
             };
             logs.push(values);
         });
         return {
             to: to,
-            from: txRecord.from,
+            from: response.from,
+            timestamp: response.timestamp,
             contractAddress: contractAddress,
-            gasUsed: txRecord.customData.gas_used,
+            gasUsed: (_b = response.customData) === null || _b === void 0 ? void 0 : _b.gas_used,
             logsBloom: null,
-            transactionHash: txRecord.hash,
+            transactionId: response.transactionId,
+            transactionHash: response.hash,
             logs: logs,
-            cumulativeGasUsed: txRecord.customData.gas_used,
-            byzantium: false,
-            status: txRecord.customData.transaction.result === 'SUCCESS' ? 1 : 0
+            cumulativeGasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
+            type: 0,
+            byzantium: true,
+            status: ((_d = response.customData) === null || _d === void 0 ? void 0 : _d.result) === 'SUCCESS' ? 1 : 0
         };
     }
     topics(value) {

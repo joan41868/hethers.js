@@ -19,7 +19,7 @@ export declare type TransactionRequest = {
     nodeId?: AccountLike;
     customData?: Record<string, any>;
 };
-export declare type HederaTransactionResponse = {
+export declare type HederaTransactionRecord = {
     chainId: number;
     amount: number;
     call_result: string;
@@ -43,10 +43,10 @@ export declare type HederaTransactionResponse = {
 };
 export interface TransactionResponse extends Transaction {
     hash: string;
-    timestamp?: number;
+    timestamp?: string;
     from: string;
     raw?: string;
-    wait: (confirmations?: number) => Promise<TransactionReceipt>;
+    wait: (timestamp?: number) => Promise<TransactionReceipt>;
     customData?: {
         [key: string]: any;
     };
@@ -73,6 +73,7 @@ export interface BlockWithTransactions extends _Block {
     transactions: Array<TransactionResponse>;
 }
 export interface Log {
+    timestamp: string;
     address: string;
     data: string;
     topics: Array<string>;
@@ -83,12 +84,15 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string;
+    timestamp: string;
     gasUsed: BigNumber;
     logsBloom: string;
+    transactionId: string;
     transactionHash: string;
     logs: Array<Log>;
     cumulativeGasUsed: BigNumber;
-    byzantium: boolean;
+    byzantium: true;
+    type: 0;
     status?: number;
 }
 export interface FeeData {

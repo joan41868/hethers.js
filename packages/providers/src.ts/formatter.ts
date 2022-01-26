@@ -399,7 +399,7 @@ export class Formatter {
         return {
             chainId: record.chainId,
             hash: record.hash,
-            timestamp: Number(record.timestamp),
+            timestamp: record.timestamp,
             transactionId: record.transaction.transaction_id,
             from: record.from,
             to: record.to,
@@ -415,37 +415,40 @@ export class Formatter {
         }
     }
 
-    receiptFromResponse(txRecord: TransactionResponse): TransactionReceipt {
+    receiptFromResponse(response: TransactionResponse): TransactionReceipt {
         let contractAddress = null;
-        if (txRecord.customData.call_result != '0x') {
-            contractAddress = txRecord.to;
+        let to = null;
+        if (response.data != '0x') {
+            contractAddress = response.to;
+        } else {
+            to = response.to;
         }
         let logs: Log[] = [];
-        txRecord.customData.logs.forEach(function (log: any) {
+        response.customData?.logs.forEach(function (log: any) {
             const values = {
-                timestamp: txRecord.timestamp,
+                timestamp: response.timestamp,
                 address: log.address,
                 data: log.data,
                 topics: log.topics,
-                transactionHash: txRecord.hash,
+                transactionHash: response.hash,
                 logIndex: log.index
             };
             logs.push(values);
         });
         return {
-            to: txRecord.to,
-            from: txRecord.from,
-            timestamp: txRecord.timestamp,
+            to: to,
+            from: response.from,
+            timestamp: response.timestamp,
             contractAddress: contractAddress,
-            gasUsed: txRecord.customData.gas_used,
+            gasUsed: response.customData?.gas_used,
             logsBloom: null, //to be provided by hedera rest api
-            transactionId: txRecord.transactionId,
-            transactionHash: txRecord.hash,
+            transactionId: response.transactionId,
+            transactionHash: response.hash,
             logs: logs,
-            cumulativeGasUsed: txRecord.customData.gas_used,
+            cumulativeGasUsed: response.customData?.gas_used,
             type: 0,
             byzantium: true,
-            status: txRecord.customData?.result === 'SUCCESS' ? 1 : 0
+            status: response.customData?.result === 'SUCCESS' ? 1 : 0
         }
     }
 

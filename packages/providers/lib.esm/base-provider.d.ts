@@ -53,6 +53,7 @@ export declare class BaseProvider extends Provider {
     _networkPromise: Promise<Network>;
     _network: Network;
     _events: Array<Event>;
+    _pollingInterval: number;
     formatter: Formatter;
     readonly anyNetwork: boolean;
     private readonly hederaClient;
@@ -73,7 +74,9 @@ export declare class BaseProvider extends Provider {
     get network(): Network;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
-    waitForTransaction(transactionId: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
+    get pollingInterval(): number;
+    set pollingInterval(value: number);
+    waitForTransaction(transactionId: string, timeout?: number): Promise<TransactionReceipt>;
     _waitForTransaction(transactionId: string, timeout: number): Promise<TransactionReceipt>;
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
@@ -96,6 +99,11 @@ export declare class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse>;
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param transactionId - id of the transaction to search for
+     */
     getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
