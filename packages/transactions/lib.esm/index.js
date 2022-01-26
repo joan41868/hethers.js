@@ -21,7 +21,7 @@ import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { base64, getAddressFromAccount } from "ethers/lib/utils";
-import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, TransactionId, AccountId, TransferTransaction } from "@hashgraph/sdk";
+import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction, AccountCreateTransaction, Hbar } from "@hashgraph/sdk";
 const logger = new Logger(version);
 export var TransactionTypes;
 (function (TransactionTypes) {
@@ -247,7 +247,7 @@ export function serialize(transaction, signature) {
         transactionType: transaction.type
     });
 }
-export function serializeHederaTransaction(transaction, pubKey) {
+export function serializeHederaTransaction(transaction) {
     var _a, _b;
     let tx;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
@@ -281,8 +281,13 @@ export function serializeHederaTransaction(transaction, pubKey) {
                     .setContents(transaction.customData.fileChunk)
                     .setKeys([transaction.customData.fileKey ?
                         transaction.customData.fileKey :
-                        pubKey
-                ]);
+                        HederaPubKey.fromString(this._signingKey().compressedPublicKey)]);
+            }
+            else if (transaction.customData.publicKey) {
+                const { publicKey, initialBalance } = transaction.customData;
+                tx = new AccountCreateTransaction()
+                    .setKey(HederaPubKey.fromString(publicKey.toString()))
+                    .setInitialBalance(Hbar.fromTinybars(initialBalance.toString()));
             }
             else {
                 logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
@@ -428,6 +433,11 @@ export function parse(rawTransaction) {
         }
         else if (parsed instanceof TransferTransaction) {
             // TODO populate value / to?
+        }
+        else if (parsed instanceof AccountCreateTransaction) {
+            parsed = parsed;
+            contents.value = parsed.initialBalance ?
+                handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
         }
         else {
             return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
