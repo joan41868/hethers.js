@@ -2,13 +2,12 @@
 
 import { checkResultErrors, EventFragment, Fragment, FunctionFragment, Indexed, Interface, JsonFragment, LogDescription, ParamType, Result } from "@ethersproject/abi";
 import { Block, BlockTag, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
-import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
+import { Signer, splitInChunks, VoidSigner } from "@ethersproject/abstract-signer";
 import { getAddress, getContractAddress } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { AccessList, accessListify, AccessListish } from "@ethersproject/transactions";
-import { splitInChunks } from "@ethersproject/abstract-signer";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -1224,19 +1223,34 @@ export class ContractFactory {
         const params = await resolveAddresses(this.signer, args, this.interface.deploy.inputs);
         params.push(overrides);
 
+        // TODO: probably assert there are at least 2 or 3 transactions?
         // Get the deployment transaction (with optional overrides)
-        const unsignedTx = this.getDeployTransaction();
+        const unsignedTransactions = this.getDeployTransaction();
 
-        // Send the deployment transaction
-        const tx = await this.signer.sendTransaction(unsignedTx[0]);
-
-        const address = getStatic<(tx: TransactionResponse) => string>(this.constructor, "getContractAddress")(tx);
+        const fc = unsignedTransactions[0];//await this.signer.sendTransaction(unsignedTransactions[0]);
+        const signedFc = await this.signer.signTransaction(fc);
+        const fcResponse = await this.signer.provider.sendTransaction(signedFc);
+        // @ts-ignore - ignores possibly null object
+        const fileId = fcResponse.customData.fileId;
+        // Iterate file append transactions
+        for (const fa of unsignedTransactions.slice(1, unsignedTransactions.length -2)) {
+            fa.customData.fileId = fileId;
+            const signedFa = await this.signer.signTransaction(fa);
+            await this.signer.provider.sendTransaction(signedFa);
+        }
+        const cc = unsignedTransactions[unsignedTransactions.length -1];
+        cc.customData.bytecodeFileId = fileId;
+        cc.gasLimit = 300000;
+        const signedCc = await this.signer.signTransaction(cc);
+        const ccResponse = await this.signer.provider.sendTransaction(signedCc);
+        // @ts-ignore - ignores possibly null object
+        const address = ccResponse.customData.contractId;
         const contract = getStatic<(address: string, contractInterface: ContractInterface, signer?: Signer) => Contract>(this.constructor, "getContract")(address, this.interface, this.signer);
 
         // Add the modified wait that wraps events
-        addContractWait(contract, tx);
+        addContractWait(contract, ccResponse);
 
-        defineReadOnly(contract, "deployTransaction", tx);
+        defineReadOnly(contract, "deployTransaction", ccResponse);
         return contract;
     }
 

@@ -56,29 +56,31 @@ const account = {
     const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
 
     const contractFactory = new hethers.ContractFactory(abi, contractByteCode, wallet);
-    const transactions = contractFactory.getDeployTransaction({
-        gasLimit: 300000
-    });
-    const signedFileCreateTx = await wallet.signTransaction(transactions[0]);
-    const fileCreateTx = await wallet.provider.sendTransaction(signedFileCreateTx);
-    // @ts-ignore
-    const fileId = fileCreateTx.customData.fileId;
-
-    for (let i = 1; i <= transactions.length - 2; i++) {
-        // @ts-ignore
-        transactions[i].customData.fileId = fileId;
-
-        const signedFileAppendTx = await wallet.signTransaction(transactions[i]);
-        await wallet.provider.sendTransaction(signedFileAppendTx);
-    }
-
-    // @ts-ignore
-    transactions[transactions.length - 1].customData.bytecodeFileId = fileId;
-
-    const signedContractCreateTx = await wallet.signTransaction(transactions[transactions.length - 1]);
-    const contractCreateTx = await wallet.provider.sendTransaction(signedContractCreateTx);
-
-    // @ts-ignore
-    const contractId = contractCreateTx.customData.contractId;
-    console.log(contractId);
+    const cc = await contractFactory.deploy();
+    console.log(cc);
+    // const transactions = contractFactory.getDeployTransaction({
+    //     gasLimit: 300000
+    // });
+    // const signedFileCreateTx = await wallet.signTransaction(transactions[0]);
+    // const fileCreateTx = await wallet.provider.sendTransaction(signedFileCreateTx);
+    // // @ts-ignore
+    // const fileId = fileCreateTx.customData.fileId;
+    //
+    // for (let i = 1; i <= transactions.length - 2; i++) {
+    //     // @ts-ignore
+    //     transactions[i].customData.fileId = fileId;
+    //
+    //     const signedFileAppendTx = await wallet.signTransaction(transactions[i]);
+    //     await wallet.provider.sendTransaction(signedFileAppendTx);
+    // }
+    //
+    // // @ts-ignore
+    // transactions[transactions.length - 1].customData.bytecodeFileId = fileId;
+    //
+    // const signedContractCreateTx = await wallet.signTransaction(transactions[transactions.length - 1]);
+    // const contractCreateTx = await wallet.provider.sendTransaction(signedContractCreateTx);
+    //
+    // // @ts-ignore
+    // const contractId = contractCreateTx.customData.contractId;
+    // console.log(contractId);
 })();
