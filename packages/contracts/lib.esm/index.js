@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { checkResultErrors, Indexed, Interface } from "@ethersproject/abi";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
-import { getAddress, getContractAddress } from "@ethersproject/address";
+import { getAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
@@ -611,9 +611,6 @@ export class BaseContract {
             }
         });
     }
-    static getContractAddress(transaction) {
-        return getContractAddress(transaction);
-    }
     static getInterface(contractInterface) {
         if (Interface.isInterface(contractInterface)) {
             return contractInterface;
@@ -1016,9 +1013,6 @@ export class ContractFactory {
     }
     static getInterface(contractInterface) {
         return Contract.getInterface(contractInterface);
-    }
-    static getContractAddress(tx) {
-        return getContractAddress(tx);
     }
     static getContract(address, contractInterface, signer) {
         return new Contract(address, contractInterface, signer);

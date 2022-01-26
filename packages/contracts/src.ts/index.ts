@@ -3,7 +3,7 @@
 import { checkResultErrors, EventFragment, Fragment, FunctionFragment, Indexed, Interface, JsonFragment, LogDescription, ParamType, Result } from "@ethersproject/abi";
 import { Block, BlockTag, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
-import { getAddress, getContractAddress } from "@ethersproject/address";
+import { getAddress } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
@@ -802,10 +802,6 @@ export class BaseContract {
         });
     }
 
-    static getContractAddress(transaction: { from: string, nonce: BigNumberish }): string {
-        return getContractAddress(transaction);
-    }
-
     static getInterface(contractInterface: ContractInterface): Interface {
         if (Interface.isInterface(contractInterface)) {
             return contractInterface;
@@ -1282,10 +1278,6 @@ export class ContractFactory {
 
     static getInterface(contractInterface: ContractInterface) {
         return Contract.getInterface(contractInterface);
-    }
-
-    static getContractAddress(tx: { from: string, nonce: BytesLike | BigNumber | number }): string {
-        return getContractAddress(tx);
     }
 
     static getContract(address: string, contractInterface: ContractInterface, signer?: Signer): Contract {
