@@ -297,7 +297,7 @@ export class VoidSigner extends Signer {
         return new VoidSigner(this.address, provider);
     }
 }
-function splitInChunks(data, chunkSize) {
+export function splitInChunks(data, chunkSize) {
     const chunks = [];
     let num = 0;
     while (num <= data.length) {

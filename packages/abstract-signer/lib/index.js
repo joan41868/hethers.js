@@ -70,7 +70,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.randomNumBetween = exports.VoidSigner = exports.Signer = void 0;
+exports.randomNumBetween = exports.splitInChunks = exports.VoidSigner = exports.Signer = void 0;
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
@@ -463,6 +463,7 @@ function splitInChunks(data, chunkSize) {
     }
     return chunks;
 }
+exports.splitInChunks = splitInChunks;
 /**
  * Generates a random integer in the given range
  * @param min - range start

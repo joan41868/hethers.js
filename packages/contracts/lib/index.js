@@ -14,6 +14,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -69,18 +80,19 @@ var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
 var transactions_1 = require("@ethersproject/transactions");
+var abstract_signer_2 = require("@ethersproject/abstract-signer");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 ;
 ;
 ///////////////////////////////
-var allowedTransactionKeys = {
-    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, nonce: true, to: true, value: true,
-    type: true, accessList: true,
-    maxFeePerGas: true, maxPriorityFeePerGas: true,
-    customData: true
-};
+// const allowedTransactionKeys: { [ key: string ]: boolean } = {
+//     chainId: true, data: true, from: true, gasLimit: true, gasPrice:true, nonce: true, to: true, value: true,
+//     type: true, accessList: true,
+//     maxFeePerGas: true, maxPriorityFeePerGas: true,
+//     customData: true
+// }
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function () {
@@ -1086,46 +1098,21 @@ var ContractFactory = /** @class */ (function () {
         (0, properties_1.defineReadOnly)(this, "interface", (0, properties_1.getStatic)(_newTarget, "getInterface")(contractInterface));
         (0, properties_1.defineReadOnly)(this, "signer", signer || null);
     }
-    // @TODO: Future; rename to populateTransaction?
-    ContractFactory.prototype.getDeployTransaction = function () {
-        var args = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            args[_i] = arguments[_i];
+    ContractFactory.prototype.getDeployTransaction = function (args) {
+        var chunks = (0, abstract_signer_2.splitInChunks)(Buffer.from(this.bytecode).toString(), 4096);
+        var fileCreate = __assign(__assign({}, args), { customData: {
+                fileChunk: chunks[0]
+            } });
+        var fileAppends = [];
+        for (var _i = 0, _a = chunks.slice(1); _i < _a.length; _i++) {
+            var chunk = _a[_i];
+            var fileAppend = __assign(__assign({}, args), { customData: {
+                    fileChunk: chunk
+                } });
+            fileAppends.push(fileAppend);
         }
-        var tx = {};
-        // If we have 1 additional argument, we allow transaction overrides
-        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-            tx = (0, properties_1.shallowCopy)(args.pop());
-            for (var key in tx) {
-                if (!allowedTransactionKeys[key]) {
-                    throw new Error("unknown transaction override " + key);
-                }
-            }
-        }
-        // Do not allow these to be overridden in a deployment transaction
-        ["data", "from", "to"].forEach(function (key) {
-            if (tx[key] == null) {
-                return;
-            }
-            logger.throwError("cannot override " + key, logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
-        });
-        if (tx.value) {
-            var value = bignumber_1.BigNumber.from(tx.value);
-            if (!value.isZero() && !this.interface.deploy.payable) {
-                logger.throwError("non-payable constructor cannot override value", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "overrides.value",
-                    value: tx.value
-                });
-            }
-        }
-        // Make sure the call matches the constructor signature
-        logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-        // Set the data to the bytecode + the encoded constructor arguments
-        tx.data = (0, bytes_1.hexlify)((0, bytes_1.concat)([
-            this.bytecode,
-            this.interface.encodeDeploy(args)
-        ]));
-        return tx;
+        var contractCreate = __assign(__assign({}, args), { customData: {} });
+        return __spreadArray(__spreadArray([fileCreate], fileAppends, true), [contractCreate], false);
     };
     ContractFactory.prototype.deploy = function () {
         var args = [];
@@ -1148,8 +1135,8 @@ var ContractFactory = /** @class */ (function () {
                     case 1:
                         params = _a.sent();
                         params.push(overrides);
-                        unsignedTx = this.getDeployTransaction.apply(this, params);
-                        return [4 /*yield*/, this.signer.sendTransaction(unsignedTx)];
+                        unsignedTx = this.getDeployTransaction();
+                        return [4 /*yield*/, this.signer.sendTransaction(unsignedTx[0])];
                     case 2:
                         tx = _a.sent();
                         address = (0, properties_1.getStatic)(this.constructor, "getContractAddress")(tx);

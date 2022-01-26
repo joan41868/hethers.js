@@ -190,13 +190,14 @@ var Wallet = /** @class */ (function (_super) {
         this._checkAddress('signTransaction');
         this.checkTransaction(transaction);
         return this.populateTransaction(transaction).then(function (readyTx) { return __awaiter(_this, void 0, void 0, function () {
-            var tx, pkey, signed;
+            var pubKey, tx, privKey, signed;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        tx = (0, transactions_1.serializeHederaTransaction)(readyTx);
-                        pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-                        return [4 /*yield*/, tx.sign(pkey)];
+                        pubKey = sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey);
+                        tx = (0, transactions_1.serializeHederaTransaction)(readyTx, pubKey);
+                        privKey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+                        return [4 /*yield*/, tx.sign(privKey)];
                     case 1:
                         signed = _a.sent();
                         return [2 /*return*/, (0, bytes_1.hexlify)(signed.toBytes())];

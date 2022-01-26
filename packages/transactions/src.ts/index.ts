@@ -363,7 +363,7 @@ export function serialize(transaction: UnsignedTransaction, signature?: Signatur
     });
 }
 
-export function serializeHederaTransaction(transaction: TransactionRequest) : HederaTransaction {
+export function serializeHederaTransaction(transaction: TransactionRequest, pubKey?: HederaPubKey) : HederaTransaction {
     let tx: HederaTransaction;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
@@ -391,9 +391,10 @@ export function serializeHederaTransaction(transaction: TransactionRequest) : He
                 // only a chunk, thus the first one
                 tx = new FileCreateTransaction()
                     .setContents(transaction.customData.fileChunk)
-                    .setKeys([ transaction.customData.fileKey ?
+                    .setKeys([transaction.customData.fileKey ?
                         transaction.customData.fileKey :
-                        HederaPubKey.fromString(this._signingKey().compressedPublicKey) ])
+                        pubKey
+                    ]);
             } else {
                 logger.throwArgumentError(
                     "Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`",

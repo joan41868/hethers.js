@@ -398,7 +398,7 @@ export class VoidSigner extends Signer implements TypedDataSigner {
 }
 
 
-function splitInChunks(data: string, chunkSize: number): string[] {
+export function splitInChunks(data: string, chunkSize: number): string[] {
     const chunks = [];
     let num = 0;
     while (num <= data.length) {

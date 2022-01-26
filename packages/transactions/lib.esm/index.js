@@ -21,7 +21,7 @@ import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { base64, getAddressFromAccount } from "ethers/lib/utils";
-import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction } from "@hashgraph/sdk";
+import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, TransactionId, AccountId, TransferTransaction } from "@hashgraph/sdk";
 const logger = new Logger(version);
 export var TransactionTypes;
 (function (TransactionTypes) {
@@ -247,7 +247,7 @@ export function serialize(transaction, signature) {
         transactionType: transaction.type
     });
 }
-export function serializeHederaTransaction(transaction) {
+export function serializeHederaTransaction(transaction, pubKey) {
     var _a, _b;
     let tx;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
@@ -281,7 +281,8 @@ export function serializeHederaTransaction(transaction) {
                     .setContents(transaction.customData.fileChunk)
                     .setKeys([transaction.customData.fileKey ?
                         transaction.customData.fileKey :
-                        HederaPubKey.fromString(this._signingKey().compressedPublicKey)]);
+                        pubKey
+                ]);
             }
             else {
                 logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
