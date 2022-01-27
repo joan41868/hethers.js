@@ -1097,7 +1097,7 @@ describe("Test Hedera Provider", function () {
                         case 1: return [4 /*yield*/, _b.apply(_a, [_c.sent()])];
                         case 2:
                             sendTransactionResponse = _c.sent();
-                            return [4 /*yield*/, sendTransactionResponse.wait(timeout)];
+                            return [4 /*yield*/, sendTransactionResponse.wait(timeout * 2)];
                         case 3:
                             receipt = _c.sent();
                             // assert.strict(receipt.logs.length > 0);

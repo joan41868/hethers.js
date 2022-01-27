@@ -997,7 +997,7 @@ describe("Test Hedera Provider", function () {
         it("Should populate transaction receipt with timeout", function () {
             return __awaiter(this, void 0, void 0, function* () {
                 const sendTransactionResponse = yield provider.sendTransaction(yield signedTx);
-                const receipt = yield sendTransactionResponse.wait(timeout);
+                const receipt = yield sendTransactionResponse.wait(timeout * 2);
                 // assert.strict(receipt.logs.length > 0);
                 assert.strictEqual(receipt.to, null);
                 assert.strictEqual(receipt.contractAddress, '0x' + sendTransactionResponse.customData.contractId);
