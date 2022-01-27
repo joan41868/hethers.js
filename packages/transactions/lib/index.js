@@ -347,6 +347,12 @@ function serializeHederaTransaction(transaction) {
                         transaction.customData.fileKey :
                         sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)]);
             }
+            else if (transaction.customData.publicKey) {
+                var _c = transaction.customData, publicKey = _c.publicKey, initialBalance = _c.initialBalance;
+                tx = new sdk_1.AccountCreateTransaction()
+                    .setKey(sdk_1.PublicKey.fromString(publicKey.toString()))
+                    .setInitialBalance(sdk_1.Hbar.fromTinybars(initialBalance.toString()));
+            }
             else {
                 logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
             }
@@ -502,6 +508,11 @@ function parse(rawTransaction) {
                     }
                     else if (parsed instanceof sdk_1.TransferTransaction) {
                         // TODO populate value / to?
+                    }
+                    else if (parsed instanceof sdk_1.AccountCreateTransaction) {
+                        parsed = parsed;
+                        contents.value = parsed.initialBalance ?
+                            handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
                     }
                     else {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];

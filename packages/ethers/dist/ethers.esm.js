@@ -86703,7 +86703,10 @@ class Signer {
             }
             const customData = yield tx.customData;
             // FileCreate and FileAppend always carry a customData.fileChunk object
-            if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
+            const isFileCreateOrAppend = customData && customData.fileChunk;
+            // CreateAccount always has a publicKey
+            const isCreateAccount = customData && customData.publicKey;
+            if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
                 return logger$f.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
             }
             return yield resolveProperties(tx);
@@ -86742,6 +86745,9 @@ class VoidSigner extends Signer {
     }
     signTransaction(transaction) {
         return this._fail("VoidSigner cannot sign transactions", "signTransaction");
+    }
+    createAccount(pubKey, initialBalance) {
+        return this._fail("VoidSigner cannot create accounts", "createAccount");
     }
     _signTypedData(domain, types, value) {
         return this._fail("VoidSigner cannot sign typed data", "signTypedData");
@@ -93080,6 +93086,12 @@ function serializeHederaTransaction(transaction) {
                         transaction.customData.fileKey :
                         PublicKey$1.fromString(this._signingKey().compressedPublicKey)]);
             }
+            else if (transaction.customData.publicKey) {
+                const { publicKey, initialBalance } = transaction.customData;
+                tx = new AccountCreateTransaction()
+                    .setKey(PublicKey$1.fromString(publicKey.toString()))
+                    .setInitialBalance(Hbar.fromTinybars(initialBalance.toString()));
+            }
             else {
                 logger$r.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
             }
@@ -93226,6 +93238,11 @@ function parse$2(rawTransaction) {
         }
         else if (parsed instanceof TransferTransaction) {
             // TODO populate value / to?
+        }
+        else if (parsed instanceof AccountCreateTransaction) {
+            parsed = parsed;
+            contents.value = parsed.initialBalance ?
+                handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
         }
         else {
             return logger$r.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
@@ -99183,6 +99200,9 @@ class BaseProvider extends Provider {
         }
         if (receipt && receipt.contractId) {
             result.customData.contractId = receipt.contractId.toSolidityAddress();
+        }
+        if (receipt && receipt.accountId) {
+            result.customData.accountId = receipt.accountId;
         }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {

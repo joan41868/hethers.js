@@ -4,16 +4,56 @@ import assert from "assert";
 
 import { ethers } from "ethers";
 import { loadTests, TestCase } from "@ethersproject/testcases";
+import { BytesLike } from "@ethersproject/bytes";
 import * as utils from './utils';
 import { arrayify, getAddressFromAccount, Logger } from "ethers/lib/utils";
 import {
+    AccountCreateTransaction, AccountId,
+    Client,
     ContractCreateTransaction,
     ContractExecuteTransaction,
     FileAppendTransaction,
-    FileCreateTransaction, PublicKey, Transaction
+    FileCreateTransaction, Hbar, PrivateKey, PublicKey, Transaction, TransactionId,
+    Key as HederaKey
 } from "@hashgraph/sdk";
 import { readFileSync } from "fs";
-import * as hethers from "ethers";
+import { Key } from "@hashgraph/proto";
+
+/**
+ * Helper function that returns a Wallet instance from the provided ED25519 credentials,
+ * provided from portal.hedera.com
+ * @param account
+ * @param provider
+ */
+const createWalletFromED25519 = async (account: any, provider: ethers.providers.BaseProvider) => {
+    const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
+    const client = Client.forNetwork(account.network);
+    const randomWallet = ethers.Wallet.createRandom();
+    const protoKey = Key.create({
+        ECDSASecp256k1: arrayify(randomWallet._signingKey().compressedPublicKey)
+    });
+
+    const newAccountKey = HederaKey._fromProtobufKey(protoKey);
+    const accountCreate = await (await new AccountCreateTransaction()
+        .setKey(newAccountKey)
+        .setTransactionId(TransactionId.generate(account.operator.accountId))
+        .setInitialBalance(new Hbar(10))
+        .setNodeAccountIds([new AccountId(0,0,3)])
+        .freeze()
+        .sign(edPrivateKey))
+        .execute(client);
+    const receipt = await accountCreate.getReceipt(client);
+    // @ts-ignore
+    const newAccountId = receipt.accountId.toString();
+
+    const hederaEoa = {
+        account: newAccountId,
+        privateKey: randomWallet.privateKey
+    };
+
+    // @ts-ignore
+    return new ethers.Wallet(hederaEoa, provider);
+}
 
 describe('Test JSON Wallets', function() {
 
@@ -477,7 +517,7 @@ describe("Wallet local calls", async function () {
     const wallet = new ethers.Wallet(hederaEoa, provider);
     const contractAddr = '0000000000000000000000000000000001b34cbb';
     const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
-    const contract = hethers.ContractFactory.getContract(contractAddr, abi, wallet);
+    const contract = ethers.ContractFactory.getContract(contractAddr, abi, wallet);
     const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
         await wallet.getAddress()
     ]);
@@ -537,5 +577,54 @@ describe("Wallet local calls", async function () {
         } catch (err) {
             assert.strictEqual(err.code, Logger.errors.INVALID_ARGUMENT)
         }
+    });
+});
+
+describe("Wallet createAccount", function () {
+
+    let wallet: ethers.Wallet, newAccount: ethers.Wallet, newAccountPublicKey: BytesLike, provider: ethers.providers.BaseProvider;
+
+    before( async () => {
+        const account = {
+            "operator": {
+                "accountId": "0.0.1065",
+                "publicKey": "302a300506032b65700321006286f3cfa771a803f1ff90a3ee5d227002ac209d934f7b47fa41288e71938095",
+                "privateKey": "302e020100300506032b657004220420f24f8a15fc36ec3cee05c99c2e71bda086977885eeeebbec17654c5d3a6c35b5"
+            },
+            "network": {
+                "35.231.208.148:50211": "0.0.3",
+                "35.199.15.177:50211": "0.0.4",
+                "35.225.201.195:50211": "0.0.5",
+                "35.247.109.135:50211": "0.0.6"
+            }
+        };
+
+        provider = ethers.providers.getDefaultProvider('previewnet');
+        wallet = await createWalletFromED25519(account, provider);
+    })
+
+    beforeEach( async () => {
+        newAccount = ethers.Wallet.createRandom();
+        newAccountPublicKey = newAccount._signingKey().compressedPublicKey;
+    })
+
+    it("Should create an account", async function() {
+        this.timeout(12000);
+        const tx = await wallet.createAccount(newAccountPublicKey);
+        assert.ok(tx, 'tx exists');
+        assert.ok(tx.customData, 'tx.customData exists');
+        assert.ok(tx.customData.accountId, 'accountId exists');
+    });
+
+    it("Should add initial balance if provided", async function() {
+        this.timeout(12000);
+        const tx = await wallet.createAccount(newAccountPublicKey, BigInt(123) );
+        assert.ok(tx, 'tx exists');
+        assert.ok(tx.customData, 'tx.customData exists');
+        assert.ok(tx.customData.accountId, 'accountId exists');
+
+        const newAccountAddress = getAddressFromAccount(tx.customData.accountId.toString());
+        const newAccBalance = await provider.getBalance(newAccountAddress);
+        assert.strictEqual(BigInt(123).toString(), newAccBalance.toString(), 'The initial balance is correct');
     });
 });
