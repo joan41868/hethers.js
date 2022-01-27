@@ -749,29 +749,24 @@ export class BaseProvider extends Provider {
      */
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
         if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
-
         transactionId = await transactionId;
-
         const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
         try {
             let { data } = await axios.get(this._mirrorNodeUrl + transactionsEndpoint);
-            let result = null;
             if (data) {
                 const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
                 if (filtered.length > 0) {
-                    const transaction = filtered[0];
                     const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
-
-                    const response = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
-                    const mergedData = {
+                    const dataWithLogs = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
+                    const record = {
                         chainId: this._network.chainId,
-                        ...response.data,
-                        transaction: { transaction_id: transaction.transaction_id, result: transaction.result }
+                        transactionId: transactionId,
+                        result: filtered[0].result,
+                        ...dataWithLogs.data
                     };
-                    return this.formatter.responseFromRecord(mergedData);
+                    return this.formatter.responseFromRecord(record);
                 }
             }
-            return result;
         } catch (error) {
             if (error && error.response && error.response.status != 404) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
@@ -779,8 +774,8 @@ export class BaseProvider extends Provider {
                     error
                 });
             }
-            return null;
         }
+        return null;
     }
 
     /**

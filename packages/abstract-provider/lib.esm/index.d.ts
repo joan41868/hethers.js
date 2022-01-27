@@ -21,6 +21,8 @@ export declare type TransactionRequest = {
 };
 export declare type HederaTransactionRecord = {
     chainId: number;
+    transactionId: string;
+    result: string;
     amount: number;
     call_result: string;
     contract_id: string;
@@ -36,10 +38,6 @@ export declare type HederaTransactionRecord = {
     block_number: number;
     hash: string;
     logs: {};
-    transaction: {
-        transaction_id: string;
-        result: string;
-    };
 };
 export interface TransactionResponse extends Transaction {
     hash: string;

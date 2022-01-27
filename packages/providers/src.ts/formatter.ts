@@ -400,7 +400,7 @@ export class Formatter {
             chainId: record.chainId,
             hash: record.hash,
             timestamp: record.timestamp,
-            transactionId: record.transaction.transaction_id,
+            transactionId: record.transactionId,
             from: record.from,
             to: record.to,
             data: record.call_result,
@@ -409,7 +409,7 @@ export class Formatter {
             customData: {
                 gas_used: record.gas_used,
                 logs: record.logs,
-                result: record.transaction.result
+                result: record.result
             },
             wait: null
         }
@@ -418,12 +418,8 @@ export class Formatter {
     receiptFromResponse(response: TransactionResponse): TransactionReceipt {
         let contractAddress = null;
         let to = null;
-        if (response.data != '0x') {
-            contractAddress = response.to;
-        } else {
-            to = response.to;
-        }
         let logs: Log[] = [];
+        response.data != '0x' ? contractAddress = response.to : to = response.to;
         response.customData?.logs.forEach(function (log: any) {
             const values = {
                 timestamp: response.timestamp,

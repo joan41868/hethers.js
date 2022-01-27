@@ -32,6 +32,8 @@ export type TransactionRequest = {
 
 export type HederaTransactionRecord = {
     chainId: number,
+    transactionId: string,
+    result: string,
     amount: number,
     call_result: string,
     contract_id: string,
@@ -46,11 +48,7 @@ export type HederaTransactionRecord = {
     block_hash: string,
     block_number: number,
     hash: string,
-    logs: {},
-    transaction: {
-        transaction_id: string,
-        result: string
-    }
+    logs: {}
 }
   
 export interface TransactionResponse extends Transaction {

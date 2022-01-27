@@ -94879,7 +94879,7 @@ class Formatter {
             chainId: record.chainId,
             hash: record.hash,
             timestamp: record.timestamp,
-            transactionId: record.transaction.transaction_id,
+            transactionId: record.transactionId,
             from: record.from,
             to: record.to,
             data: record.call_result,
@@ -94888,7 +94888,7 @@ class Formatter {
             customData: {
                 gas_used: record.gas_used,
                 logs: record.logs,
-                result: record.transaction.result
+                result: record.result
             },
             wait: null
         };
@@ -94897,13 +94897,8 @@ class Formatter {
         var _a, _b, _c, _d;
         let contractAddress = null;
         let to = null;
-        if (response.data != '0x') {
-            contractAddress = response.to;
-        }
-        else {
-            to = response.to;
-        }
         let logs = [];
+        response.data != '0x' ? contractAddress = response.to : to = response.to;
         (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
             const values = {
                 timestamp: response.timestamp,
@@ -99292,18 +99287,15 @@ class BaseProvider extends Provider {
             const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
             try {
                 let { data } = yield axios$1.get(this._mirrorNodeUrl + transactionsEndpoint);
-                let result = null;
                 if (data) {
                     const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
                     if (filtered.length > 0) {
-                        const transaction = filtered[0];
                         const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
-                        const response = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
-                        const mergedData = Object.assign(Object.assign({ chainId: this._network.chainId }, response.data), { transaction: { transaction_id: transaction.transaction_id, result: transaction.result } });
-                        return this.formatter.responseFromRecord(mergedData);
+                        const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
+                        const record = Object.assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
+                        return this.formatter.responseFromRecord(record);
                     }
                 }
-                return result;
             }
             catch (error) {
                 if (error && error.response && error.response.status != 404) {
@@ -99312,8 +99304,8 @@ class BaseProvider extends Provider {
                         error
                     });
                 }
-                return null;
             }
+            return null;
         });
     }
     /**

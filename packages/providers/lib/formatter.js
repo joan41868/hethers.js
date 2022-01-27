@@ -333,7 +333,7 @@ var Formatter = /** @class */ (function () {
             chainId: record.chainId,
             hash: record.hash,
             timestamp: record.timestamp,
-            transactionId: record.transaction.transaction_id,
+            transactionId: record.transactionId,
             from: record.from,
             to: record.to,
             data: record.call_result,
@@ -342,7 +342,7 @@ var Formatter = /** @class */ (function () {
             customData: {
                 gas_used: record.gas_used,
                 logs: record.logs,
-                result: record.transaction.result
+                result: record.result
             },
             wait: null
         };
@@ -351,13 +351,8 @@ var Formatter = /** @class */ (function () {
         var _a, _b, _c, _d;
         var contractAddress = null;
         var to = null;
-        if (response.data != '0x') {
-            contractAddress = response.to;
-        }
-        else {
-            to = response.to;
-        }
         var logs = [];
+        response.data != '0x' ? contractAddress = response.to : to = response.to;
         (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
             var values = {
                 timestamp: response.timestamp,
