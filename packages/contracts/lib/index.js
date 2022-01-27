@@ -14,17 +14,6 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
-var __assign = (this && this.__assign) || function () {
-    __assign = Object.assign || function(t) {
-        for (var s, i = 1, n = arguments.length; i < n; i++) {
-            s = arguments[i];
-            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-                t[p] = s[p];
-        }
-        return t;
-    };
-    return __assign.apply(this, arguments);
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -1098,20 +1087,32 @@ var ContractFactory = /** @class */ (function () {
         (0, properties_1.defineReadOnly)(this, "interface", (0, properties_1.getStatic)(_newTarget, "getInterface")(contractInterface));
         (0, properties_1.defineReadOnly)(this, "signer", signer || null);
     }
-    ContractFactory.prototype.getDeployTransaction = function (args) {
+    ContractFactory.prototype.getDeployTransactions = function () {
+        var args = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            args[_i] = arguments[_i];
+        }
         var chunks = (0, abstract_signer_2.splitInChunks)(Buffer.from(this.bytecode).toString(), 4096);
-        var fileCreate = __assign(__assign({}, args), { customData: {
+        var fileCreate = {
+            customData: {
                 fileChunk: chunks[0]
-            } });
+            }
+        };
         var fileAppends = [];
-        for (var _i = 0, _a = chunks.slice(1); _i < _a.length; _i++) {
-            var chunk = _a[_i];
-            var fileAppend = __assign(__assign({}, args), { customData: {
+        for (var _a = 0, _b = chunks.slice(1); _a < _b.length; _a++) {
+            var chunk = _b[_a];
+            var fileAppend = {
+                customData: {
                     fileChunk: chunk
-                } });
+                }
+            };
             fileAppends.push(fileAppend);
         }
-        var contractCreate = __assign(__assign({}, args), { customData: {} });
+        var contractCreate = {
+            gasLimit: 300000,
+            data: this.interface.encodeDeploy(args),
+            customData: {}
+        };
         return __spreadArray(__spreadArray([fileCreate], fileAppends, true), [contractCreate], false);
     };
     ContractFactory.prototype.deploy = function () {
@@ -1135,7 +1136,7 @@ var ContractFactory = /** @class */ (function () {
                     case 1:
                         params = _a.sent();
                         params.push(overrides);
-                        unsignedTx = this.getDeployTransaction();
+                        unsignedTx = this.getDeployTransactions();
                         return [4 /*yield*/, this.signer.sendTransaction(unsignedTx[0])];
                     case 2:
                         tx = _a.sent();

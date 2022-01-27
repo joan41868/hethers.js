@@ -94161,19 +94161,27 @@ class ContractFactory {
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         defineReadOnly(this, "signer", signer || null);
     }
-    getDeployTransaction(args) {
+    getDeployTransactions(...args) {
         let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
-        const fileCreate = Object.assign(Object.assign({}, args), { customData: {
+        const fileCreate = {
+            customData: {
                 fileChunk: chunks[0]
-            } });
+            }
+        };
         let fileAppends = [];
         for (let chunk of chunks.slice(1)) {
-            const fileAppend = Object.assign(Object.assign({}, args), { customData: {
+            const fileAppend = {
+                customData: {
                     fileChunk: chunk
-                } });
+                }
+            };
             fileAppends.push(fileAppend);
         }
-        const contractCreate = Object.assign(Object.assign({}, args), { customData: {} });
+        const contractCreate = {
+            gasLimit: 300000,
+            data: this.interface.encodeDeploy(args),
+            customData: {}
+        };
         return [fileCreate, ...fileAppends, contractCreate];
     }
     deploy(...args) {
@@ -94189,7 +94197,7 @@ class ContractFactory {
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
             // Get the deployment transaction (with optional overrides)
-            const unsignedTx = this.getDeployTransaction();
+            const unsignedTx = this.getDeployTransactions();
             // Send the deployment transaction
             const tx = yield this.signer.sendTransaction(unsignedTx[0]);
             const address = getStatic(this.constructor, "getContractAddress")(tx);

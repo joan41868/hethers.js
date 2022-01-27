@@ -291,7 +291,7 @@ describe("Test Contract Transaction Population", function() {
         assert.equal(tx.from, testAddressCheck.toLowerCase(), "from address matches");
     });
 
-    it("should return an array of transactions on getDeployTransaction call", async function () {
+    it("should return an array of transactions on getDeployTransactions call", async function () {
         const hederaEoa = {
             account: "0.0.1280",
             privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
@@ -301,9 +301,7 @@ describe("Test Contract Transaction Population", function() {
         const wallet = new ethers.Wallet(hederaEoa, provider);
 
         const contractFactory = new ethers.ContractFactory(abi, "", wallet);
-        const transactions = contractFactory.getDeployTransaction({
-            gasLimit: 300000,
-        });
+        const transactions = contractFactory.getDeployTransactions();
 
         assert.strictEqual(Array.isArray(transactions), true);
         assert.strictEqual(transactions.length, 2);

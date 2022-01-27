@@ -408,7 +408,7 @@ describe("Test Contract Transaction Population", function () {
             });
         });
     });
-    it("should return an array of transactions on getDeployTransaction call", function () {
+    it("should return an array of transactions on getDeployTransactions call", function () {
         return __awaiter(this, void 0, void 0, function () {
             var hederaEoa, provider, wallet, contractFactory, transactions;
             return __generator(this, function (_a) {
@@ -419,9 +419,7 @@ describe("Test Contract Transaction Population", function () {
                 provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
                 wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
                 contractFactory = new ethers_1.ethers.ContractFactory(abi, "", wallet);
-                transactions = contractFactory.getDeployTransaction({
-                    gasLimit: 300000,
-                });
+                transactions = contractFactory.getDeployTransactions();
                 assert_1.default.strictEqual(Array.isArray(transactions), true);
                 assert_1.default.strictEqual(transactions.length, 2);
                 return [2 /*return*/];

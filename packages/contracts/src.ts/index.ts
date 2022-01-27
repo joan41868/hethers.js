@@ -1178,11 +1178,10 @@ export class ContractFactory {
         defineReadOnly(this, "signer", signer || null);
     }
 
-    getDeployTransaction(args?: {}): Array<TransactionRequest> {
+    getDeployTransactions(...args: Array<any>): Array<TransactionRequest> {
         let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
 
         const fileCreate: TransactionRequest = {
-            ...args,
             customData: {
                 fileChunk: chunks[0]
             }
@@ -1191,7 +1190,6 @@ export class ContractFactory {
         let fileAppends: Array<any> = [];
         for (let chunk of chunks.slice(1)) {
             const fileAppend: TransactionRequest = {
-                ...args,
                 customData: {
                     fileChunk: chunk
                 }
@@ -1201,7 +1199,8 @@ export class ContractFactory {
         }
 
         const contractCreate: TransactionRequest = {
-            ...args,
+            gasLimit: 300000,
+            data: this.interface.encodeDeploy(args),
             customData: {}
         };
 
@@ -1225,7 +1224,7 @@ export class ContractFactory {
         params.push(overrides);
 
         // Get the deployment transaction (with optional overrides)
-        const unsignedTx = this.getDeployTransaction();
+        const unsignedTx = this.getDeployTransactions();
 
         // Send the deployment transaction
         const tx = await this.signer.sendTransaction(unsignedTx[0]);
