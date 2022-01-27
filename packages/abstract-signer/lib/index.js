@@ -80,6 +80,7 @@ var address_1 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var Long = __importStar(require("long"));
 var proto_1 = require("@hashgraph/proto");
+var strings_1 = require("@ethersproject/strings");
 var logger = new logger_1.Logger(_version_1.version);
 var allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
@@ -259,7 +260,7 @@ var Signer = /** @class */ (function () {
                     case 3: return [2 /*return*/, _b.sent()];
                     case 4:
                         contractByteCode = tx.data;
-                        chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
+                        chunks = (0, strings_1.splitInChunks)(Buffer.from(contractByteCode).toString(), 4096);
                         fileCreate = {
                             customData: {
                                 fileChunk: chunks[0],
@@ -457,16 +458,6 @@ var VoidSigner = /** @class */ (function (_super) {
     return VoidSigner;
 }(Signer));
 exports.VoidSigner = VoidSigner;
-function splitInChunks(data, chunkSize) {
-    var chunks = [];
-    var num = 0;
-    while (num <= data.length) {
-        var slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
-}
 /**
  * Generates a random integer in the given range
  * @param min - range start

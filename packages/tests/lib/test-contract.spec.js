@@ -408,5 +408,23 @@ describe("Test Contract Transaction Population", function () {
             });
         });
     });
+    it("should return an array of transactions on getDeployTransactions call", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var hederaEoa, provider, wallet, contractFactory, transactions;
+            return __generator(this, function (_a) {
+                hederaEoa = {
+                    account: "0.0.1280",
+                    privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
+                };
+                provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
+                wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
+                contractFactory = new ethers_1.ethers.ContractFactory(abi, "", wallet);
+                transactions = contractFactory.getDeployTransactions();
+                assert_1.default.strictEqual(Array.isArray(transactions), true);
+                assert_1.default.strictEqual(transactions.length, 2);
+                return [2 /*return*/];
+            });
+        });
+    });
 });
 //# sourceMappingURL=test-contract.spec.js.map
