@@ -7682,6 +7682,16 @@ function toUtf8String(bytes, onError) {
 function toUtf8CodePoints(str, form = UnicodeNormalizationForm.current) {
     return getUtf8CodePoints(toUtf8Bytes(str, form));
 }
+function splitInChunks(data, chunkSize) {
+    const chunks = [];
+    let num = 0;
+    while (num <= data.length) {
+        const slice = data.slice(num, chunkSize + num);
+        num += chunkSize;
+        chunks.push(slice);
+    }
+    return chunks;
+}
 
 "use strict";
 function formatBytes32String(text) {
@@ -7912,7 +7922,8 @@ var lib_esm$6 = /*#__PURE__*/Object.freeze({
 	get UnicodeNormalizationForm () { return UnicodeNormalizationForm; },
 	formatBytes32String: formatBytes32String,
 	parseBytes32String: parseBytes32String,
-	nameprep: nameprep
+	nameprep: nameprep,
+	splitInChunks: splitInChunks
 });
 
 "use strict";
@@ -86757,16 +86768,6 @@ class VoidSigner extends Signer {
     connect(provider) {
         return new VoidSigner(this.address, provider);
     }
-}
-function splitInChunks(data, chunkSize) {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
 }
 /**
  * Generates a random integer in the given range

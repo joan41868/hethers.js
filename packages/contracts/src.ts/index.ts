@@ -8,7 +8,7 @@ import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { AccessList, accessListify, AccessListish } from "@ethersproject/transactions";
-import { splitInChunks } from "@ethersproject/abstract-signer";
+import { splitInChunks } from "@ethersproject/strings";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
