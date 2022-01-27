@@ -22373,6 +22373,12 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$1 = keccak(256);
 
+var _args = [
+	[
+		"elliptic@6.5.4",
+		"/home/nikolay/Desktop/hethers.js"
+	]
+];
 var _from = "elliptic@6.5.4";
 var _id = "elliptic@6.5.4";
 var _inBundle = false;
@@ -22395,9 +22401,8 @@ var _requiredBy = [
 	"/@hashgraph/cryptography"
 ];
 var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
-var _shasum = "da37cebd31e79a1367e941b592ed1fbebd58abbb";
-var _spec = "elliptic@6.5.4";
-var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
+var _spec = "6.5.4";
+var _where = "/home/nikolay/Desktop/hethers.js";
 var author = {
 	name: "Fedor Indutny",
 	email: "fedor@indutny.com"
@@ -22405,7 +22410,6 @@ var author = {
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
-var bundleDependencies = false;
 var dependencies = {
 	"bn.js": "^4.11.9",
 	brorand: "^1.1.0",
@@ -22415,7 +22419,6 @@ var dependencies = {
 	"minimalistic-assert": "^1.0.1",
 	"minimalistic-crypto-utils": "^1.0.1"
 };
-var deprecated = false;
 var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
@@ -22458,6 +22461,7 @@ var scripts = {
 };
 var version$b = "6.5.4";
 var require$$0 = {
+	_args: _args,
 	_from: _from,
 	_id: _id,
 	_inBundle: _inBundle,
@@ -22467,14 +22471,11 @@ var require$$0 = {
 	_requested: _requested,
 	_requiredBy: _requiredBy,
 	_resolved: _resolved,
-	_shasum: _shasum,
 	_spec: _spec,
 	_where: _where,
 	author: author,
 	bugs: bugs,
-	bundleDependencies: bundleDependencies,
 	dependencies: dependencies,
-	deprecated: deprecated,
 	description: description,
 	devDependencies: devDependencies,
 	files: files,
@@ -80725,7 +80726,13 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var _from$1 = "@grpc/grpc-js@^1.4.4";
+var _args$1 = [
+	[
+		"@grpc/grpc-js@1.5.1",
+		"/home/nikolay/Desktop/hethers.js"
+	]
+];
+var _from$1 = "@grpc/grpc-js@1.5.1";
 var _id$1 = "@grpc/grpc-js@1.5.1";
 var _inBundle$1 = false;
 var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
@@ -80733,27 +80740,25 @@ var _location$1 = "/@grpc/grpc-js";
 var _phantomChildren$1 = {
 };
 var _requested$1 = {
-	type: "range",
+	type: "version",
 	registry: true,
-	raw: "@grpc/grpc-js@^1.4.4",
+	raw: "@grpc/grpc-js@1.5.1",
 	name: "@grpc/grpc-js",
 	escapedName: "@grpc%2fgrpc-js",
 	scope: "@grpc",
-	rawSpec: "^1.4.4",
+	rawSpec: "1.5.1",
 	saveSpec: null,
-	fetchSpec: "^1.4.4"
+	fetchSpec: "1.5.1"
 };
 var _requiredBy$1 = [
 	"/@hashgraph/sdk"
 ];
 var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
-var _shasum$1 = "934571ae351e868e61d2bd1d56249b79ce8bd1f5";
-var _spec$1 = "@grpc/grpc-js@^1.4.4";
-var _where$1 = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js\\node_modules\\@hashgraph\\sdk";
+var _spec$1 = "1.5.1";
+var _where$1 = "/home/nikolay/Desktop/hethers.js";
 var author$1 = {
 	name: "Google Inc."
 };
-var bundleDependencies$1 = false;
 var contributors = [
 	{
 		name: "Google Inc."
@@ -80763,7 +80768,6 @@ var dependencies$1 = {
 	"@grpc/proto-loader": "^0.6.4",
 	"@types/node": ">=12.12.47"
 };
-var deprecated$1 = false;
 var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
@@ -80833,6 +80837,7 @@ var scripts$1 = {
 var types = "build/src/index.d.ts";
 var version$c = "1.5.1";
 var require$$0$2 = {
+	_args: _args$1,
 	_from: _from$1,
 	_id: _id$1,
 	_inBundle: _inBundle$1,
@@ -80842,14 +80847,11 @@ var require$$0$2 = {
 	_requested: _requested$1,
 	_requiredBy: _requiredBy$1,
 	_resolved: _resolved$1,
-	_shasum: _shasum$1,
 	_spec: _spec$1,
 	_where: _where$1,
 	author: author$1,
-	bundleDependencies: bundleDependencies$1,
 	contributors: contributors,
 	dependencies: dependencies$1,
-	deprecated: deprecated$1,
 	description: description$1,
 	devDependencies: devDependencies$1,
 	engines: engines,
@@ -93050,7 +93052,7 @@ function serialize(transaction, signature) {
         transactionType: transaction.type
     });
 }
-function serializeHederaTransaction(transaction) {
+function serializeHederaTransaction(transaction, pubKey) {
     var _a, _b;
     let tx;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
@@ -93084,7 +93086,8 @@ function serializeHederaTransaction(transaction) {
                     .setContents(transaction.customData.fileChunk)
                     .setKeys([transaction.customData.fileKey ?
                         transaction.customData.fileKey :
-                        PublicKey$1.fromString(this._signingKey().compressedPublicKey)]);
+                        pubKey
+                ]);
             }
             else if (transaction.customData.publicKey) {
                 const { publicKey, initialBalance } = transaction.customData;
@@ -93268,12 +93271,12 @@ const logger$s = new Logger(version$o);
 ;
 ;
 ///////////////////////////////
-const allowedTransactionKeys$2 = {
-    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, nonce: true, to: true, value: true,
-    type: true, accessList: true,
-    maxFeePerGas: true, maxPriorityFeePerGas: true,
-    customData: true
-};
+// const allowedTransactionKeys: { [ key: string ]: boolean } = {
+//     chainId: true, data: true, from: true, gasLimit: true, gasPrice:true, nonce: true, to: true, value: true,
+//     type: true, accessList: true,
+//     maxFeePerGas: true, maxPriorityFeePerGas: true,
+//     customData: true
+// }
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter$8(this, void 0, void 0, function* () {
@@ -94176,42 +94179,28 @@ class ContractFactory {
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         defineReadOnly(this, "signer", signer || null);
     }
-    // @TODO: Future; rename to populateTransaction?
-    getDeployTransaction(...args) {
-        let tx = {};
-        // If we have 1 additional argument, we allow transaction overrides
-        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-            tx = shallowCopy(args.pop());
-            for (const key in tx) {
-                if (!allowedTransactionKeys$2[key]) {
-                    throw new Error("unknown transaction override " + key);
+    getDeployTransactions(...args) {
+        let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
+        const fileCreate = {
+            customData: {
+                fileChunk: chunks[0]
+            }
+        };
+        let fileAppends = [];
+        for (let chunk of chunks.slice(1)) {
+            const fileAppend = {
+                customData: {
+                    fileChunk: chunk
                 }
-            }
+            };
+            fileAppends.push(fileAppend);
         }
-        // Do not allow these to be overridden in a deployment transaction
-        ["data", "from", "to"].forEach((key) => {
-            if (tx[key] == null) {
-                return;
-            }
-            logger$s.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
-        });
-        if (tx.value) {
-            const value = BigNumber.from(tx.value);
-            if (!value.isZero() && !this.interface.deploy.payable) {
-                logger$s.throwError("non-payable constructor cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "overrides.value",
-                    value: tx.value
-                });
-            }
-        }
-        // Make sure the call matches the constructor signature
-        logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-        // Set the data to the bytecode + the encoded constructor arguments
-        tx.data = hexlify(concat([
-            this.bytecode,
-            this.interface.encodeDeploy(args)
-        ]));
-        return tx;
+        const contractCreate = {
+            gasLimit: 300000,
+            data: this.interface.encodeDeploy(args),
+            customData: {}
+        };
+        return [fileCreate, ...fileAppends, contractCreate];
     }
     deploy(...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
@@ -94226,9 +94215,9 @@ class ContractFactory {
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
             // Get the deployment transaction (with optional overrides)
-            const unsignedTx = this.getDeployTransaction(...params);
+            const unsignedTx = this.getDeployTransactions();
             // Send the deployment transaction
-            const tx = yield this.signer.sendTransaction(unsignedTx);
+            const tx = yield this.signer.sendTransaction(unsignedTx[0]);
             const address = getStatic(this.constructor, "getContractAddress")(tx);
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
             // Add the modified wait that wraps events
