@@ -220,7 +220,7 @@ var Formatter = /** @class */ (function () {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     Formatter.prototype.hash = function (value, strict) {
         var result = this.hex(value, strict);
-        if ((0, bytes_1.hexDataLength)(result) !== 32) {
+        if ((0, bytes_1.hexDataLength)(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
         }
         return result;
@@ -313,10 +313,6 @@ var Formatter = /** @class */ (function () {
             }
             result.chainId = chainId;
         }
-        // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
         return result;
     };
     Formatter.prototype.transaction = function (value) {
@@ -327,32 +323,62 @@ var Formatter = /** @class */ (function () {
     };
     Formatter.prototype.receipt = function (value) {
         var result = Formatter.check(this.formats.receipt, value);
-        // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                var value_1 = bignumber_1.BigNumber.from(result.root).toNumber();
-                if (value_1 === 0 || value_1 === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value_1)) {
-                        logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value_1;
-                    delete result.root;
-                }
-                else {
-                    logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            }
-            else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
         if (result.status != null) {
             result.byzantium = true;
         }
         return result;
+    };
+    Formatter.prototype.responseFromRecord = function (record) {
+        return {
+            chainId: record.chainId,
+            hash: record.hash,
+            timestamp: record.timestamp,
+            transactionId: record.transactionId,
+            from: record.from,
+            to: record.to,
+            data: record.call_result,
+            gasLimit: bignumber_1.BigNumber.from(record.gas_limit),
+            value: bignumber_1.BigNumber.from(record.amount),
+            customData: {
+                gas_used: record.gas_used,
+                logs: record.logs,
+                result: record.result
+            },
+            wait: null
+        };
+    };
+    Formatter.prototype.receiptFromResponse = function (response) {
+        var _a, _b, _c, _d;
+        var contractAddress = null;
+        var to = null;
+        var logs = [];
+        response.data != '0x' ? contractAddress = response.to : to = response.to;
+        (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
+            var values = {
+                timestamp: response.timestamp,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                transactionHash: response.hash,
+                logIndex: log.index
+            };
+            logs.push(values);
+        });
+        return {
+            to: to,
+            from: response.from,
+            timestamp: response.timestamp,
+            contractAddress: contractAddress,
+            gasUsed: (_b = response.customData) === null || _b === void 0 ? void 0 : _b.gas_used,
+            logsBloom: null,
+            transactionId: response.transactionId,
+            transactionHash: response.hash,
+            logs: logs,
+            cumulativeGasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
+            type: 0,
+            byzantium: true,
+            status: ((_d = response.customData) === null || _d === void 0 ? void 0 : _d.result) === 'SUCCESS' ? 1 : 0
+        };
     };
     Formatter.prototype.topics = function (value) {
         var _this = this;

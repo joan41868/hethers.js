@@ -27,22 +27,18 @@ export declare type UnsignedTransaction = {
     maxFeePerGas?: BigNumberish;
 };
 export interface Transaction {
+    transactionId: string;
     hash?: string;
     to?: string;
     from?: string;
-    nonce: number;
     gasLimit: BigNumber;
-    gasPrice?: BigNumber;
     data: string;
     value: BigNumber;
     chainId: number;
     r?: string;
     s?: string;
     v?: number;
-    type?: number | null;
     accessList?: AccessList;
-    maxPriorityFeePerGas?: BigNumber;
-    maxFeePerGas?: BigNumber;
 }
 export declare function computeAddress(key: BytesLike | string): string;
 export declare function computeAlias(key: BytesLike | string): string;

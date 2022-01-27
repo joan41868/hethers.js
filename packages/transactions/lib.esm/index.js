@@ -403,7 +403,9 @@ export function parse(rawTransaction) {
         catch (error) {
             logger.throwArgumentError(error.message, "rawTransaction", rawTransaction);
         }
+        const tx = parsed.transactionId;
         let contents = {
+            transactionId: tx.accountId.toString() + '-' + tx.validStart.seconds + '-' + tx.validStart.nanos,
             hash: hexlify(yield parsed.getTransactionHash()),
             from: getAddressFromAccount(parsed.transactionId.accountId.toString()),
         };
@@ -443,7 +445,7 @@ export function parse(rawTransaction) {
             return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
-        return Object.assign(Object.assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null });
+        return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
 //# sourceMappingURL=index.js.map

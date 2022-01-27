@@ -188,8 +188,8 @@ var Wallet = /** @class */ (function (_super) {
     Wallet.prototype.signTransaction = function (transaction) {
         var _this = this;
         this._checkAddress('signTransaction');
-        this.checkTransaction(transaction);
-        return this.populateTransaction(transaction).then(function (readyTx) { return __awaiter(_this, void 0, void 0, function () {
+        var tx = this.checkTransaction(transaction);
+        return this.populateTransaction(tx).then(function (readyTx) { return __awaiter(_this, void 0, void 0, function () {
             var tx, pkey, signed;
             return __generator(this, function (_a) {
                 switch (_a.label) {
