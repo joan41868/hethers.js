@@ -16,6 +16,7 @@ import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
+import { getAddressFromAccount } from "@ethersproject/address";
 import { version } from "./_version";
 const logger = new Logger(version);
 
@@ -760,14 +761,24 @@ export class BaseProvider extends Provider {
             if (data) {
                 const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
                 if (filtered.length > 0) {
-                    const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
-                    const dataWithLogs = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
-                    const record = {
+                    let record: any;
+                    record = {
                         chainId: this._network.chainId,
                         transactionId: transactionId,
                         result: filtered[0].result,
-                        ...dataWithLogs.data
                     };
+
+                    const transactionName = filtered[0].name;
+                    if (transactionName === 'CRYPTOCREATEACCOUNT') {
+                        record.hash = filtered[0].transaction_hash;
+                        record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
+                    }
+                    else {
+                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                        const dataWithLogs = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
+                        record = Object.assign({}, record, {...dataWithLogs.data});
+                    }
+
                     return this.formatter.responseFromRecord(record);
                 }
             }

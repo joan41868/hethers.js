@@ -76,10 +76,11 @@ var sha2_1 = require("@ethersproject/sha2");
 var strings_1 = require("@ethersproject/strings");
 var bech32_1 = __importDefault(require("bech32"));
 var logger_1 = require("@ethersproject/logger");
+var address_1 = require("@ethersproject/address");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 var formatter_1 = require("./formatter");
-var address_1 = require("@ethersproject/address");
+var address_2 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
 //////////////////////////////
@@ -666,7 +667,7 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 0: return [4 /*yield*/, accountLike];
                     case 1:
                         accountLike = _a.sent();
-                        account = (0, address_1.asAccountString)(accountLike);
+                        account = (0, address_2.asAccountString)(accountLike);
                         _a.label = 2;
                     case 2:
                         _a.trys.push([2, 4, , 5]);
@@ -878,7 +879,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var transactionsEndpoint, data, filtered, contractsEndpoint, dataWithLogs, record, error_4;
+            var transactionsEndpoint, data, filtered, record, transactionName, contractsEndpoint, dataWithLogs, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -890,21 +891,34 @@ var BaseProvider = /** @class */ (function (_super) {
                         transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
                         _a.label = 2;
                     case 2:
-                        _a.trys.push([2, 6, , 7]);
+                        _a.trys.push([2, 8, , 9]);
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + transactionsEndpoint)];
                     case 3:
                         data = (_a.sent()).data;
-                        if (!data) return [3 /*break*/, 5];
+                        if (!data) return [3 /*break*/, 7];
                         filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
-                        if (!(filtered.length > 0)) return [3 /*break*/, 5];
+                        if (!(filtered.length > 0)) return [3 /*break*/, 7];
+                        record = void 0;
+                        record = {
+                            chainId: this._network.chainId,
+                            transactionId: transactionId,
+                            result: filtered[0].result,
+                        };
+                        transactionName = filtered[0].name;
+                        if (!(transactionName === 'CRYPTOCREATEACCOUNT')) return [3 /*break*/, 4];
+                        record.hash = filtered[0].transaction_hash;
+                        record.accountAddress = (0, address_1.getAddressFromAccount)(filtered[0].entity_id);
+                        return [3 /*break*/, 6];
+                    case 4:
                         contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
-                    case 4:
+                    case 5:
                         dataWithLogs = _a.sent();
-                        record = __assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
-                        return [2 /*return*/, this.formatter.responseFromRecord(record)];
-                    case 5: return [3 /*break*/, 7];
-                    case 6:
+                        record = Object.assign({}, record, __assign({}, dataWithLogs.data));
+                        _a.label = 6;
+                    case 6: return [2 /*return*/, this.formatter.responseFromRecord(record)];
+                    case 7: return [3 /*break*/, 9];
+                    case 8:
                         error_4 = _a.sent();
                         if (error_4 && error_4.response && error_4.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
@@ -912,8 +926,8 @@ var BaseProvider = /** @class */ (function (_super) {
                                 error: error_4
                             });
                         }
-                        return [3 /*break*/, 7];
-                    case 7: return [2 /*return*/, null];
+                        return [3 /*break*/, 9];
+                    case 9: return [2 /*return*/, null];
                 }
             });
         });
