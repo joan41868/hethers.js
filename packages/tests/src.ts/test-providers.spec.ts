@@ -1316,6 +1316,30 @@ describe("Test Hedera Provider", function () {
         const record2 = await provider2.getTransaction(txId);
         assert.notStrictEqual(record2, null, "Record is null")
     }).timeout(timeout*4);
+
+    it("provider.getTransaction should be able to work with CRYPTOCREATEACCOUNT transactions", async function() {
+        let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
+        const mintedTransaction = await defaultProvider.getTransaction("0.0.29562746-1643299484-861748482");
+
+        assert.notStrictEqual(mintedTransaction, null, "getTransaction returns the transaction");
+        assert.strictEqual(
+            mintedTransaction.transactionId,
+            '0.0.29562746-1643299484-861748482',
+            "transactionId is correct"
+        );
+        assert.strictEqual(
+            mintedTransaction.hash,
+            '6LVkJypoO2QEu4y9ACnJ/dVtc2L1Z/kcrI9ghGcXGiPqSD4IifRMWVgSuDgCqzyH',
+            "hash is correct"
+        );
+        assert.notStrictEqual(mintedTransaction.customData, null, "customData exists");
+        assert.strictEqual(
+            mintedTransaction.customData.accountAddress,
+            '0x0000000000000000000000000000000001c31782',
+            "customData.accountAddress exists"
+        );
+        assert.strictEqual(mintedTransaction.customData.result, 'SUCCESS', "customData.result is correct");
+    });
 });
 
 describe("Test Hedera Provider Formatters", function () {

@@ -1431,6 +1431,27 @@ describe("Test Hedera Provider", function () {
             });
         });
     }).timeout(timeout * 4);
+    it("provider.getTransaction should be able to work with CRYPTOCREATEACCOUNT transactions", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var defaultProvider, mintedTransaction;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        defaultProvider = ethers_1.ethers.providers.getDefaultProvider(default_hedera_provider_1.HederaNetworks.TESTNET);
+                        return [4 /*yield*/, defaultProvider.getTransaction("0.0.29562746-1643299484-861748482")];
+                    case 1:
+                        mintedTransaction = _a.sent();
+                        assert_1.default.notStrictEqual(mintedTransaction, null, "getTransaction returns the transaction");
+                        assert_1.default.strictEqual(mintedTransaction.transactionId, '0.0.29562746-1643299484-861748482', "transactionId is correct");
+                        assert_1.default.strictEqual(mintedTransaction.hash, '6LVkJypoO2QEu4y9ACnJ/dVtc2L1Z/kcrI9ghGcXGiPqSD4IifRMWVgSuDgCqzyH', "hash is correct");
+                        assert_1.default.notStrictEqual(mintedTransaction.customData, null, "customData exists");
+                        assert_1.default.strictEqual(mintedTransaction.customData.accountAddress, '0x0000000000000000000000000000000001c31782', "customData.accountAddress exists");
+                        assert_1.default.strictEqual(mintedTransaction.customData.result, 'SUCCESS', "customData.result is correct");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
 });
 describe("Test Hedera Provider Formatters", function () {
     var timeout = 15000;

@@ -769,9 +769,9 @@ xdescribe("Wallet createAccount", function () {
                     case 0: return [4 /*yield*/, wallet.createAccount(newAccountPublicKey)];
                     case 1:
                         tx = _a.sent();
-                        assert_1.default.ok(tx, 'tx exists');
-                        assert_1.default.ok(tx.customData, 'tx.customData exists');
-                        assert_1.default.ok(tx.customData.accountId, 'accountId exists');
+                        assert_1.default.notStrictEqual(tx, null, 'tx exists');
+                        assert_1.default.notStrictEqual(tx.customData, null, 'tx.customData exists');
+                        assert_1.default.notStrictEqual(tx.customData.accountId, null, 'accountId exists');
                         return [2 /*return*/];
                 }
             });
@@ -785,14 +785,37 @@ xdescribe("Wallet createAccount", function () {
                     case 0: return [4 /*yield*/, wallet.createAccount(newAccountPublicKey, BigInt(123))];
                     case 1:
                         tx = _a.sent();
-                        assert_1.default.ok(tx, 'tx exists');
-                        assert_1.default.ok(tx.customData, 'tx.customData exists');
-                        assert_1.default.ok(tx.customData.accountId, 'accountId exists');
+                        assert_1.default.notStrictEqual(tx, null, 'tx exists');
+                        assert_1.default.notStrictEqual(tx.customData, null, 'tx.customData exists');
+                        assert_1.default.notStrictEqual(tx.customData.accountId, null, 'accountId exists');
                         newAccountAddress = (0, utils_1.getAddressFromAccount)(tx.customData.accountId.toString());
                         return [4 /*yield*/, provider.getBalance(newAccountAddress)];
                     case 2:
                         newAccBalance = _a.sent();
                         assert_1.default.strictEqual(BigInt(123).toString(), newAccBalance.toString(), 'The initial balance is correct');
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Transaction receipt contains the account address", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var tx, receipt;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, wallet.createAccount(newAccountPublicKey, BigInt(123))];
+                    case 1:
+                        tx = _a.sent();
+                        assert_1.default.notStrictEqual(tx, null, 'tx exists');
+                        assert_1.default.notStrictEqual(tx.customData, null, 'tx.customData exists');
+                        assert_1.default.notStrictEqual(tx.customData.accountId, null, 'accountId exists');
+                        assert_1.default.strictEqual(tx.value.toString(), BigInt(123).toString(), 'InitialBalance is the same as tx.value');
+                        return [4 /*yield*/, tx.wait()];
+                    case 2:
+                        receipt = _a.sent();
+                        assert_1.default.notStrictEqual(receipt.accountAddress, null, "accountAddress exists");
+                        assert_1.default.notStrictEqual(receipt.transactionId, null, "transactionId exists");
+                        assert_1.default.ok(receipt.accountAddress.match(new RegExp(/^0x/)), "accountAddress has the correct format");
                         return [2 /*return*/];
                 }
             });
