@@ -42,7 +42,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
 var ethers_1 = require("ethers");
 var test_contract_json_1 = __importDefault(require("./test-contract.json"));
-var fs_1 = __importDefault(require("fs"));
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
 var provider = ethers_1.ethers.getDefaultProvider("testnet");
 var TIMEOUT_PERIOD = 120000;
@@ -409,7 +408,7 @@ describe("Test Contract Transaction Population", function () {
             });
         });
     });
-    it("should return an array of transactions on getDeployTransaction call", function () {
+    it("should return an array of transactions on getDeployTransactions call", function () {
         return __awaiter(this, void 0, void 0, function () {
             var hederaEoa, provider, wallet, contractFactory, transactions;
             return __generator(this, function (_a) {
@@ -420,41 +419,12 @@ describe("Test Contract Transaction Population", function () {
                 provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
                 wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
                 contractFactory = new ethers_1.ethers.ContractFactory(abi, "", wallet);
-                transactions = contractFactory.getDeployTransaction({
-                    gasLimit: 300000,
-                });
+                transactions = contractFactory.getDeployTransactions();
                 assert_1.default.strictEqual(Array.isArray(transactions), true);
                 assert_1.default.strictEqual(transactions.length, 2);
                 return [2 /*return*/];
             });
         });
     });
-    // TODO: skipped as we should not spam testnet with random contracts
-    // Previewnet is not really a choice as it will (soon or later) result in INVALID_SIGNATURE pre-checks as of cleanup
-    xit("should be able to deploy a contract", function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var hederaEoa, provider, wallet, abi, bytecode, contractFactory, contract;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        hederaEoa = {
-                            account: "0.0.29559509",
-                            privateKey: "0xbb621d187c22459ab6ed6768bd516bd630a087df4d5a4fbe95d77e87af10c6e1"
-                        };
-                        provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
-                        wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
-                        abi = JSON.parse(fs_1.default.readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
-                        bytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
-                        contractFactory = new ethers_1.ethers.ContractFactory(abi, bytecode, wallet);
-                        return [4 /*yield*/, contractFactory.deploy()];
-                    case 1:
-                        contract = _a.sent();
-                        assert_1.default.notStrictEqual(contract, null, "nullified contract");
-                        assert_1.default.notStrictEqual(contract.deployTransaction, "missing deploy transaction");
-                        return [2 /*return*/];
-                }
-            });
-        });
-    }).timeout(60000);
 });
 //# sourceMappingURL=test-contract.spec.js.map

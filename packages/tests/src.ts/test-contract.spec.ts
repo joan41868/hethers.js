@@ -302,9 +302,7 @@ describe("Test Contract Transaction Population", function() {
         const wallet = new ethers.Wallet(hederaEoa, provider);
 
         const contractFactory = new ethers.ContractFactory(abi, "", wallet);
-        const transactions = contractFactory.getDeployTransaction({
-            gasLimit: 300000,
-        });
+        const transactions = contractFactory.getDeployTransactions();
 
         assert.strictEqual(Array.isArray(transactions), true);
         assert.strictEqual(transactions.length, 2);

@@ -23,6 +23,7 @@ import {
 } from "@hashgraph/sdk";
 import * as Long from "long";
 import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
+import { splitInChunks } from "@ethersproject/strings";
 
 const logger = new Logger(version);
 
@@ -413,19 +414,6 @@ export class VoidSigner extends Signer implements TypedDataSigner {
         return new VoidSigner(this.address, provider);
     }
 }
-
-
-export function splitInChunks(data: string, chunkSize: number): string[] {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
-}
-
 
 /**
  * Generates a random integer in the given range

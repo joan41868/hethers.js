@@ -10,12 +10,13 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { checkResultErrors, Indexed, Interface } from "@ethersproject/abi";
 import { Provider } from "@ethersproject/abstract-provider";
-import { Signer, splitInChunks, VoidSigner } from "@ethersproject/abstract-signer";
+import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { getAddress, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { accessListify } from "@ethersproject/transactions";
+import { splitInChunks } from "@ethersproject/strings";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
@@ -930,19 +931,27 @@ export class ContractFactory {
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         defineReadOnly(this, "signer", signer || null);
     }
-    getDeployTransaction(args) {
+    getDeployTransactions(...args) {
         let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
-        const fileCreate = Object.assign(Object.assign({}, args), { customData: {
+        const fileCreate = {
+            customData: {
                 fileChunk: chunks[0]
-            } });
+            }
+        };
         let fileAppends = [];
         for (let chunk of chunks.slice(1)) {
-            const fileAppend = Object.assign(Object.assign({}, args), { customData: {
+            const fileAppend = {
+                customData: {
                     fileChunk: chunk
-                } });
+                }
+            };
             fileAppends.push(fileAppend);
         }
-        const contractCreate = Object.assign(Object.assign({}, args), { customData: {} });
+        const contractCreate = {
+            gasLimit: 300000,
+            data: this.interface.encodeDeploy(args),
+            customData: {}
+        };
         return [fileCreate, ...fileAppends, contractCreate];
     }
     deploy(...args) {
@@ -957,31 +966,15 @@ export class ContractFactory {
             // Resolve ENS names and promises in the arguments
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
-            // TODO: probably assert there are at least 2 or 3 transactions?
             // Get the deployment transaction (with optional overrides)
-            const unsignedTransactions = this.getDeployTransaction();
-            const fc = unsignedTransactions[0]; //await this.signer.sendTransaction(unsignedTransactions[0]);
-            const signedFc = yield this.signer.signTransaction(fc);
-            const fcResponse = yield this.signer.provider.sendTransaction(signedFc);
-            // @ts-ignore - ignores possibly null object
-            const fileId = fcResponse.customData.fileId;
-            // Iterate file append transactions
-            for (const fa of unsignedTransactions.slice(1, unsignedTransactions.length - 2)) {
-                fa.customData.fileId = fileId;
-                const signedFa = yield this.signer.signTransaction(fa);
-                yield this.signer.provider.sendTransaction(signedFa);
-            }
-            const cc = unsignedTransactions[unsignedTransactions.length - 1];
-            cc.customData.bytecodeFileId = fileId;
-            cc.gasLimit = 300000;
-            const signedCc = yield this.signer.signTransaction(cc);
-            const ccResponse = yield this.signer.provider.sendTransaction(signedCc);
-            // @ts-ignore - ignores possibly null object
-            const address = ccResponse.customData.contractId;
+            const unsignedTx = this.getDeployTransactions();
+            // Send the deployment transaction
+            const tx = yield this.signer.sendTransaction(unsignedTx[0]);
+            const address = getStatic(this.constructor, "getContractAddress")(tx);
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
             // Add the modified wait that wraps events
-            addContractWait(contract, ccResponse);
-            defineReadOnly(contract, "deployTransaction", ccResponse);
+            addContractWait(contract, tx);
+            defineReadOnly(contract, "deployTransaction", tx);
             return contract;
         });
     }

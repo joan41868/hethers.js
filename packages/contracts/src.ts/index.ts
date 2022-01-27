@@ -2,12 +2,13 @@
 
 import { checkResultErrors, EventFragment, Fragment, FunctionFragment, Indexed, Interface, JsonFragment, LogDescription, ParamType, Result } from "@ethersproject/abi";
 import { Block, BlockTag, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
-import { Signer, splitInChunks, VoidSigner } from "@ethersproject/abstract-signer";
+import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { getAddress, getContractAddress } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { AccessList, accessListify, AccessListish } from "@ethersproject/transactions";
+import { splitInChunks } from "@ethersproject/strings";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -1177,11 +1178,10 @@ export class ContractFactory {
         defineReadOnly(this, "signer", signer || null);
     }
 
-    getDeployTransaction(args?: {}): Array<TransactionRequest> {
+    getDeployTransactions(...args: Array<any>): Array<TransactionRequest> {
         let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
 
         const fileCreate: TransactionRequest = {
-            ...args,
             customData: {
                 fileChunk: chunks[0]
             }
@@ -1190,7 +1190,6 @@ export class ContractFactory {
         let fileAppends: Array<any> = [];
         for (let chunk of chunks.slice(1)) {
             const fileAppend: TransactionRequest = {
-                ...args,
                 customData: {
                     fileChunk: chunk
                 }
@@ -1200,7 +1199,8 @@ export class ContractFactory {
         }
 
         const contractCreate: TransactionRequest = {
-            ...args,
+            gasLimit: 300000,
+            data: this.interface.encodeDeploy(args),
             customData: {}
         };
 
