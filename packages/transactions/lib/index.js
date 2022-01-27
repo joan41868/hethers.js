@@ -461,7 +461,7 @@ exports.serializeHederaTransaction = serializeHederaTransaction;
 function parse(rawTransaction) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var payload, parsed, contents, _b;
+        var payload, parsed, tx, contents, _b;
         var _c;
         return __generator(this, function (_d) {
             switch (_d.label) {
@@ -473,7 +473,10 @@ function parse(rawTransaction) {
                     catch (error) {
                         logger.throwArgumentError(error.message, "rawTransaction", rawTransaction);
                     }
-                    _c = {};
+                    tx = parsed.transactionId;
+                    _c = {
+                        transactionId: tx.accountId.toString() + '-' + tx.validStart.seconds + '-' + tx.validStart.nanos
+                    };
                     _b = bytes_1.hexlify;
                     return [4 /*yield*/, parsed.getTransactionHash()];
                 case 1:
@@ -516,7 +519,7 @@ function parse(rawTransaction) {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];
                     }
                     // TODO populate r, s ,v
-                    return [2 /*return*/, __assign(__assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null })];
+                    return [2 /*return*/, __assign(__assign({}, contents), { chainId: 0, r: '', s: '', v: 0 })];
             }
         });
     });

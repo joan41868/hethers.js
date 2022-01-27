@@ -298,7 +298,6 @@ function getProcessFunc(provider: FallbackProvider, method: string, params: { [ 
                     block = shallowCopy(block);
                     block.transactions = block.transactions.map((tx) => {
                         tx = shallowCopy(tx);
-                        tx.confirmations = -1;
                         return tx;
                     });
                     return serialize(block);

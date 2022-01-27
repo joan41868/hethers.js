@@ -30,15 +30,33 @@ export type TransactionRequest = {
     customData?: Record<string, any>;
 }
 
+export type HederaTransactionRecord = {
+    chainId: number,
+    transactionId: string,
+    result: string,
+    amount: number,
+    call_result: string,
+    contract_id: string,
+    created_contract_ids: string[],
+    error_message: string,
+    from: string,
+    function_parameters: string,
+    gas_limit: number,
+    gas_used: number,
+    timestamp: string,
+    to: string,
+    block_hash: string,
+    block_number: number,
+    hash: string,
+    logs: {}
+}
+  
 export interface TransactionResponse extends Transaction {
     hash: string;
-    blockNumber?: number,
-    blockHash?: string,
-    timestamp?: number,
-    confirmations: number,
+    timestamp?: string,
     from: string;
     raw?: string,
-    wait: (confirmations?: number) => Promise<TransactionReceipt>,
+    wait: (timestamp?: number) => Promise<TransactionReceipt>,
     customData?: {
         [key: string]:any;
     }
@@ -75,17 +93,10 @@ export interface BlockWithTransactions extends _Block {
 
 
 export interface Log {
-    blockNumber: number;
-    blockHash: string;
-    transactionIndex: number;
-
-    removed: boolean;
-
+    timestamp: string;
     address: string;
     data: string;
-
     topics: Array<string>;
-
     transactionHash: string;
     logIndex: number;
 }
@@ -94,21 +105,17 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string,
-    transactionIndex: number,
-    root?: string,
+    timestamp: string,
     gasUsed: BigNumber,
     logsBloom: string,
-    blockHash: string,
+    transactionId: string,
     transactionHash: string,
     logs: Array<Log>,
-    blockNumber: number,
-    confirmations: number,
     cumulativeGasUsed: BigNumber,
-    effectiveGasPrice: BigNumber,
-    byzantium: boolean,
-    type: number;
+    byzantium: true,
+    type: 0,
     status?: number
-};
+}
 
 export interface FeeData {
     maxFeePerGas: null | BigNumber;

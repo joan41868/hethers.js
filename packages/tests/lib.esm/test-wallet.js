@@ -37,7 +37,7 @@ describe('Test JSON Wallets', function () {
                 }
                 // Make sure it can accept a SigningKey
                 {
-                    const wallet2 = new ethers.Wallet(wallet._signingKey());
+                    const wallet2 = new ethers.Wallet({ address: wallet.address, privateKey: wallet.privateKey });
                     assert.equal(wallet2.privateKey, test.privateKey, 'generated correct private key - ' + wallet2.privateKey);
                 }
                 // Test the sync decryption (this wallet is light, so it is safe)
@@ -160,7 +160,7 @@ describe('Test Transaction Signing and Parsing', function () {
         it(('wallet signs transaction - ' + test.name), function () {
             return __awaiter(this, void 0, void 0, function* () {
                 this.timeout(120000);
-                const wallet = new ethers.Wallet(test.privateKey);
+                const wallet = new ethers.Wallet({ address: test.accountAddress, privateKey: test.privateKey });
                 const transaction = {
                     to: test.to,
                     data: test.data,
@@ -209,7 +209,7 @@ describe('Test Signing Messages', function () {
     tests.forEach(function (test) {
         it(('signs a message "' + test.name + '"'), function () {
             this.timeout(120000);
-            let wallet = new ethers.Wallet(test.privateKey);
+            let wallet = new ethers.Wallet({ address: test.address, privateKey: test.privateKey });
             return wallet.signMessage(test.message).then(function (signature) {
                 assert.equal(signature, test.signature, 'computes message signature');
             });
@@ -267,7 +267,10 @@ describe("Wallet Errors", function () {
         });
     });
     it("fails on from mismatch", function () {
-        const wallet = new ethers.Wallet("0x6a73cd9b03647e83ef937888a5258a26e4c766dbf41ddd974f15e32d09cfe9c0");
+        const wallet = new ethers.Wallet({
+            privateKey: "0x6a73cd9b03647e83ef937888a5258a26e4c766dbf41ddd974f15e32d09cfe9c0",
+            address: "0x4Dfe3BF68c80f19083FF90E6a852fC876AE7429b"
+        });
         return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
             try {
                 yield wallet.signTransaction({
