@@ -1036,7 +1036,7 @@ describe("Test Hedera Provider", function () {
             });
         });
     }).timeout(timeout);
-    describe("Sign & Send Transacton, Wait for receipt", function () {
+    describe("Sign & Send Transaction, Wait for receipt", function () {
         var _this = this;
         var signedTx;
         beforeEach(function () { return __awaiter(_this, void 0, void 0, function () {

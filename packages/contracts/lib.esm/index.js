@@ -948,7 +948,7 @@ export class ContractFactory {
             fileAppends.push(fileAppend);
         }
         const contractCreate = {
-            gasLimit: 300000,
+            gasLimit: 500000,
             data: this.interface.encodeDeploy(args),
             customData: {}
         };
@@ -966,15 +966,30 @@ export class ContractFactory {
             // Resolve ENS names and promises in the arguments
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
+            // TODO: probably assert there are at least 2 or 3 transactions?
             // Get the deployment transaction (with optional overrides)
-            const unsignedTx = this.getDeployTransactions();
-            // Send the deployment transaction
-            const tx = yield this.signer.sendTransaction(unsignedTx[0]);
-            const address = getStatic(this.constructor, "getContractAddress")(tx);
+            const unsignedTransactions = this.getDeployTransactions(...args);
+            const fc = unsignedTransactions[0]; //await this.signer.sendTransaction(unsignedTransactions[0]);
+            const signedFc = yield this.signer.signTransaction(fc);
+            const fcResponse = yield this.signer.provider.sendTransaction(signedFc);
+            // @ts-ignore - ignores possibly null object
+            const fileId = fcResponse.customData.fileId;
+            // Iterate file append transactions
+            for (const fa of unsignedTransactions.slice(1, unsignedTransactions.length - 1)) {
+                fa.customData.fileId = fileId;
+                const signedFa = yield this.signer.signTransaction(fa);
+                yield this.signer.provider.sendTransaction(signedFa);
+            }
+            const cc = unsignedTransactions[unsignedTransactions.length - 1];
+            cc.customData.bytecodeFileId = fileId;
+            const signedCc = yield this.signer.signTransaction(cc);
+            const ccResponse = yield this.signer.provider.sendTransaction(signedCc);
+            // @ts-ignore - ignores possibly null object
+            const address = ccResponse.customData.contractId;
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
             // Add the modified wait that wraps events
-            addContractWait(contract, tx);
-            defineReadOnly(contract, "deployTransaction", tx);
+            addContractWait(contract, ccResponse);
+            defineReadOnly(contract, "deployTransaction", ccResponse);
             return contract;
         });
     }

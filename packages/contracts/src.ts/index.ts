@@ -1199,7 +1199,7 @@ export class ContractFactory {
         }
 
         const contractCreate: TransactionRequest = {
-            gasLimit: 300000,
+            gasLimit: 500000,
             data: this.interface.encodeDeploy(args),
             customData: {}
         };
@@ -1225,7 +1225,7 @@ export class ContractFactory {
 
         // TODO: probably assert there are at least 2 or 3 transactions?
         // Get the deployment transaction (with optional overrides)
-        const unsignedTransactions = this.getDeployTransaction();
+        const unsignedTransactions = this.getDeployTransactions(...args);
 
         const fc = unsignedTransactions[0];//await this.signer.sendTransaction(unsignedTransactions[0]);
         const signedFc = await this.signer.signTransaction(fc);
@@ -1233,14 +1233,13 @@ export class ContractFactory {
         // @ts-ignore - ignores possibly null object
         const fileId = fcResponse.customData.fileId;
         // Iterate file append transactions
-        for (const fa of unsignedTransactions.slice(1, unsignedTransactions.length -2)) {
+        for (const fa of unsignedTransactions.slice(1, unsignedTransactions.length -1)) {
             fa.customData.fileId = fileId;
             const signedFa = await this.signer.signTransaction(fa);
             await this.signer.provider.sendTransaction(signedFa);
         }
         const cc = unsignedTransactions[unsignedTransactions.length -1];
         cc.customData.bytecodeFileId = fileId;
-        cc.gasLimit = 300000;
         const signedCc = await this.signer.signTransaction(cc);
         const ccResponse = await this.signer.provider.sendTransaction(signedCc);
         // @ts-ignore - ignores possibly null object

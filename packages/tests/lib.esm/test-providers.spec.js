@@ -967,7 +967,7 @@ describe("Test Hedera Provider", function () {
             assert.strictEqual(true, balance.gte(0));
         });
     }).timeout(timeout);
-    describe("Sign & Send Transacton, Wait for receipt", function () {
+    describe("Sign & Send Transaction, Wait for receipt", function () {
         let signedTx;
         beforeEach(() => __awaiter(this, void 0, void 0, function* () {
             const privateKey = PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);

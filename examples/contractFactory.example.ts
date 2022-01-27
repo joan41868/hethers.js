@@ -1,64 +1,25 @@
 import * as hethers from "ethers";
-import {arrayify, getAddressFromAccount} from "ethers/lib/utils";
-import {
-    AccountCreateTransaction,
-    PrivateKey,
-    Hbar,
-    Client,
-    Key as HederaKey, AccountId, TransactionId,
-} from "@hashgraph/sdk";
 import {readFileSync} from "fs";
-import {Key} from "@hashgraph/proto";
 import {BigNumber} from "@ethersproject/bignumber";
-
-const account = {
-    "operator": {
-        "accountId": "0.0.28542425",
-        "publicKey": "302a300506032b6570032100a997b103c3e0c12d80179ee3b5f1c7ffe37e0a779fd5bc1bc14e6cc27321c6ee",
-        "privateKey": "302e020100300506032b65700422042077d69b53642df4e59215da8f5f10c97f6a6214b6c8de46940d394da21d30e7cc"
-    },
-    "network": {
-        "0.testnet.hedera.com:50211": "0.0.3",
-        "1.testnet.hedera.com:50211": "0.0.4",
-        "2.testnet.hedera.com:50211": "0.0.5",
-        "3.testnet.hedera.com:50211": "0.0.6"
-    }
-};
 
 // main
 (async () => {
-    const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
-    const client = Client.forNetwork(account.network);
-    const generatedWallet = hethers.Wallet.createRandom();
     const provider = hethers.providers.getDefaultProvider('testnet');
-    const protoKey = Key.create({
-        ECDSASecp256k1: arrayify(generatedWallet._signingKey().compressedPublicKey)
-    });
-    const newAccountKey = HederaKey._fromProtobufKey(protoKey);
-    const accountCreate = await (await new AccountCreateTransaction()
-        .setKey(newAccountKey)
-        .setTransactionId(TransactionId.generate(account.operator.accountId))
-        .setInitialBalance(new Hbar(10))
-        .setNodeAccountIds([new AccountId(0, 0, 3)])
-        .freeze()
-        .sign(edPrivateKey))
-        .execute(client);
-    const receipt = await accountCreate.getReceipt(client);
-    // @ts-ignore
-    const newAccountId = receipt.accountId.toString();
+
+    // This account has around 1.7k HBars.
     const hederaEoa = {
-        account: newAccountId,
-        privateKey: generatedWallet.privateKey
+        account: '0.0.29562194',
+        privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
     };
     // @ts-ignore
     const wallet = new hethers.Wallet(hederaEoa, provider);
 
-    // const abi = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
-    // const contractByteCode = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
-
     const abi = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
     const contractByteCode = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
 
+    /**
+     * Example 1. Getting the deployment transactions, signing & executing each one of them
+     */
     const contractFactory = new hethers.ContractFactory(abi, contractByteCode, wallet);
     const transactions = contractFactory.getDeployTransactions(BigNumber.from("10000"));
     const signedFileCreateTx = await wallet.signTransaction(transactions[0]);
@@ -82,4 +43,11 @@ const account = {
     // @ts-ignore
     const contractId = contractCreateTx.customData.contractId;
     console.log(contractId);
+
+    /**
+     * Example 2. Using contractFactory.deploy()
+     */
+    const contract = await contractFactory.deploy(BigNumber.from("10000"));
+    // @ts-ignore
+    console.log(contract.deployTransaction.customData.contractId);
 })();

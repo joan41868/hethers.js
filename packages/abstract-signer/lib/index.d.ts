@@ -85,7 +85,6 @@ export declare class VoidSigner extends Signer implements TypedDataSigner {
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;
     connect(provider: Provider): VoidSigner;
 }
-export declare function splitInChunks(data: string, chunkSize: number): string[];
 /**
  * Generates a random integer in the given range
  * @param min - range start
