@@ -611,19 +611,33 @@ describe("Wallet createAccount", function () {
 
     it("Should create an account", async function () {
         const tx = await wallet.createAccount(newAccountPublicKey);
-        assert.ok(tx, 'tx exists');
-        assert.ok(tx.customData, 'tx.customData exists');
-        assert.ok(tx.customData.accountId, 'accountId exists');
+        assert.notStrictEqual(tx, null, 'tx exists');
+        assert.notStrictEqual(tx.customData, null, 'tx.customData exists');
+        assert.notStrictEqual(tx.customData.accountId, null, 'accountId exists');
     }).timeout(timeout);
 
     it("Should add initial balance if provided", async function () {
         const tx = await wallet.createAccount(newAccountPublicKey, BigInt(123));
-        assert.ok(tx, 'tx exists');
-        assert.ok(tx.customData, 'tx.customData exists');
-        assert.ok(tx.customData.accountId, 'accountId exists');
+        assert.notStrictEqual(tx, null, 'tx exists');
+        assert.notStrictEqual(tx.customData, null, 'tx.customData exists');
+        assert.notStrictEqual(tx.customData.accountId, null, 'accountId exists');
 
         const newAccountAddress = getAddressFromAccount(tx.customData.accountId.toString());
         const newAccBalance = await provider.getBalance(newAccountAddress);
         assert.strictEqual(BigInt(123).toString(), newAccBalance.toString(), 'The initial balance is correct');
+    }).timeout(timeout);
+
+    it("Transaction receipt contains the account address", async function () {
+        const tx = await wallet.createAccount(newAccountPublicKey, BigInt(123));
+        assert.notStrictEqual(tx, null, 'tx exists');
+        assert.notStrictEqual(tx.customData, null, 'tx.customData exists');
+        assert.notStrictEqual(tx.customData.accountId, null,'accountId exists');
+        assert.strictEqual( tx.value.toString(), BigInt(123).toString(),'InitialBalance is the same as tx.value');
+
+        const receipt = await tx.wait();
+
+        assert.notStrictEqual(receipt.accountAddress, null,"accountAddress exists");
+        assert.notStrictEqual(receipt.transactionId, null,"transactionId exists");
+        assert.ok(receipt.accountAddress.match(new RegExp(/^0x/)), "accountAddress has the correct format");
     }).timeout(timeout);
 });
