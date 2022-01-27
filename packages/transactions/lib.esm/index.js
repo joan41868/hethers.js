@@ -247,7 +247,7 @@ export function serialize(transaction, signature) {
         transactionType: transaction.type
     });
 }
-export function serializeHederaTransaction(transaction) {
+export function serializeHederaTransaction(transaction, pubKey) {
     var _a, _b;
     let tx;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
@@ -281,7 +281,8 @@ export function serializeHederaTransaction(transaction) {
                     .setContents(transaction.customData.fileChunk)
                     .setKeys([transaction.customData.fileKey ?
                         transaction.customData.fileKey :
-                        HederaPubKey.fromString(this._signingKey().compressedPublicKey)]);
+                        pubKey
+                ]);
             }
             else if (transaction.customData.publicKey) {
                 const { publicKey, initialBalance } = transaction.customData;
