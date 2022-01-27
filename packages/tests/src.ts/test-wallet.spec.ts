@@ -584,7 +584,7 @@ describe("Wallet createAccount", function () {
 
     let wallet: ethers.Wallet, newAccount: ethers.Wallet, newAccountPublicKey: BytesLike, provider: ethers.providers.BaseProvider;
 
-    before( async () => {
+    before( async function() {
         const account = {
             "operator": {
                 "accountId": "0.0.1065",
@@ -598,7 +598,7 @@ describe("Wallet createAccount", function () {
                 "35.247.109.135:50211": "0.0.6"
             }
         };
-
+        this.timeout(60000);
         provider = ethers.providers.getDefaultProvider('previewnet');
         wallet = await createWalletFromED25519(account, provider);
     })
@@ -609,7 +609,7 @@ describe("Wallet createAccount", function () {
     })
 
     it("Should create an account", async function() {
-        this.timeout(12000);
+        this.timeout(60000);
         const tx = await wallet.createAccount(newAccountPublicKey);
         assert.ok(tx, 'tx exists');
         assert.ok(tx.customData, 'tx.customData exists');
@@ -617,7 +617,7 @@ describe("Wallet createAccount", function () {
     });
 
     it("Should add initial balance if provided", async function() {
-        this.timeout(12000);
+        this.timeout(60000);
         const tx = await wallet.createAccount(newAccountPublicKey, BigInt(123) );
         assert.ok(tx, 'tx exists');
         assert.ok(tx.customData, 'tx.customData exists');
