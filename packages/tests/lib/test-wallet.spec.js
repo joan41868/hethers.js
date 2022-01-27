@@ -726,6 +726,7 @@ describe("Wallet local calls", function () {
 describe("Wallet createAccount", function () {
     var _this = this;
     var wallet, newAccount, newAccountPublicKey, provider;
+    var timeout = 60000;
     before(function () { return __awaiter(_this, void 0, void 0, function () {
         var account;
         return __generator(this, function (_a) {
@@ -744,6 +745,7 @@ describe("Wallet createAccount", function () {
                             "35.247.109.135:50211": "0.0.6"
                         }
                     };
+                    this.timeout(timeout);
                     provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
                     return [4 /*yield*/, createWalletFromED25519(account, provider)];
                 case 1:
@@ -764,9 +766,7 @@ describe("Wallet createAccount", function () {
             var tx;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        this.timeout(12000);
-                        return [4 /*yield*/, wallet.createAccount(newAccountPublicKey)];
+                    case 0: return [4 /*yield*/, wallet.createAccount(newAccountPublicKey)];
                     case 1:
                         tx = _a.sent();
                         assert_1.default.ok(tx, 'tx exists');
@@ -776,15 +776,13 @@ describe("Wallet createAccount", function () {
                 }
             });
         });
-    });
+    }).timeout(timeout);
     it("Should add initial balance if provided", function () {
         return __awaiter(this, void 0, void 0, function () {
             var tx, newAccountAddress, newAccBalance;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        this.timeout(12000);
-                        return [4 /*yield*/, wallet.createAccount(newAccountPublicKey, BigInt(123))];
+                    case 0: return [4 /*yield*/, wallet.createAccount(newAccountPublicKey, BigInt(123))];
                     case 1:
                         tx = _a.sent();
                         assert_1.default.ok(tx, 'tx exists');
@@ -799,6 +797,6 @@ describe("Wallet createAccount", function () {
                 }
             });
         });
-    });
+    }).timeout(timeout);
 });
 //# sourceMappingURL=test-wallet.spec.js.map
