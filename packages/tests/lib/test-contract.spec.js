@@ -429,9 +429,9 @@ describe("Test Contract Transaction Population", function () {
             });
         });
     });
-    // TODO: skipped as we should not
+    // TODO: skipped as we should not spam testnet with random contracts
     // Previewnet is not really a choice as it will (soon or later) result in INVALID_SIGNATURE pre-checks as of cleanup
-    it.only("should be able to deploy a contract", function () {
+    xit("should be able to deploy a contract", function () {
         return __awaiter(this, void 0, void 0, function () {
             var hederaEoa, provider, wallet, abi, bytecode, contractFactory, contract;
             return __generator(this, function (_a) {

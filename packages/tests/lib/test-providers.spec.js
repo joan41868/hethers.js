@@ -1109,7 +1109,7 @@ describe("Test Hedera Provider", function () {
                     }
                 });
             });
-        }).timeout(timeout * 4);
+        }).timeout(timeout * 10);
         it("Should throw timeout exceeded", function () {
             return __awaiter(this, void 0, void 0, function () {
                 var insufficientTimeout;

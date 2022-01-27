@@ -21,7 +21,7 @@ import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethe
 import { computeAlias, serializeHederaTransaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { PrivateKey as HederaPrivKey, PublicKey as HederaPubKey } from "@hashgraph/sdk";
+import { PrivateKey as HederaPrivKey, } from "@hashgraph/sdk";
 const logger = new Logger(version);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
@@ -126,12 +126,11 @@ export class Wallet extends Signer {
     }
     signTransaction(transaction) {
         this._checkAddress('signTransaction');
-        this.checkTransaction(transaction);
-        return this.populateTransaction(transaction).then((readyTx) => __awaiter(this, void 0, void 0, function* () {
-            const pubKey = HederaPubKey.fromString(this._signingKey().compressedPublicKey);
-            const tx = serializeHederaTransaction(readyTx, pubKey);
-            const privKey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
-            const signed = yield tx.sign(privKey);
+        let tx = this.checkTransaction(transaction);
+        return this.populateTransaction(tx).then((readyTx) => __awaiter(this, void 0, void 0, function* () {
+            const tx = serializeHederaTransaction(readyTx);
+            const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
+            const signed = yield tx.sign(pkey);
             return hexlify(signed.toBytes());
         }));
     }

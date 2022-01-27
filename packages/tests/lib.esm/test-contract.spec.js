@@ -11,8 +11,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import assert from "assert";
 import { ethers } from "ethers";
 import contractData from "./test-contract.json";
+import fs from "fs";
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
-const provider = ethers.getDefaultProvider("rinkeby");
+const provider = ethers.getDefaultProvider("testnet");
 const TIMEOUT_PERIOD = 120000;
 const contract = (function () {
     return new ethers.Contract(contractData.contractAddress, contractData.interface, provider);
@@ -162,7 +163,7 @@ describe("Test Contract Transaction Population", function () {
     const testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     const fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
     const contract = new ethers.Contract(testAddress, abi);
-    const contractConnected = contract.connect(ethers.getDefaultProvider("homestead"));
+    const contractConnected = contract.connect(ethers.getDefaultProvider("testnet"));
     xit("standard population", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const tx = yield contract.populateTransaction.balanceOf(testAddress);
@@ -289,5 +290,41 @@ describe("Test Contract Transaction Population", function () {
             assert.equal(tx.from, testAddressCheck.toLowerCase(), "from address matches");
         });
     });
+    it("should return an array of transactions on getDeployTransaction call", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const hederaEoa = {
+                account: "0.0.1280",
+                privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
+            };
+            const provider = ethers.providers.getDefaultProvider('previewnet');
+            // @ts-ignore
+            const wallet = new ethers.Wallet(hederaEoa, provider);
+            const contractFactory = new ethers.ContractFactory(abi, "", wallet);
+            const transactions = contractFactory.getDeployTransaction({
+                gasLimit: 300000,
+            });
+            assert.strictEqual(Array.isArray(transactions), true);
+            assert.strictEqual(transactions.length, 2);
+        });
+    });
+    // TODO: skipped as we should not spam testnet with random contracts
+    // Previewnet is not really a choice as it will (soon or later) result in INVALID_SIGNATURE pre-checks as of cleanup
+    xit("should be able to deploy a contract", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const hederaEoa = {
+                account: "0.0.29559509",
+                privateKey: "0xbb621d187c22459ab6ed6768bd516bd630a087df4d5a4fbe95d77e87af10c6e1"
+            };
+            const provider = ethers.providers.getDefaultProvider('testnet');
+            // @ts-ignore
+            const wallet = new ethers.Wallet(hederaEoa, provider);
+            const abi = JSON.parse(fs.readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
+            const bytecode = fs.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+            const contractFactory = new ethers.ContractFactory(abi, bytecode, wallet);
+            const contract = yield contractFactory.deploy();
+            assert.notStrictEqual(contract, null, "nullified contract");
+            assert.notStrictEqual(contract.deployTransaction, "missing deploy transaction");
+        });
+    }).timeout(60000);
 });
 //# sourceMappingURL=test-contract.spec.js.map
