@@ -388,8 +388,6 @@ var WrappedSigner = /** @class */ (function (_super) {
                     case 8:
                         receipt = _a.sent();
                         dump("Success:", {
-                            "Block Number": receipt.blockNumber,
-                            "Block Hash": receipt.blockHash,
                             "Gas Used": ethers_1.ethers.utils.commify(receipt.gasUsed.toString()),
                             "Fee": (ethers_1.ethers.utils.formatEther(receipt.gasUsed.mul(tx.gasPrice)) + " ether")
                         });

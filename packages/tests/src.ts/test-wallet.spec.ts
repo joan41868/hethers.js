@@ -583,6 +583,7 @@ describe("Wallet local calls", async function () {
 describe("Wallet createAccount", function () {
 
     let wallet: ethers.Wallet, newAccount: ethers.Wallet, newAccountPublicKey: BytesLike, provider: ethers.providers.BaseProvider;
+    const timeout = 60000;
 
     before( async function() {
         const account = {
@@ -598,27 +599,25 @@ describe("Wallet createAccount", function () {
                 "35.247.109.135:50211": "0.0.6"
             }
         };
-        this.timeout(60000);
+        this.timeout(timeout);
         provider = ethers.providers.getDefaultProvider('previewnet');
         wallet = await createWalletFromED25519(account, provider);
-    })
+    });
 
-    beforeEach( async () => {
+    beforeEach(async () => {
         newAccount = ethers.Wallet.createRandom();
         newAccountPublicKey = newAccount._signingKey().compressedPublicKey;
-    })
+    });
 
-    it("Should create an account", async function() {
-        this.timeout(60000);
+    it("Should create an account", async function () {
         const tx = await wallet.createAccount(newAccountPublicKey);
         assert.ok(tx, 'tx exists');
         assert.ok(tx.customData, 'tx.customData exists');
         assert.ok(tx.customData.accountId, 'accountId exists');
-    });
+    }).timeout(timeout);
 
-    it("Should add initial balance if provided", async function() {
-        this.timeout(60000);
-        const tx = await wallet.createAccount(newAccountPublicKey, BigInt(123) );
+    it("Should add initial balance if provided", async function () {
+        const tx = await wallet.createAccount(newAccountPublicKey, BigInt(123));
         assert.ok(tx, 'tx exists');
         assert.ok(tx.customData, 'tx.customData exists');
         assert.ok(tx.customData.accountId, 'accountId exists');
@@ -626,5 +625,5 @@ describe("Wallet createAccount", function () {
         const newAccountAddress = getAddressFromAccount(tx.customData.accountId.toString());
         const newAccBalance = await provider.getBalance(newAccountAddress);
         assert.strictEqual(BigInt(123).toString(), newAccBalance.toString(), 'The initial balance is correct');
-    });
+    }).timeout(timeout);
 });

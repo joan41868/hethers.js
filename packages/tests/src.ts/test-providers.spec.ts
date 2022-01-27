@@ -5,14 +5,16 @@ import assert from "assert";
 // import Web3HttpProvider from "web3-providers-http";
 
 import { ethers } from "ethers";
+import { BigNumber } from "@ethersproject/bignumber";
 import { DefaultHederaProvider } from "@ethersproject/providers";
+import { HederaTransactionRecord, TransactionResponse, TransactionReceipt } from "@ethersproject/abstract-provider";
 import { getAddressFromAccount } from "ethers/lib/utils";
 import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-provider";
 import {
     AccountId,
     ContractCreateTransaction, ContractFunctionParameters,
     PrivateKey,
-    TransactionId,
+    TransactionId
 } from "@hashgraph/sdk";
 
 const bnify = ethers.BigNumber.from;
@@ -650,9 +652,6 @@ Object.keys(blockchainData).forEach((network) => {
         addObjectTest(`fetches transaction ${ hash }`, async (provider: ethers.providers.Provider) => {
             const tx = await provider.getTransaction(hash);
 
-            // This changes with every block
-            assert.equal(typeof(tx.confirmations), "number", "confirmations is a number");
-            delete tx.confirmations;
 
             assert.equal(typeof(tx.wait), "function", "wait is a function");
             delete tx.wait
@@ -676,8 +675,8 @@ Object.keys(blockchainData).forEach((network) => {
             }
 
             // This changes with every block; so just make sure it is a number
-            assert.equal(typeof(receipt.confirmations), "number", "confirmations is a number");
-            delete receipt.confirmations;
+            // assert.equal(typeof(receipt.confirmations), "number", "confirmations is a number");
+            // delete receipt.confirmations;
 
             return receipt;
         }, test, (provider: string, network: string, test: TestDescription) => {
@@ -1063,16 +1062,91 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(true, balance.gte(0));
     }).timeout(timeout);
 
-    it("Gets txn record", async function (){
-        /* the test contains ignores as of the not yet refactored BaseProvider */
-        const record = await provider.getTransaction(`0.0.15680048-1638189529-145876922`);
-        // @ts-ignore
-        assert.strictEqual(record.transaction_id, `0.0.15680048-1638189529-145876922`);
-        // @ts-ignore
-        assert.strictEqual(record.transfers.length, 3);
-        // @ts-ignore
-        assert.strictEqual(record.valid_duration_seconds, '120');
-    }).timeout(timeout);
+    describe("Sign & Send Transacton, Wait for receipt", function () {
+        let signedTx: string | Promise<string>;
+        beforeEach(async () => {
+            const privateKey = PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
+            const txID = TransactionId.generate(hederaTestnetOperableAccount.operator.accountId);
+            const tx = await new ContractCreateTransaction()
+                .setGas(300000)
+                .setBytecodeFileId("0.0.26562254")
+                .setNodeAccountIds([new AccountId(0,0,3)])
+                .setConstructorParameters(new ContractFunctionParameters().addUint256(100))
+                .setTransactionId(txID)
+                .freeze()
+                .sign(privateKey);
+            const txBytes = tx.toBytes();
+            signedTx = ethers.utils.hexlify(txBytes);
+        });
+
+        it("Should populate transaction receipt", async function (){
+            const sendTransactionResponse = await provider.sendTransaction(await signedTx);
+            const receipt = await sendTransactionResponse.wait();
+            // assert.strict(receipt.logs.length > 0);
+            assert.strictEqual(receipt.to, null);
+            assert.strictEqual(receipt.contractAddress, '0x'+sendTransactionResponse.customData.contractId);
+            assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
+            assert.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
+        }).timeout(timeout * 4);
+
+        it("Should populate transaction receipt with timeout", async function (){
+            const sendTransactionResponse = await provider.sendTransaction(await signedTx);
+            const receipt = await sendTransactionResponse.wait(timeout);
+            // assert.strict(receipt.logs.length > 0);
+            assert.strictEqual(receipt.to, null);
+            assert.strictEqual(receipt.contractAddress, '0x'+sendTransactionResponse.customData.contractId);
+            assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
+            assert.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
+        }).timeout(timeout * 4);
+    
+        it("Should throw timeout exceeded", async function () {
+            const insufficientTimeout = 500;
+            await assert.rejects(
+                async () => {
+                    const sendTransactionResponse = await provider.sendTransaction(await signedTx);
+                    await sendTransactionResponse.wait(insufficientTimeout);
+                },
+                (err) => {
+                    assert.strictEqual(err.name, 'Error');
+                    assert.strictEqual(err.reason, 'timeout exceeded');
+                    assert.strictEqual(err.code, 'TIMEOUT');
+                    assert.strictEqual(err.timeout, insufficientTimeout);    
+                    return true;
+                }
+            );
+        }).timeout(timeout * 4);
+    });
+
+    it("Should populate txn response", async function (){
+        const existingId = `0.0.1546615-1641987871-235099329`;
+        const record = await provider.getTransaction(existingId);
+        const network = await provider.getNetwork();
+        assert.strictEqual(record.transactionId, existingId);
+        assert.strictEqual(record.chainId, network.chainId);
+    }).timeout(timeout * 4);
+
+    it("Should return null on record not found", async function (){
+        const fakeTransactionId = `0.0.0-0000000000-000000000`;
+        const record = await provider.getTransaction(fakeTransactionId);
+        assert.strictEqual(record, null);
+    }).timeout(timeout * 4);
+
+    it("Should throw backend error", async function (){
+        const badRequestId = `0.0.0`;
+        await assert.rejects(
+            async () => {
+                await provider.getTransaction(badRequestId);
+            },
+            (err) => {
+                assert.strictEqual(err.name, 'Error');
+                assert.strictEqual(err.reason, 'bad result from backend');
+                assert.strictEqual(err.method, 'TransactionResponseQuery');
+                assert.strictEqual(err.error.response.status, 400);
+                assert.strictEqual(err.error.response.statusText, 'Bad Request');
+                return true;
+            }
+        );
+    }).timeout(timeout * 4);
 
     it("Is able to get hedera provider as default", async function() {
         let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
@@ -1153,8 +1227,184 @@ describe("Test Hedera Provider", function () {
 
         const balance2 = await provider2.getBalance(solAddr);
         assert.strictEqual(true, balance2.gte(0));
-        const txId = `0.0.15680048-1638189529-145876922`;
+        const txId = `0.0.1546615-1641987871-235099329`;
         const record2 = await provider2.getTransaction(txId);
         assert.notStrictEqual(record2, null, "Record is null")
     }).timeout(timeout*4);
+});
+
+describe("Test Hedera Provider Formatters", function () {
+    const timeout = 15000;
+    const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+
+    it('Should parse hedera record to hethers response', async function () {
+        const hederaTransactionRecord: HederaTransactionRecord = {
+            chainId: 291,
+            transactionId: "0.0.28540924-1642692847-203890635",
+            result: "SUCCESS",
+            amount: 1000000,
+            call_result: "0x608060405234801561001057600080fd5b50600436106100b45760003560e01c806370a082311161007157806370a082311461014157806395d89b411461016a578063a0712d6814610172578063a457c2d714610187578063a9059cbb1461019a578063dd62ed3e146101ad57600080fd5b806306fdde03146100b9578063095ea7b3146100d757806318160ddd146100fa57806323b872dd1461010c578063313ce5671461011f578063395093511461012e575b600080fd5b6100c16101e6565b6040516100ce9190610936565b60405180910390f35b6100ea6100e53660046108f3565b610278565b60405190151581526020016100ce565b6002545b6040519081526020016100ce565b6100ea61011a3660046108b7565b61028e565b604051601281526020016100ce565b6100ea61013c3660046108f3565b61033d565b6100fe61014f366004610862565b6001600160a01b031660009081526020819052604090205490565b6100c1610379565b61018561018036600461091d565b610388565b005b6100ea6101953660046108f3565b6103ce565b6100ea6101a83660046108f3565b610467565b6100fe6101bb366004610884565b6001600160a01b03918216600090815260016020908152604080832093909416825291909152205490565b6060600380546101f5906109b1565b80601f0160208091040260200160405190810160405280929190818152602001828054610221906109b1565b801561026e5780601f106102435761010080835404028352916020019161026e565b820191906000526020600020905b81548152906001019060200180831161025157829003601f168201915b5050505050905090565b6000610285338484610474565b50600192915050565b600061029b848484610598565b6001600160a01b0384166000908152600160209081526040808320338452909152902054828110156103255760405162461bcd60e51b815260206004820152602860248201527f45524332303a207472616e7366657220616d6f756e74206578636565647320616044820152676c6c6f77616e636560c01b60648201526084015b60405180910390fd5b6103328533858403610474565b506001949350505050565b3360008181526001602090815260408083206001600160a01b0387168452909152812054909161028591859061037490869061098b565b610474565b6060600480546101f5906109b1565b60408051338152602081018390527f0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885910160405180910390a16103cb3382610767565b50565b3360009081526001602090815260408083206001600160a01b0386168452909152812054828110156104505760405162461bcd60e51b815260206004820152602560248201527f45524332303a2064656372656173656420616c6c6f77616e63652062656c6f77604482015264207a65726f60d81b606482015260840161031c565b61045d3385858403610474565b5060019392505050565b6000610285338484610598565b6001600160a01b0383166104d65760405162461bcd60e51b8152602060048201526024808201527f45524332303a20617070726f76652066726f6d20746865207a65726f206164646044820152637265737360e01b606482015260840161031c565b6001600160a01b0382166105375760405162461bcd60e51b815260206004820152602260248201527f45524332303a20617070726f766520746f20746865207a65726f206164647265604482015261737360f01b606482015260840161031c565b6001600160a01b0383811660008181526001602090815260408083209487168084529482529182902085905590518481527f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925910160405180910390a3505050565b6001600160a01b0383166105fc5760405162461bcd60e51b815260206004820152602560248201527f45524332303a207472616e736665722066726f6d20746865207a65726f206164604482015264647265737360d81b606482015260840161031c565b6001600160a01b03821661065e5760405162461bcd60e51b815260206004820152602360248201527f45524332303a207472616e7366657220746f20746865207a65726f206164647260448201526265737360e81b606482015260840161031c565b6001600160a01b038316600090815260208190526040902054818110156106d65760405162461bcd60e51b815260206004820152602660248201527f45524332303a207472616e7366657220616d6f756e7420657863656564732062604482015265616c616e636560d01b606482015260840161031c565b6001600160a01b0380851660009081526020819052604080822085850390559185168152908120805484929061070d90849061098b565b92505081905550826001600160a01b0316846001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef8460405161075991815260200190565b60405180910390a350505050565b6001600160a01b0382166107bd5760405162461bcd60e51b815260206004820152601f60248201527f45524332303a206d696e7420746f20746865207a65726f206164647265737300604482015260640161031c565b80600260008282546107cf919061098b565b90915550506001600160a01b038216600090815260208190526040812080548392906107fc90849061098b565b90915550506040518181526001600160a01b038316906000907fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef9060200160405180910390a35050565b80356001600160a01b038116811461085d57600080fd5b919050565b60006020828403121561087457600080fd5b61087d82610846565b9392505050565b6000806040838503121561089757600080fd5b6108a083610846565b91506108ae60208401610846565b90509250929050565b6000806000606084860312156108cc57600080fd5b6108d584610846565b92506108e360208501610846565b9150604084013590509250925092565b6000806040838503121561090657600080fd5b61090f83610846565b946020939093013593505050565b60006020828403121561092f57600080fd5b5035919050565b600060208083528351808285015260005b8181101561096357858101830151858201604001528201610947565b81811115610975576000604083870101525b50601f01601f1916929092016040019392505050565b600082198211156109ac57634e487b7160e01b600052601160045260246000fd5b500190565b600181811c908216806109c557607f821691505b602082108114156109e657634e487b7160e01b600052602260045260246000fd5b5091905056fea2646970667358221220a89138010396e5c52a2e58663294560a5b37fe1fb303e2dc2199cfbb5765afec64736f6c63430008070033",
+            contract_id: "0.0.28540926",
+            created_contract_ids: [ "0.0.28540926" ],
+            error_message: "",
+            from: "0x0000000000000000000000000000000001b37ffc",
+            function_parameters: "0x",
+            gas_limit: 300000,
+            gas_used: 93420,
+            timestamp: "1642692857.235742000",
+            to: "0x0000000000000000000000000000000001b37ffe",
+            block_hash: '',
+            block_number: 0,
+            hash: "0x525e387986062f406fae028c164f98dff64aef97dc6e042506026d7931a02402b8feaa13e77eb6dd3efc70f9b1a4633e",
+            logs: [
+                {
+                    address: "0x0000000000000000000000000000000001b37ffe",
+                    contract_id: "0.0.28540926",
+                    data: "0x0000000000000000000000000000000000000000000000000000000001b37ffc0000000000000000000000000000000000000000000000000000000000002710",
+                    index: 0,
+                    topics: [
+                        "0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885"
+                    ]
+                },
+                {
+                    address: "0x0000000000000000000000000000000001b37ffe",
+                    contract_id: "0.0.28540926",
+                    data: "0x0000000000000000000000000000000000000000000000000000000000002710",
+                    index: 1,
+                    topics: [
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                        "0x0000000000000000000000000000000000000000000000000000000000000000",
+                        "0x0000000000000000000000000000000000000000000000000000000001b37ffc"
+                    ]
+                }
+            ]
+        }
+
+        let transactionResponse: TransactionResponse = {
+            accessList: null,
+            chainId: 0,
+            data: null,
+            from: null,
+            gasLimit: null,
+            hash: null,
+            transactionId: null,
+            to: null,
+            value: null,
+            customData: { 
+                gas_used: 0,
+                logs: {},
+                result: null
+            },
+            wait: null
+        }
+        
+        transactionResponse = provider.formatter.responseFromRecord(hederaTransactionRecord);
+
+        assert.strictEqual(transactionResponse.chainId, hederaTransactionRecord.chainId);
+        assert.strictEqual(transactionResponse.hash, hederaTransactionRecord.hash);
+        assert.strictEqual(transactionResponse.timestamp, hederaTransactionRecord.timestamp);
+        assert.strictEqual(transactionResponse.transactionId, hederaTransactionRecord.transactionId);
+        assert.strictEqual(transactionResponse.from, hederaTransactionRecord.from);
+        assert.strictEqual(transactionResponse.to, hederaTransactionRecord.to);
+        assert.strictEqual(transactionResponse.data, hederaTransactionRecord.call_result);
+        assert.strictEqual(transactionResponse.gasLimit.toNumber(), hederaTransactionRecord.gas_limit);
+        assert.strictEqual(transactionResponse.value.toNumber(), hederaTransactionRecord.amount);
+
+        assert.strictEqual(transactionResponse.customData.gas_used, hederaTransactionRecord.gas_used);
+        assert.deepStrictEqual(transactionResponse.customData.logs, hederaTransactionRecord.logs);
+        assert.strictEqual(transactionResponse.customData.result, hederaTransactionRecord.result);
+    }).timeout(timeout * 4);
+
+    it('Should parse hethers response to hethers receipt', async function () {
+        const transactionResponse: TransactionResponse = {
+            chainId: 1,
+            data: "0x608060405234801561001057600080fd5b50600436106100b45760003560e01c806370a082311161007157806370a082311461014157806395d89b411461016a578063a0712d6814610172578063a457c2d714610187578063a9059cbb1461019a578063dd62ed3e146101ad57600080fd5b806306fdde03146100b9578063095ea7b3146100d757806318160ddd146100fa57806323b872dd1461010c578063313ce5671461011f578063395093511461012e575b600080fd5b6100c16101e6565b6040516100ce9190610936565b60405180910390f35b6100ea6100e53660046108f3565b610278565b60405190151581526020016100ce565b6002545b6040519081526020016100ce565b6100ea61011a3660046108b7565b61028e565b604051601281526020016100ce565b6100ea61013c3660046108f3565b61033d565b6100fe61014f366004610862565b6001600160a01b031660009081526020819052604090205490565b6100c1610379565b61018561018036600461091d565b610388565b005b6100ea6101953660046108f3565b6103ce565b6100ea6101a83660046108f3565b610467565b6100fe6101bb366004610884565b6001600160a01b03918216600090815260016020908152604080832093909416825291909152205490565b6060600380546101f5906109b1565b80601f0160208091040260200160405190810160405280929190818152602001828054610221906109b1565b801561026e5780601f106102435761010080835404028352916020019161026e565b820191906000526020600020905b81548152906001019060200180831161025157829003601f168201915b5050505050905090565b6000610285338484610474565b50600192915050565b600061029b848484610598565b6001600160a01b0384166000908152600160209081526040808320338452909152902054828110156103255760405162461bcd60e51b815260206004820152602860248201527f45524332303a207472616e7366657220616d6f756e74206578636565647320616044820152676c6c6f77616e636560c01b60648201526084015b60405180910390fd5b6103328533858403610474565b506001949350505050565b3360008181526001602090815260408083206001600160a01b0387168452909152812054909161028591859061037490869061098b565b610474565b6060600480546101f5906109b1565b60408051338152602081018390527f0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885910160405180910390a16103cb3382610767565b50565b3360009081526001602090815260408083206001600160a01b0386168452909152812054828110156104505760405162461bcd60e51b815260206004820152602560248201527f45524332303a2064656372656173656420616c6c6f77616e63652062656c6f77604482015264207a65726f60d81b606482015260840161031c565b61045d3385858403610474565b5060019392505050565b6000610285338484610598565b6001600160a01b0383166104d65760405162461bcd60e51b8152602060048201526024808201527f45524332303a20617070726f76652066726f6d20746865207a65726f206164646044820152637265737360e01b606482015260840161031c565b6001600160a01b0382166105375760405162461bcd60e51b815260206004820152602260248201527f45524332303a20617070726f766520746f20746865207a65726f206164647265604482015261737360f01b606482015260840161031c565b6001600160a01b0383811660008181526001602090815260408083209487168084529482529182902085905590518481527f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925910160405180910390a3505050565b6001600160a01b0383166105fc5760405162461bcd60e51b815260206004820152602560248201527f45524332303a207472616e736665722066726f6d20746865207a65726f206164604482015264647265737360d81b606482015260840161031c565b6001600160a01b03821661065e5760405162461bcd60e51b815260206004820152602360248201527f45524332303a207472616e7366657220746f20746865207a65726f206164647260448201526265737360e81b606482015260840161031c565b6001600160a01b038316600090815260208190526040902054818110156106d65760405162461bcd60e51b815260206004820152602660248201527f45524332303a207472616e7366657220616d6f756e7420657863656564732062604482015265616c616e636560d01b606482015260840161031c565b6001600160a01b0380851660009081526020819052604080822085850390559185168152908120805484929061070d90849061098b565b92505081905550826001600160a01b0316846001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef8460405161075991815260200190565b60405180910390a350505050565b6001600160a01b0382166107bd5760405162461bcd60e51b815260206004820152601f60248201527f45524332303a206d696e7420746f20746865207a65726f206164647265737300604482015260640161031c565b80600260008282546107cf919061098b565b90915550506001600160a01b038216600090815260208190526040812080548392906107fc90849061098b565b90915550506040518181526001600160a01b038316906000907fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef9060200160405180910390a35050565b80356001600160a01b038116811461085d57600080fd5b919050565b60006020828403121561087457600080fd5b61087d82610846565b9392505050565b6000806040838503121561089757600080fd5b6108a083610846565b91506108ae60208401610846565b90509250929050565b6000806000606084860312156108cc57600080fd5b6108d584610846565b92506108e360208501610846565b9150604084013590509250925092565b6000806040838503121561090657600080fd5b61090f83610846565b946020939093013593505050565b60006020828403121561092f57600080fd5b5035919050565b600060208083528351808285015260005b8181101561096357858101830151858201604001528201610947565b81811115610975576000604083870101525b50601f01601f1916929092016040019392505050565b600082198211156109ac57634e487b7160e01b600052601160045260246000fd5b500190565b600181811c908216806109c557607f821691505b602082108114156109e657634e487b7160e01b600052602260045260246000fd5b5091905056fea2646970667358221220a89138010396e5c52a2e58663294560a5b37fe1fb303e2dc2199cfbb5765afec64736f6c63430008070033",
+            from: "0x0000000000000000000000000000000001b37ffc",
+            gasLimit: BigNumber.from(300_000),
+            hash: "0x525e387986062f406fae028c164f98dff64aef97dc6e042506026d7931a02402b8feaa13e77eb6dd3efc70f9b1a4633e",
+            timestamp: "1642692857.235742000",
+            transactionId: "0.0.28540924-1642692847-203890635",
+            to: null,
+            value: BigNumber.from(0),
+            customData: { 
+                gas_used: 93420,
+                logs: [
+                    {
+                        address: "0x0000000000000000000000000000000001b37ffe",
+                        contract_id: "0.0.28540926",
+                        data: "0x0000000000000000000000000000000000000000000000000000000001b37ffc0000000000000000000000000000000000000000000000000000000000002710",
+                        index: 0,
+                        topics: [
+                            "0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885"
+                        ]
+                    },
+                    {
+                        address: "0x0000000000000000000000000000000001b37ffe",
+                        contract_id: "0.0.28540926",
+                        data: "0x0000000000000000000000000000000000000000000000000000000000002710",
+                        index: 1,
+                        topics: [
+                            "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                            "0x0000000000000000000000000000000000000000000000000000000000000000",
+                            "0x0000000000000000000000000000000000000000000000000000000001b37ffc"
+                        ]
+                    }
+                ],
+                result: "SUCCESS"
+            },
+            wait: null
+        }
+
+        let receipt: TransactionReceipt = {
+            to: null,
+            from: null,
+            timestamp: null,
+            contractAddress: null,
+            gasUsed: null,
+            logsBloom: null,
+            transactionId: null,
+            transactionHash: null,
+            logs: [
+                {
+                    timestamp: null,
+                    address: null,
+                    data: null,
+                    topics: [],
+                    transactionHash: null,
+                    logIndex: 0 
+                }
+            ],
+            cumulativeGasUsed: null,
+            byzantium: true,
+            type: 0,
+            status: 0
+        }
+        
+        receipt = provider.formatter.receiptFromResponse(transactionResponse);
+
+        assert.strictEqual(receipt.to, transactionResponse.to);
+        assert.strictEqual(receipt.from, transactionResponse.from);
+        assert.strictEqual(receipt.timestamp, transactionResponse.timestamp),
+        assert.strictEqual(receipt.contractAddress, null);
+        assert.strictEqual(receipt.transactionId, transactionResponse.transactionId);
+        assert.strictEqual(receipt.transactionHash, transactionResponse.hash);
+        assert.strictEqual(receipt.cumulativeGasUsed, transactionResponse.customData.gas_used);
+        assert.strictEqual(receipt.gasUsed, transactionResponse.customData.gas_used);
+        assert.strictEqual(receipt.status, 1);
+        
+        assert.strictEqual(receipt.logs.length, 2);
+        assert.strictEqual(receipt.logs[0].timestamp, transactionResponse.timestamp);
+        assert.strictEqual(receipt.logs[0].address, transactionResponse.customData.logs[0].address);
+        assert.strictEqual(receipt.logs[0].data, transactionResponse.customData.logs[0].data);
+        assert.deepStrictEqual(receipt.logs[0].topics, transactionResponse.customData.logs[0].topics);
+        assert.strictEqual(receipt.logs[0].transactionHash, transactionResponse.hash);
+        assert.strictEqual(receipt.logs[0].logIndex, transactionResponse.customData.logs[0].index);
+
+        assert.strictEqual(receipt.logs[1].timestamp, transactionResponse.timestamp);
+        assert.strictEqual(receipt.logs[1].address, transactionResponse.customData.logs[1].address);
+        assert.strictEqual(receipt.logs[1].data, transactionResponse.customData.logs[1].data);
+        assert.deepStrictEqual(receipt.logs[1].topics, transactionResponse.customData.logs[1].topics);
+        assert.strictEqual(receipt.logs[1].transactionHash, transactionResponse.hash);
+        assert.strictEqual(receipt.logs[1].logIndex, transactionResponse.customData.logs[1].index);
+    }).timeout(timeout * 4);
 });
