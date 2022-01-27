@@ -17,6 +17,7 @@ import { asAccountString, getAddressFromAccount, getChecksumAddress } from "@eth
 import { AccountId, ContractCallQuery, Hbar, PrivateKey, PublicKey as HederaPubKey, TransactionId } from "@hashgraph/sdk";
 import * as Long from "long";
 import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
+import { splitInChunks } from "@ethersproject/strings";
 const logger = new Logger(version);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
@@ -302,16 +303,6 @@ export class VoidSigner extends Signer {
     connect(provider) {
         return new VoidSigner(this.address, provider);
     }
-}
-function splitInChunks(data, chunkSize) {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
 }
 /**
  * Generates a random integer in the given range

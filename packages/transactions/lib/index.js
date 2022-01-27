@@ -311,7 +311,7 @@ function serialize(transaction, signature) {
     });
 }
 exports.serialize = serialize;
-function serializeHederaTransaction(transaction) {
+function serializeHederaTransaction(transaction, pubKey) {
     var _a, _b;
     var tx;
     var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
@@ -345,7 +345,8 @@ function serializeHederaTransaction(transaction) {
                     .setContents(transaction.customData.fileChunk)
                     .setKeys([transaction.customData.fileKey ?
                         transaction.customData.fileKey :
-                        sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)]);
+                        pubKey
+                ]);
             }
             else if (transaction.customData.publicKey) {
                 var _c = transaction.customData, publicKey = _c.publicKey, initialBalance = _c.initialBalance;
