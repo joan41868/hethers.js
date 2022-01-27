@@ -17,6 +17,7 @@ import { asAccountString, getAddressFromAccount, getChecksumAddress } from "@eth
 import { AccountId, ContractCallQuery, Hbar, PrivateKey, PublicKey as HederaPubKey, TransactionId } from "@hashgraph/sdk";
 import * as Long from "long";
 import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
+import { splitInChunks } from "@ethersproject/strings";
 const logger = new Logger(version);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
@@ -250,7 +251,10 @@ export class Signer {
             }
             const customData = yield tx.customData;
             // FileCreate and FileAppend always carry a customData.fileChunk object
-            if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
+            const isFileCreateOrAppend = customData && customData.fileChunk;
+            // CreateAccount always has a publicKey
+            const isCreateAccount = customData && customData.publicKey;
+            if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
                 return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
             }
             return yield resolveProperties(tx);
@@ -290,22 +294,15 @@ export class VoidSigner extends Signer {
     signTransaction(transaction) {
         return this._fail("VoidSigner cannot sign transactions", "signTransaction");
     }
+    createAccount(pubKey, initialBalance) {
+        return this._fail("VoidSigner cannot create accounts", "createAccount");
+    }
     _signTypedData(domain, types, value) {
         return this._fail("VoidSigner cannot sign typed data", "signTypedData");
     }
     connect(provider) {
         return new VoidSigner(this.address, provider);
     }
-}
-function splitInChunks(data, chunkSize) {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
 }
 /**
  * Generates a random integer in the given range

@@ -58,17 +58,18 @@ const account = {
 	 * Deploy a contract - OZ ERC20
 	 */
 	const contractByteCode = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
-	const contractCreateResponse = await wallet.sendTransaction({
+	const deployTx = await wallet.sendTransaction({
 		data: contractByteCode,
 		gasLimit: 300000
 	});
-	console.log('contractCreate response:', contractCreateResponse);
+	const deploy = await deployTx.wait();
+	console.log('contractCreate response:', deploy);
 
 	/**
 	 * Instantiate the contract locally in order to interact with it
 	 */
 	const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
-	const contract = hethers.ContractFactory.getContract(contractCreateResponse.customData?.contractId, abi, wallet);
+	const contract = hethers.ContractFactory.getContract(deploy.contractAddress, abi, wallet);
 
 	/**
 	 * The following lines call:
@@ -80,22 +81,24 @@ const account = {
 		getAddressFromAccount(account.operator.accountId),
 		1000
 	]);
-	const approveResponse = await wallet.sendTransaction({
+	const approveTx = await wallet.sendTransaction({
 		to: contract.address,
 		data: approveParams,
 		gasLimit: 100000
 	});
-	console.log('approve response: ', approveResponse);
+	const approve = await approveTx.wait();
+	console.log('approve: ', approve);
 
 	const mintParams = contract.interface.encodeFunctionData('mint', [
 		1000
 	]);
-	const mintResponse = await wallet.sendTransaction({
+	const mintTx = await wallet.sendTransaction({
 		to: contract.address,
 		data: mintParams,
 		gasLimit: 100000
 	});
-	console.log('mint response:', mintResponse);
+	const mint = await mintTx.wait();
+	console.log('mint:', mint);
 
 	const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
 		await wallet.getAddress()

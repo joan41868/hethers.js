@@ -1,13 +1,12 @@
 "use strict";
 
-import { Block, TransactionReceipt, TransactionResponse } from "@ethersproject/abstract-provider";
+import { Block, Log, TransactionReceipt, TransactionResponse, HederaTransactionRecord } from "@ethersproject/abstract-provider";
 import { getAddress, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@ethersproject/constants";
 import { shallowCopy } from "@ethersproject/properties";
 import { AccessList, accessListify, parse as parseTransaction } from "@ethersproject/transactions";
-
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
@@ -265,7 +264,7 @@ export class Formatter {
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash(value: any, strict?: boolean): string {
         const result = this.hex(value, strict);
-        if (hexDataLength(result) !== 32) {
+        if (hexDataLength(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
         }
         return result;
@@ -375,12 +374,6 @@ export class Formatter {
 
             result.chainId = chainId;
         }
-
-        // 0x0000... should actually be null
-        if (result.blockHash && result.blockHash.replace(/0/g, "") === "x") {
-            result.blockHash = null;
-        }
-
         return result;
     }
 
@@ -395,32 +388,64 @@ export class Formatter {
     receipt(value: any): TransactionReceipt {
         const result: TransactionReceipt = Formatter.check(this.formats.receipt, value);
 
-        // RSK incorrectly implemented EIP-658, so we munge things a bit here for it
-        if (result.root != null) {
-            if (result.root.length <= 4) {
-                // Could be 0x00, 0x0, 0x01 or 0x1
-                const value = BigNumber.from(result.root).toNumber();
-                if (value === 0 || value === 1) {
-                    // Make sure if both are specified, they match
-                    if (result.status != null && (result.status !== value)) {
-                        logger.throwArgumentError("alt-root-status/status mismatch", "value", { root: result.root, status: result.status });
-                    }
-                    result.status = value;
-                    delete result.root;
-                } else {
-                    logger.throwArgumentError("invalid alt-root-status", "value.root", result.root);
-                }
-            } else if (result.root.length !== 66) {
-                // Must be a valid bytes32
-                logger.throwArgumentError("invalid root hash", "value.root", result.root);
-            }
-        }
-
         if (result.status != null) {
             result.byzantium = true;
         }
 
         return result;
+    }
+
+    responseFromRecord(record: HederaTransactionRecord): TransactionResponse {
+        return {
+            chainId: record.chainId,
+            hash: record.hash,
+            timestamp: record.timestamp,
+            transactionId: record.transactionId,
+            from: record.from,
+            to: record.to,
+            data: record.call_result,
+            gasLimit: BigNumber.from(record.gas_limit),
+            value: BigNumber.from(record.amount),
+            customData: {
+                gas_used: record.gas_used,
+                logs: record.logs,
+                result: record.result
+            },
+            wait: null
+        }
+    }
+
+    receiptFromResponse(response: TransactionResponse): TransactionReceipt {
+        let contractAddress = null;
+        let to = null;
+        let logs: Log[] = [];
+        response.data != '0x' ? contractAddress = response.to : to = response.to;
+        response.customData?.logs.forEach(function (log: any) {
+            const values = {
+                timestamp: response.timestamp,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                transactionHash: response.hash,
+                logIndex: log.index
+            };
+            logs.push(values);
+        });
+        return {
+            to: to,
+            from: response.from,
+            timestamp: response.timestamp,
+            contractAddress: contractAddress,
+            gasUsed: response.customData?.gas_used,
+            logsBloom: null, //to be provided by hedera rest api
+            transactionId: response.transactionId,
+            transactionHash: response.hash,
+            logs: logs,
+            cumulativeGasUsed: response.customData?.gas_used,
+            type: 0,
+            byzantium: true,
+            status: response.customData?.result === 'SUCCESS' ? 1 : 0
+        }
     }
 
     topics(value: any): any {

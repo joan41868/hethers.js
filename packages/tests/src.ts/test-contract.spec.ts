@@ -291,6 +291,21 @@ describe("Test Contract Transaction Population", function() {
         assert.equal(tx.from, testAddressCheck.toLowerCase(), "from address matches");
     });
 
+    it("should return an array of transactions on getDeployTransactions call", async function () {
+        const hederaEoa = {
+            account: "0.0.1280",
+            privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
+        };
+        const provider = ethers.providers.getDefaultProvider('previewnet');
+        // @ts-ignore
+        const wallet = new ethers.Wallet(hederaEoa, provider);
+
+        const contractFactory = new ethers.ContractFactory(abi, "", wallet);
+        const transactions = contractFactory.getDeployTransactions();
+
+        assert.strictEqual(Array.isArray(transactions), true);
+        assert.strictEqual(transactions.length, 2);
+    });
 });
 
 /*

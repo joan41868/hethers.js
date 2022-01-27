@@ -652,8 +652,6 @@ class WaitPlugin extends Plugin {
 
         let receipt = await this.provider.waitForTransaction(this.hash);
         dump("Response:", {
-            "Block": receipt.blockNumber,
-            "Block Hash": receipt.blockHash,
             "Status": (receipt.status ? "ok": "failed")
         });
     }

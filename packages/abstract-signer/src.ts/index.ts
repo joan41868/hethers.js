@@ -23,6 +23,7 @@ import {
 } from "@hashgraph/sdk";
 import * as Long from "long";
 import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
+import { splitInChunks } from "@ethersproject/strings";
 
 const logger = new Logger(version);
 
@@ -130,6 +131,13 @@ export abstract class Signer {
     // Returns a new instance of the Signer, connected to provider.
     // This MAY throw if changing providers is not supported.
     abstract connect(provider: Provider): Signer;
+
+    /**
+     * Creates an account for the specified public key and sets initial balance.
+     * @param pubKey
+     * @param initialBalance
+     */
+    abstract createAccount(pubKey: BytesLike, initialBalance?: BigInt): Promise<TransactionResponse>;
 
     readonly _isSigner: boolean;
 
@@ -337,8 +345,14 @@ export abstract class Signer {
         }
 
         const customData = await tx.customData;
+
         // FileCreate and FileAppend always carry a customData.fileChunk object
-        if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
+        const isFileCreateOrAppend = customData && customData.fileChunk;
+
+        // CreateAccount always has a publicKey
+        const isCreateAccount = customData && customData.publicKey;
+
+        if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
             return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
         }
 
@@ -388,6 +402,10 @@ export class VoidSigner extends Signer implements TypedDataSigner {
         return this._fail("VoidSigner cannot sign transactions", "signTransaction");
     }
 
+    createAccount(pubKey: BytesLike, initialBalance?: BigInt): Promise<TransactionResponse> {
+        return this._fail("VoidSigner cannot create accounts", "createAccount");
+    }
+
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string> {
         return this._fail("VoidSigner cannot sign typed data", "signTypedData");
     }
@@ -396,19 +414,6 @@ export class VoidSigner extends Signer implements TypedDataSigner {
         return new VoidSigner(this.address, provider);
     }
 }
-
-
-function splitInChunks(data: string, chunkSize: number): string[] {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
-}
-
 
 /**
  * Generates a random integer in the given range

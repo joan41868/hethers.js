@@ -30,7 +30,7 @@ import {
     ContractExecuteTransaction, ContractId, FileAppendTransaction,
     FileCreateTransaction,
     Transaction as HederaTransaction,
-    PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction
+    PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction, AccountCreateTransaction, Hbar
 } from "@hashgraph/sdk";
 import { TransactionRequest } from "@ethersproject/abstract-provider";
 
@@ -75,14 +75,13 @@ export type UnsignedTransaction = {
 }
 
 export interface Transaction {
+    transactionId: string;
     hash?: string;
 
     to?: string;
     from?: string;
-    nonce: number; // TODO remove
 
     gasLimit: BigNumber;
-    gasPrice?: BigNumber; // TODO remove
 
     data: string;
     value: BigNumber;
@@ -92,18 +91,12 @@ export interface Transaction {
     s?: string;
     v?: number;
 
-    // Typed-Transaction features
-    type?: number | null;
-
     // EIP-2930; Type 1 & EIP-1559; Type 2
     accessList?: AccessList;
-
-    // EIP-1559; Type 2
-    maxPriorityFeePerGas?: BigNumber;
-    maxFeePerGas?: BigNumber;
 }
 
 type HederaTransactionContents = {
+    transactionId: string,
     hash: string,
     to?: string,
     from: string,
@@ -363,7 +356,7 @@ export function serialize(transaction: UnsignedTransaction, signature?: Signatur
     });
 }
 
-export function serializeHederaTransaction(transaction: TransactionRequest) : HederaTransaction {
+export function serializeHederaTransaction(transaction: TransactionRequest, pubKey?: HederaPubKey) : HederaTransaction {
     let tx: HederaTransaction;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
@@ -391,10 +384,17 @@ export function serializeHederaTransaction(transaction: TransactionRequest) : He
                 // only a chunk, thus the first one
                 tx = new FileCreateTransaction()
                     .setContents(transaction.customData.fileChunk)
-                    .setKeys([ transaction.customData.fileKey ?
+                    .setKeys([transaction.customData.fileKey ?
                         transaction.customData.fileKey :
-                        HederaPubKey.fromString(this._signingKey().compressedPublicKey) ])
-            } else {
+                        pubKey
+                    ]);
+            } else if (transaction.customData.publicKey) {
+                const {publicKey, initialBalance} = transaction.customData;
+                tx = new AccountCreateTransaction()
+                    .setKey(HederaPubKey.fromString(publicKey.toString()))
+                    .setInitialBalance(Hbar.fromTinybars(initialBalance.toString()));
+            }
+            else {
                 logger.throwArgumentError(
                     "Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`",
                     Logger.errors.INVALID_ARGUMENT,
@@ -505,7 +505,6 @@ export function serializeHederaTransaction(transaction: TransactionRequest) : He
 //     return tx;
 // }
 
-
 export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     const payload = arrayify(rawTransaction);
 
@@ -515,9 +514,10 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     } catch (error) {
         logger.throwArgumentError(error.message, "rawTransaction", rawTransaction);
     }
-
+    const tx = parsed.transactionId;
     let contents = {
-        hash: hexlify(await parsed.getTransactionHash()),
+        transactionId: tx.accountId.toString() + '-' + tx.validStart.seconds + '-' + tx.validStart.nanos,
+        hash: hexlify(await parsed.getTransactionHash()), //stringify?
         from: getAddressFromAccount(parsed.transactionId.accountId.toString()),
     } as HederaTransactionContents;
 
@@ -543,21 +543,21 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
         contents.data = hexlify(Buffer.from(parsed.contents));
     } else if (parsed instanceof TransferTransaction) {
         // TODO populate value / to?
+    } else if (parsed instanceof AccountCreateTransaction) {
+        parsed = parsed as AccountCreateTransaction;
+        contents.value = parsed.initialBalance ?
+            handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
     } else {
         return logger.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, {operation: "parse"});
     }
 
     // TODO populate r, s ,v
-
     return {
         ...contents,
-        nonce: 0,
-        gasPrice: handleNumber('0'),
         chainId: 0,
         r: '',
         s: '',
         v: 0,
-        type: null,
     };
 }
 

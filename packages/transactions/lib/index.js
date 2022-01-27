@@ -311,7 +311,7 @@ function serialize(transaction, signature) {
     });
 }
 exports.serialize = serialize;
-function serializeHederaTransaction(transaction) {
+function serializeHederaTransaction(transaction, pubKey) {
     var _a, _b;
     var tx;
     var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
@@ -345,7 +345,14 @@ function serializeHederaTransaction(transaction) {
                     .setContents(transaction.customData.fileChunk)
                     .setKeys([transaction.customData.fileKey ?
                         transaction.customData.fileKey :
-                        sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey)]);
+                        pubKey
+                ]);
+            }
+            else if (transaction.customData.publicKey) {
+                var _c = transaction.customData, publicKey = _c.publicKey, initialBalance = _c.initialBalance;
+                tx = new sdk_1.AccountCreateTransaction()
+                    .setKey(sdk_1.PublicKey.fromString(publicKey.toString()))
+                    .setInitialBalance(sdk_1.Hbar.fromTinybars(initialBalance.toString()));
             }
             else {
                 logger.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", logger_1.Logger.errors.INVALID_ARGUMENT, transaction);
@@ -454,7 +461,7 @@ exports.serializeHederaTransaction = serializeHederaTransaction;
 function parse(rawTransaction) {
     var _a;
     return __awaiter(this, void 0, void 0, function () {
-        var payload, parsed, contents, _b;
+        var payload, parsed, tx, contents, _b;
         var _c;
         return __generator(this, function (_d) {
             switch (_d.label) {
@@ -466,7 +473,10 @@ function parse(rawTransaction) {
                     catch (error) {
                         logger.throwArgumentError(error.message, "rawTransaction", rawTransaction);
                     }
-                    _c = {};
+                    tx = parsed.transactionId;
+                    _c = {
+                        transactionId: tx.accountId.toString() + '-' + tx.validStart.seconds + '-' + tx.validStart.nanos
+                    };
                     _b = bytes_1.hexlify;
                     return [4 /*yield*/, parsed.getTransactionHash()];
                 case 1:
@@ -500,11 +510,16 @@ function parse(rawTransaction) {
                     else if (parsed instanceof sdk_1.TransferTransaction) {
                         // TODO populate value / to?
                     }
+                    else if (parsed instanceof sdk_1.AccountCreateTransaction) {
+                        parsed = parsed;
+                        contents.value = parsed.initialBalance ?
+                            handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
+                    }
                     else {
                         return [2 /*return*/, logger.throwError("unsupported transaction", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" })];
                     }
                     // TODO populate r, s ,v
-                    return [2 /*return*/, __assign(__assign({}, contents), { nonce: 0, gasPrice: handleNumber('0'), chainId: 0, r: '', s: '', v: 0, type: null })];
+                    return [2 /*return*/, __assign(__assign({}, contents), { chainId: 0, r: '', s: '', v: 0 })];
             }
         });
     });

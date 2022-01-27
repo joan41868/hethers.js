@@ -188,15 +188,16 @@ var Wallet = /** @class */ (function (_super) {
     Wallet.prototype.signTransaction = function (transaction) {
         var _this = this;
         this._checkAddress('signTransaction');
-        this.checkTransaction(transaction);
-        return this.populateTransaction(transaction).then(function (readyTx) { return __awaiter(_this, void 0, void 0, function () {
-            var tx, pkey, signed;
+        var tx = this.checkTransaction(transaction);
+        return this.populateTransaction(tx).then(function (readyTx) { return __awaiter(_this, void 0, void 0, function () {
+            var pubKey, tx, privKey, signed;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        tx = (0, transactions_1.serializeHederaTransaction)(readyTx);
-                        pkey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
-                        return [4 /*yield*/, tx.sign(pkey)];
+                        pubKey = sdk_1.PublicKey.fromString(this._signingKey().compressedPublicKey);
+                        tx = (0, transactions_1.serializeHederaTransaction)(readyTx, pubKey);
+                        privKey = sdk_1.PrivateKey.fromStringECDSA(this._signingKey().privateKey);
+                        return [4 /*yield*/, tx.sign(privKey)];
                     case 1:
                         signed = _a.sent();
                         return [2 /*return*/, (0, bytes_1.hexlify)(signed.toBytes())];
@@ -254,6 +255,28 @@ var Wallet = /** @class */ (function (_super) {
         var mnemonic = (0, hdnode_1.entropyToMnemonic)(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     };
+    Wallet.prototype.createAccount = function (pubKey, initialBalance) {
+        return __awaiter(this, void 0, void 0, function () {
+            var signed;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!initialBalance)
+                            initialBalance = BigInt(0);
+                        return [4 /*yield*/, this.signTransaction({
+                                customData: {
+                                    publicKey: pubKey,
+                                    initialBalance: initialBalance
+                                }
+                            })];
+                    case 1:
+                        signed = _a.sent();
+                        return [2 /*return*/, this.provider.sendTransaction(signed)];
+                }
+            });
+        });
+    };
+    ;
     Wallet.fromEncryptedJson = function (json, password, progressCallback) {
         return (0, json_wallets_1.decryptJsonWallet)(json, password, progressCallback).then(function (account) {
             return new Wallet(account);

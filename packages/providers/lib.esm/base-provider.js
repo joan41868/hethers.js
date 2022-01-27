@@ -16,7 +16,6 @@ import { getNetwork } from "@ethersproject/networks";
 import { defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
 import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
-import { poll } from "@ethersproject/web";
 import bech32 from "bech32";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -322,6 +321,8 @@ export class Resolver {
     }
 }
 let defaultFormatter = null;
+const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
+const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
 export class BaseProvider extends Provider {
     /**
      *  ready
@@ -378,6 +379,7 @@ export class BaseProvider extends Provider {
                 });
             }
         }
+        this._pollingInterval = 3000;
     }
     _ready() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -467,14 +469,39 @@ export class BaseProvider extends Provider {
             return network;
         });
     }
-    waitForTransaction(transactionHash, confirmations, timeout) {
+    get pollingInterval() {
+        return this._pollingInterval;
+    }
+    set pollingInterval(value) {
+        if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
+            throw new Error("invalid polling interval");
+        }
+        this._pollingInterval = value;
+    }
+    waitForTransaction(transactionId, timeout) {
         return __awaiter(this, void 0, void 0, function* () {
-            return this._waitForTransaction(transactionHash, (confirmations == null) ? 1 : confirmations, timeout || 0, null);
+            return this._waitForTransaction(transactionId, timeout);
         });
     }
-    _waitForTransaction(transactionHash, confirmations, timeout, replaceable) {
+    _waitForTransaction(transactionId, timeout) {
         return __awaiter(this, void 0, void 0, function* () {
-            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+            let remainingTimeout = timeout;
+            return new Promise((resolve, reject) => __awaiter(this, void 0, void 0, function* () {
+                while (remainingTimeout == null || remainingTimeout > 0) {
+                    const txResponse = yield this.getTransaction(transactionId);
+                    if (txResponse == null) {
+                        yield new Promise((resolve) => {
+                            setTimeout(resolve, this._pollingInterval);
+                        });
+                        if (remainingTimeout != null)
+                            remainingTimeout -= this._pollingInterval;
+                    }
+                    else {
+                        return resolve(this.formatter.receiptFromResponse(txResponse));
+                    }
+                }
+                reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
+            }));
         });
     }
     /**
@@ -534,33 +561,15 @@ export class BaseProvider extends Provider {
         if (receipt && receipt.contractId) {
             result.customData.contractId = receipt.contractId.toSolidityAddress();
         }
+        if (receipt && receipt.accountId) {
+            result.customData.accountId = receipt.accountId;
+        }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
-        result.wait = (confirms, timeout) => __awaiter(this, void 0, void 0, function* () {
-            if (confirms == null) {
-                confirms = 1;
-            }
-            if (timeout == null) {
-                timeout = 0;
-            }
-            // Get the details to detect replacement
-            let replacement = undefined;
-            if (confirms !== 0) {
-                replacement = {
-                    data: tx.data,
-                    from: tx.from,
-                    nonce: tx.nonce,
-                    to: tx.to,
-                    value: tx.value,
-                    startBlock: 0
-                };
-            }
-            const receipt = yield this._waitForTransaction(tx.hash, confirms, timeout, replacement);
-            if (receipt == null && confirms === 0) {
-                return null;
-            }
+        result.wait = (timeout) => __awaiter(this, void 0, void 0, function* () {
+            const receipt = yield this._waitForTransaction(tx.transactionId, timeout);
             if (receipt.status === 0) {
                 logger.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
@@ -648,35 +657,61 @@ export class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param txId - id of the transaction to search for
+     * @param transactionId - id of the transaction to search for
      */
-    getTransaction(txId) {
+    getTransaction(transactionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            txId = yield txId;
-            const ep = '/api/v1/transactions/' + txId;
-            let { data } = yield axios.get(this._mirrorNodeUrl + ep);
-            const filtered = data.transactions
-                .filter((e) => e.result === "SUCCESS");
-            return filtered.length > 0 ? filtered[0] : null;
+            if (!this._mirrorNodeUrl)
+                logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            transactionId = yield transactionId;
+            const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
+            try {
+                let { data } = yield axios.get(this._mirrorNodeUrl + transactionsEndpoint);
+                if (data) {
+                    const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
+                    if (filtered.length > 0) {
+                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                        const dataWithLogs = yield axios.get(this._mirrorNodeUrl + contractsEndpoint);
+                        const record = Object.assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
+                        return this.formatter.responseFromRecord(record);
+                    }
+                }
+            }
+            catch (error) {
+                if (error && error.response && error.response.status != 404) {
+                    logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "TransactionResponseQuery",
+                        error
+                    });
+                }
+            }
+            return null;
         });
     }
-    getTransactionReceipt(transactionHash) {
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param transactionId - id of the transaction to search for
+     */
+    getTransactionReceipt(transactionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            transactionHash = yield transactionHash;
-            const params = { transactionHash: this.formatter.hash(transactionHash, true) };
-            return poll(() => __awaiter(this, void 0, void 0, function* () {
-                const result = yield this.perform("getTransactionReceipt", params);
-                if (result == null) {
-                    return undefined;
-                }
-                // "geth-etc" returns receipts before they are ready
-                if (result.blockHash == null) {
-                    return undefined;
-                }
-                return this.formatter.receipt(result);
-            }), { oncePoll: this });
+            return logger.throwError("getTransactionReceipt not implemented", Logger.errors.NOT_IMPLEMENTED, {
+                operation: 'getTransactionReceipt'
+            });
+            // await this.getNetwork();
+            // transactionId = await transactionId;
+            // try {
+            //     let receipt = await new TransactionReceiptQuery()
+            //         .setTransactionId(transactionId)
+            //         .execute(this.hederaClient);
+            //     console.log("getTransactionReceipt: ", receipt);
+            //     return null;
+            // } catch (error) {
+            //     return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+            //         method: "TransactionGetReceiptQuery",
+            //         error
+            //     });
+            // }
         });
     }
     getLogs(filter) {
@@ -684,11 +719,6 @@ export class BaseProvider extends Provider {
             yield this.getNetwork();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
             const logs = yield this.perform("getLogs", params);
-            logs.forEach((log) => {
-                if (log.removed == null) {
-                    log.removed = false;
-                }
-            });
             return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
         });
     }

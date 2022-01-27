@@ -80,6 +80,7 @@ var address_1 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var Long = __importStar(require("long"));
 var proto_1 = require("@hashgraph/proto");
+var strings_1 = require("@ethersproject/strings");
 var logger = new logger_1.Logger(_version_1.version);
 var allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
@@ -259,7 +260,7 @@ var Signer = /** @class */ (function () {
                     case 3: return [2 /*return*/, _b.sent()];
                     case 4:
                         contractByteCode = tx.data;
-                        chunks = splitInChunks(Buffer.from(contractByteCode).toString(), 4096);
+                        chunks = (0, strings_1.splitInChunks)(Buffer.from(contractByteCode).toString(), 4096);
                         fileCreate = {
                             customData: {
                                 fileChunk: chunks[0],
@@ -372,7 +373,7 @@ var Signer = /** @class */ (function () {
      */
     Signer.prototype.populateTransaction = function (transaction) {
         return __awaiter(this, void 0, void 0, function () {
-            var tx, customData;
+            var tx, customData, isFileCreateOrAppend, isCreateAccount;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -394,8 +395,9 @@ var Signer = /** @class */ (function () {
                         return [4 /*yield*/, tx.customData];
                     case 2:
                         customData = _a.sent();
-                        // FileCreate and FileAppend always carry a customData.fileChunk object
-                        if (!(customData && customData.fileChunk) && tx.gasLimit == null) {
+                        isFileCreateOrAppend = customData && customData.fileChunk;
+                        isCreateAccount = customData && customData.publicKey;
+                        if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
                             return [2 /*return*/, logger.throwError("cannot estimate gas; transaction requires manual gas limit", logger_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx })];
                         }
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(tx)];
@@ -444,6 +446,9 @@ var VoidSigner = /** @class */ (function (_super) {
     VoidSigner.prototype.signTransaction = function (transaction) {
         return this._fail("VoidSigner cannot sign transactions", "signTransaction");
     };
+    VoidSigner.prototype.createAccount = function (pubKey, initialBalance) {
+        return this._fail("VoidSigner cannot create accounts", "createAccount");
+    };
     VoidSigner.prototype._signTypedData = function (domain, types, value) {
         return this._fail("VoidSigner cannot sign typed data", "signTypedData");
     };
@@ -453,16 +458,6 @@ var VoidSigner = /** @class */ (function (_super) {
     return VoidSigner;
 }(Signer));
 exports.VoidSigner = VoidSigner;
-function splitInChunks(data, chunkSize) {
-    var chunks = [];
-    var num = 0;
-    while (num <= data.length) {
-        var slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
-}
 /**
  * Generates a random integer in the given range
  * @param min - range start

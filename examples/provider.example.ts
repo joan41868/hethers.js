@@ -2,7 +2,7 @@ const hethers = require("ethers");
 
 (async () => {
     const accountNum = 98;
-    //
+
     const provider = hethers.providers.getDefaultProvider("testnet");
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
     const solAddr = hethers.utils.getAddressFromAccount(accountConfig);
