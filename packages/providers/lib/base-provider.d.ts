@@ -3,8 +3,10 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
+import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
-import { AccountId, TransactionReceipt as HederaTransactionReceipt } from "@hashgraph/sdk";
+import { AccountLike } from "@ethersproject/address";
+import { AccountId, Client } from "@hashgraph/sdk";
 export declare class Event {
     readonly listener: Listener;
     readonly once: boolean;
@@ -51,6 +53,7 @@ export declare class BaseProvider extends Provider {
     _networkPromise: Promise<Network>;
     _network: Network;
     _events: Array<Event>;
+    _pollingInterval: number;
     formatter: Formatter;
     readonly anyNetwork: boolean;
     private readonly hederaClient;
@@ -65,31 +68,27 @@ export declare class BaseProvider extends Provider {
      *
      */
     constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike);
-    getHederaNetworkConfig(): AccountId[];
     _ready(): Promise<Network>;
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
     get network(): Network;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
-    waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
-    _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: {
-        data: string;
-        from: string;
-        nonce: number;
-        to: string;
-        value: BigNumber;
-        startBlock: number;
-    }): Promise<TransactionReceipt>;
+    get pollingInterval(): number;
+    set pollingInterval(value: number);
+    waitForTransaction(transactionId: string, timeout?: number): Promise<TransactionReceipt>;
+    _waitForTransaction(transactionId: string, timeout: number): Promise<TransactionReceipt>;
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
      *
-     * @param addressOrName The address to check balance of
+     * @param accountLike The address to check balance of
      */
-    getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
+    getBalance(accountLike: AccountLike | Promise<AccountLike>): Promise<BigNumber>;
     getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
+    getHederaClient(): Client;
+    getHederaNetworkConfig(): AccountId[];
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     _getFilter(filter: Filter | Promise<Filter>): Promise<Filter>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
@@ -97,10 +96,15 @@ export declare class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param txId - id of the transaction to search for
+     * @param transactionId - id of the transaction to search for
      */
-    getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
-    getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt>;
+    getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse>;
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param transactionId - id of the transaction to search for
+     */
+    getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
     getResolver(name: string): Promise<null | Resolver>;

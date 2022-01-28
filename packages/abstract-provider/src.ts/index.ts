@@ -9,9 +9,8 @@ import { AccessListish, Transaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { AccountLike } from "@ethersproject/address";
-import { AccountId } from "@hashgraph/sdk";
+import { AccountId, Client } from '@hashgraph/sdk';
 const logger = new Logger(version);
-
 ///////////////////////////////
 // Exported Types
 
@@ -31,8 +30,10 @@ export type TransactionRequest = {
     customData?: Record<string, any>;
 }
 
-export type HederaTransactionResponse = {
+export type HederaTransactionRecord = {
     chainId: number,
+    transactionId: string,
+    result: string,
     amount: number,
     call_result: string,
     contract_id: string,
@@ -47,19 +48,15 @@ export type HederaTransactionResponse = {
     block_hash: string,
     block_number: number,
     hash: string,
-    logs: {},
-    transaction: {
-        transaction_id: string,
-        result: string
-    }
+    logs: {}
 }
   
 export interface TransactionResponse extends Transaction {
     hash: string;
-    timestamp?: number,
+    timestamp?: string,
     from: string;
     raw?: string,
-    wait: (confirmations?: number) => Promise<TransactionReceipt>,
+    wait: (timestamp?: number) => Promise<TransactionReceipt>,
     customData?: {
         [key: string]:any;
     }
@@ -96,11 +93,10 @@ export interface BlockWithTransactions extends _Block {
 
 
 export interface Log {
+    timestamp: string;
     address: string;
     data: string;
-
     topics: Array<string>;
-
     transactionHash: string;
     logIndex: number;
 }
@@ -109,14 +105,17 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string,
+    timestamp: string,
     gasUsed: BigNumber,
     logsBloom: string,
+    transactionId: string,
     transactionHash: string,
     logs: Array<Log>,
     cumulativeGasUsed: BigNumber,
-    byzantium: boolean,
+    byzantium: true,
+    type: 0,
     status?: number
-};
+}
 
 export interface FeeData {
     maxFeePerGas: null | BigNumber;
@@ -224,12 +223,17 @@ export abstract class Provider {
 
     // Network
     abstract getNetwork(): Promise<Network>;
+    getHederaClient() : Client {
+        return logger.throwError("getHederaClient not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaClient'
+        })
+    }
+
     getHederaNetworkConfig() : AccountId[] {
         return logger.throwError("getHederaNetworkConfig not implemented", Logger.errors.NOT_IMPLEMENTED, {
             operation: 'getHederaNetworkConfig'
         })
     }
-
     // Latest State
     getGasPrice(): Promise<BigNumber> {
         return logger.throwArgumentError("getGasPrice not implemented", Logger.errors.NOT_IMPLEMENTED, {
@@ -283,44 +287,4 @@ export abstract class Provider {
     static isProvider(value: any): value is Provider {
         return !!(value && value._isProvider);
     }
-
-/*
-    static getResolver(network: Network, callable: CallTransactionable, namehash: string): string {
-        // No ENS...
-        if (!network.ensAddress) {
-            errors.throwError(
-                "network does support ENS",
-                errors.UNSUPPORTED_OPERATION,
-                { operation: "ENS", network: network.name }
-            );
-        }
-
-        // Not a namehash
-        if (!isHexString(namehash, 32)) {
-            errors.throwArgumentError("invalid name hash", "namehash", namehash);
-        }
-
-        // keccak256("resolver(bytes32)")
-        let data = "0x0178b8bf" + namehash.substring(2);
-        let transaction = { to: network.ensAddress, data: data };
-
-        return provider.call(transaction).then((data) => {
-            return provider.formatter.callAddress(data);
-        });
-    }
-
-    static resolveNamehash(network: Network, callable: CallTransactionable, namehash: string): string {
-        return this.getResolver(network, callable, namehash).then((resolverAddress) => {
-            if (!resolverAddress) { return null; }
-
-            // keccak256("addr(bytes32)")
-            let data = "0x3b3b57de" + namehash(name).substring(2);
-            let transaction = { to: resolverAddress, data: data };
-            return callable.call(transaction).then((data) => {
-                return this.formatter.callAddress(data);
-            });
-
-        })
-    }
-*/
 }

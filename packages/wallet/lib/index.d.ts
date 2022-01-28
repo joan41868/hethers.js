@@ -1,5 +1,5 @@
 import { Account, AccountLike } from "@ethersproject/address";
-import { Provider, TransactionRequest } from "@ethersproject/abstract-provider";
+import { Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@ethersproject/abstract-signer";
 import { Bytes, BytesLike, SignatureLike } from "@ethersproject/bytes";
 import { Mnemonic } from "@ethersproject/hdnode";
@@ -27,9 +27,17 @@ export declare class Wallet extends Signer implements ExternallyOwnedAccount, Ty
     _signTypedData(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): Promise<string>;
     encrypt(password: Bytes | string, options?: any, progressCallback?: ProgressCallback): Promise<string>;
     /**
+     * Performs a contract local call (ContractCallQuery) against the given contract in the provider's network.
+     * In the future, this method should automatically perform getCost and apply the results for gasLimit/txFee.
+     * TODO: utilize getCost when implemented
+     *
+     * @param txRequest - the call request to be submitted
+     */
+    /**
      *  Static methods to create Wallet instances.
      */
     static createRandom(options?: any): Wallet;
+    createAccount(pubKey: BytesLike, initialBalance?: BigInt): Promise<TransactionResponse>;
     static fromEncryptedJson(json: string, password: Bytes | string, progressCallback?: ProgressCallback): Promise<Wallet>;
     static fromEncryptedJsonSync(json: string, password: Bytes | string): Wallet;
     static fromMnemonic(mnemonic: string, path?: string, wordlist?: Wordlist): Wallet;

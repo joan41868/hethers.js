@@ -69,18 +69,19 @@ var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
 var transactions_1 = require("@ethersproject/transactions");
+var strings_1 = require("@ethersproject/strings");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 ;
 ;
 ///////////////////////////////
-var allowedTransactionKeys = {
-    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, nonce: true, to: true, value: true,
-    type: true, accessList: true,
-    maxFeePerGas: true, maxPriorityFeePerGas: true,
-    customData: true
-};
+// const allowedTransactionKeys: { [ key: string ]: boolean } = {
+//     chainId: true, data: true, from: true, gasLimit: true, gasPrice:true, nonce: true, to: true, value: true,
+//     type: true, accessList: true,
+//     maxFeePerGas: true, maxPriorityFeePerGas: true,
+//     customData: true
+// }
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function () {
@@ -383,7 +384,7 @@ function buildCall(contract, fragment, collapseSimple) {
                     case 5: return [4 /*yield*/, populateTransaction(contract, fragment, args)];
                     case 6:
                         tx = _a.sent();
-                        return [4 /*yield*/, signer.call(tx, blockTag)];
+                        return [4 /*yield*/, signer.call(tx)];
                     case 7:
                         result = _a.sent();
                         try {
@@ -748,9 +749,6 @@ var BaseContract = /** @class */ (function () {
             }
         });
     }
-    BaseContract.getContractAddress = function (transaction) {
-        return (0, address_1.getContractAddress)(transaction);
-    };
     BaseContract.getInterface = function (contractInterface) {
         if (abi_1.Interface.isInterface(contractInterface)) {
             return contractInterface;
@@ -1086,46 +1084,33 @@ var ContractFactory = /** @class */ (function () {
         (0, properties_1.defineReadOnly)(this, "interface", (0, properties_1.getStatic)(_newTarget, "getInterface")(contractInterface));
         (0, properties_1.defineReadOnly)(this, "signer", signer || null);
     }
-    // @TODO: Future; rename to populateTransaction?
-    ContractFactory.prototype.getDeployTransaction = function () {
+    ContractFactory.prototype.getDeployTransactions = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
-        var tx = {};
-        // If we have 1 additional argument, we allow transaction overrides
-        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-            tx = (0, properties_1.shallowCopy)(args.pop());
-            for (var key in tx) {
-                if (!allowedTransactionKeys[key]) {
-                    throw new Error("unknown transaction override " + key);
+        var chunks = (0, strings_1.splitInChunks)(Buffer.from(this.bytecode).toString(), 4096);
+        var fileCreate = {
+            customData: {
+                fileChunk: chunks[0]
+            }
+        };
+        var fileAppends = [];
+        for (var _a = 0, _b = chunks.slice(1); _a < _b.length; _a++) {
+            var chunk = _b[_a];
+            var fileAppend = {
+                customData: {
+                    fileChunk: chunk
                 }
-            }
+            };
+            fileAppends.push(fileAppend);
         }
-        // Do not allow these to be overridden in a deployment transaction
-        ["data", "from", "to"].forEach(function (key) {
-            if (tx[key] == null) {
-                return;
-            }
-            logger.throwError("cannot override " + key, logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
-        });
-        if (tx.value) {
-            var value = bignumber_1.BigNumber.from(tx.value);
-            if (!value.isZero() && !this.interface.deploy.payable) {
-                logger.throwError("non-payable constructor cannot override value", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "overrides.value",
-                    value: tx.value
-                });
-            }
-        }
-        // Make sure the call matches the constructor signature
-        logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-        // Set the data to the bytecode + the encoded constructor arguments
-        tx.data = (0, bytes_1.hexlify)((0, bytes_1.concat)([
-            this.bytecode,
-            this.interface.encodeDeploy(args)
-        ]));
-        return tx;
+        var contractCreate = {
+            gasLimit: 300000,
+            data: this.interface.encodeDeploy(args),
+            customData: {}
+        };
+        return __spreadArray(__spreadArray([fileCreate], fileAppends, true), [contractCreate], false);
     };
     ContractFactory.prototype.deploy = function () {
         var args = [];
@@ -1148,8 +1133,8 @@ var ContractFactory = /** @class */ (function () {
                     case 1:
                         params = _a.sent();
                         params.push(overrides);
-                        unsignedTx = this.getDeployTransaction.apply(this, params);
-                        return [4 /*yield*/, this.signer.sendTransaction(unsignedTx)];
+                        unsignedTx = this.getDeployTransactions();
+                        return [4 /*yield*/, this.signer.sendTransaction(unsignedTx[0])];
                     case 2:
                         tx = _a.sent();
                         address = (0, properties_1.getStatic)(this.constructor, "getContractAddress")(tx);
@@ -1187,9 +1172,6 @@ var ContractFactory = /** @class */ (function () {
     };
     ContractFactory.getInterface = function (contractInterface) {
         return Contract.getInterface(contractInterface);
-    };
-    ContractFactory.getContractAddress = function (tx) {
-        return (0, address_1.getContractAddress)(tx);
     };
     ContractFactory.getContract = function (address, contractInterface, signer) {
         return new Contract(address, contractInterface, signer);

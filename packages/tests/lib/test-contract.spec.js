@@ -43,7 +43,7 @@ var assert_1 = __importDefault(require("assert"));
 var ethers_1 = require("ethers");
 var test_contract_json_1 = __importDefault(require("./test-contract.json"));
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
-var provider = ethers_1.ethers.getDefaultProvider("rinkeby");
+var provider = ethers_1.ethers.getDefaultProvider("testnet");
 var TIMEOUT_PERIOD = 120000;
 var contract = (function () {
     return new ethers_1.ethers.Contract(test_contract_json_1.default.contractAddress, test_contract_json_1.default.interface, provider);
@@ -200,7 +200,7 @@ describe("Test Contract Transaction Population", function () {
     var testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     var fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
     var contract = new ethers_1.ethers.Contract(testAddress, abi);
-    var contractConnected = contract.connect(ethers_1.ethers.getDefaultProvider("homestead"));
+    var contractConnected = contract.connect(ethers_1.ethers.getDefaultProvider("testnet"));
     xit("standard population", function () {
         return __awaiter(this, void 0, void 0, function () {
             var tx;
@@ -405,6 +405,24 @@ describe("Test Contract Transaction Population", function () {
                         assert_1.default.equal(tx.from, testAddressCheck.toLowerCase(), "from address matches");
                         return [2 /*return*/];
                 }
+            });
+        });
+    });
+    it("should return an array of transactions on getDeployTransactions call", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var hederaEoa, provider, wallet, contractFactory, transactions;
+            return __generator(this, function (_a) {
+                hederaEoa = {
+                    account: "0.0.1280",
+                    privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
+                };
+                provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
+                wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
+                contractFactory = new ethers_1.ethers.ContractFactory(abi, "", wallet);
+                transactions = contractFactory.getDeployTransactions();
+                assert_1.default.strictEqual(Array.isArray(transactions), true);
+                assert_1.default.strictEqual(transactions.length, 2);
+                return [2 /*return*/];
             });
         });
     });

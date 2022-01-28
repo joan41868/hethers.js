@@ -4,7 +4,6 @@ import { Description, defineReadOnly } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
-;
 //export type CallTransactionable = {
 //    call(transaction: TransactionRequest): Promise<TransactionResponse>;
 //};
@@ -62,6 +61,11 @@ export class Provider {
     constructor() {
         logger.checkAbstract(new.target, Provider);
         defineReadOnly(this, "_isProvider", true);
+    }
+    getHederaClient() {
+        return logger.throwError("getHederaClient not implemented", Logger.errors.NOT_IMPLEMENTED, {
+            operation: 'getHederaClient'
+        });
     }
     getHederaNetworkConfig() {
         return logger.throwError("getHederaNetworkConfig not implemented", Logger.errors.NOT_IMPLEMENTED, {

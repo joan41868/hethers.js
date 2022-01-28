@@ -65,6 +65,8 @@ var testcases_1 = require("@ethersproject/testcases");
 var utils = __importStar(require("./utils"));
 var sdk_1 = require("@hashgraph/sdk");
 var utils_1 = require("ethers/lib/utils");
+var address_1 = require("@ethersproject/address");
+var logger_1 = require("@ethersproject/logger");
 // @ts-ignore
 function equals(a, b) {
     if (Array.isArray(a)) {
@@ -678,6 +680,62 @@ describe("Base58 Coder", function () {
         assert_1.default.equal(ethers_1.ethers.utils.base58.encode(ethers_1.ethers.utils.toUtf8Bytes("Hello World")), "JxF12TrwUP45BMd");
     });
 });
+describe("Account like to string", function () {
+    it('Is usable for ethereum addresses', function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var contractAddr, accStr;
+            return __generator(this, function (_a) {
+                contractAddr = '0000000000000000000000000000000001b34cbb';
+                accStr = (0, address_1.asAccountString)(contractAddr);
+                // should not be touched
+                assert_1.default.strictEqual(accStr, '0.0.28527803');
+                return [2 /*return*/];
+            });
+        });
+    });
+    it('Is able to convert hedera account to string', function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var accLike, accStr, split, accLike2, split2;
+            return __generator(this, function (_a) {
+                accLike = {
+                    shard: BigInt(0),
+                    realm: BigInt(0),
+                    num: BigInt(420),
+                };
+                accStr = (0, address_1.asAccountString)(accLike);
+                split = accStr.split('.');
+                assert_1.default.notStrictEqual(accStr, "");
+                assert_1.default.strictEqual(split[0], "0");
+                assert_1.default.strictEqual(split[1], "0");
+                assert_1.default.strictEqual(split[2], "420");
+                accLike2 = "0.0.69";
+                accStr = (0, address_1.asAccountString)(accLike2);
+                split2 = accStr.split('.');
+                assert_1.default.notStrictEqual(accStr, "");
+                assert_1.default.strictEqual(split2[0], "0");
+                assert_1.default.strictEqual(split2[1], "0");
+                assert_1.default.strictEqual(split2[2], "69");
+                return [2 /*return*/];
+            });
+        });
+    });
+    it("Should throw on random string", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var notReallyAccountLike;
+            return __generator(this, function (_a) {
+                notReallyAccountLike = "foo";
+                try {
+                    (0, address_1.asAccountString)(notReallyAccountLike);
+                }
+                catch (e) {
+                    assert_1.default.strictEqual(e.code, logger_1.Logger.errors.INVALID_ARGUMENT);
+                    assert_1.default.notStrictEqual(e, null);
+                }
+                return [2 /*return*/];
+            });
+        });
+    });
+});
 /*
 describe("Web Fetch", function() {
     it("fetches JSON", async function() {
@@ -705,15 +763,14 @@ describe("EIP-712", function () {
         }
         it("signing " + test.name, function () {
             return __awaiter(this, void 0, void 0, function () {
-                var wallet, signature;
+                var wallet;
                 return __generator(this, function (_a) {
                     switch (_a.label) {
                         case 0:
                             wallet = new ethers_1.ethers.Wallet(test.privateKey);
-                            return [4 /*yield*/, wallet._signTypedData(test.domain, test.types, test.data)];
+                            return [4 /*yield*/, assert_1.default.rejects(wallet._signTypedData(test.domain, test.types, test.data), '_signTypedData not supported')];
                         case 1:
-                            signature = _a.sent();
-                            assert_1.default.equal(signature, test.signature, "signature");
+                            _a.sent();
                             return [2 /*return*/];
                     }
                 });

@@ -4,7 +4,7 @@ import { Network } from "@ethersproject/networks";
 import { Deferrable, Description } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@ethersproject/transactions";
 import { AccountLike } from "@ethersproject/address";
-import { AccountId } from "@hashgraph/sdk";
+import { AccountId, Client } from '@hashgraph/sdk';
 export declare type TransactionRequest = {
     to?: AccountLike;
     from?: AccountLike;
@@ -19,8 +19,10 @@ export declare type TransactionRequest = {
     nodeId?: AccountLike;
     customData?: Record<string, any>;
 };
-export declare type HederaTransactionResponse = {
+export declare type HederaTransactionRecord = {
     chainId: number;
+    transactionId: string;
+    result: string;
     amount: number;
     call_result: string;
     contract_id: string;
@@ -36,17 +38,13 @@ export declare type HederaTransactionResponse = {
     block_number: number;
     hash: string;
     logs: {};
-    transaction: {
-        transaction_id: string;
-        result: string;
-    };
 };
 export interface TransactionResponse extends Transaction {
     hash: string;
-    timestamp?: number;
+    timestamp?: string;
     from: string;
     raw?: string;
-    wait: (confirmations?: number) => Promise<TransactionReceipt>;
+    wait: (timestamp?: number) => Promise<TransactionReceipt>;
     customData?: {
         [key: string]: any;
     };
@@ -73,6 +71,7 @@ export interface BlockWithTransactions extends _Block {
     transactions: Array<TransactionResponse>;
 }
 export interface Log {
+    timestamp: string;
     address: string;
     data: string;
     topics: Array<string>;
@@ -83,12 +82,15 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string;
+    timestamp: string;
     gasUsed: BigNumber;
     logsBloom: string;
+    transactionId: string;
     transactionHash: string;
     logs: Array<Log>;
     cumulativeGasUsed: BigNumber;
-    byzantium: boolean;
+    byzantium: true;
+    type: 0;
     status?: number;
 }
 export interface FeeData {
@@ -133,6 +135,7 @@ export declare type EventType = string | Array<string | Array<string>> | EventFi
 export declare type Listener = (...args: Array<any>) => void;
 export declare abstract class Provider {
     abstract getNetwork(): Promise<Network>;
+    getHederaClient(): Client;
     getHederaNetworkConfig(): AccountId[];
     getGasPrice(): Promise<BigNumber>;
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;

@@ -14,6 +14,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -63,15 +74,14 @@ var networks_1 = require("@ethersproject/networks");
 var properties_1 = require("@ethersproject/properties");
 var sha2_1 = require("@ethersproject/sha2");
 var strings_1 = require("@ethersproject/strings");
-var web_1 = require("@ethersproject/web");
 var bech32_1 = __importDefault(require("bech32"));
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
+var logger = new logger_1.Logger(_version_1.version);
 var formatter_1 = require("./formatter");
 var address_1 = require("@ethersproject/address");
-var axios_1 = __importDefault(require("axios"));
 var sdk_1 = require("@hashgraph/sdk");
-var logger = new logger_1.Logger(_version_1.version);
+var axios_1 = __importDefault(require("axios"));
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -409,6 +419,8 @@ var Resolver = /** @class */ (function () {
 }());
 exports.Resolver = Resolver;
 var defaultFormatter = null;
+var MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
+var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
 var BaseProvider = /** @class */ (function (_super) {
     __extends(BaseProvider, _super);
     /**
@@ -468,11 +480,9 @@ var BaseProvider = /** @class */ (function (_super) {
                 });
             }
         }
+        _this._pollingInterval = 3000;
         return _this;
     }
-    BaseProvider.prototype.getHederaNetworkConfig = function () {
-        return this.hederaClient._network.getNodeAccountIdsForExecute();
-    };
     BaseProvider.prototype._ready = function () {
         return __awaiter(this, void 0, void 0, function () {
             var network, error_1;
@@ -586,17 +596,59 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.waitForTransaction = function (transactionHash, confirmations, timeout) {
+    Object.defineProperty(BaseProvider.prototype, "pollingInterval", {
+        get: function () {
+            return this._pollingInterval;
+        },
+        set: function (value) {
+            if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
+                throw new Error("invalid polling interval");
+            }
+            this._pollingInterval = value;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    BaseProvider.prototype.waitForTransaction = function (transactionId, timeout) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                return [2 /*return*/, this._waitForTransaction(transactionHash, (confirmations == null) ? 1 : confirmations, timeout || 0, null)];
+                return [2 /*return*/, this._waitForTransaction(transactionId, timeout)];
             });
         });
     };
-    BaseProvider.prototype._waitForTransaction = function (transactionHash, confirmations, timeout, replaceable) {
+    BaseProvider.prototype._waitForTransaction = function (transactionId, timeout) {
         return __awaiter(this, void 0, void 0, function () {
+            var remainingTimeout;
+            var _this = this;
             return __generator(this, function (_a) {
-                return [2 /*return*/, logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION)];
+                remainingTimeout = timeout;
+                return [2 /*return*/, new Promise(function (resolve, reject) { return __awaiter(_this, void 0, void 0, function () {
+                        var txResponse;
+                        var _this = this;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    if (!(remainingTimeout == null || remainingTimeout > 0)) return [3 /*break*/, 5];
+                                    return [4 /*yield*/, this.getTransaction(transactionId)];
+                                case 1:
+                                    txResponse = _a.sent();
+                                    if (!(txResponse == null)) return [3 /*break*/, 3];
+                                    return [4 /*yield*/, new Promise(function (resolve) {
+                                            setTimeout(resolve, _this._pollingInterval);
+                                        })];
+                                case 2:
+                                    _a.sent();
+                                    if (remainingTimeout != null)
+                                        remainingTimeout -= this._pollingInterval;
+                                    return [3 /*break*/, 4];
+                                case 3: return [2 /*return*/, resolve(this.formatter.receiptFromResponse(txResponse))];
+                                case 4: return [3 /*break*/, 0];
+                                case 5:
+                                    reject(logger.makeError("timeout exceeded", logger_1.Logger.errors.TIMEOUT, { timeout: timeout }));
+                                    return [2 /*return*/];
+                            }
+                        });
+                    }); })];
             });
         });
     };
@@ -604,34 +656,31 @@ var BaseProvider = /** @class */ (function (_super) {
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
      *
-     * @param addressOrName The address to check balance of
+     * @param accountLike The address to check balance of
      */
-    BaseProvider.prototype.getBalance = function (addressOrName) {
+    BaseProvider.prototype.getBalance = function (accountLike) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, shard, realm, num, shardNum, realmNum, accountNum, balance, error_2;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0: return [4 /*yield*/, addressOrName];
+            var account, balance, error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, accountLike];
                     case 1:
-                        addressOrName = _b.sent();
-                        _a = (0, address_1.getAccountFromAddress)(addressOrName), shard = _a.shard, realm = _a.realm, num = _a.num;
-                        shardNum = bignumber_1.BigNumber.from(shard).toNumber();
-                        realmNum = bignumber_1.BigNumber.from(realm).toNumber();
-                        accountNum = bignumber_1.BigNumber.from(num).toNumber();
-                        _b.label = 2;
+                        accountLike = _a.sent();
+                        account = (0, address_1.asAccountString)(accountLike);
+                        _a.label = 2;
                     case 2:
-                        _b.trys.push([2, 4, , 5]);
+                        _a.trys.push([2, 4, , 5]);
                         return [4 /*yield*/, new sdk_1.AccountBalanceQuery()
-                                .setAccountId(new sdk_1.AccountId({ shard: shardNum, realm: realmNum, num: accountNum }))
+                                .setAccountId(sdk_1.AccountId.fromString(account))
                                 .execute(this.hederaClient)];
                     case 3:
-                        balance = _b.sent();
+                        balance = _a.sent();
                         return [2 /*return*/, bignumber_1.BigNumber.from(balance.hbars.toTinybars().toNumber())];
                     case 4:
-                        error_2 = _b.sent();
+                        error_2 = _a.sent();
                         return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "AccountBalanceQuery",
-                                params: { address: addressOrName },
+                                params: { address: accountLike },
                                 error: error_2
                             })];
                     case 5: return [2 /*return*/];
@@ -686,38 +735,20 @@ var BaseProvider = /** @class */ (function (_super) {
         if (receipt && receipt.contractId) {
             result.customData.contractId = receipt.contractId.toSolidityAddress();
         }
+        if (receipt && receipt.accountId) {
+            result.customData.accountId = receipt.accountId;
+        }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
             logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", logger_1.Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
-        result.wait = function (confirms, timeout) { return __awaiter(_this, void 0, void 0, function () {
-            var replacement, receipt;
+        result.wait = function (timeout) { return __awaiter(_this, void 0, void 0, function () {
+            var receipt;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        if (confirms == null) {
-                            confirms = 1;
-                        }
-                        if (timeout == null) {
-                            timeout = 0;
-                        }
-                        replacement = undefined;
-                        if (confirms !== 0) {
-                            replacement = {
-                                data: tx.data,
-                                from: tx.from,
-                                nonce: tx.nonce,
-                                to: tx.to,
-                                value: tx.value,
-                                startBlock: 0
-                            };
-                        }
-                        return [4 /*yield*/, this._waitForTransaction(tx.hash, confirms, timeout, replacement)];
+                    case 0: return [4 /*yield*/, this._waitForTransaction(tx.transactionId, timeout)];
                     case 1:
                         receipt = _a.sent();
-                        if (receipt == null && confirms === 0) {
-                            return [2 /*return*/, null];
-                        }
                         if (receipt.status === 0) {
                             logger.throwError("transaction failed", logger_1.Logger.errors.CALL_EXCEPTION, {
                                 transactionHash: tx.hash,
@@ -730,6 +761,12 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         }); };
         return result;
+    };
+    BaseProvider.prototype.getHederaClient = function () {
+        return this.hederaClient;
+    };
+    BaseProvider.prototype.getHederaNetworkConfig = function () {
+        return this.hederaClient._network.getNodeAccountIdsForExecute();
     };
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
@@ -842,68 +879,82 @@ var BaseProvider = /** @class */ (function (_super) {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param txId - id of the transaction to search for
+     * @param transactionId - id of the transaction to search for
      */
-    BaseProvider.prototype.getTransaction = function (txId) {
+    BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var ep, data, filtered;
+            var transactionsEndpoint, data, filtered, contractsEndpoint, dataWithLogs, record, error_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 0:
+                        if (!this._mirrorNodeUrl)
+                            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+                        return [4 /*yield*/, transactionId];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, txId];
+                        transactionId = _a.sent();
+                        transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
+                        _a.label = 2;
                     case 2:
-                        txId = _a.sent();
-                        ep = '/api/v1/transactions/' + txId;
-                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + ep)];
+                        _a.trys.push([2, 6, , 7]);
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + transactionsEndpoint)];
                     case 3:
                         data = (_a.sent()).data;
-                        filtered = data.transactions
-                            .filter(function (e) { return e.result === "SUCCESS"; });
-                        return [2 /*return*/, filtered.length > 0 ? filtered[0] : null];
+                        if (!data) return [3 /*break*/, 5];
+                        filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
+                        if (!(filtered.length > 0)) return [3 /*break*/, 5];
+                        contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
+                    case 4:
+                        dataWithLogs = _a.sent();
+                        record = __assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
+                        return [2 /*return*/, this.formatter.responseFromRecord(record)];
+                    case 5: return [3 /*break*/, 7];
+                    case 6:
+                        error_4 = _a.sent();
+                        if (error_4 && error_4.response && error_4.response.status != 404) {
+                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                method: "TransactionResponseQuery",
+                                error: error_4
+                            });
+                        }
+                        return [3 /*break*/, 7];
+                    case 7: return [2 /*return*/, null];
                 }
             });
         });
     };
-    BaseProvider.prototype.getTransactionReceipt = function (transactionHash) {
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param transactionId - id of the transaction to search for
+     */
+    BaseProvider.prototype.getTransactionReceipt = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var params;
-            var _this = this;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
-                        return [4 /*yield*/, transactionHash];
-                    case 2:
-                        transactionHash = _a.sent();
-                        params = { transactionHash: this.formatter.hash(transactionHash, true) };
-                        return [2 /*return*/, (0, web_1.poll)(function () { return __awaiter(_this, void 0, void 0, function () {
-                                var result;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0: return [4 /*yield*/, this.perform("getTransactionReceipt", params)];
-                                        case 1:
-                                            result = _a.sent();
-                                            if (result == null) {
-                                                return [2 /*return*/, undefined];
-                                            }
-                                            // "geth-etc" returns receipts before they are ready
-                                            if (result.blockHash == null) {
-                                                return [2 /*return*/, undefined];
-                                            }
-                                            return [2 /*return*/, this.formatter.receipt(result)];
-                                    }
-                                });
-                            }); }, { oncePoll: this })];
-                }
+                return [2 /*return*/, logger.throwError("getTransactionReceipt not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
+                        operation: 'getTransactionReceipt'
+                    })
+                    // await this.getNetwork();
+                    // transactionId = await transactionId;
+                    // try {
+                    //     let receipt = await new TransactionReceiptQuery()
+                    //         .setTransactionId(transactionId)
+                    //         .execute(this.hederaClient);
+                    //     console.log("getTransactionReceipt: ", receipt);
+                    //     return null;
+                    // } catch (error) {
+                    //     return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    //         method: "TransactionGetReceiptQuery",
+                    //         error
+                    //     });
+                    // }
+                ];
             });
         });
     };
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, logs, error_4;
+            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, logs, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -938,11 +989,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, logs];
                     case 4:
-                        error_4 = _a.sent();
-                        if (error_4 && error_4.response && error_4.response.status != 404) {
+                        error_5 = _a.sent();
+                        if (error_5 && error_5.response && error_5.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "ContractLogsQuery",
-                                error: error_4
+                                error: error_5
                             });
                         }
                         return [2 /*return*/, null];
@@ -961,7 +1012,7 @@ var BaseProvider = /** @class */ (function (_super) {
     // TODO FIXME
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_5;
+            var address, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -974,8 +1025,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_5 = _a.sent();
-                        if (error_5.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_6 = _a.sent();
+                        if (error_6.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];

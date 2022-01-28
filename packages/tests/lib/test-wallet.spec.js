@@ -64,6 +64,50 @@ var testcases_1 = require("@ethersproject/testcases");
 var utils = __importStar(require("./utils"));
 var utils_1 = require("ethers/lib/utils");
 var sdk_1 = require("@hashgraph/sdk");
+var fs_1 = require("fs");
+var proto_1 = require("@hashgraph/proto");
+/**
+ * Helper function that returns a Wallet instance from the provided ED25519 credentials,
+ * provided from portal.hedera.com
+ * @param account
+ * @param provider
+ */
+var createWalletFromED25519 = function (account, provider) { return __awaiter(void 0, void 0, void 0, function () {
+    var edPrivateKey, client, randomWallet, protoKey, newAccountKey, accountCreate, receipt, newAccountId, hederaEoa;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                edPrivateKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
+                client = sdk_1.Client.forNetwork(account.network);
+                randomWallet = ethers_1.ethers.Wallet.createRandom();
+                protoKey = proto_1.Key.create({
+                    ECDSASecp256k1: (0, utils_1.arrayify)(randomWallet._signingKey().compressedPublicKey)
+                });
+                newAccountKey = sdk_1.Key._fromProtobufKey(protoKey);
+                return [4 /*yield*/, new sdk_1.AccountCreateTransaction()
+                        .setKey(newAccountKey)
+                        .setTransactionId(sdk_1.TransactionId.generate(account.operator.accountId))
+                        .setInitialBalance(new sdk_1.Hbar(10))
+                        .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
+                        .freeze()
+                        .sign(edPrivateKey)];
+            case 1: return [4 /*yield*/, (_a.sent())
+                    .execute(client)];
+            case 2:
+                accountCreate = _a.sent();
+                return [4 /*yield*/, accountCreate.getReceipt(client)];
+            case 3:
+                receipt = _a.sent();
+                newAccountId = receipt.accountId.toString();
+                hederaEoa = {
+                    account: newAccountId,
+                    privateKey: randomWallet.privateKey
+                };
+                // @ts-ignore
+                return [2 /*return*/, new ethers_1.ethers.Wallet(hederaEoa, provider)];
+        }
+    });
+}); };
 describe('Test JSON Wallets', function () {
     var tests = (0, testcases_1.loadTests)('wallets');
     tests.forEach(function (test) {
@@ -541,5 +585,218 @@ describe("Wallet getters", function () {
             });
         });
     });
+});
+describe("Wallet local calls", function () {
+    return __awaiter(this, void 0, void 0, function () {
+        var hederaEoa, provider, wallet, contractAddr, abi, contract, balanceOfParams, _a, _b, _c;
+        return __generator(this, function (_d) {
+            switch (_d.label) {
+                case 0:
+                    hederaEoa = {
+                        account: '0.0.29511337',
+                        privateKey: '0x409836c5c296fe800fcac721093c68c78c4c03a1f88cb10bbdf01ecc49247132'
+                    };
+                    provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                    wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
+                    contractAddr = '0000000000000000000000000000000001b34cbb';
+                    abi = JSON.parse((0, fs_1.readFileSync)('examples/assets/abi/GLDToken_abi.json').toString());
+                    contract = ethers_1.ethers.ContractFactory.getContract(contractAddr, abi, wallet);
+                    _b = (_a = contract.interface).encodeFunctionData;
+                    _c = ['balanceOf'];
+                    return [4 /*yield*/, wallet.getAddress()];
+                case 1:
+                    balanceOfParams = _b.apply(_a, _c.concat([[
+                            _d.sent()
+                        ]]));
+                    // skipped - no balance in account
+                    xit("Should be able to perform local call", function () {
+                        return __awaiter(this, void 0, void 0, function () {
+                            var balanceOfTx, response;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        balanceOfTx = {
+                                            to: contractAddr,
+                                            gasLimit: 30000,
+                                            data: (0, utils_1.arrayify)(balanceOfParams),
+                                        };
+                                        return [4 /*yield*/, wallet.call(balanceOfTx)];
+                                    case 1:
+                                        response = _a.sent();
+                                        assert_1.default.notStrictEqual(response, null);
+                                        return [2 /*return*/];
+                                }
+                            });
+                        });
+                    });
+                    // skipped - no balance in account
+                    xit('should fail on contract revert', function () {
+                        return __awaiter(this, void 0, void 0, function () {
+                            var balanceOfTx, err_1;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        this.timeout(60000);
+                                        balanceOfTx = {
+                                            to: contractAddr,
+                                            gasLimit: 50000,
+                                            data: "0x",
+                                            nodeId: "0.0.3"
+                                        };
+                                        _a.label = 1;
+                                    case 1:
+                                        _a.trys.push([1, 3, , 4]);
+                                        return [4 /*yield*/, wallet.call(balanceOfTx)];
+                                    case 2:
+                                        _a.sent();
+                                        return [3 /*break*/, 4];
+                                    case 3:
+                                        err_1 = _a.sent();
+                                        assert_1.default.strictEqual(err_1.code, utils_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT);
+                                        return [3 /*break*/, 4];
+                                    case 4: return [2 /*return*/];
+                                }
+                            });
+                        });
+                    });
+                    it('should fail on insufficient gas', function () {
+                        return __awaiter(this, void 0, void 0, function () {
+                            var balanceOfTx, err_2;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        this.timeout(60000);
+                                        balanceOfTx = {
+                                            to: contractAddr,
+                                            gasLimit: 100,
+                                            data: (0, utils_1.arrayify)(balanceOfParams),
+                                            nodeId: "0.0.3"
+                                        };
+                                        _a.label = 1;
+                                    case 1:
+                                        _a.trys.push([1, 3, , 4]);
+                                        return [4 /*yield*/, wallet.call(balanceOfTx)];
+                                    case 2:
+                                        _a.sent();
+                                        return [3 /*break*/, 4];
+                                    case 3:
+                                        err_2 = _a.sent();
+                                        assert_1.default.strictEqual(err_2.code, utils_1.Logger.errors.INSUFFICIENT_FUNDS);
+                                        return [3 /*break*/, 4];
+                                    case 4: return [2 /*return*/];
+                                }
+                            });
+                        });
+                    });
+                    it('should fail on invalid contract', function () {
+                        return __awaiter(this, void 0, void 0, function () {
+                            var balanceOfTx, err_3;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        this.timeout(60000);
+                                        balanceOfTx = {
+                                            // incorrect addr
+                                            to: 'z000000000000000000000000000000001b34cbb',
+                                            gasLimit: 30000,
+                                            data: (0, utils_1.arrayify)(balanceOfParams),
+                                            nodeId: "0.0.3"
+                                        };
+                                        _a.label = 1;
+                                    case 1:
+                                        _a.trys.push([1, 3, , 4]);
+                                        return [4 /*yield*/, wallet.call(balanceOfTx)];
+                                    case 2:
+                                        _a.sent();
+                                        return [3 /*break*/, 4];
+                                    case 3:
+                                        err_3 = _a.sent();
+                                        assert_1.default.strictEqual(err_3.code, utils_1.Logger.errors.INVALID_ARGUMENT);
+                                        return [3 /*break*/, 4];
+                                    case 4: return [2 /*return*/];
+                                }
+                            });
+                        });
+                    });
+                    return [2 /*return*/];
+            }
+        });
+    });
+});
+describe("Wallet createAccount", function () {
+    var _this = this;
+    var wallet, newAccount, newAccountPublicKey, provider;
+    var timeout = 60000;
+    before(function () { return __awaiter(_this, void 0, void 0, function () {
+        var account;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    account = {
+                        "operator": {
+                            "accountId": "0.0.1065",
+                            "publicKey": "302a300506032b65700321006286f3cfa771a803f1ff90a3ee5d227002ac209d934f7b47fa41288e71938095",
+                            "privateKey": "302e020100300506032b657004220420f24f8a15fc36ec3cee05c99c2e71bda086977885eeeebbec17654c5d3a6c35b5"
+                        },
+                        "network": {
+                            "35.231.208.148:50211": "0.0.3",
+                            "35.199.15.177:50211": "0.0.4",
+                            "35.225.201.195:50211": "0.0.5",
+                            "35.247.109.135:50211": "0.0.6"
+                        }
+                    };
+                    this.timeout(timeout);
+                    provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
+                    return [4 /*yield*/, createWalletFromED25519(account, provider)];
+                case 1:
+                    wallet = _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    }); });
+    beforeEach(function () { return __awaiter(_this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            newAccount = ethers_1.ethers.Wallet.createRandom();
+            newAccountPublicKey = newAccount._signingKey().compressedPublicKey;
+            return [2 /*return*/];
+        });
+    }); });
+    it("Should create an account", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var tx;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, wallet.createAccount(newAccountPublicKey)];
+                    case 1:
+                        tx = _a.sent();
+                        assert_1.default.ok(tx, 'tx exists');
+                        assert_1.default.ok(tx.customData, 'tx.customData exists');
+                        assert_1.default.ok(tx.customData.accountId, 'accountId exists');
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should add initial balance if provided", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var tx, newAccountAddress, newAccBalance;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, wallet.createAccount(newAccountPublicKey, BigInt(123))];
+                    case 1:
+                        tx = _a.sent();
+                        assert_1.default.ok(tx, 'tx exists');
+                        assert_1.default.ok(tx.customData, 'tx.customData exists');
+                        assert_1.default.ok(tx.customData.accountId, 'accountId exists');
+                        newAccountAddress = (0, utils_1.getAddressFromAccount)(tx.customData.accountId.toString());
+                        return [4 /*yield*/, provider.getBalance(newAccountAddress)];
+                    case 2:
+                        newAccBalance = _a.sent();
+                        assert_1.default.strictEqual(BigInt(123).toString(), newAccBalance.toString(), 'The initial balance is correct');
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
 });
 //# sourceMappingURL=test-wallet.spec.js.map
