@@ -103,10 +103,6 @@ export declare class BaseContract {
         [eventTag: string]: (...args: Array<any>) => void;
     };
     constructor(addressOrName: string, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider);
-    static getContractAddress(transaction: {
-        from: string;
-        nonce: BigNumberish;
-    }): string;
     static getInterface(contractInterface: ContractInterface): Interface;
     deployed(): Promise<Contract>;
     _deployed(blockTag?: BlockTag): Promise<Contract>;
@@ -145,10 +141,6 @@ export declare class ContractFactory {
     connect(signer: Signer): ContractFactory;
     static fromSolidity(compilerOutput: any, signer?: Signer): ContractFactory;
     static getInterface(contractInterface: ContractInterface): Interface;
-    static getContractAddress(tx: {
-        from: string;
-        nonce: BytesLike | BigNumber | number;
-    }): string;
     static getContract(address: string, contractInterface: ContractInterface, signer?: Signer): Contract;
 }
 export {};
