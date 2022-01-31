@@ -817,8 +817,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         filter = _c.sent();
                         result = {};
                         if (filter.address != null) {
-                            result.address = this._getAddress(filter.address);
-                            // result.address = filter.address;
+                            result.address = filter.address;
                         }
                         ["blockHash", "topics"].forEach(function (key) {
                             if (filter[key] == null) {
@@ -826,9 +825,6 @@ var BaseProvider = /** @class */ (function (_super) {
                             }
                             result[key] = filter[key];
                         });
-                        // ["fromBlock", "toBlock"].forEach((key) => {
-                        //     if ((<any>filter)[key] == null) { return; }
-                        // });
                         ["fromTimestamp", "toTimestamp"].forEach(function (key) {
                             if (filter[key] == null) {
                                 return;

@@ -1065,7 +1065,8 @@ describe("Test Hedera Provider", function () {
     it('Should filter logs by timestamp and address', async function () {
         const fromTimestamp = "1642065156.264170833";
         const toTimestamp = "1642080642.176149864";
-        const address = "0x000000000000000000000000000000000186fb1a";
+        const address = "0x000000000000000000000000000000000186fb1A";
+        const account = "0.0.25623322";
         const filterParams = {
             address: address,
             fromTimestamp: fromTimestamp,
@@ -1119,6 +1120,31 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(logs[1].transactionHash, undefined);
         assert.strictEqual(logs[1].logIndex, logsResponse[1].index);
         assert.strictEqual(logs[1].transactionIndex, logsResponse[1].index);
+
+        const filterParamsAccount = {
+            address: account,
+            fromTimestamp: fromTimestamp,
+            toTimestamp: toTimestamp
+        }
+
+        const logs2 = await provider.getLogs(filterParamsAccount);
+        assert.strictEqual(logs.length, 2);
+
+        assert.strictEqual(logs2[0].timestamp, logsResponse[0].timestamp);
+        assert.strictEqual(logs2[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
+        assert.strictEqual(logs2[0].data, logsResponse[0].data);
+        assert.deepStrictEqual(logs2[0].topics, logsResponse[0].topics);
+        assert.strictEqual(logs2[0].transactionHash, undefined);
+        assert.strictEqual(logs2[0].logIndex, logsResponse[0].index);
+        assert.strictEqual(logs2[0].transactionIndex, logsResponse[0].index);
+
+        assert.strictEqual(logs2[1].timestamp, logsResponse[1].timestamp);
+        assert.strictEqual(logs2[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
+        assert.strictEqual(logs2[1].data, logsResponse[1].data);
+        assert.deepStrictEqual(logs2[1].topics, logsResponse[1].topics);
+        assert.strictEqual(logs2[1].transactionHash, undefined);
+        assert.strictEqual(logs2[1].logIndex, logsResponse[1].index);
+        assert.strictEqual(logs2[1].transactionIndex, logsResponse[1].index);
     }).timeout(timeout * 4);
 
     describe("Sign & Send Transacton, Wait for receipt", function () {

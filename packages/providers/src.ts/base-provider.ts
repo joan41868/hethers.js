@@ -717,18 +717,13 @@ export class BaseProvider extends Provider {
         const result: any = { };
 
         if (filter.address != null) {
-            result.address = this._getAddress(filter.address);
-            // result.address = filter.address;
+            result.address = filter.address;
         }
 
         ["blockHash", "topics"].forEach((key) => {
             if ((<any>filter)[key] == null) { return; }
             result[key] = (<any>filter)[key];
         });
-
-        // ["fromBlock", "toBlock"].forEach((key) => {
-        //     if ((<any>filter)[key] == null) { return; }
-        // });
 
         ["fromTimestamp", "toTimestamp"].forEach((key) => {
             if ((<any>filter)[key] == null) { return; }

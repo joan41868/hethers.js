@@ -21,7 +21,6 @@ var Formatter = /** @class */ (function () {
         var formats = ({});
         var address = this.address.bind(this);
         var bigNumber = this.bigNumber.bind(this);
-        var blockTag = this.blockTag.bind(this);
         var data = this.data.bind(this);
         var hash_48 = this.hash_48.bind(this);
         var hash_32 = this.hash_32.bind(this);
@@ -114,8 +113,6 @@ var Formatter = /** @class */ (function () {
         formats.blockWithTransactions = (0, properties_1.shallowCopy)(formats.block);
         formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
         formats.filter = {
-            fromBlock: Formatter.allowNull(blockTag, undefined),
-            toBlock: Formatter.allowNull(blockTag, undefined),
             fromTimestamp: Formatter.allowNull(timestamp, undefined),
             toTimestamp: Formatter.allowNull(timestamp, undefined),
             blockHash: Formatter.allowNull(hash_48, undefined),
@@ -212,8 +209,11 @@ var Formatter = /** @class */ (function () {
     // Requires an address
     // Strict! Used on input.
     Formatter.prototype.address = function (value) {
-        //TODO handle AccountLike
-        return (0, address_1.getAddress)(value);
+        var address = value.toString();
+        if (address.indexOf(".") !== -1) {
+            address = (0, address_1.getAddressFromAccount)(address);
+        }
+        return (0, address_1.getAddress)(address);
     };
     Formatter.prototype.callAddress = function (value) {
         if (!(0, bytes_1.isHexString)(value, 32)) {

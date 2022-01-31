@@ -125,13 +125,11 @@ export interface FeeData {
 }
 
 export interface EventFilter {
-    address?: string;
+    address?: AccountLike;
     topics?: Array<string | Array<string> | null>;
 }
 
 export interface Filter extends EventFilter {
-    fromBlock?: BlockTag,
-    toBlock?: BlockTag,
     fromTimestamp?: string,
     toTimestamp?: string,
 }

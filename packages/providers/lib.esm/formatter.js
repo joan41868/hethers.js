@@ -1,5 +1,5 @@
 "use strict";
-import { getAddress, getContractAddress } from "@ethersproject/address";
+import { getAddress, getAddressFromAccount, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@ethersproject/constants";
@@ -17,7 +17,6 @@ export class Formatter {
         const formats = ({});
         const address = this.address.bind(this);
         const bigNumber = this.bigNumber.bind(this);
-        const blockTag = this.blockTag.bind(this);
         const data = this.data.bind(this);
         const hash_48 = this.hash_48.bind(this);
         const hash_32 = this.hash_32.bind(this);
@@ -110,8 +109,6 @@ export class Formatter {
         formats.blockWithTransactions = shallowCopy(formats.block);
         formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
         formats.filter = {
-            fromBlock: Formatter.allowNull(blockTag, undefined),
-            toBlock: Formatter.allowNull(blockTag, undefined),
             fromTimestamp: Formatter.allowNull(timestamp, undefined),
             toTimestamp: Formatter.allowNull(timestamp, undefined),
             blockHash: Formatter.allowNull(hash_48, undefined),
@@ -208,8 +205,11 @@ export class Formatter {
     // Requires an address
     // Strict! Used on input.
     address(value) {
-        //TODO handle AccountLike
-        return getAddress(value);
+        let address = value.toString();
+        if (address.indexOf(".") !== -1) {
+            address = getAddressFromAccount(address);
+        }
+        return getAddress(address);
     }
     callAddress(value) {
         if (!isHexString(value, 32)) {

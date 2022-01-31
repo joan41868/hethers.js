@@ -1038,13 +1038,14 @@ describe("Test Hedera Provider", function () {
     }).timeout(timeout);
     it('Should filter logs by timestamp and address', function () {
         return __awaiter(this, void 0, void 0, function () {
-            var fromTimestamp, toTimestamp, address, filterParams, logsResponse, logs;
+            var fromTimestamp, toTimestamp, address, account, filterParams, logsResponse, logs, filterParamsAccount, logs2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         fromTimestamp = "1642065156.264170833";
                         toTimestamp = "1642080642.176149864";
-                        address = "0x000000000000000000000000000000000186fb1a";
+                        address = "0x000000000000000000000000000000000186fb1A";
+                        account = "0.0.25623322";
                         filterParams = {
                             address: address,
                             fromTimestamp: fromTimestamp,
@@ -1096,6 +1097,29 @@ describe("Test Hedera Provider", function () {
                         assert_1.default.strictEqual(logs[1].transactionHash, undefined);
                         assert_1.default.strictEqual(logs[1].logIndex, logsResponse[1].index);
                         assert_1.default.strictEqual(logs[1].transactionIndex, logsResponse[1].index);
+                        filterParamsAccount = {
+                            address: account,
+                            fromTimestamp: fromTimestamp,
+                            toTimestamp: toTimestamp
+                        };
+                        return [4 /*yield*/, provider.getLogs(filterParamsAccount)];
+                    case 2:
+                        logs2 = _a.sent();
+                        assert_1.default.strictEqual(logs.length, 2);
+                        assert_1.default.strictEqual(logs2[0].timestamp, logsResponse[0].timestamp);
+                        assert_1.default.strictEqual(logs2[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
+                        assert_1.default.strictEqual(logs2[0].data, logsResponse[0].data);
+                        assert_1.default.deepStrictEqual(logs2[0].topics, logsResponse[0].topics);
+                        assert_1.default.strictEqual(logs2[0].transactionHash, undefined);
+                        assert_1.default.strictEqual(logs2[0].logIndex, logsResponse[0].index);
+                        assert_1.default.strictEqual(logs2[0].transactionIndex, logsResponse[0].index);
+                        assert_1.default.strictEqual(logs2[1].timestamp, logsResponse[1].timestamp);
+                        assert_1.default.strictEqual(logs2[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
+                        assert_1.default.strictEqual(logs2[1].data, logsResponse[1].data);
+                        assert_1.default.deepStrictEqual(logs2[1].topics, logsResponse[1].topics);
+                        assert_1.default.strictEqual(logs2[1].transactionHash, undefined);
+                        assert_1.default.strictEqual(logs2[1].logIndex, logsResponse[1].index);
+                        assert_1.default.strictEqual(logs2[1].transactionIndex, logsResponse[1].index);
                         return [2 /*return*/];
                 }
             });
