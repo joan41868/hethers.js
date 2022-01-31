@@ -1226,30 +1226,34 @@ export class ContractFactory {
         // TODO: probably assert there are at least 2 or 3 transactions?
         // Get the deployment transaction (with optional overrides)
         const unsignedTransactions = this.getDeployTransactions(...args);
-
-        const fc = unsignedTransactions[0];//await this.signer.sendTransaction(unsignedTransactions[0]);
-        const signedFc = await this.signer.signTransaction(fc);
-        const fcResponse = await this.signer.provider.sendTransaction(signedFc);
+        const contractCreate = {
+                data: Buffer.from(this.bytecode),
+                gasLimit: unsignedTransactions[unsignedTransactions.length -1].gasLimit
+        };
+        const contractCreateResponse = await this.signer.sendTransaction(contractCreate);
+        // const fc = unsignedTransactions[0];//await this.signer.sendTransaction(unsignedTransactions[0]);
+        // const signedFc = await this.signer.signTransaction(fc);
+        // const fcResponse = await this.signer.provider.sendTransaction(signedFc);
         // @ts-ignore - ignores possibly null object
-        const fileId = fcResponse.customData.fileId;
+        // const fileId = fcResponse.customData.fileId;
         // Iterate file append transactions
-        for (const fa of unsignedTransactions.slice(1, unsignedTransactions.length -1)) {
-            fa.customData.fileId = fileId;
-            const signedFa = await this.signer.signTransaction(fa);
-            await this.signer.provider.sendTransaction(signedFa);
-        }
-        const cc = unsignedTransactions[unsignedTransactions.length -1];
-        cc.customData.bytecodeFileId = fileId;
-        const signedCc = await this.signer.signTransaction(cc);
-        const ccResponse = await this.signer.provider.sendTransaction(signedCc);
+        // for (const fa of unsignedTransactions.slice(1, unsignedTransactions.length -1)) {
+        //     fa.customData.fileId = fileId;
+        //     const signedFa = await this.signer.signTransaction(fa);
+        //     await this.signer.provider.sendTransaction(signedFa);
+        // }
+        // const cc = unsignedTransactions[unsignedTransactions.length -1];
+        // cc.customData.bytecodeFileId = fileId;
+        // const signedCc = await this.signer.signTransaction(cc);
+        // const ccResponse = await this.signer.provider.sendTransaction(signedCc);
         // @ts-ignore - ignores possibly null object
-        const address = ccResponse.customData.contractId;
+        const address = contractCreateResponse.customData.contractId;
         const contract = getStatic<(address: string, contractInterface: ContractInterface, signer?: Signer) => Contract>(this.constructor, "getContract")(address, this.interface, this.signer);
 
         // Add the modified wait that wraps events
-        addContractWait(contract, ccResponse);
+        addContractWait(contract, contractCreateResponse);
 
-        defineReadOnly(contract, "deployTransaction", ccResponse);
+        defineReadOnly(contract, "deployTransaction", contractCreateResponse);
         return contract;
     }
 

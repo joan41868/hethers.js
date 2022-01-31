@@ -1121,9 +1121,9 @@ var ContractFactory = /** @class */ (function () {
             args[_i] = arguments[_i];
         }
         return __awaiter(this, void 0, void 0, function () {
-            var overrides, params, unsignedTransactions, fc, signedFc, fcResponse, fileId, _a, _b, fa, signedFa, cc, signedCc, ccResponse, address, contract;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var overrides, params, unsignedTransactions, contractCreate, contractCreateResponse, address, contract;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         overrides = {};
                         // If 1 extra parameter was passed in, it contains overrides
@@ -1134,47 +1134,21 @@ var ContractFactory = /** @class */ (function () {
                         logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
                         return [4 /*yield*/, resolveAddresses(this.signer, args, this.interface.deploy.inputs)];
                     case 1:
-                        params = _c.sent();
+                        params = _a.sent();
                         params.push(overrides);
                         unsignedTransactions = this.getDeployTransactions.apply(this, args);
-                        fc = unsignedTransactions[0];
-                        return [4 /*yield*/, this.signer.signTransaction(fc)];
+                        contractCreate = {
+                            data: Buffer.from(this.bytecode),
+                            gasLimit: unsignedTransactions[unsignedTransactions.length - 1].gasLimit
+                        };
+                        return [4 /*yield*/, this.signer.sendTransaction(contractCreate)];
                     case 2:
-                        signedFc = _c.sent();
-                        return [4 /*yield*/, this.signer.provider.sendTransaction(signedFc)];
-                    case 3:
-                        fcResponse = _c.sent();
-                        fileId = fcResponse.customData.fileId;
-                        _a = 0, _b = unsignedTransactions.slice(1, unsignedTransactions.length - 1);
-                        _c.label = 4;
-                    case 4:
-                        if (!(_a < _b.length)) return [3 /*break*/, 8];
-                        fa = _b[_a];
-                        fa.customData.fileId = fileId;
-                        return [4 /*yield*/, this.signer.signTransaction(fa)];
-                    case 5:
-                        signedFa = _c.sent();
-                        return [4 /*yield*/, this.signer.provider.sendTransaction(signedFa)];
-                    case 6:
-                        _c.sent();
-                        _c.label = 7;
-                    case 7:
-                        _a++;
-                        return [3 /*break*/, 4];
-                    case 8:
-                        cc = unsignedTransactions[unsignedTransactions.length - 1];
-                        cc.customData.bytecodeFileId = fileId;
-                        return [4 /*yield*/, this.signer.signTransaction(cc)];
-                    case 9:
-                        signedCc = _c.sent();
-                        return [4 /*yield*/, this.signer.provider.sendTransaction(signedCc)];
-                    case 10:
-                        ccResponse = _c.sent();
-                        address = ccResponse.customData.contractId;
+                        contractCreateResponse = _a.sent();
+                        address = contractCreateResponse.customData.contractId;
                         contract = (0, properties_1.getStatic)(this.constructor, "getContract")(address, this.interface, this.signer);
                         // Add the modified wait that wraps events
-                        addContractWait(contract, ccResponse);
-                        (0, properties_1.defineReadOnly)(contract, "deployTransaction", ccResponse);
+                        addContractWait(contract, contractCreateResponse);
+                        (0, properties_1.defineReadOnly)(contract, "deployTransaction", contractCreateResponse);
                         return [2 /*return*/, contract];
                 }
             });
