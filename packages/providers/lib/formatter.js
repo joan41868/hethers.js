@@ -24,6 +24,7 @@ var Formatter = /** @class */ (function () {
         var blockTag = this.blockTag.bind(this);
         var data = this.data.bind(this);
         var hash = this.hash.bind(this);
+        var topicsHash = this.topicsHash.bind(this);
         var hex = this.hex.bind(this);
         var number = this.number.bind(this);
         var type = this.type.bind(this);
@@ -122,15 +123,13 @@ var Formatter = /** @class */ (function () {
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
         formats.filterLog = {
-            // blockNumber: Formatter.allowNull(number),
-            // blockHash: Formatter.allowNull(hash),
-            // transactionIndex: number,
-            // removed: Formatter.allowNull(this.boolean.bind(this)),
+            timestamp: timestamp,
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
-            topics: Formatter.arrayOf(hash),
-            // transactionHash: hash,
-            // logIndex: number,
+            index: number,
+            topics: Formatter.arrayOf(topicsHash),
+            // logIndex: number
+            // transactionHash: hash, 
         };
         return formats;
     };
@@ -228,6 +227,14 @@ var Formatter = /** @class */ (function () {
         var result = this.hex(value, strict);
         if ((0, bytes_1.hexDataLength)(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
+        }
+        return result;
+    };
+    //hedera topics hash has length 32
+    Formatter.prototype.topicsHash = function (value, strict) {
+        var result = this.hex(value, strict);
+        if ((0, bytes_1.hexDataLength)(result) !== 32) {
+            return logger.throwArgumentError("invalid topics hash", "value", value);
         }
         return result;
     };
@@ -392,7 +399,7 @@ var Formatter = /** @class */ (function () {
             return value.map(function (v) { return _this.topics(v); });
         }
         else if (value != null) {
-            return this.hash(value, true);
+            return this.topicsHash(value, true);
         }
         return null;
     };

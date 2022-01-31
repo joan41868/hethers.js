@@ -954,7 +954,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, logs, error_5;
+            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -966,7 +966,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         toTimestampFilter = "";
                         fromTimestampFilter = "";
                         epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
-                        //@ts-ignore
+                        // @ts-ignore
                         if (params.filter.toTimestamp) {
                             //@ts-ignore
                             toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
@@ -983,11 +983,10 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, axios_1.default.get(requestUrl)];
                     case 3:
                         data = (_a.sent()).data;
-                        logs = null;
                         if (data) {
-                            logs = formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
+                            return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs)];
                         }
-                        return [2 /*return*/, logs];
+                        return [3 /*break*/, 5];
                     case 4:
                         error_5 = _a.sent();
                         if (error_5 && error_5.response && error_5.response.status != 404) {
@@ -996,8 +995,8 @@ var BaseProvider = /** @class */ (function (_super) {
                                 error: error_5
                             });
                         }
-                        return [2 /*return*/, null];
-                    case 5: return [2 /*return*/];
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/, null];
                 }
             });
         });

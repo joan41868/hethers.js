@@ -20,6 +20,7 @@ export class Formatter {
         const blockTag = this.blockTag.bind(this);
         const data = this.data.bind(this);
         const hash = this.hash.bind(this);
+        const topicsHash = this.topicsHash.bind(this);
         const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
@@ -118,15 +119,13 @@ export class Formatter {
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
         formats.filterLog = {
-            // blockNumber: Formatter.allowNull(number),
-            // blockHash: Formatter.allowNull(hash),
-            // transactionIndex: number,
-            // removed: Formatter.allowNull(this.boolean.bind(this)),
+            timestamp: timestamp,
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
-            topics: Formatter.arrayOf(hash),
-            // transactionHash: hash,
-            // logIndex: number,
+            index: number,
+            topics: Formatter.arrayOf(topicsHash),
+            // logIndex: number
+            // transactionHash: hash, 
         };
         return formats;
     }
@@ -224,6 +223,14 @@ export class Formatter {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
+        }
+        return result;
+    }
+    //hedera topics hash has length 32
+    topicsHash(value, strict) {
+        const result = this.hex(value, strict);
+        if (hexDataLength(result) !== 32) {
+            return logger.throwArgumentError("invalid topics hash", "value", value);
         }
         return result;
     }
@@ -387,7 +394,7 @@ export class Formatter {
             return value.map((v) => this.topics(v));
         }
         else if (value != null) {
-            return this.hash(value, true);
+            return this.topicsHash(value, true);
         }
         return null;
     }

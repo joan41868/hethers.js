@@ -94569,6 +94569,7 @@ class Formatter {
         const blockTag = this.blockTag.bind(this);
         const data = this.data.bind(this);
         const hash = this.hash.bind(this);
+        const topicsHash = this.topicsHash.bind(this);
         const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
@@ -94667,15 +94668,13 @@ class Formatter {
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
         formats.filterLog = {
-            // blockNumber: Formatter.allowNull(number),
-            // blockHash: Formatter.allowNull(hash),
-            // transactionIndex: number,
-            // removed: Formatter.allowNull(this.boolean.bind(this)),
+            timestamp: timestamp,
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
-            topics: Formatter.arrayOf(hash),
-            // transactionHash: hash,
-            // logIndex: number,
+            index: number,
+            topics: Formatter.arrayOf(topicsHash),
+            // logIndex: number
+            // transactionHash: hash, 
         };
         return formats;
     }
@@ -94773,6 +94772,14 @@ class Formatter {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 48) {
             return logger$u.throwArgumentError("invalid hash", "value", value);
+        }
+        return result;
+    }
+    //hedera topics hash has length 32
+    topicsHash(value, strict) {
+        const result = this.hex(value, strict);
+        if (hexDataLength(result) !== 32) {
+            return logger$u.throwArgumentError("invalid topics hash", "value", value);
         }
         return result;
     }
@@ -94936,7 +94943,7 @@ class Formatter {
             return value.map((v) => this.topics(v));
         }
         else if (value != null) {
-            return this.hash(value, true);
+            return this.topicsHash(value, true);
         }
         return null;
     }
@@ -99355,7 +99362,7 @@ class BaseProvider extends Provider {
             let toTimestampFilter = "";
             let fromTimestampFilter = "";
             const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
-            //@ts-ignore
+            // @ts-ignore
             if (params.filter.toTimestamp) {
                 //@ts-ignore
                 toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
@@ -99368,11 +99375,9 @@ class BaseProvider extends Provider {
             const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
             try {
                 let { data } = yield axios$1.get(requestUrl);
-                let logs = null;
                 if (data) {
-                    logs = Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
+                    return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
                 }
-                return logs;
             }
             catch (error) {
                 if (error && error.response && error.response.status != 404) {
@@ -99381,8 +99386,8 @@ class BaseProvider extends Provider {
                         error
                     });
                 }
-                return null;
             }
+            return null;
         });
     }
     getHbarPrice() {

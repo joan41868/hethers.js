@@ -828,7 +828,7 @@ export class BaseProvider extends Provider {
         let toTimestampFilter = "";
         let fromTimestampFilter = "";
         const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
-        //@ts-ignore
+        // @ts-ignore
         if (params.filter.toTimestamp) {
             //@ts-ignore
             toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
@@ -841,11 +841,9 @@ export class BaseProvider extends Provider {
         const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
         try {
             let { data } = await axios.get(requestUrl);
-            let logs: Array<Log> = null;
             if (data) {
-                logs = Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
+                return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
             }
-            return logs;
         } catch (error) {
             if (error && error.response && error.response.status != 404) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
@@ -853,8 +851,8 @@ export class BaseProvider extends Provider {
                     error
                 });
             }
-            return null;
         } 
+        return null;
     }
 
     async getHbarPrice(): Promise<number> {
