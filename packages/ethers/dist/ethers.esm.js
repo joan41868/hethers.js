@@ -99226,7 +99226,7 @@ class BaseProvider extends Provider {
                         if (transactionName === 'CRYPTOCREATEACCOUNT') {
                             record.from = getAccountFromTransactionId(transactionId);
                             record.timestamp = filtered[0].consensus_timestamp;
-                            record.hash = filtered[0].transaction_hash;
+                            record.hash = keccak256(toUtf8Bytes(filtered[0].transaction_hash));
                             record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                         }
                         else {

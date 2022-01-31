@@ -83,6 +83,7 @@ var formatter_1 = require("./formatter");
 var address_2 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
+var keccak256_1 = require("@ethersproject/keccak256");
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -908,7 +909,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (!(transactionName === 'CRYPTOCREATEACCOUNT')) return [3 /*break*/, 4];
                         record.from = (0, address_1.getAccountFromTransactionId)(transactionId);
                         record.timestamp = filtered[0].consensus_timestamp;
-                        record.hash = filtered[0].transaction_hash;
+                        record.hash = (0, keccak256_1.keccak256)((0, strings_1.toUtf8Bytes)(filtered[0].transaction_hash));
                         record.accountAddress = (0, address_1.getAddressFromAccount)(filtered[0].entity_id);
                         return [3 /*break*/, 6];
                     case 4:
