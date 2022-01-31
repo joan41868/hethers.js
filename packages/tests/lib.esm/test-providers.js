@@ -11,6 +11,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import assert from "assert";
 //import Web3HttpProvider from "web3-providers-http";
 import { ethers } from "ethers";
+import { DefaultHederaProvider } from "@ethersproject/providers";
+import { HederaNetworks } from "@ethersproject/providers/lib/hedera-provider";
+import { getAddressFromAccount } from "ethers/lib/utils";
 const bnify = ethers.BigNumber.from;
 const blockchainData = {
     homestead: {
@@ -549,15 +552,6 @@ const providerFunctions = [
             return new ethers.providers.AlchemyProvider(network, getApiKeys(network).alchemy);
         }
     },
-    /*
-    {
-        name: "CloudflareProvider",
-        networks: [ "default", "homestead" ],
-        create: (network: string) => {
-            return new ethers.providers.CloudflareProvider(network);
-        }
-    },
-    */
     {
         name: "InfuraProvider",
         networks: allNetworks,
@@ -578,40 +572,6 @@ const providerFunctions = [
             return new ethers.providers.EtherscanProvider(network, getApiKeys(network).etherscan);
         }
     },
-    {
-        name: "NodesmithProvider",
-        networks: [],
-        create: (network) => {
-            throw new Error("not tested");
-        }
-    },
-    {
-        name: "PocketProvider",
-        // note: sans-kovan
-        // @TODO: Pocket is being incredibly unreliable right now; removing it so
-        // we can pass the CI
-        //networks: [ "default", "homestead", "ropsten", "rinkeby", "goerli" ],
-        networks: ["default", "homestead"],
-        create: (network) => {
-            if (network == "default") {
-                return new ethers.providers.PocketProvider(null, {
-                    applicationId: getApiKeys(network).pocket,
-                    loadBalancer: true
-                });
-            }
-            return new ethers.providers.PocketProvider(network, {
-                applicationId: getApiKeys(network).pocket,
-                loadBalancer: true
-            });
-        }
-    },
-    {
-        name: "Web3Provider",
-        networks: [],
-        create: (network) => {
-            throw new Error("not tested");
-        }
-    }
 ];
 // This wallet can be funded and used for various test cases
 const fundWallet = ethers.Wallet.createRandom();
@@ -1089,78 +1049,6 @@ describe("Test API Key Formatting", function () {
             return (error.argument === "network" && error.reason === "unsupported network");
         });
     });
-    it("Pocket API key", function () {
-        const applicationId = "someApplicationId";
-        const applicationSecretKey = "someApplicationSecret";
-        // Test simple applicationId
-        const apiKeyString = ethers.providers.PocketProvider.getApiKey(applicationId);
-        assert.equal(apiKeyString.applicationId, applicationId);
-        assert.ok(apiKeyString.applicationSecretKey == null);
-        // Test complex API key with applicationId
-        const apiKeyObject = ethers.providers.PocketProvider.getApiKey({
-            applicationId
-        });
-        assert.equal(apiKeyObject.applicationId, applicationId);
-        assert.ok(apiKeyObject.applicationSecretKey == null);
-        // Test complex API key with applicationId and applicationSecretKey
-        const apiKeyObject2 = ethers.providers.PocketProvider.getApiKey({
-            applicationId: applicationId,
-            applicationSecretKey: applicationSecretKey
-        });
-        assert.equal(apiKeyObject2.applicationId, applicationId);
-        assert.equal(apiKeyObject2.applicationSecretKey, applicationSecretKey);
-        // Test complex API key with loadBalancer
-        [true, false].forEach((loadBalancer) => {
-            const apiKeyObject = ethers.providers.PocketProvider.getApiKey({
-                applicationId, loadBalancer
-            });
-            assert.equal(apiKeyObject.applicationId, applicationId);
-            assert.equal(apiKeyObject.loadBalancer, loadBalancer);
-            assert.ok(apiKeyObject.applicationSecretKey == null);
-            const apiKeyObject2 = ethers.providers.PocketProvider.getApiKey({
-                applicationId, applicationSecretKey, loadBalancer
-            });
-            assert.equal(apiKeyObject2.applicationId, applicationId);
-            assert.equal(apiKeyObject2.applicationSecretKey, applicationSecretKey);
-            assert.equal(apiKeyObject2.loadBalancer, loadBalancer);
-        });
-        // Fails on invalid applicationId type
-        assert.throws(() => {
-            const apiKey = ethers.providers.PocketProvider.getApiKey({
-                applicationId: 1234,
-                applicationSecretKey: applicationSecretKey
-            });
-            console.log(apiKey);
-        }, (error) => {
-            return (error.argument === "applicationId" && error.reason === "applicationSecretKey requires an applicationId");
-        });
-        // Fails on invalid projectSecret type
-        assert.throws(() => {
-            const apiKey = ethers.providers.PocketProvider.getApiKey({
-                applicationId: applicationId,
-                applicationSecretKey: 1234
-            });
-            console.log(apiKey);
-        }, (error) => {
-            return (error.argument === "applicationSecretKey" && error.reason === "invalid applicationSecretKey");
-        });
-        {
-            const provider = new ethers.providers.PocketProvider("homestead", {
-                applicationId: applicationId,
-                applicationSecretKey: applicationSecretKey
-            });
-            assert.equal(provider.network.name, "homestead");
-            assert.equal(provider.applicationId, applicationId);
-            assert.equal(provider.applicationSecretKey, applicationSecretKey);
-        }
-        // Attempt an unsupported network
-        assert.throws(() => {
-            const provider = new ethers.providers.PocketProvider("imaginary");
-            console.log(provider);
-        }, (error) => {
-            return (error.argument === "network" && error.reason === "unsupported network");
-        });
-    });
 });
 describe("Test WebSocketProvider", function () {
     this.retries(3);
@@ -1207,32 +1095,36 @@ describe("Test Events", function () {
         });
     });
 });
-// describe("Bad ENS resolution", function() {
-//     const provider = providerFunctions[0].create("ropsten");
-//     it("signer has a bad ENS name", async function() {
-//         this.timeout(300000);
-//         const wallet = new ethers.Wallet(ethers.utils.id("random-wallet"), provider);
-//         // If "to" is specified as an ENS name, it cannot resolve to null
-//         try {
-//             const tx = await wallet.sendTransaction({ to: "junk", value: 1 });
-//             console.log("TX", tx);
-//             assert.ok(false, "failed to throw an exception");
-//         } catch (error) {
-//             assert.ok(error.argument === "tx.to" && error.value === "junk");
-//         }
-//         // But promises that resolve to null are ok
-//         const tos = [ null, Promise.resolve(null) ];
-//         for (let i = 0; i < tos.length; i++) {
-//             const to = tos[i];
-//             try {
-//                 const tx = await wallet.sendTransaction({ to, value: 1 });
-//                 console.log("TX", tx);
-//             } catch (error) {
-//                 assert.ok(error.code === "INSUFFICIENT_FUNDS");
-//             }
-//         }
-//     });
-// });
+describe("Bad ENS resolution", function () {
+    const provider = providerFunctions[0].create("ropsten");
+    it("signer has a bad ENS name", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            this.timeout(300000);
+            const wallet = new ethers.Wallet(ethers.utils.id("random-wallet"), provider);
+            // If "to" is specified as an ENS name, it cannot resolve to null
+            try {
+                const tx = yield wallet.sendTransaction({ to: "junk", value: 1 });
+                console.log("TX", tx);
+                assert.ok(false, "failed to throw an exception");
+            }
+            catch (error) {
+                assert.ok(error.argument === "tx.to" && error.value === "junk");
+            }
+            // But promises that resolve to null are ok
+            const tos = [null, Promise.resolve(null)];
+            for (let i = 0; i < tos.length; i++) {
+                const to = tos[i];
+                try {
+                    const tx = yield wallet.sendTransaction({ to, value: 1 });
+                    console.log("TX", tx);
+                }
+                catch (error) {
+                    assert.ok(error.code === "INSUFFICIENT_FUNDS");
+                }
+            }
+        });
+    });
+});
 describe("Resolve ENS avatar", function () {
     [
         { title: "data", name: "data-avatar.tests.eth", value: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAMAAACeL25MAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAyVpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDYuMC1jMDAyIDc5LjE2NDQ4OCwgMjAyMC8wNy8xMC0yMjowNjo1MyAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIiB4bWxuczp4bXBNTT0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL21tLyIgeG1sbnM6c3RSZWY9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZVJlZiMiIHhtcDpDcmVhdG9yVG9vbD0iQWRvYmUgUGhvdG9zaG9wIDIyLjAgKE1hY2ludG9zaCkiIHhtcE1NOkluc3RhbmNlSUQ9InhtcC5paWQ6NUQ4NTEyNUIyOEIwMTFFQzg0NTBDNTU2RDk1NTA5NzgiIHhtcE1NOkRvY3VtZW50SUQ9InhtcC5kaWQ6NUQ4NTEyNUMyOEIwMTFFQzg0NTBDNTU2RDk1NTA5NzgiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDo1RDg1MTI1OTI4QjAxMUVDODQ1MEM1NTZEOTU1MDk3OCIgc3RSZWY6ZG9jdW1lbnRJRD0ieG1wLmRpZDo1RDg1MTI1QTI4QjAxMUVDODQ1MEM1NTZEOTU1MDk3OCIvPiA8L3JkZjpEZXNjcmlwdGlvbj4gPC9yZGY6UkRGPiA8L3g6eG1wbWV0YT4gPD94cGFja2V0IGVuZD0iciI/PkbM0uMAAAAGUExURQAA/wAAAHtivz4AAAAOSURBVHjaYmDABAABBgAAFAABaEkyYwAAAABJRU5ErkJggg==" },
@@ -1261,5 +1153,37 @@ describe("Resolve ENS avatar", function () {
             });
         });
     });
+});
+describe("Test Hedera Provider", function () {
+    const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+    const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(98) };
+    const solAddr = getAddressFromAccount(accountConfig);
+    it('Gets the balance', () => __awaiter(this, void 0, void 0, function* () {
+        const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
+        const balance = yield provider.getBalance(solAddr);
+        // the balance of 0.0.98 cannot be negative
+        assert.strictEqual(true, balance.gte(0));
+    }));
+    it("Gets txn record", () => __awaiter(this, void 0, void 0, function* () {
+        /* the test contains ignores as of the not yet refactored BaseProvider */
+        const record = yield provider.getTransaction(`0.0.15680048-1638189529-145876922`);
+        // @ts-ignore
+        assert.strictEqual(record.transaction_id, `0.0.15680048-1638189529-145876922`);
+        // @ts-ignore
+        assert.strictEqual(record.transfers.length, 3);
+        // @ts-ignore
+        assert.strictEqual(record.valid_duration_seconds, '120');
+    }));
+    it("Is able to get hedera provider as default", () => __awaiter(this, void 0, void 0, function* () {
+        let defaultProvider = ethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
+        assert.notStrictEqual(defaultProvider, null);
+        const chainIDDerivedProvider = ethers.providers.getDefaultProvider(291);
+        assert.notStrictEqual(chainIDDerivedProvider, null);
+        // ensure providers are usable
+        let balance = yield defaultProvider.getBalance(solAddr);
+        assert.strictEqual(true, balance.gte(0));
+        balance = yield chainIDDerivedProvider.getBalance(solAddr);
+        assert.strictEqual(true, balance.gte(0));
+    }));
 });
 //# sourceMappingURL=test-providers.js.map

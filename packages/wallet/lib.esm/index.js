@@ -21,7 +21,7 @@ import { decryptJsonWallet, decryptJsonWalletSync, encryptKeystore } from "@ethe
 import { computeAlias, serializeHederaTransaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { PrivateKey as HederaPrivKey, } from "@hashgraph/sdk";
+import { PrivateKey as HederaPrivKey, PublicKey as HederaPubKey } from "@hashgraph/sdk";
 const logger = new Logger(version);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
@@ -126,11 +126,12 @@ export class Wallet extends Signer {
     }
     signTransaction(transaction) {
         this._checkAddress('signTransaction');
-        this.checkTransaction(transaction);
-        return this.populateTransaction(transaction).then((readyTx) => __awaiter(this, void 0, void 0, function* () {
-            const tx = serializeHederaTransaction(readyTx);
-            const pkey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
-            const signed = yield tx.sign(pkey);
+        let tx = this.checkTransaction(transaction);
+        return this.populateTransaction(tx).then((readyTx) => __awaiter(this, void 0, void 0, function* () {
+            const pubKey = HederaPubKey.fromString(this._signingKey().compressedPublicKey);
+            const tx = serializeHederaTransaction(readyTx, pubKey);
+            const privKey = HederaPrivKey.fromStringECDSA(this._signingKey().privateKey);
+            const signed = yield tx.sign(privKey);
             return hexlify(signed.toBytes());
         }));
     }
@@ -180,6 +181,20 @@ export class Wallet extends Signer {
         const mnemonic = entropyToMnemonic(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     }
+    createAccount(pubKey, initialBalance) {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!initialBalance)
+                initialBalance = BigInt(0);
+            const signed = yield this.signTransaction({
+                customData: {
+                    publicKey: pubKey,
+                    initialBalance
+                }
+            });
+            return this.provider.sendTransaction(signed);
+        });
+    }
+    ;
     static fromEncryptedJson(json, password, progressCallback) {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
             return new Wallet(account);

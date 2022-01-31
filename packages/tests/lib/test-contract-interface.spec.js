@@ -533,6 +533,7 @@ describe("Test ParamType Parser", function () {
     });
 });
 describe('Test EIP-838 Error Codes', function () {
+    // @ts-ignore
     var addr = "0xbd0B4B009a76CA97766360F04f75e05A3E449f1E";
     xit("testError1", function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -541,7 +542,7 @@ describe('Test EIP-838 Error Codes', function () {
                 switch (_a.label) {
                     case 0:
                         provider = ethers_1.ethers.providers.getDefaultProvider();
-                        contract = new ethers_1.ethers.Contract(addr, [
+                        contract = new ethers_1.ethers.Contract([
                             "function testError1(bool pass, address addr, uint256 value) pure returns (bool)",
                             "function testError2(bool pass, bytes data) pure returns (bool)",
                             "error TestError1(address addr, uint256 value)",

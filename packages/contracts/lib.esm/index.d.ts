@@ -74,7 +74,7 @@ declare class RunningEvent {
 }
 export declare type ContractInterface = string | ReadonlyArray<Fragment | JsonFragment | string> | Interface;
 export declare class BaseContract {
-    readonly address: string;
+    private _address;
     readonly interface: Interface;
     readonly signer: Signer;
     readonly provider: Provider;
@@ -102,7 +102,9 @@ export declare class BaseContract {
     _wrappedEmits: {
         [eventTag: string]: (...args: Array<any>) => void;
     };
-    constructor(addressOrName: string, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider);
+    constructor(contractInterface: ContractInterface, signerOrProvider?: Signer | Provider);
+    set address(val: string);
+    get address(): string;
     static getInterface(contractInterface: ContractInterface): Interface;
     deployed(): Promise<Contract>;
     _deployed(blockTag?: BlockTag): Promise<Contract>;

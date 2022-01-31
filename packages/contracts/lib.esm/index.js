@@ -214,6 +214,7 @@ function buildPopulate(contract, fragment) {
         return populateTransaction(contract, fragment, args);
     };
 }
+// @ts-ignore
 function buildEstimate(contract, fragment) {
     const signerOrProvider = (contract.signer || contract.provider);
     return function (...args) {
@@ -473,10 +474,10 @@ class WildcardRunningEvent extends RunningEvent {
     }
 }
 export class BaseContract {
-    constructor(addressOrName, contractInterface, signerOrProvider) {
+    constructor(contractInterface, signerOrProvider) {
         logger.checkNew(new.target, Contract);
-        // @TODO: Maybe still check the addressOrName looks like a valid address or name?
-        //address = getAddress(address);
+        // @TODO: Maybe still check the addressOrName looks like a valid _address or name?
+        //_address = getAddress(_address);
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         if (signerOrProvider == null) {
             defineReadOnly(this, "provider", null);
@@ -504,7 +505,7 @@ export class BaseContract {
                 const event = this.interface.events[eventSignature];
                 defineReadOnly(this.filters, eventSignature, (...args) => {
                     return {
-                        address: this.address,
+                        address: this._address,
                         topics: this.interface.encodeFilterTopics(event, args)
                     };
                 });
@@ -525,24 +526,6 @@ export class BaseContract {
         }
         defineReadOnly(this, "_runningEvents", {});
         defineReadOnly(this, "_wrappedEmits", {});
-        if (addressOrName == null) {
-            logger.throwArgumentError("invalid contract address or ENS name", "addressOrName", addressOrName);
-        }
-        defineReadOnly(this, "address", addressOrName);
-        if (this.provider) {
-            defineReadOnly(this, "resolvedAddress", resolveName(this.provider, addressOrName));
-        }
-        else {
-            try {
-                defineReadOnly(this, "resolvedAddress", Promise.resolve(getAddress(addressOrName)));
-            }
-            catch (error) {
-                // Without a provider, we cannot use ENS names
-                logger.throwError("provider is required to use ENS name as contract address", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "new Contract"
-                });
-            }
-        }
         const uniqueNames = {};
         const uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -578,9 +561,6 @@ export class BaseContract {
             if (this.populateTransaction[signature] == null) {
                 defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
             }
-            if (this.estimateGas[signature] == null) {
-                defineReadOnly(this.estimateGas, signature, buildEstimate(this, fragment));
-            }
         });
         Object.keys(uniqueNames).forEach((name) => {
             // Ambiguous names to not get attached as bare names
@@ -607,10 +587,13 @@ export class BaseContract {
             if (this.populateTransaction[name] == null) {
                 defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
             }
-            if (this.estimateGas[name] == null) {
-                defineReadOnly(this.estimateGas, name, this.estimateGas[signature]);
-            }
         });
+    }
+    set address(val) {
+        this._address = val;
+    }
+    get address() {
+        return this._address;
     }
     static getInterface(contractInterface) {
         if (Interface.isInterface(contractInterface)) {
@@ -634,10 +617,10 @@ export class BaseContract {
                 // @TODO: Once we allow a timeout to be passed in, we will wait
                 // up to that many blocks for getCode
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this.address, blockTag).then((code) => {
+                this._deployedPromise = this.provider.getCode(this._address, blockTag).then((code) => {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
-                            contractAddress: this.address,
+                            contractAddress: this._address,
                             operation: "getDeployed"
                         });
                     }
@@ -672,7 +655,8 @@ export class BaseContract {
         if (typeof (signerOrProvider) === "string") {
             signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
         }
-        const contract = new (this.constructor)(this.address, this.interface, signerOrProvider);
+        const contract = new (this.constructor)(this.interface, signerOrProvider);
+        contract.address = this._address;
         if (this.deployTransaction) {
             defineReadOnly(contract, "deployTransaction", this.deployTransaction);
         }
@@ -680,7 +664,9 @@ export class BaseContract {
     }
     // Re-attach to a different on-chain instance of this contract
     attach(addressOrName) {
-        return new (this.constructor)(addressOrName, this.interface, this.signer || this.provider);
+        const contract = new (this.constructor)(this.interface, this.signer || this.provider);
+        contract.address = addressOrName;
+        return contract;
     }
     static isIndexed(value) {
         return Indexed.isIndexed(value);
@@ -705,11 +691,11 @@ export class BaseContract {
             }
             // Listen for any event
             if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
+                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
             }
             // Get the event Fragment (throws if ambiguous/unknown event)
             const fragment = this.interface.getEvent(eventName);
-            return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment));
+            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment));
         }
         // We have topics to filter by...
         if (eventName.topics && eventName.topics.length > 0) {
@@ -720,17 +706,17 @@ export class BaseContract {
                     throw new Error("invalid topic"); // @TODO: May happen for anonymous events
                 }
                 const fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment, eventName.topics));
+                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment, eventName.topics));
             }
             catch (error) { }
             // Filter by the unknown topichash
             const filter = {
-                address: this.address,
+                address: this._address,
                 topics: eventName.topics
             };
             return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
         }
-        return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
+        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
     }
     _checkRunningEvents(runningEvent) {
         if (runningEvent.listenerCount() === 0) {
@@ -976,7 +962,9 @@ export class ContractFactory {
         });
     }
     attach(address) {
-        return (this.constructor).getContract(address, this.interface, this.signer);
+        const contract = (this.constructor).getContract(address, this.interface, this.signer);
+        contract.address = address;
+        return contract;
     }
     connect(signer) {
         return new (this.constructor)(this.interface, this.bytecode, signer);
@@ -1002,7 +990,9 @@ export class ContractFactory {
         return Contract.getInterface(contractInterface);
     }
     static getContract(address, contractInterface, signer) {
-        return new Contract(address, contractInterface, signer);
+        const contract = new Contract(contractInterface, signer);
+        contract.address = address;
+        return contract;
     }
 }
 //# sourceMappingURL=index.js.map
