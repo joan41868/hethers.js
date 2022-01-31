@@ -13,7 +13,7 @@ import { Provider } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { getAddress, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
+import { arrayify, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { accessListify } from "@ethersproject/transactions";
 import { splitInChunks } from "@ethersproject/strings";
@@ -931,7 +931,7 @@ export class ContractFactory {
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         defineReadOnly(this, "signer", signer || null);
     }
-    getDeployTransactions(...args) {
+    getDeployTransaction(...args) {
         let contractCreateTx = {};
         if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
             contractCreateTx = shallowCopy(args.pop());
@@ -974,7 +974,10 @@ export class ContractFactory {
             };
             fileAppendTxs.push(fileAppendTx);
         }
-        contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: this.interface.encodeDeploy(args), customData: {} });
+        contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: hexlify(concat([
+                this.bytecode,
+                this.interface.encodeDeploy(args)
+            ])), customData: {} });
         return [fileCreateTx, ...fileAppendTxs, contractCreateTx];
     }
     deploy(...args) {
@@ -989,30 +992,10 @@ export class ContractFactory {
             // Resolve ENS names and promises in the arguments
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
-            // TODO: probably assert there are at least 2 or 3 transactions?
             // Get the deployment transaction (with optional overrides)
-            const unsignedTransactions = this.getDeployTransactions(...args);
-            const contractCreate = {
-                data: Buffer.from(this.bytecode),
-                gasLimit: unsignedTransactions[unsignedTransactions.length - 1].gasLimit
-            };
+            const unsignedTransactions = this.getDeployTransaction(...params);
+            const contractCreate = unsignedTransactions[unsignedTransactions.length - 1];
             const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
-            // const fc = unsignedTransactions[0];//await this.signer.sendTransaction(unsignedTransactions[0]);
-            // const signedFc = await this.signer.signTransaction(fc);
-            // const fcResponse = await this.signer.provider.sendTransaction(signedFc);
-            // @ts-ignore - ignores possibly null object
-            // const fileId = fcResponse.customData.fileId;
-            // Iterate file append transactions
-            // for (const fa of unsignedTransactions.slice(1, unsignedTransactions.length -1)) {
-            //     fa.customData.fileId = fileId;
-            //     const signedFa = await this.signer.signTransaction(fa);
-            //     await this.signer.provider.sendTransaction(signedFa);
-            // }
-            // const cc = unsignedTransactions[unsignedTransactions.length -1];
-            // cc.customData.bytecodeFileId = fileId;
-            // const signedCc = await this.signer.signTransaction(cc);
-            // const ccResponse = await this.signer.provider.sendTransaction(signedCc);
-            // @ts-ignore - ignores possibly null object
             const address = contractCreateResponse.customData.contractId;
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
             // Add the modified wait that wraps events

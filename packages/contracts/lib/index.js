@@ -1098,7 +1098,7 @@ var ContractFactory = /** @class */ (function () {
         (0, properties_1.defineReadOnly)(this, "interface", (0, properties_1.getStatic)(_newTarget, "getInterface")(contractInterface));
         (0, properties_1.defineReadOnly)(this, "signer", signer || null);
     }
-    ContractFactory.prototype.getDeployTransactions = function () {
+    ContractFactory.prototype.getDeployTransaction = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
@@ -1146,7 +1146,10 @@ var ContractFactory = /** @class */ (function () {
             };
             fileAppendTxs.push(fileAppendTx);
         }
-        contractCreateTx = __assign(__assign({}, contractCreateTx), { data: this.interface.encodeDeploy(args), customData: {} });
+        contractCreateTx = __assign(__assign({}, contractCreateTx), { data: (0, bytes_1.hexlify)((0, bytes_1.concat)([
+                this.bytecode,
+                this.interface.encodeDeploy(args)
+            ])), customData: {} });
         return __spreadArray(__spreadArray([fileCreateTx], fileAppendTxs, true), [contractCreateTx], false);
     };
     ContractFactory.prototype.deploy = function () {
@@ -1170,11 +1173,8 @@ var ContractFactory = /** @class */ (function () {
                     case 1:
                         params = _a.sent();
                         params.push(overrides);
-                        unsignedTransactions = this.getDeployTransactions.apply(this, args);
-                        contractCreate = {
-                            data: Buffer.from(this.bytecode),
-                            gasLimit: unsignedTransactions[unsignedTransactions.length - 1].gasLimit
-                        };
+                        unsignedTransactions = this.getDeployTransaction.apply(this, params);
+                        contractCreate = unsignedTransactions[unsignedTransactions.length - 1];
                         return [4 /*yield*/, this.signer.sendTransaction(contractCreate)];
                     case 2:
                         contractCreateResponse = _a.sent();

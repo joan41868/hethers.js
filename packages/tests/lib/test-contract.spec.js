@@ -43,6 +43,7 @@ var assert_1 = __importDefault(require("assert"));
 var ethers_1 = require("ethers");
 var test_contract_json_1 = __importDefault(require("./test-contract.json"));
 var fs_1 = __importDefault(require("fs"));
+var utils_1 = require("ethers/lib/utils");
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
 var provider = ethers_1.ethers.getDefaultProvider("testnet");
 var TIMEOUT_PERIOD = 120000;
@@ -420,35 +421,45 @@ describe("Test Contract Transaction Population", function () {
                 provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
                 wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
                 contractFactory = new ethers_1.ethers.ContractFactory(abi, "", wallet);
-                transactions = contractFactory.getDeployTransactions();
+                transactions = contractFactory.getDeployTransaction();
                 assert_1.default.strictEqual(Array.isArray(transactions), true);
                 assert_1.default.strictEqual(transactions.length, 2);
                 return [2 /*return*/];
             });
         });
     });
-    // TODO: skipped as we should not spam testnet with random contracts
-    // Previewnet is not really a choice as it will (soon or later) result in INVALID_SIGNATURE pre-checks as of cleanup
-    xit("should be able to deploy a contract", function () {
+    it.only("should be able to deploy a contract", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var hederaEoa, provider, wallet, abi, bytecode, contractFactory, contract;
+            var hederaEoa, provider, wallet, bytecode, contractFactory, contract, params, balance;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         hederaEoa = {
-                            account: "0.0.29559509",
-                            privateKey: "0xbb621d187c22459ab6ed6768bd516bd630a087df4d5a4fbe95d77e87af10c6e1"
+                            account: '0.0.29562194',
+                            privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
                         };
                         provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
                         wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
-                        abi = JSON.parse(fs_1.default.readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
                         bytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
                         contractFactory = new ethers_1.ethers.ContractFactory(abi, bytecode, wallet);
-                        return [4 /*yield*/, contractFactory.deploy()];
+                        return [4 /*yield*/, contractFactory.deploy({ gasLimit: 300000 })];
                     case 1:
                         contract = _a.sent();
                         assert_1.default.notStrictEqual(contract, null, "nullified contract");
                         assert_1.default.notStrictEqual(contract.deployTransaction, "missing deploy transaction");
+                        assert_1.default.notStrictEqual(contract.address, null, 'missing address');
+                        params = contract.interface.encodeFunctionData('balanceOf', [
+                            wallet.address
+                        ]);
+                        return [4 /*yield*/, wallet.call({
+                                from: wallet.address,
+                                to: contract.address,
+                                data: (0, utils_1.arrayify)(params),
+                                gasLimit: 300000
+                            })];
+                    case 2:
+                        balance = _a.sent();
+                        assert_1.default.strictEqual(ethers_1.BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
                         return [2 /*return*/];
                 }
             });

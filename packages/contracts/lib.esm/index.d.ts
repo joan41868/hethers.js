@@ -139,7 +139,7 @@ export declare class ContractFactory {
     constructor(contractInterface: ContractInterface, bytecode: BytesLike | {
         object: string;
     }, signer?: Signer);
-    getDeployTransactions(...args: Array<any>): Array<TransactionRequest>;
+    getDeployTransaction(...args: Array<any>): Array<TransactionRequest>;
     deploy(...args: Array<any>): Promise<Contract>;
     attach(address: string): Contract;
     connect(signer: Signer): ContractFactory;

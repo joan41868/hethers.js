@@ -9,9 +9,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import assert from "assert";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import contractData from "./test-contract.json";
 import fs from "fs";
+import { arrayify } from "ethers/lib/utils";
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
 const provider = ethers.getDefaultProvider("testnet");
 const TIMEOUT_PERIOD = 120000;
@@ -300,28 +301,36 @@ describe("Test Contract Transaction Population", function () {
             // @ts-ignore
             const wallet = new ethers.Wallet(hederaEoa, provider);
             const contractFactory = new ethers.ContractFactory(abi, "", wallet);
-            const transactions = contractFactory.getDeployTransactions();
+            const transactions = contractFactory.getDeployTransaction();
             assert.strictEqual(Array.isArray(transactions), true);
             assert.strictEqual(transactions.length, 2);
         });
     });
-    // TODO: skipped as we should not spam testnet with random contracts
-    // Previewnet is not really a choice as it will (soon or later) result in INVALID_SIGNATURE pre-checks as of cleanup
-    xit("should be able to deploy a contract", function () {
+    it.only("should be able to deploy a contract", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const hederaEoa = {
-                account: "0.0.29559509",
-                privateKey: "0xbb621d187c22459ab6ed6768bd516bd630a087df4d5a4fbe95d77e87af10c6e1"
+                account: '0.0.29562194',
+                privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
             };
             const provider = ethers.providers.getDefaultProvider('testnet');
             // @ts-ignore
             const wallet = new ethers.Wallet(hederaEoa, provider);
-            const abi = JSON.parse(fs.readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
             const bytecode = fs.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
             const contractFactory = new ethers.ContractFactory(abi, bytecode, wallet);
-            const contract = yield contractFactory.deploy();
+            const contract = yield contractFactory.deploy({ gasLimit: 300000 });
             assert.notStrictEqual(contract, null, "nullified contract");
             assert.notStrictEqual(contract.deployTransaction, "missing deploy transaction");
+            assert.notStrictEqual(contract.address, null, 'missing address');
+            const params = contract.interface.encodeFunctionData('balanceOf', [
+                wallet.address
+            ]);
+            const balance = yield wallet.call({
+                from: wallet.address,
+                to: contract.address,
+                data: arrayify(params),
+                gasLimit: 300000
+            });
+            assert.strictEqual(BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
         });
     }).timeout(60000);
 });
