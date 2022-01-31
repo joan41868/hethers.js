@@ -1065,26 +1065,60 @@ describe("Test Hedera Provider", function () {
     it('Should filter logs by timestamp and address', async function () {
         const fromTimestamp = "1642065156.264170833";
         const toTimestamp = "1642080642.176149864";
-        const address = "0x000000000000000000000000000000000186fb1A";
+        const address = "0x000000000000000000000000000000000186fb1a";
         const filterParams = {
-            // address: "0.0.25623322",
             address: address,
             fromTimestamp: fromTimestamp,
             toTimestamp: toTimestamp
         }
+
+        const logsResponse = [
+            {
+                "address": "0x000000000000000000000000000000000186fb1a",
+                "contract_id": "0.0.25623322",
+                "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+                "index": 0,
+                "topics": [
+                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0x0000000000000000000000000000000000000000000000000000000000179977"
+                ],
+                "root_contract_id": "0.0.25623322",
+                "timestamp": "1642080642.176149864"
+            },
+            {
+                "address": "0x000000000000000000000000000000000186fb1a",
+                "contract_id": "0.0.25623322",
+                "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+                "index": 0,
+                "topics": [
+                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                    "0x0000000000000000000000000000000000000000000000000000000000179977"
+                ],
+                "root_contract_id": "0.0.25623322",
+                "timestamp": "1642065156.264170833"
+            }
+        ]
+
         const logs = await provider.getLogs(filterParams);
         assert.strictEqual(logs.length, 2);
-        assert.strictEqual(logs[0].timestamp, toTimestamp);
-        assert.strictEqual(logs[0].address, address);
-        assert.strictEqual(logs[0].data, "0x00000000000000000000000000000000000000000000003635c9adc5dea00000");
-        assert.strictEqual(logs[0].logIndex, 0);
-        assert.strictEqual(logs[0].topics.length, 3);
 
-        assert.strictEqual(logs[1].timestamp, fromTimestamp);
-        assert.strictEqual(logs[1].address, address);
-        assert.strictEqual(logs[1].data, "0x00000000000000000000000000000000000000000000003635c9adc5dea00000");
-        assert.strictEqual(logs[1].logIndex, 0);
-        assert.strictEqual(logs[1].topics.length, 3);
+        assert.strictEqual(logs[0].timestamp, logsResponse[0].timestamp);
+        assert.strictEqual(logs[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
+        assert.strictEqual(logs[0].data, logsResponse[0].data);
+        assert.deepStrictEqual(logs[0].topics, logsResponse[0].topics);
+        assert.strictEqual(logs[0].transactionHash, undefined);
+        assert.strictEqual(logs[0].logIndex, logsResponse[0].index);
+        assert.strictEqual(logs[0].transactionIndex, logsResponse[0].index);
+
+        assert.strictEqual(logs[1].timestamp, logsResponse[1].timestamp);
+        assert.strictEqual(logs[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
+        assert.strictEqual(logs[1].data, logsResponse[1].data);
+        assert.deepStrictEqual(logs[1].topics, logsResponse[1].topics);
+        assert.strictEqual(logs[1].transactionHash, undefined);
+        assert.strictEqual(logs[1].logIndex, logsResponse[1].index);
+        assert.strictEqual(logs[1].transactionIndex, logsResponse[1].index);
     }).timeout(timeout * 4);
 
     describe("Sign & Send Transacton, Wait for receipt", function () {
@@ -1396,7 +1430,8 @@ describe("Test Hedera Provider Formatters", function () {
                     data: null,
                     topics: [],
                     transactionHash: null,
-                    logIndex: 0 
+                    logIndex: 0,
+                    transactionIndex: 0
                 }
             ],
             cumulativeGasUsed: null,
@@ -1409,7 +1444,7 @@ describe("Test Hedera Provider Formatters", function () {
 
         assert.strictEqual(receipt.to, transactionResponse.to);
         assert.strictEqual(receipt.from, transactionResponse.from);
-        assert.strictEqual(receipt.timestamp, transactionResponse.timestamp),
+        assert.strictEqual(receipt.timestamp, transactionResponse.timestamp);
         assert.strictEqual(receipt.contractAddress, null);
         assert.strictEqual(receipt.transactionId, transactionResponse.transactionId);
         assert.strictEqual(receipt.transactionHash, transactionResponse.hash);
@@ -1424,6 +1459,7 @@ describe("Test Hedera Provider Formatters", function () {
         assert.deepStrictEqual(receipt.logs[0].topics, transactionResponse.customData.logs[0].topics);
         assert.strictEqual(receipt.logs[0].transactionHash, transactionResponse.hash);
         assert.strictEqual(receipt.logs[0].logIndex, transactionResponse.customData.logs[0].index);
+        assert.strictEqual(receipt.logs[0].transactionIndex, transactionResponse.customData.logs[0].index);
 
         assert.strictEqual(receipt.logs[1].timestamp, transactionResponse.timestamp);
         assert.strictEqual(receipt.logs[1].address, transactionResponse.customData.logs[1].address);
@@ -1431,5 +1467,6 @@ describe("Test Hedera Provider Formatters", function () {
         assert.deepStrictEqual(receipt.logs[1].topics, transactionResponse.customData.logs[1].topics);
         assert.strictEqual(receipt.logs[1].transactionHash, transactionResponse.hash);
         assert.strictEqual(receipt.logs[1].logIndex, transactionResponse.customData.logs[1].index);
+        assert.strictEqual(receipt.logs[1].transactionIndex, transactionResponse.customData.logs[0].index);
     }).timeout(timeout * 4);
 });

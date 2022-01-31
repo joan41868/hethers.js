@@ -1,4 +1,4 @@
-import { Block, TransactionReceipt, TransactionResponse, HederaTransactionRecord } from "@ethersproject/abstract-provider";
+import { Block, Log, TransactionReceipt, TransactionResponse, HederaTransactionRecord } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { AccessList } from "@ethersproject/transactions";
 export declare type FormatFunc = (value: any) => any;
@@ -19,6 +19,7 @@ export declare class Formatter {
     readonly formats: Formats;
     constructor();
     getDefaultFormats(): Formats;
+    logsMapper(values: Array<any>): Array<Log>;
     timestamp(value: any): string;
     accessList(accessList: Array<any>): AccessList;
     number(number: any): number;
@@ -31,8 +32,8 @@ export declare class Formatter {
     callAddress(value: any): string;
     contractAddress(value: any): string;
     blockTag(blockTag: any): string;
-    hash(value: any, strict?: boolean): string;
-    topicsHash(value: any, strict?: boolean): string;
+    hash_48(value: any, strict?: boolean): string;
+    hash_32(value: any, strict?: boolean): string;
     difficulty(value: any): number;
     uint256(value: any): string;
     _block(value: any, format: any): Block;

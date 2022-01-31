@@ -741,7 +741,8 @@ export class BaseProvider extends Provider {
             try {
                 let { data } = yield axios.get(requestUrl);
                 if (data) {
-                    return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs);
+                    const mappedLogs = this.formatter.logsMapper(data.logs);
+                    return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
                 }
             }
             catch (error) {

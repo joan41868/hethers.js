@@ -99,6 +99,7 @@ export interface Log {
     topics: Array<string>;
     transactionHash: string;
     logIndex: number;
+    transactionIndex: number;
 }
 
 export interface TransactionReceipt {

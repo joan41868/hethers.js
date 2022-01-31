@@ -23,18 +23,18 @@ var Formatter = /** @class */ (function () {
         var bigNumber = this.bigNumber.bind(this);
         var blockTag = this.blockTag.bind(this);
         var data = this.data.bind(this);
-        var hash = this.hash.bind(this);
-        var topicsHash = this.topicsHash.bind(this);
+        var hash_48 = this.hash_48.bind(this);
+        var hash_32 = this.hash_32.bind(this);
         var hex = this.hex.bind(this);
         var number = this.number.bind(this);
         var type = this.type.bind(this);
         var timestamp = this.timestamp.bind(this);
         var strictData = function (v) { return _this.data(v, true); };
         formats.transaction = {
-            hash: hash,
+            hash: hash_48,
             type: type,
             accessList: Formatter.allowNull(this.accessList.bind(this), null),
-            blockHash: Formatter.allowNull(hash, null),
+            blockHash: Formatter.allowNull(hash_48, null),
             blockNumber: Formatter.allowNull(number, null),
             transactionIndex: Formatter.allowNull(number, null),
             confirmations: Formatter.allowNull(number, null),
@@ -71,12 +71,12 @@ var Formatter = /** @class */ (function () {
         formats.receiptLog = {
             transactionIndex: number,
             blockNumber: number,
-            transactionHash: hash,
+            transactionHash: hash_48,
             address: address,
-            topics: Formatter.arrayOf(hash),
+            topics: Formatter.arrayOf(hash_32),
             data: data,
             logIndex: number,
-            blockHash: hash,
+            blockHash: hash_48,
         };
         formats.receipt = {
             to: Formatter.allowNull(this.address, null),
@@ -87,8 +87,8 @@ var Formatter = /** @class */ (function () {
             root: Formatter.allowNull(hex),
             gasUsed: bigNumber,
             logsBloom: Formatter.allowNull(data),
-            blockHash: hash,
-            transactionHash: hash,
+            blockHash: hash_48,
+            transactionHash: hash_48,
             logs: Formatter.arrayOf(this.receiptLog.bind(this)),
             blockNumber: number,
             confirmations: Formatter.allowNull(number, null),
@@ -98,8 +98,8 @@ var Formatter = /** @class */ (function () {
             type: type
         };
         formats.block = {
-            hash: hash,
-            parentHash: hash,
+            hash: hash_48,
+            parentHash: hash_48,
             number: number,
             timestamp: number,
             nonce: Formatter.allowNull(hex),
@@ -108,7 +108,7 @@ var Formatter = /** @class */ (function () {
             gasUsed: bigNumber,
             miner: address,
             extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash)),
+            transactions: Formatter.allowNull(Formatter.arrayOf(hash_48)),
             baseFeePerGas: Formatter.allowNull(bigNumber)
         };
         formats.blockWithTransactions = (0, properties_1.shallowCopy)(formats.block);
@@ -118,7 +118,7 @@ var Formatter = /** @class */ (function () {
             toBlock: Formatter.allowNull(blockTag, undefined),
             fromTimestamp: Formatter.allowNull(timestamp, undefined),
             toTimestamp: Formatter.allowNull(timestamp, undefined),
-            blockHash: Formatter.allowNull(hash, undefined),
+            blockHash: Formatter.allowNull(hash_48, undefined),
             address: Formatter.allowNull(address, undefined),
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
@@ -126,13 +126,31 @@ var Formatter = /** @class */ (function () {
             timestamp: timestamp,
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
-            index: number,
-            topics: Formatter.arrayOf(topicsHash),
-            // logIndex: number
-            // transactionHash: hash, 
+            topics: Formatter.arrayOf(hash_32),
+            transactionHash: Formatter.allowNull(hash_48, undefined),
+            logIndex: number,
+            transactionIndex: number
         };
         return formats;
     };
+    Formatter.prototype.logsMapper = function (values) {
+        var logs = [];
+        values.forEach(function (log) {
+            var mapped = {
+                timestamp: log.timestamp,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                //@ts-ignore
+                transactionHash: null,
+                logIndex: log.index,
+                transactionIndex: log.index,
+            };
+            logs.push(mapped);
+        });
+        return logs;
+    };
+    //TODO propper validation needed?
     Formatter.prototype.timestamp = function (value) {
         return value;
     };
@@ -194,6 +212,7 @@ var Formatter = /** @class */ (function () {
     // Requires an address
     // Strict! Used on input.
     Formatter.prototype.address = function (value) {
+        //TODO handle AccountLike
         return (0, address_1.getAddress)(value);
     };
     Formatter.prototype.callAddress = function (value) {
@@ -223,7 +242,7 @@ var Formatter = /** @class */ (function () {
         throw new Error("invalid blockTag");
     };
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
-    Formatter.prototype.hash = function (value, strict) {
+    Formatter.prototype.hash_48 = function (value, strict) {
         var result = this.hex(value, strict);
         if ((0, bytes_1.hexDataLength)(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
@@ -231,7 +250,7 @@ var Formatter = /** @class */ (function () {
         return result;
     };
     //hedera topics hash has length 32
-    Formatter.prototype.topicsHash = function (value, strict) {
+    Formatter.prototype.hash_32 = function (value, strict) {
         var result = this.hex(value, strict);
         if ((0, bytes_1.hexDataLength)(result) !== 32) {
             return logger.throwArgumentError("invalid topics hash", "value", value);
@@ -373,7 +392,8 @@ var Formatter = /** @class */ (function () {
                 data: log.data,
                 topics: log.topics,
                 transactionHash: response.hash,
-                logIndex: log.index
+                logIndex: log.index,
+                transactionIndex: log.index,
             };
             logs.push(values);
         });
@@ -399,7 +419,7 @@ var Formatter = /** @class */ (function () {
             return value.map(function (v) { return _this.topics(v); });
         }
         else if (value != null) {
-            return this.topicsHash(value, true);
+            return this.hash_32(value, true);
         }
         return null;
     };

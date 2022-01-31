@@ -954,7 +954,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, error_5;
+            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, mappedLogs, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -984,7 +984,8 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 3:
                         data = (_a.sent()).data;
                         if (data) {
-                            return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(data.logs)];
+                            mappedLogs = this.formatter.logsMapper(data.logs);
+                            return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs)];
                         }
                         return [3 /*break*/, 5];
                     case 4:
