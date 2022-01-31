@@ -411,18 +411,30 @@ describe("Test Contract Transaction Population", function () {
     });
     it("should return an array of transactions on getDeployTransaction call", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var hederaEoa, provider, wallet, contractFactory, transactions;
+            var hederaEoa, provider, wallet, contractAbi, contractBytecode, contractFactory, transactions;
             return __generator(this, function (_a) {
                 hederaEoa = {
-                    account: "0.0.1280",
-                    privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
+                    account: '0.0.29562194',
+                    privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
                 };
-                provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
+                provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
                 wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
-                contractFactory = new ethers_1.ethers.ContractFactory(abi, "", wallet);
-                transactions = contractFactory.getDeployTransactions();
+                contractAbi = JSON.parse(fs_1.default.readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+                contractBytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+                contractFactory = new ethers_1.ethers.ContractFactory(contractAbi, contractBytecode, wallet);
+                transactions = contractFactory.getDeployTransactions(ethers_1.ethers.BigNumber.from("1000000"), {
+                    gasLimit: 300000
+                });
                 assert_1.default.strictEqual(Array.isArray(transactions), true);
-                assert_1.default.strictEqual(transactions.length, 2);
+                assert_1.default.strictEqual(transactions.length, 3);
+                (0, assert_1.default)('customData' in transactions[0]);
+                (0, assert_1.default)('fileChunk' in transactions[0].customData);
+                (0, assert_1.default)('customData' in transactions[1]);
+                (0, assert_1.default)('fileChunk' in transactions[1].customData);
+                (0, assert_1.default)('data' in transactions[2]);
+                (0, assert_1.default)('customData' in transactions[2]);
+                (0, assert_1.default)('gasLimit' in transactions[2]);
+                assert_1.default.strictEqual(300000, transactions[2].gasLimit);
                 return [2 /*return*/];
             });
         });

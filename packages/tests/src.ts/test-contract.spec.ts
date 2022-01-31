@@ -294,18 +294,31 @@ describe("Test Contract Transaction Population", function() {
 
     it("should return an array of transactions on getDeployTransaction call", async function () {
         const hederaEoa = {
-            account: "0.0.1280",
-            privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
+            account: '0.0.29562194',
+            privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
         };
-        const provider = ethers.providers.getDefaultProvider('previewnet');
+        const provider = ethers.providers.getDefaultProvider('testnet');
         // @ts-ignore
         const wallet = new ethers.Wallet(hederaEoa, provider);
 
-        const contractFactory = new ethers.ContractFactory(abi, "", wallet);
-        const transactions = contractFactory.getDeployTransactions();
+        const contractAbi = JSON.parse(fs.readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+        const contractBytecode = fs.readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+
+        const contractFactory = new ethers.ContractFactory(contractAbi, contractBytecode, wallet);
+        const transactions = contractFactory.getDeployTransactions(ethers.BigNumber.from("1000000"), {
+            gasLimit: 300000
+        });
 
         assert.strictEqual(Array.isArray(transactions), true);
-        assert.strictEqual(transactions.length, 2);
+        assert.strictEqual(transactions.length, 3);
+        assert('customData' in transactions[0]);
+        assert('fileChunk' in transactions[0].customData);
+        assert('customData' in transactions[1]);
+        assert('fileChunk' in transactions[1].customData);
+        assert('data' in transactions[2]);
+        assert('customData' in transactions[2]);
+        assert('gasLimit' in transactions[2]);
+        assert.strictEqual(300000, transactions[2].gasLimit);
     });
 
     // TODO: skipped as we should not spam testnet with random contracts
