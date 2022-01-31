@@ -372,19 +372,14 @@ function buildCall(contract: Contract, fragment: FunctionFragment, collapseSimpl
 
     return async function(...args: Array<any>): Promise<any> {
         // Extract the "blockTag" override if present
-        let blockTag = undefined;
         if (args.length === fragment.inputs.length + 1 && typeof(args[args.length - 1]) === "object") {
             const overrides = shallowCopy(args.pop());
-            if (overrides.blockTag != null) {
-                blockTag = await overrides.blockTag;
-            }
-            delete overrides.blockTag;
             args.push(overrides);
         }
 
         // If the contract was just deployed, wait until it is mined
         if (contract.deployTransaction != null) {
-            await contract._deployed(blockTag);
+            await contract._deployed();
         }
 
         // Call a node and get the result
@@ -819,7 +814,7 @@ export class BaseContract {
         return this._deployed();
     }
 
-    _deployed(blockTag?: BlockTag): Promise<Contract> {
+    _deployed(): Promise<Contract> {
         if (!this._deployedPromise) {
 
             // If we were just deployed, we know the transaction we should occur in
@@ -833,7 +828,7 @@ export class BaseContract {
                 // up to that many blocks for getCode
 
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this.address, blockTag).then((code) => {
+                this._deployedPromise = this.provider.getCode(this.address).then((code) => {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: this.address,

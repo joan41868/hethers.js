@@ -241,7 +241,7 @@ export abstract class Provider {
 
     // Account
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
-    abstract getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> ;
+    abstract getCode(addressOrName: string | Promise<string>): Promise<string> ;
 
     // Execution
     abstract sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;

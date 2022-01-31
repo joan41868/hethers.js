@@ -359,33 +359,25 @@ function buildCall(contract, fragment, collapseSimple) {
             args[_i] = arguments[_i];
         }
         return __awaiter(this, void 0, void 0, function () {
-            var blockTag, overrides, tx, result, value;
+            var overrides, tx, result, value;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        blockTag = undefined;
-                        if (!(args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object")) return [3 /*break*/, 3];
-                        overrides = (0, properties_1.shallowCopy)(args.pop());
-                        if (!(overrides.blockTag != null)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, overrides.blockTag];
+                        // Extract the "blockTag" override if present
+                        if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+                            overrides = (0, properties_1.shallowCopy)(args.pop());
+                            args.push(overrides);
+                        }
+                        if (!(contract.deployTransaction != null)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, contract._deployed()];
                     case 1:
-                        blockTag = _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        delete overrides.blockTag;
-                        args.push(overrides);
-                        _a.label = 3;
-                    case 3:
-                        if (!(contract.deployTransaction != null)) return [3 /*break*/, 5];
-                        return [4 /*yield*/, contract._deployed(blockTag)];
-                    case 4:
                         _a.sent();
-                        _a.label = 5;
-                    case 5: return [4 /*yield*/, populateTransaction(contract, fragment, args)];
-                    case 6:
+                        _a.label = 2;
+                    case 2: return [4 /*yield*/, populateTransaction(contract, fragment, args)];
+                    case 3:
                         tx = _a.sent();
                         return [4 /*yield*/, signer.call(tx)];
-                    case 7:
+                    case 4:
                         result = _a.sent();
                         try {
                             value = contract.interface.decodeFunctionResult(fragment, result);
@@ -762,7 +754,7 @@ var BaseContract = /** @class */ (function () {
     BaseContract.prototype.deployed = function () {
         return this._deployed();
     };
-    BaseContract.prototype._deployed = function (blockTag) {
+    BaseContract.prototype._deployed = function () {
         var _this = this;
         if (!this._deployedPromise) {
             // If we were just deployed, we know the transaction we should occur in
@@ -775,7 +767,7 @@ var BaseContract = /** @class */ (function () {
                 // @TODO: Once we allow a timeout to be passed in, we will wait
                 // up to that many blocks for getCode
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this.address, blockTag).then(function (code) {
+                this._deployedPromise = this.provider.getCode(this.address).then(function (code) {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: _this.address,

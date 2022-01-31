@@ -688,7 +688,7 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.getCode = function (addressOrName, blockTag) {
+    BaseProvider.prototype.getCode = function (addressOrName) {
         return __awaiter(this, void 0, void 0, function () {
             var params, result;
             return __generator(this, function (_a) {

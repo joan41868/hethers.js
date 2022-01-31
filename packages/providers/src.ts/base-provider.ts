@@ -1,7 +1,7 @@
 "use strict";
 
 import {
-    BlockTag, EventType, Filter, FilterByBlockHash,
+    EventType, Filter, FilterByBlockHash,
     Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
@@ -623,7 +623,7 @@ export class BaseProvider extends Provider {
         }
     }
 
-    async getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
+    async getCode(addressOrName: string | Promise<string>): Promise<string> {
         await this.getNetwork();
         const params = await resolveProperties({
             address: this._getAddress(addressOrName),

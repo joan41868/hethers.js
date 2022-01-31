@@ -529,7 +529,7 @@ export class BaseProvider extends Provider {
             }
         });
     }
-    getCode(addressOrName, blockTag) {
+    getCode(addressOrName) {
         return __awaiter(this, void 0, void 0, function* () {
             yield this.getNetwork();
             const params = yield resolveProperties({

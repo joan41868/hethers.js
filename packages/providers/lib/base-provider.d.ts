@@ -1,4 +1,4 @@
-import { BlockTag, EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
@@ -85,7 +85,7 @@ export declare class BaseProvider extends Provider {
      * @param accountLike The address to check balance of
      */
     getBalance(accountLike: AccountLike | Promise<AccountLike>): Promise<BigNumber>;
-    getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
+    getCode(addressOrName: string | Promise<string>): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
     getHederaClient(): Client;
     getHederaNetworkConfig(): AccountId[];
