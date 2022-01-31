@@ -107,12 +107,12 @@ export interface ContractTransaction extends TransactionResponse {
 
 ///////////////////////////////
 
-// const allowedTransactionKeys: { [ key: string ]: boolean } = {
-//     chainId: true, data: true, from: true, gasLimit: true, gasPrice:true, nonce: true, to: true, value: true,
-//     type: true, accessList: true,
-//     maxFeePerGas: true, maxPriorityFeePerGas: true,
-//     customData: true
-// }
+const allowedTransactionKeys: { [ key: string ]: boolean } = {
+    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
+    type: true, /*accessList: true,*/
+    maxFeePerGas: true, maxPriorityFeePerGas: true,
+    customData: true, nodeId: true,
+}
 
 // TODO FIXME
 async function resolveName(resolver: Signer | Provider, nameOrPromise: string | Promise<string>): Promise<string> {
@@ -1179,32 +1179,64 @@ export class ContractFactory {
     }
 
     getDeployTransactions(...args: Array<any>): Array<TransactionRequest> {
+        let contractCreateTx: TransactionRequest = {};
+        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+            contractCreateTx = shallowCopy(args.pop());
+            for (const key in contractCreateTx) {
+                if (!allowedTransactionKeys[key]) {
+                    throw new Error("unknown transaction override " + key);
+                }
+            }
+        }
+
+        // Allow only these to be overwritten in a deployment transaction
+        Object.keys(contractCreateTx).forEach((key) => {
+            if (["gasLimit", "value"].indexOf(key) > -1) {
+                return;
+            }
+            logger.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, {operation: key})
+        });
+
+        if (contractCreateTx.value) {
+            const value = BigNumber.from(contractCreateTx.value);
+            if (!value.isZero() && !this.interface.deploy.payable) {
+                logger.throwError("non-payable constructor cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "overrides.value",
+                    value: contractCreateTx.value
+                });
+            }
+        }
+
+        // Make sure the call matches the constructor signature
+        logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
+
         let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
 
-        const fileCreate: TransactionRequest = {
+        const fileCreateTx: TransactionRequest = {
             customData: {
                 fileChunk: chunks[0]
             }
         };
 
-        let fileAppends: Array<any> = [];
+        let fileAppendTxs: Array<any> = [];
         for (let chunk of chunks.slice(1)) {
-            const fileAppend: TransactionRequest = {
+            const fileAppendTx: TransactionRequest = {
                 customData: {
                     fileChunk: chunk
                 }
             };
 
-            fileAppends.push(fileAppend);
+            fileAppendTxs.push(fileAppendTx);
         }
 
-        const contractCreate: TransactionRequest = {
+        contractCreateTx = {
             gasLimit: 500000,
             data: this.interface.encodeDeploy(args),
-            customData: {}
+            customData: {},
+            ...contractCreateTx,
         };
 
-        return [fileCreate, ...fileAppends, contractCreate];
+        return [fileCreateTx, ...fileAppendTxs, contractCreateTx];
     }
 
     async deploy(...args: Array<any>): Promise<Contract> {
