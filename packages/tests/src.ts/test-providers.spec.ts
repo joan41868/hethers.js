@@ -1062,6 +1062,31 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(true, balance.gte(0));
     }).timeout(timeout);
 
+    it('Should filter logs by timestamp and address', async function () {
+        const fromTimestamp = "1642065156.264170833";
+        const toTimestamp = "1642080642.176149864";
+        const address = "0x000000000000000000000000000000000186fb1A";
+        const filterParams = {
+            // address: "0.0.25623322",
+            address: address,
+            fromTimestamp: fromTimestamp,
+            toTimestamp: toTimestamp
+        }
+        const logs = await provider.getLogs(filterParams);
+        assert.strictEqual(logs.length, 2);
+        assert.strictEqual(logs[0].timestamp, toTimestamp);
+        assert.strictEqual(logs[0].address, address);
+        assert.strictEqual(logs[0].data, "0x00000000000000000000000000000000000000000000003635c9adc5dea00000");
+        assert.strictEqual(logs[0].logIndex, 0);
+        assert.strictEqual(logs[0].topics.length, 3);
+
+        assert.strictEqual(logs[1].timestamp, fromTimestamp);
+        assert.strictEqual(logs[1].address, address);
+        assert.strictEqual(logs[1].data, "0x00000000000000000000000000000000000000000000003635c9adc5dea00000");
+        assert.strictEqual(logs[1].logIndex, 0);
+        assert.strictEqual(logs[1].topics.length, 3);
+    }).timeout(timeout * 4);
+
     describe("Sign & Send Transacton, Wait for receipt", function () {
         let signedTx: string | Promise<string>;
         beforeEach(async () => {

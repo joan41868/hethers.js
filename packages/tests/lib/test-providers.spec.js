@@ -1036,6 +1036,40 @@ describe("Test Hedera Provider", function () {
             });
         });
     }).timeout(timeout);
+    it('Should filter logs by timestamp and address', function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var fromTimestamp, toTimestamp, address, filterParams, logs;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        fromTimestamp = "1642065156.264170833";
+                        toTimestamp = "1642080642.176149864";
+                        address = "0x000000000000000000000000000000000186fb1A";
+                        filterParams = {
+                            // address: "0.0.25623322",
+                            address: address,
+                            fromTimestamp: fromTimestamp,
+                            toTimestamp: toTimestamp
+                        };
+                        return [4 /*yield*/, provider.getLogs(filterParams)];
+                    case 1:
+                        logs = _a.sent();
+                        assert_1.default.strictEqual(logs.length, 2);
+                        assert_1.default.strictEqual(logs[0].timestamp, toTimestamp);
+                        assert_1.default.strictEqual(logs[0].address, address);
+                        assert_1.default.strictEqual(logs[0].data, "0x00000000000000000000000000000000000000000000003635c9adc5dea00000");
+                        assert_1.default.strictEqual(logs[0].logIndex, 0);
+                        assert_1.default.strictEqual(logs[0].topics.length, 3);
+                        assert_1.default.strictEqual(logs[1].timestamp, fromTimestamp);
+                        assert_1.default.strictEqual(logs[1].address, address);
+                        assert_1.default.strictEqual(logs[1].data, "0x00000000000000000000000000000000000000000000003635c9adc5dea00000");
+                        assert_1.default.strictEqual(logs[1].logIndex, 0);
+                        assert_1.default.strictEqual(logs[1].topics.length, 3);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout * 4);
     describe("Sign & Send Transacton, Wait for receipt", function () {
         var _this = this;
         var signedTx;
