@@ -94693,6 +94693,9 @@ class Formatter {
     }
     //TODO propper validation needed?
     timestamp(value) {
+        if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
+            logger$u.throwArgumentError("bad timestamp format", "value", value);
+        }
         return value;
     }
     accessList(accessList) {

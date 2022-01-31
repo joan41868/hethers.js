@@ -149,6 +149,9 @@ var Formatter = /** @class */ (function () {
     };
     //TODO propper validation needed?
     Formatter.prototype.timestamp = function (value) {
+        if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
+            logger.throwArgumentError("bad timestamp format", "value", value);
+        }
         return value;
     };
     Formatter.prototype.accessList = function (accessList) {
