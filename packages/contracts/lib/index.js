@@ -14,6 +14,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -76,12 +87,12 @@ var logger = new logger_1.Logger(_version_1.version);
 ;
 ;
 ///////////////////////////////
-// const allowedTransactionKeys: { [ key: string ]: boolean } = {
-//     chainId: true, data: true, from: true, gasLimit: true, gasPrice:true, nonce: true, to: true, value: true,
-//     type: true, accessList: true,
-//     maxFeePerGas: true, maxPriorityFeePerGas: true,
-//     customData: true
-// }
+var allowedTransactionKeys = {
+    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
+    type: true,
+    maxFeePerGas: true, maxPriorityFeePerGas: true,
+    customData: true, nodeId: true,
+};
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function () {
@@ -1092,28 +1103,51 @@ var ContractFactory = /** @class */ (function () {
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
+        var contractCreateTx = {};
+        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+            contractCreateTx = (0, properties_1.shallowCopy)(args.pop());
+            for (var key in contractCreateTx) {
+                if (!allowedTransactionKeys[key]) {
+                    throw new Error("unknown transaction override " + key);
+                }
+            }
+        }
+        // Allow only these to be overwritten in a deployment transaction
+        Object.keys(contractCreateTx).forEach(function (key) {
+            if (["gasLimit", "value"].indexOf(key) > -1) {
+                return;
+            }
+            logger.throwError("cannot override " + key, logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
+        });
+        if (contractCreateTx.value) {
+            var value = bignumber_1.BigNumber.from(contractCreateTx.value);
+            if (!value.isZero() && !this.interface.deploy.payable) {
+                logger.throwError("non-payable constructor cannot override value", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "overrides.value",
+                    value: contractCreateTx.value
+                });
+            }
+        }
+        // Make sure the call matches the constructor signature
+        logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
         var chunks = (0, strings_1.splitInChunks)(Buffer.from(this.bytecode).toString(), 4096);
-        var fileCreate = {
+        var fileCreateTx = {
             customData: {
                 fileChunk: chunks[0]
             }
         };
-        var fileAppends = [];
+        var fileAppendTxs = [];
         for (var _a = 0, _b = chunks.slice(1); _a < _b.length; _a++) {
             var chunk = _b[_a];
-            var fileAppend = {
+            var fileAppendTx = {
                 customData: {
                     fileChunk: chunk
                 }
             };
-            fileAppends.push(fileAppend);
+            fileAppendTxs.push(fileAppendTx);
         }
-        var contractCreate = {
-            gasLimit: 500000,
-            data: this.interface.encodeDeploy(args),
-            customData: {}
-        };
-        return __spreadArray(__spreadArray([fileCreate], fileAppends, true), [contractCreate], false);
+        contractCreateTx = __assign(__assign({}, contractCreateTx), { data: this.interface.encodeDeploy(args), customData: {} });
+        return __spreadArray(__spreadArray([fileCreateTx], fileAppendTxs, true), [contractCreateTx], false);
     };
     ContractFactory.prototype.deploy = function () {
         var args = [];
