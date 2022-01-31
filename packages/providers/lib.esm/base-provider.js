@@ -18,7 +18,7 @@ import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import bech32 from "bech32";
 import { Logger } from "@ethersproject/logger";
-import { getAddressFromAccount } from "@ethersproject/address";
+import { getAccountFromTransactionId, getAddressFromAccount } from "@ethersproject/address";
 import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
@@ -679,6 +679,8 @@ export class BaseProvider extends Provider {
                         };
                         const transactionName = filtered[0].name;
                         if (transactionName === 'CRYPTOCREATEACCOUNT') {
+                            record.from = getAccountFromTransactionId(transactionId);
+                            record.timestamp = filtered[0].consensus_timestamp;
                             record.hash = filtered[0].transaction_hash;
                             record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                         }

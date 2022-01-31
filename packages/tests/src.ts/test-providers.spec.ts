@@ -1,3 +1,5 @@
+// noinspection JSVoidFunctionReturnValueUsed
+
 "use strict";
 
 import assert from "assert";
@@ -1254,6 +1256,10 @@ describe("Test Hedera Provider", function () {
             "customData.accountAddress exists"
         );
         assert.strictEqual(mintedTransaction.customData.result, 'SUCCESS', "customData.result is correct");
+
+        assert.strictEqual(mintedTransaction.from, '0.0.29562746', "from is correct");
+        assert.strictEqual(mintedTransaction.timestamp, '1643299496.863374000', "timestamp is correct");
+
     });
 });
 
