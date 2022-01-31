@@ -1,3 +1,4 @@
+// noinspection JSVoidFunctionReturnValueUsed
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -1447,6 +1448,8 @@ describe("Test Hedera Provider", function () {
                         assert_1.default.notStrictEqual(mintedTransaction.customData, null, "customData exists");
                         assert_1.default.strictEqual(mintedTransaction.customData.accountAddress, '0x0000000000000000000000000000000001c31782', "customData.accountAddress exists");
                         assert_1.default.strictEqual(mintedTransaction.customData.result, 'SUCCESS', "customData.result is correct");
+                        assert_1.default.strictEqual(mintedTransaction.from, '0.0.29562746', "from is correct");
+                        assert_1.default.strictEqual(mintedTransaction.timestamp, '1643299496.863374000', "timestamp is correct");
                         return [2 /*return*/];
                 }
             });

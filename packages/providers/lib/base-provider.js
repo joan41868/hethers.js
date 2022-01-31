@@ -907,6 +907,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         };
                         transactionName = filtered[0].name;
                         if (!(transactionName === 'CRYPTOCREATEACCOUNT')) return [3 /*break*/, 4];
+                        record.from = (0, address_1.getAccountFromTransactionId)(transactionId);
+                        record.timestamp = filtered[0].consensus_timestamp;
                         record.hash = filtered[0].transaction_hash;
                         record.accountAddress = (0, address_1.getAddressFromAccount)(filtered[0].entity_id);
                         return [3 /*break*/, 6];

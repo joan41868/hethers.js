@@ -18,6 +18,16 @@ import {version} from "./_version";
 
 const logger = new Logger(version);
 
+export function getAccountFromTransactionId(transactionId: string): string {
+    // TransactionId looks like this: '0.0.99999999-9999999999-999999999'
+    if (!transactionId.match(/^\d+?\.\d+?\.\d+-\d+-\d+$/)) {
+        logger.throwArgumentError("invalid transactionId", "transactionId", transactionId);
+    }
+
+    const account = transactionId.split('-');
+    return account[0];
+}
+
 export function asAccountString(accountLike: AccountLike): string {
     let parsedAccount: Account = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
     return `${parsedAccount.shard}.${parsedAccount.realm}.${parsedAccount.num}`;

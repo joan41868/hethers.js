@@ -24,7 +24,7 @@ import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
-import { getAddressFromAccount } from "@ethersproject/address";
+import {getAccountFromTransactionId, getAddressFromAccount} from "@ethersproject/address";
 import { version } from "./_version";
 const logger = new Logger(version);
 
@@ -779,6 +779,8 @@ export class BaseProvider extends Provider {
 
                     const transactionName = filtered[0].name;
                     if (transactionName === 'CRYPTOCREATEACCOUNT') {
+                        record.from = getAccountFromTransactionId(transactionId);
+                        record.timestamp = filtered[0].consensus_timestamp;
                         record.hash = filtered[0].transaction_hash;
                         record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                     }

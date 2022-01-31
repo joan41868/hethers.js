@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.isAddress = exports.getAddress = exports.getChecksumAddress = exports.asAccountString = void 0;
+exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.isAddress = exports.getAddress = exports.getChecksumAddress = exports.asAccountString = exports.getAccountFromTransactionId = void 0;
 var bytes_1 = require("@ethersproject/bytes");
 var bignumber_1 = require("@ethersproject/bignumber");
 var keccak256_1 = require("@ethersproject/keccak256");
@@ -8,6 +8,15 @@ var rlp_1 = require("@ethersproject/rlp");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
+function getAccountFromTransactionId(transactionId) {
+    // TransactionId looks like this: '0.0.99999999-9999999999-999999999'
+    if (!transactionId.match(/^\d+?\.\d+?\.\d+-\d+-\d+$/)) {
+        logger.throwArgumentError("invalid transactionId", "transactionId", transactionId);
+    }
+    var account = transactionId.split('-');
+    return account[0];
+}
+exports.getAccountFromTransactionId = getAccountFromTransactionId;
 function asAccountString(accountLike) {
     var parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
     return parsedAccount.shard + "." + parsedAccount.realm + "." + parsedAccount.num;

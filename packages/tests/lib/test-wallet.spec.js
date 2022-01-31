@@ -1,3 +1,4 @@
+// noinspection JSVoidFunctionReturnValueUsed
 'use strict';
 var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
@@ -734,19 +735,19 @@ xdescribe("Wallet createAccount", function () {
                 case 0:
                     account = {
                         "operator": {
-                            "accountId": "0.0.1261",
-                            "publicKey": "302a300506032b65700321006286f3cfa771a803f1ff90a3ee5d227002ac209d934f7b47fa41288e71938095",
-                            "privateKey": "302e020100300506032b657004220420f24f8a15fc36ec3cee05c99c2e71bda086977885eeeebbec17654c5d3a6c35b5"
+                            "accountId": "0.0.28527683",
+                            "publicKey": "302a300506032b657003210007765d9cb324bd0a43cd8b8a57f5955cb94eef4149f38ebf96383235e711a3ab",
+                            "privateKey": "302e020100300506032b65700422042071b5d7e7d9765e1a71640493b27fdcb3fe1437e04325aefda828876371e7912c"
                         },
                         "network": {
-                            "35.231.208.148:50211": "0.0.3",
-                            "35.199.15.177:50211": "0.0.4",
-                            "35.225.201.195:50211": "0.0.5",
-                            "35.247.109.135:50211": "0.0.6"
+                            "0.testnet.hedera.com:50211": "0.0.3",
+                            "1.testnet.hedera.com:50211": "0.0.4",
+                            "2.testnet.hedera.com:50211": "0.0.5",
+                            "3.testnet.hedera.com:50211": "0.0.6"
                         }
                     };
                     this.timeout(timeout);
-                    provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
+                    provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
                     return [4 /*yield*/, createWalletFromED25519(account, provider)];
                 case 1:
                     wallet = _a.sent();
