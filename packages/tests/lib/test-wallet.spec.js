@@ -723,7 +723,7 @@ describe("Wallet local calls", function () {
         });
     });
 });
-describe("Wallet createAccount", function () {
+xdescribe("Wallet createAccount", function () {
     var _this = this;
     var wallet, newAccount, newAccountPublicKey, provider;
     var timeout = 60000;

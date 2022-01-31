@@ -580,7 +580,7 @@ describe("Wallet local calls", async function () {
     });
 });
 
-describe("Wallet createAccount", function () {
+xdescribe("Wallet createAccount", function () {
 
     let wallet: ethers.Wallet, newAccount: ethers.Wallet, newAccountPublicKey: BytesLike, provider: ethers.providers.BaseProvider;
     const timeout = 60000;

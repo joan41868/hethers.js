@@ -1581,7 +1581,7 @@ describe("Test Hedera Provider Formatters", function () {
                 assert_1.default.deepStrictEqual(receipt.logs[1].topics, transactionResponse.customData.logs[1].topics);
                 assert_1.default.strictEqual(receipt.logs[1].transactionHash, transactionResponse.hash);
                 assert_1.default.strictEqual(receipt.logs[1].logIndex, transactionResponse.customData.logs[1].index);
-                assert_1.default.strictEqual(receipt.logs[1].transactionIndex, transactionResponse.customData.logs[0].index);
+                assert_1.default.strictEqual(receipt.logs[1].transactionIndex, transactionResponse.customData.logs[1].index);
                 return [2 /*return*/];
             });
         });
