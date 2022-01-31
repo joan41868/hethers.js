@@ -94238,7 +94238,7 @@ class ContractFactory {
             };
             fileAppendTxs.push(fileAppendTx);
         }
-        contractCreateTx = Object.assign({ gasLimit: 500000, data: this.interface.encodeDeploy(args), customData: {} }, contractCreateTx);
+        contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: this.interface.encodeDeploy(args), customData: {} });
         return [fileCreateTx, ...fileAppendTxs, contractCreateTx];
     }
     deploy(...args) {

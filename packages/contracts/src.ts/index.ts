@@ -1230,10 +1230,9 @@ export class ContractFactory {
         }
 
         contractCreateTx = {
-            gasLimit: 500000,
-            data: this.interface.encodeDeploy(args),
-            customData: {},
             ...contractCreateTx,
+            data: this.interface.encodeDeploy(args),
+            customData: {}
         };
 
         return [fileCreateTx, ...fileAppendTxs, contractCreateTx];

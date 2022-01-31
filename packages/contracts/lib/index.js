@@ -1146,7 +1146,7 @@ var ContractFactory = /** @class */ (function () {
             };
             fileAppendTxs.push(fileAppendTx);
         }
-        contractCreateTx = __assign({ gasLimit: 500000, data: this.interface.encodeDeploy(args), customData: {} }, contractCreateTx);
+        contractCreateTx = __assign(__assign({}, contractCreateTx), { data: this.interface.encodeDeploy(args), customData: {} });
         return __spreadArray(__spreadArray([fileCreateTx], fileAppendTxs, true), [contractCreateTx], false);
     };
     ContractFactory.prototype.deploy = function () {
