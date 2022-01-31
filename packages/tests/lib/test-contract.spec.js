@@ -1,4 +1,23 @@
 'use strict';
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43,6 +62,14 @@ var assert_1 = __importDefault(require("assert"));
 var ethers_1 = require("ethers");
 var test_contract_json_1 = __importDefault(require("./test-contract.json"));
 var fs_1 = __importDefault(require("fs"));
+// @ts-ignore
+var abi = __importStar(require("../../../examples/assets/abi/GLDToken_abi.json"));
+// @ts-ignore
+var abiWithArgs = __importStar(require("../../../examples/assets/abi/GLDTokenWithConstructorArgs_abi.json"));
+// @ts-ignore
+abi = abi.default;
+// @ts-ignore
+abiWithArgs = abiWithArgs.default;
 var utils_1 = require("ethers/lib/utils");
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
 var provider = ethers_1.ethers.getDefaultProvider("testnet");
@@ -192,12 +219,6 @@ function TestContractEvents() {
 // });
 // @TODO: Exapnd this
 describe("Test Contract Transaction Population", function () {
-    var abi = [
-        "function transfer(address to, uint amount)",
-        "function unstake() nonpayable",
-        "function mint() payable",
-        "function balanceOf(address owner) view returns (uint)"
-    ];
     var testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03";
     var testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     var fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
@@ -412,23 +433,34 @@ describe("Test Contract Transaction Population", function () {
     });
     it("should return an array of transactions on getDeployTransaction call", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var hederaEoa, provider, wallet, contractFactory, transactions;
+            var hederaEoa, provider, wallet, contractBytecode, contractFactory, transactions;
             return __generator(this, function (_a) {
                 hederaEoa = {
-                    account: "0.0.1280",
-                    privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
+                    account: '0.0.29562194',
+                    privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
                 };
-                provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
+                provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
                 wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
-                contractFactory = new ethers_1.ethers.ContractFactory(abi, "", wallet);
-                transactions = contractFactory.getDeployTransaction();
+                contractBytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+                contractFactory = new ethers_1.ethers.ContractFactory(abiWithArgs, contractBytecode, wallet);
+                transactions = contractFactory.getDeployTransaction(ethers_1.ethers.BigNumber.from("1000000"), {
+                    gasLimit: 300000
+                });
                 assert_1.default.strictEqual(Array.isArray(transactions), true);
-                assert_1.default.strictEqual(transactions.length, 2);
+                assert_1.default.strictEqual(transactions.length, 3);
+                (0, assert_1.default)('customData' in transactions[0]);
+                (0, assert_1.default)('fileChunk' in transactions[0].customData);
+                (0, assert_1.default)('customData' in transactions[1]);
+                (0, assert_1.default)('fileChunk' in transactions[1].customData);
+                (0, assert_1.default)('data' in transactions[2]);
+                (0, assert_1.default)('customData' in transactions[2]);
+                (0, assert_1.default)('gasLimit' in transactions[2]);
+                assert_1.default.strictEqual(300000, transactions[2].gasLimit);
                 return [2 /*return*/];
             });
         });
     });
-    it.only("should be able to deploy a contract", function () {
+    it("should be able to deploy a contract", function () {
         return __awaiter(this, void 0, void 0, function () {
             var hederaEoa, provider, wallet, bytecode, contractFactory, contract, params, balance;
             return __generator(this, function (_a) {

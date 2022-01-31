@@ -7,7 +7,13 @@ import { BigNumber, ethers } from "ethers";
 import contractData from "./test-contract.json";
 import fs from "fs";
 // @ts-ignore
-import * as abi from 'examples/assets/abi/GLDToken_abi.json';
+import * as abi from '../../../examples/assets/abi/GLDToken_abi.json';
+// @ts-ignore
+import * as abiWithArgs from '../../../examples/assets/abi/GLDTokenWithConstructorArgs_abi.json';
+// @ts-ignore
+abi = abi.default;
+// @ts-ignore
+abiWithArgs = abiWithArgs.default;
 import { arrayify } from "ethers/lib/utils";
 
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
@@ -160,12 +166,6 @@ async function TestContractEvents() {
 
 // @TODO: Exapnd this
 describe("Test Contract Transaction Population", function() {
-    const abi = [
-        "function transfer(address to, uint amount)",
-        "function unstake() nonpayable",
-        "function mint() payable",
-        "function balanceOf(address owner) view returns (uint)"
-    ];
 
     const testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03"
     const testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
@@ -305,9 +305,8 @@ describe("Test Contract Transaction Population", function() {
         const wallet = new ethers.Wallet(hederaEoa, provider);
 
         const contractBytecode = fs.readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
-
-        const contractFactory = new ethers.ContractFactory(abi, contractBytecode, wallet);
-        const transactions = contractFactory.getDeployTransactions(ethers.BigNumber.from("1000000"), {
+        const contractFactory = new ethers.ContractFactory(abiWithArgs, contractBytecode, wallet);
+        const transactions = contractFactory.getDeployTransaction(ethers.BigNumber.from("1000000"), {
             gasLimit: 300000
         });
 

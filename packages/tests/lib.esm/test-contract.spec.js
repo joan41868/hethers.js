@@ -12,6 +12,14 @@ import assert from "assert";
 import { BigNumber, ethers } from "ethers";
 import contractData from "./test-contract.json";
 import fs from "fs";
+// @ts-ignore
+import * as abi from '../../../examples/assets/abi/GLDToken_abi.json';
+// @ts-ignore
+import * as abiWithArgs from '../../../examples/assets/abi/GLDTokenWithConstructorArgs_abi.json';
+// @ts-ignore
+abi = abi.default;
+// @ts-ignore
+abiWithArgs = abiWithArgs.default;
 import { arrayify } from "ethers/lib/utils";
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
 const provider = ethers.getDefaultProvider("testnet");
@@ -154,12 +162,6 @@ function TestContractEvents() {
 // });
 // @TODO: Exapnd this
 describe("Test Contract Transaction Population", function () {
-    const abi = [
-        "function transfer(address to, uint amount)",
-        "function unstake() nonpayable",
-        "function mint() payable",
-        "function balanceOf(address owner) view returns (uint)"
-    ];
     const testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03";
     const testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     const fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
@@ -294,19 +296,30 @@ describe("Test Contract Transaction Population", function () {
     it("should return an array of transactions on getDeployTransaction call", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const hederaEoa = {
-                account: "0.0.1280",
-                privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
+                account: '0.0.29562194',
+                privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
             };
-            const provider = ethers.providers.getDefaultProvider('previewnet');
+            const provider = ethers.providers.getDefaultProvider('testnet');
             // @ts-ignore
             const wallet = new ethers.Wallet(hederaEoa, provider);
-            const contractFactory = new ethers.ContractFactory(abi, "", wallet);
-            const transactions = contractFactory.getDeployTransaction();
+            const contractBytecode = fs.readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+            const contractFactory = new ethers.ContractFactory(abiWithArgs, contractBytecode, wallet);
+            const transactions = contractFactory.getDeployTransaction(ethers.BigNumber.from("1000000"), {
+                gasLimit: 300000
+            });
             assert.strictEqual(Array.isArray(transactions), true);
-            assert.strictEqual(transactions.length, 2);
+            assert.strictEqual(transactions.length, 3);
+            assert('customData' in transactions[0]);
+            assert('fileChunk' in transactions[0].customData);
+            assert('customData' in transactions[1]);
+            assert('fileChunk' in transactions[1].customData);
+            assert('data' in transactions[2]);
+            assert('customData' in transactions[2]);
+            assert('gasLimit' in transactions[2]);
+            assert.strictEqual(300000, transactions[2].gasLimit);
         });
     });
-    it.only("should be able to deploy a contract", function () {
+    it("should be able to deploy a contract", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const hederaEoa = {
                 account: '0.0.29562194',
