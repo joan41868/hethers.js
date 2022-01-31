@@ -32,6 +32,7 @@ import { Formatter } from "./formatter";
 import { AccountLike, asAccountString } from "@ethersproject/address";
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
+import {keccak256} from "@ethersproject/keccak256";
 
 //////////////////////////////
 // Event Serializeing
@@ -781,7 +782,7 @@ export class BaseProvider extends Provider {
                     if (transactionName === 'CRYPTOCREATEACCOUNT') {
                         record.from = getAccountFromTransactionId(transactionId);
                         record.timestamp = filtered[0].consensus_timestamp;
-                        record.hash = filtered[0].transaction_hash;
+                        record.hash = keccak256(toUtf8Bytes(filtered[0].transaction_hash));
                         record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                     }
                     else {
