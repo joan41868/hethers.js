@@ -163,13 +163,13 @@ class WrappedSigner extends ethers.Signer {
         return __awaiter(this, void 0, void 0, function* () {
             transactionRequest = ethers.utils.shallowCopy(transactionRequest);
             if (this.plugin.gasPrice != null) {
-                transactionRequest.gasPrice = this.plugin.gasPrice;
+                // transactionRequest.gasPrice = this.plugin.gasPrice;
             }
             if (this.plugin.gasLimit != null) {
                 transactionRequest.gasLimit = this.plugin.gasLimit;
             }
             if (this.plugin.nonce != null) {
-                transactionRequest.nonce = this.plugin.nonce;
+                // transactionRequest.nonce = this.plugin.nonce;
             }
             let signer = yield getSigner(this);
             return signer.populateTransaction(transactionRequest);
@@ -188,13 +188,11 @@ class WrappedSigner extends ethers.Signer {
                 info["From"] = tx.from;
             }
             info["Value"] = (ethers.utils.formatEther(tx.value || 0) + " ether");
-            if (tx.nonce != null) {
-                info["Nonce"] = tx.nonce;
-            }
+            // if (tx.nonce != null) { info["Nonce"] = tx.nonce; }
             info["Data"] = tx.data;
             info["Gas Limit"] = ethers.BigNumber.from(tx.gasLimit || 0).toString();
-            info["Gas Price"] = (ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
-                info["Chain ID"] = (tx.chainId || 0);
+            // info["Gas Price"] = (ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
+            info["Chain ID"] = (tx.chainId || 0);
             info["Network"] = network.name;
             dump("Transaction:", info);
             yield isAllowed(this, "Sign Transaction?");
@@ -243,8 +241,6 @@ class WrappedSigner extends ethers.Signer {
                 try {
                     let receipt = yield response.wait();
                     dump("Success:", {
-                        "Block Number": receipt.blockNumber,
-                        "Block Hash": receipt.blockHash,
                         "Gas Used": ethers.utils.commify(receipt.gasUsed.toString()),
                         "Fee": (ethers.utils.formatEther(receipt.gasUsed.mul(tx.gasPrice)) + " ether")
                     });

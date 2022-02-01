@@ -1,4 +1,5 @@
 {
+  "_ethers_nobuild": true,
   "author": "Richard Moore <me@ricmoo.com>",
   "bin": {
     "ethers": "./lib/bin/ethers.js",

@@ -1,10 +1,12 @@
-/// <reference types="node" />
-import { Block, BlockTag, BlockWithTransactions, EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { Network, Networkish } from "@ethersproject/networks";
+import { EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { BigNumber } from "@ethersproject/bignumber";
+import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
+import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
+import { AccountLike } from "@ethersproject/address";
+import { AccountId, Client } from "@hashgraph/sdk";
 export declare class Event {
     readonly listener: Listener;
     readonly once: boolean;
@@ -44,34 +46,18 @@ export declare class Resolver implements EnsResolver {
     _fetchBytes(selector: string, parameters?: string): Promise<null | string>;
     _getAddress(coinType: number, hexBytes: string): string;
     getAddress(coinType?: number): Promise<string>;
-    getAvatar(): Promise<null | Avatar>;
     getContentHash(): Promise<string>;
     getText(key: string): Promise<string>;
 }
-export declare class BaseProvider extends Provider implements EnsProvider {
+export declare class BaseProvider extends Provider {
     _networkPromise: Promise<Network>;
     _network: Network;
     _events: Array<Event>;
-    formatter: Formatter;
-    _emitted: {
-        [eventName: string]: number | "pending";
-    };
     _pollingInterval: number;
-    _poller: NodeJS.Timer;
-    _bootstrapPoll: NodeJS.Timer;
-    _lastBlockNumber: number;
-    _fastBlockNumber: number;
-    _fastBlockNumberPromise: Promise<number>;
-    _fastQueryDate: number;
-    _maxInternalBlockNumber: number;
-    _internalBlockNumber: Promise<{
-        blockNumber: number;
-        reqTime: number;
-        respTime: number;
-    }>;
+    formatter: Formatter;
     readonly anyNetwork: boolean;
     private readonly hederaClient;
-    private readonly mirrorNodeUrl;
+    private readonly _mirrorNodeUrl;
     /**
      *  ready
      *
@@ -81,43 +67,24 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      *  MUST set this. Standard named networks have a known chainId.
      *
      */
-    constructor(network: Networkish | Promise<Network>);
+    constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike);
     _ready(): Promise<Network>;
-    get ready(): Promise<Network>;
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
-    _getInternalBlockNumber(maxAge: number): Promise<number>;
-    poll(): Promise<void>;
-    resetEventsBlock(blockNumber: number): void;
     get network(): Network;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
-    get blockNumber(): number;
-    get polling(): boolean;
-    set polling(value: boolean);
     get pollingInterval(): number;
     set pollingInterval(value: number);
-    _getFastBlockNumber(): Promise<number>;
-    _setFastBlockNumber(blockNumber: number): void;
-    waitForTransaction(transactionHash: string, confirmations?: number, timeout?: number): Promise<TransactionReceipt>;
-    _waitForTransaction(transactionHash: string, confirmations: number, timeout: number, replaceable: {
-        data: string;
-        from: string;
-        nonce: number;
-        to: string;
-        value: BigNumber;
-        startBlock: number;
-    }): Promise<TransactionReceipt>;
-    getBlockNumber(): Promise<number>;
-    getGasPrice(): Promise<BigNumber>;
+    waitForTransaction(transactionId: string, timeout?: number): Promise<TransactionReceipt>;
+    _waitForTransaction(transactionId: string, timeout: number): Promise<TransactionReceipt>;
     /**
      *  AccountBalance query implementation, using the hashgraph sdk.
      *  It returns the tinybar balance of the given address.
      *
-     * @param addressOrName The address to check balance of
+     * @param accountLike The address to check balance of
      */
-    getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
-    getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number>;
+    getBalance(accountLike: AccountLike | Promise<AccountLike>): Promise<BigNumber>;
     /**
      *  Get contract bytecode implementation, using the REST Api.
      *  It returns the bytecode, or a default value as string.
@@ -125,35 +92,32 @@ export declare class BaseProvider extends Provider implements EnsProvider {
      * @param addressOrName The address to obtain the bytecode of
      */
     getCode(addressOrName: string | Promise<string>, throwOnNonExisting?: boolean): Promise<string>;
-    getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
-    _wrapTransaction(tx: Transaction, hash?: string, startBlock?: number): TransactionResponse;
+    _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
+    getHederaClient(): Client;
+    getHederaNetworkConfig(): AccountId[];
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
-    _getTransactionRequest(transaction: Deferrable<TransactionRequest>): Promise<Transaction>;
     _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;
-    call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     _getAddress(addressOrName: string | Promise<string>): Promise<string>;
-    _getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>, includeTransactions?: boolean): Promise<Block | BlockWithTransactions>;
-    getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<Block>;
-    getBlockWithTransactions(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<BlockWithTransactions>;
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param txId - id of the transaction to search for
+     * @param transactionId - id of the transaction to search for
      */
-    getTransaction(txId: string | Promise<string>): Promise<TransactionResponse>;
-    getTransactionReceipt(transactionHash: string | Promise<string>): Promise<TransactionReceipt>;
+    getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse>;
+    /**
+     * Transaction record query implementation using the mirror node REST API.
+     *
+     * @param transactionId - id of the transaction to search for
+     */
+    getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
-    getEtherPrice(): Promise<number>;
-    _getBlockTag(blockTag: BlockTag | Promise<BlockTag>): Promise<BlockTag>;
+    getHbarPrice(): Promise<number>;
     getResolver(name: string): Promise<null | Resolver>;
     _getResolver(name: string): Promise<string>;
     resolveName(name: string | Promise<string>): Promise<null | string>;
     lookupAddress(address: string | Promise<string>): Promise<null | string>;
-    getAvatar(nameOrAddress: string): Promise<null | string>;
     perform(method: string, params: any): Promise<any>;
-    _startEvent(event: Event): void;
-    _stopEvent(event: Event): void;
     _addEventListener(eventName: EventType, listener: Listener, once: boolean): this;
     on(eventName: EventType, listener: Listener): this;
     once(eventName: EventType, listener: Listener): this;

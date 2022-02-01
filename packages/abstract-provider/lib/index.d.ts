@@ -3,13 +3,12 @@ import { BytesLike } from "@ethersproject/bytes";
 import { Network } from "@ethersproject/networks";
 import { Deferrable, Description } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@ethersproject/transactions";
-import { OnceBlockable } from "@ethersproject/web";
+import { AccountLike } from "@ethersproject/address";
+import { AccountId, Client } from '@hashgraph/sdk';
 export declare type TransactionRequest = {
-    to?: string;
-    from?: string;
-    nonce?: BigNumberish;
+    to?: AccountLike;
+    from?: AccountLike;
     gasLimit?: BigNumberish;
-    gasPrice?: BigNumberish;
     data?: BytesLike;
     value?: BigNumberish;
     chainId?: number;
@@ -17,17 +16,38 @@ export declare type TransactionRequest = {
     accessList?: AccessListish;
     maxPriorityFeePerGas?: BigNumberish;
     maxFeePerGas?: BigNumberish;
+    nodeId?: AccountLike;
     customData?: Record<string, any>;
+};
+export declare type HederaTransactionRecord = {
+    chainId: number;
+    transactionId: string;
+    result: string;
+    amount: number;
+    call_result: string;
+    contract_id: string;
+    created_contract_ids: string[];
+    error_message: string;
+    from: string;
+    function_parameters: string;
+    gas_limit: number;
+    gas_used: number;
+    timestamp: string;
+    to: string;
+    block_hash: string;
+    block_number: number;
+    hash: string;
+    logs: {};
 };
 export interface TransactionResponse extends Transaction {
     hash: string;
-    blockNumber?: number;
-    blockHash?: string;
-    timestamp?: number;
-    confirmations: number;
+    timestamp?: string;
     from: string;
     raw?: string;
-    wait: (confirmations?: number) => Promise<TransactionReceipt>;
+    wait: (timestamp?: number) => Promise<TransactionReceipt>;
+    customData?: {
+        [key: string]: any;
+    };
 }
 export declare type BlockTag = string | number;
 export interface _Block {
@@ -51,10 +71,7 @@ export interface BlockWithTransactions extends _Block {
     transactions: Array<TransactionResponse>;
 }
 export interface Log {
-    blockNumber: number;
-    blockHash: string;
-    transactionIndex: number;
-    removed: boolean;
+    timestamp: string;
     address: string;
     data: string;
     topics: Array<string>;
@@ -65,19 +82,15 @@ export interface TransactionReceipt {
     to: string;
     from: string;
     contractAddress: string;
-    transactionIndex: number;
-    root?: string;
+    timestamp: string;
     gasUsed: BigNumber;
     logsBloom: string;
-    blockHash: string;
+    transactionId: string;
     transactionHash: string;
     logs: Array<Log>;
-    blockNumber: number;
-    confirmations: number;
     cumulativeGasUsed: BigNumber;
-    effectiveGasPrice: BigNumber;
-    byzantium: boolean;
-    type: number;
+    byzantium: true;
+    type: 0;
     status?: number;
 }
 export interface FeeData {
@@ -118,25 +131,18 @@ export declare class TransactionOrderForkEvent extends ForkEvent {
 }
 export declare type EventType = string | Array<string | Array<string>> | EventFilter | ForkEvent;
 export declare type Listener = (...args: Array<any>) => void;
-export declare abstract class Provider implements OnceBlockable {
+export declare abstract class Provider {
     abstract getNetwork(): Promise<Network>;
-    abstract getBlockNumber(): Promise<number>;
-    abstract getGasPrice(): Promise<BigNumber>;
-    getFeeData(): Promise<FeeData>;
+    getHederaClient(): Client;
+    getHederaNetworkConfig(): AccountId[];
+    getGasPrice(): Promise<BigNumber>;
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
-    abstract getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number>;
     abstract getCode(addressOrName: string | Promise<string>, throwOnNonExisting?: boolean): Promise<string>;
-    abstract getStorageAt(addressOrName: string | Promise<string>, position: BigNumberish | Promise<BigNumberish>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     abstract sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
-    abstract call(transaction: Deferrable<TransactionRequest>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
     abstract estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
-    abstract getBlock(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<Block>;
-    abstract getBlockWithTransactions(blockHashOrBlockTag: BlockTag | string | Promise<BlockTag | string>): Promise<BlockWithTransactions>;
     abstract getTransaction(transactionHash: string): Promise<TransactionResponse>;
     abstract getTransactionReceipt(transactionHash: string): Promise<TransactionReceipt>;
     abstract getLogs(filter: Filter): Promise<Array<Log>>;
-    abstract resolveName(name: string | Promise<string>): Promise<null | string>;
-    abstract lookupAddress(address: string | Promise<string>): Promise<null | string>;
     abstract on(eventName: EventType, listener: Listener): Provider;
     abstract once(eventName: EventType, listener: Listener): Provider;
     abstract emit(eventName: EventType, ...args: Array<any>): boolean;

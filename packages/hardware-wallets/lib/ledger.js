@@ -188,9 +188,9 @@ var LedgerSigner = /** @class */ (function (_super) {
                             chainId: (tx.chainId || undefined),
                             data: (tx.data || undefined),
                             gasLimit: (tx.gasLimit || undefined),
-                            gasPrice: (tx.gasPrice || undefined),
-                            nonce: (tx.nonce ? ethers_1.ethers.BigNumber.from(tx.nonce).toNumber() : undefined),
-                            to: (tx.to || undefined),
+                            // gasPrice: (tx.gasPrice || undefined),
+                            // nonce: (tx.nonce ? ethers.BigNumber.from(tx.nonce).toNumber(): undefined),
+                            to: (tx.to.toString() || undefined),
                             value: (tx.value || undefined),
                         };
                         unsignedTx = ethers_1.ethers.utils.serializeTransaction(baseTx).substring(2);

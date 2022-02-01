@@ -291,7 +291,6 @@ function getProcessFunc(provider, method, params) {
                     block = (0, properties_1.shallowCopy)(block);
                     block.transactions = block.transactions.map(function (tx) {
                         tx = (0, properties_1.shallowCopy)(tx);
-                        tx.confirmations = -1;
                         return tx;
                     });
                     return serialize(block);
@@ -320,16 +319,14 @@ function waitForSync(config, blockNumber) {
         var provider;
         return __generator(this, function (_a) {
             provider = (config.provider);
-            if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
-                return [2 /*return*/, provider];
-            }
+            // if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
+            //     return provider;
+            // }
             return [2 /*return*/, (0, web_1.poll)(function () {
                     return new Promise(function (resolve, reject) {
                         setTimeout(function () {
                             // We are synced
-                            if (provider.blockNumber >= blockNumber) {
-                                return resolve(provider);
-                            }
+                            // if (provider.blockNumber >= blockNumber) { return resolve(provider); }
                             // We're done; just quit
                             if (config.cancelled) {
                                 return resolve(null);
@@ -351,65 +348,34 @@ function getRunner(config, currentBlockNumber, method, params) {
                     provider = config.provider;
                     _a = method;
                     switch (_a) {
-                        case "getBlockNumber": return [3 /*break*/, 1];
                         case "getGasPrice": return [3 /*break*/, 1];
-                        case "getEtherPrice": return [3 /*break*/, 2];
+                        case "getHbarPrice": return [3 /*break*/, 2];
                         case "getBalance": return [3 /*break*/, 3];
-                        case "getTransactionCount": return [3 /*break*/, 3];
                         case "getCode": return [3 /*break*/, 3];
-                        case "getStorageAt": return [3 /*break*/, 6];
-                        case "getBlock": return [3 /*break*/, 9];
-                        case "call": return [3 /*break*/, 12];
-                        case "estimateGas": return [3 /*break*/, 12];
-                        case "getTransaction": return [3 /*break*/, 15];
-                        case "getTransactionReceipt": return [3 /*break*/, 15];
-                        case "getLogs": return [3 /*break*/, 16];
+                        case "estimateGas": return [3 /*break*/, 4];
+                        case "getTransaction": return [3 /*break*/, 5];
+                        case "getTransactionReceipt": return [3 /*break*/, 5];
+                        case "getLogs": return [3 /*break*/, 6];
                     }
-                    return [3 /*break*/, 19];
+                    return [3 /*break*/, 9];
                 case 1: return [2 /*return*/, provider[method]()];
                 case 2:
                     if (provider.getEtherPrice) {
                         return [2 /*return*/, provider.getEtherPrice()];
                     }
-                    return [3 /*break*/, 19];
-                case 3:
-                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 5];
-                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
-                case 4:
-                    provider = _b.sent();
-                    _b.label = 5;
-                case 5: return [2 /*return*/, provider[method](params.address, params.blockTag || "latest")];
+                    return [3 /*break*/, 9];
+                case 3: return [2 /*return*/, provider[method](params.address)];
+                case 4: return [2 /*return*/, provider[method](params.transaction)];
+                case 5: return [2 /*return*/, provider[method](params.transactionHash)];
                 case 6:
-                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 8];
+                    filter = params.filter;
+                    if (!((filter.fromBlock && (0, bytes_1.isHexString)(filter.fromBlock)) || (filter.toBlock && (0, bytes_1.isHexString)(filter.toBlock)))) return [3 /*break*/, 8];
                     return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
                 case 7:
                     provider = _b.sent();
                     _b.label = 8;
-                case 8: return [2 /*return*/, provider.getStorageAt(params.address, params.position, params.blockTag || "latest")];
-                case 9:
-                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 11];
-                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
-                case 10:
-                    provider = _b.sent();
-                    _b.label = 11;
-                case 11: return [2 /*return*/, provider[(params.includeTransactions ? "getBlockWithTransactions" : "getBlock")](params.blockTag || params.blockHash)];
-                case 12:
-                    if (!(params.blockTag && (0, bytes_1.isHexString)(params.blockTag))) return [3 /*break*/, 14];
-                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
-                case 13:
-                    provider = _b.sent();
-                    _b.label = 14;
-                case 14: return [2 /*return*/, provider[method](params.transaction)];
-                case 15: return [2 /*return*/, provider[method](params.transactionHash)];
-                case 16:
-                    filter = params.filter;
-                    if (!((filter.fromBlock && (0, bytes_1.isHexString)(filter.fromBlock)) || (filter.toBlock && (0, bytes_1.isHexString)(filter.toBlock)))) return [3 /*break*/, 18];
-                    return [4 /*yield*/, waitForSync(config, currentBlockNumber)];
-                case 17:
-                    provider = _b.sent();
-                    _b.label = 18;
-                case 18: return [2 /*return*/, provider.getLogs(filter)];
-                case 19: return [2 /*return*/, logger.throwError("unknown method error", logger_1.Logger.errors.UNKNOWN_ERROR, {
+                case 8: return [2 /*return*/, provider.getLogs(filter)];
+                case 9: return [2 /*return*/, logger.throwError("unknown method error", logger_1.Logger.errors.UNKNOWN_ERROR, {
                         method: method,
                         params: params
                     })];
@@ -512,12 +478,12 @@ var FallbackProvider = /** @class */ (function (_super) {
                         // They were all an error; pick the first error
                         throw results[0];
                     case 2:
-                        if (!(this._highestBlockNumber === -1 && method !== "getBlockNumber")) return [3 /*break*/, 4];
-                        return [4 /*yield*/, this.getBlockNumber()];
-                    case 3:
-                        _a.sent();
-                        _a.label = 4;
-                    case 4:
+                        // We need to make sure we are in sync with our backends, so we need
+                        // to know this before we can make a lot of calls
+                        // TODO: will be refactored
+                        if (this._highestBlockNumber === -1 && method !== "getBlockNumber") {
+                            // await this.getBlockNumber();
+                        }
                         processFunc = getProcessFunc(this, method, params);
                         configs = (0, random_1.shuffled)(this.providerConfigs.map(properties_1.shallowCopy));
                         configs.sort(function (a, b) { return (a.priority - b.priority); });
@@ -660,18 +626,18 @@ var FallbackProvider = /** @class */ (function (_super) {
                             });
                         };
                         this_1 = this;
-                        _a.label = 5;
-                    case 5:
-                        if (!true) return [3 /*break*/, 7];
+                        _a.label = 3;
+                    case 3:
+                        if (!true) return [3 /*break*/, 5];
                         return [5 /*yield**/, _loop_1()];
-                    case 6:
+                    case 4:
                         state_1 = _a.sent();
                         if (typeof state_1 === "object")
                             return [2 /*return*/, state_1.value];
                         if (state_1 === "break")
-                            return [3 /*break*/, 7];
-                        return [3 /*break*/, 5];
-                    case 7:
+                            return [3 /*break*/, 5];
+                        return [3 /*break*/, 3];
+                    case 5:
                         // Shut down any stallers; shouldn't be any
                         configs.forEach(function (c) {
                             if (c.staller) {

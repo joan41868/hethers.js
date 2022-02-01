@@ -31,6 +31,7 @@ import {
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import HederaProvider from "./hedera-provider";
 
 const logger = new Logger(version);
 
@@ -64,6 +65,7 @@ function getDefaultProvider(network?: Networkish, options?: any): BaseProvider {
     }
 
     return n._defaultProvider({
+        HederaProvider,
         DefaultHederaProvider,
     }, options);
 }
@@ -85,7 +87,7 @@ export {
 
 
     DefaultHederaProvider,
-
+    HederaProvider,
     ///////////////////////
     // Signer
 

@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.isAddress = exports.getAddress = void 0;
+exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.isAddress = exports.getAddress = exports.getChecksumAddress = exports.asAccountString = void 0;
 var bytes_1 = require("@ethersproject/bytes");
 var bignumber_1 = require("@ethersproject/bignumber");
 var keccak256_1 = require("@ethersproject/keccak256");
@@ -8,6 +8,11 @@ var rlp_1 = require("@ethersproject/rlp");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
+function asAccountString(accountLike) {
+    var parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
+    return parsedAccount.shard + "." + parsedAccount.realm + "." + parsedAccount.num;
+}
+exports.asAccountString = asAccountString;
 function getChecksumAddress(address) {
     if (!(0, bytes_1.isHexString)(address, 20)) {
         logger.throwArgumentError("invalid address", "address", address);
@@ -29,6 +34,7 @@ function getChecksumAddress(address) {
     }
     return "0x" + chars.join("");
 }
+exports.getChecksumAddress = getChecksumAddress;
 // Shims for environments that are missing some required constants and functions
 var MAX_SAFE_INTEGER = 0x1fffffffffffff;
 function log10(x) {
@@ -65,7 +71,6 @@ function ibanChecksum(address) {
     }
     return checksum;
 }
-;
 function getAddress(address) {
     var result = null;
     if (typeof (address) !== "string") {
@@ -152,10 +157,7 @@ function getAddressFromAccount(accountLike) {
 }
 exports.getAddressFromAccount = getAddressFromAccount;
 function getAccountFromAddress(address) {
-    if (typeof (address) !== "string") {
-        logger.throwArgumentError("invalid address", "address", address);
-    }
-    var buffer = (0, bytes_1.arrayify)(address);
+    var buffer = (0, bytes_1.arrayify)(getAddress(address));
     var view = new DataView(buffer.buffer, 0, 20);
     return {
         shard: BigInt(view.getInt32(0)),
@@ -169,13 +171,16 @@ function parseAccount(account) {
     if (typeof (account) !== "string") {
         logger.throwArgumentError("invalid account", "account", account);
     }
-    if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
-        var parsedAccount = account.split(',');
+    if (account.match(/^[0-9]+\.[0-9]+\.[0-9]+$/)) {
+        var parsedAccount = account.split('.');
         result = {
             shard: BigInt(parsedAccount[0]),
             realm: BigInt(parsedAccount[1]),
             num: BigInt(parsedAccount[2])
         };
+    }
+    else if (isAddress(account)) {
+        result = getAccountFromAddress(account);
     }
     else {
         logger.throwArgumentError("invalid account", "account", account);

@@ -354,7 +354,7 @@ class InfoPlugin extends Plugin {
             } else {
                 this.queries.push(`ENS Name: ${arg}`);
             }
-            runners.push(this.provider.resolveName(arg));
+            // runners.push(this.provider.resolveName(arg));
         })
 
         this.addresses = await Promise.all(runners);
@@ -365,9 +365,9 @@ class InfoPlugin extends Plugin {
             let address = this.addresses[i];
             let { balance, nonce, code, reverse } = await ethers.utils.resolveProperties({
                 balance: this.provider.getBalance(address),
-                nonce: this.provider.getTransactionCount(address),
+                nonce: 0, // FIXME
                 code: this.provider.getCode(address),
-                reverse: this.provider.lookupAddress(address)
+                reverse: ""//this.provider.lookupAddress(address)
             });
 
             let info: any = {
@@ -482,7 +482,7 @@ class SweepPlugin extends Plugin {
 
         let { balance, gasPrice, code } = await ethers.utils.resolveProperties({
             balance: this.provider.getBalance(this.accounts[0].getAddress()),
-            gasPrice: (this.gasPrice || this.provider.getGasPrice()),
+            gasPrice: (this.gasPrice /*|| this.provider.getGasPrice() */), // FIXME
             code: this.provider.getCode(this.toAddress)
         });
 
@@ -498,7 +498,7 @@ class SweepPlugin extends Plugin {
         await this.accounts[0].sendTransaction({
             to: this.toAddress,
             gasLimit: 21000,
-            gasPrice: gasPrice,
+            // gasPrice: gasPrice,
             value: maxSpendable
         });
     }
@@ -652,8 +652,6 @@ class WaitPlugin extends Plugin {
 
         let receipt = await this.provider.waitForTransaction(this.hash);
         dump("Response:", {
-            "Block": receipt.blockNumber,
-            "Block Hash": receipt.blockHash,
             "Status": (receipt.status ? "ok": "failed")
         });
     }

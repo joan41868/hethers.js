@@ -298,7 +298,6 @@ function getProcessFunc(provider: FallbackProvider, method: string, params: { [ 
                     block = shallowCopy(block);
                     block.transactions = block.transactions.map((tx) => {
                         tx = shallowCopy(tx);
-                        tx.confirmations = -1;
                         return tx;
                     });
                     return serialize(block);
@@ -326,16 +325,16 @@ function getProcessFunc(provider: FallbackProvider, method: string, params: { [ 
 async function waitForSync(config: RunningConfig, blockNumber: number): Promise<BaseProvider> {
     const provider = <BaseProvider>(config.provider);
 
-    if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
-        return provider;
-    }
+    // if ((provider.blockNumber != null && provider.blockNumber >= blockNumber) || blockNumber === -1) {
+    //     return provider;
+    // }
 
     return poll(() => {
         return new Promise((resolve, reject) => {
             setTimeout(function() {
 
                 // We are synced
-                if (provider.blockNumber >= blockNumber) { return resolve(provider); }
+                // if (provider.blockNumber >= blockNumber) { return resolve(provider); }
 
                 // We're done; just quit
                 if (config.cancelled) { return resolve(null); }
@@ -351,36 +350,17 @@ async function getRunner(config: RunningConfig, currentBlockNumber: number, meth
     let provider = config.provider;
 
     switch (method) {
-        case "getBlockNumber":
         case "getGasPrice":
             return provider[method]();
-        case "getEtherPrice":
+        case "getHbarPrice":
             if ((<any>provider).getEtherPrice) {
                 return (<any>provider).getEtherPrice();
             }
             break;
         case "getBalance":
-        case "getTransactionCount":
         case "getCode":
-            if (params.blockTag && isHexString(params.blockTag)) {
-                provider = await waitForSync(config, currentBlockNumber)
-            }
-            return provider[method](params.address, params.blockTag || "latest");
-        case "getStorageAt":
-            if (params.blockTag && isHexString(params.blockTag)) {
-                provider = await waitForSync(config, currentBlockNumber)
-            }
-            return provider.getStorageAt(params.address, params.position, params.blockTag || "latest");
-        case "getBlock":
-            if (params.blockTag && isHexString(params.blockTag)) {
-                provider = await waitForSync(config, currentBlockNumber)
-            }
-            return provider[(params.includeTransactions ? "getBlockWithTransactions": "getBlock")](params.blockTag || params.blockHash);
-        case "call":
+            return provider[method](params.address);
         case "estimateGas":
-            if (params.blockTag && isHexString(params.blockTag)) {
-                provider = await waitForSync(config, currentBlockNumber)
-            }
             return provider[method](params.transaction);
         case "getTransaction":
         case "getTransactionReceipt":
@@ -496,8 +476,9 @@ export class FallbackProvider extends BaseProvider {
 
         // We need to make sure we are in sync with our backends, so we need
         // to know this before we can make a lot of calls
+        // TODO: will be refactored
         if (this._highestBlockNumber === -1 && method !== "getBlockNumber") {
-            await this.getBlockNumber();
+            // await this.getBlockNumber();
         }
 
         const processFunc = getProcessFunc(this, method, params);

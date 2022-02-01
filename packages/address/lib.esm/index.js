@@ -6,7 +6,11 @@ import { encode } from "@ethersproject/rlp";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
-function getChecksumAddress(address) {
+export function asAccountString(accountLike) {
+    let parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
+    return `${parsedAccount.shard}.${parsedAccount.realm}.${parsedAccount.num}`;
+}
+export function getChecksumAddress(address) {
     if (!isHexString(address, 20)) {
         logger.throwArgumentError("invalid address", "address", address);
     }
@@ -63,7 +67,6 @@ function ibanChecksum(address) {
     }
     return checksum;
 }
-;
 export function getAddress(address) {
     let result = null;
     if (typeof (address) !== "string") {
@@ -144,10 +147,7 @@ export function getAddressFromAccount(accountLike) {
     return hexlify(buffer);
 }
 export function getAccountFromAddress(address) {
-    if (typeof (address) !== "string") {
-        logger.throwArgumentError("invalid address", "address", address);
-    }
-    let buffer = arrayify(address);
+    let buffer = arrayify(getAddress(address));
     const view = new DataView(buffer.buffer, 0, 20);
     return {
         shard: BigInt(view.getInt32(0)),
@@ -160,13 +160,16 @@ export function parseAccount(account) {
     if (typeof (account) !== "string") {
         logger.throwArgumentError("invalid account", "account", account);
     }
-    if (account.match(/^[0-9]+.[0-9]+.[0-9]+$/)) {
-        let parsedAccount = account.split(',');
+    if (account.match(/^[0-9]+\.[0-9]+\.[0-9]+$/)) {
+        let parsedAccount = account.split('.');
         result = {
             shard: BigInt(parsedAccount[0]),
             realm: BigInt(parsedAccount[1]),
             num: BigInt(parsedAccount[2])
         };
+    }
+    else if (isAddress(account)) {
+        result = getAccountFromAddress(account);
     }
     else {
         logger.throwArgumentError("invalid account", "account", account);

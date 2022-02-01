@@ -34,8 +34,8 @@ export declare class Logger {
     debug(...args: Array<any>): void;
     info(...args: Array<any>): void;
     warn(...args: Array<any>): void;
-    makeError(message: string, code?: ErrorCode, params?: any): Error;
-    throwError(message: string, code?: ErrorCode, params?: any): never;
+    makeError(message: string, code?: ErrorCode | string, params?: any): Error;
+    throwError(message: string, code?: ErrorCode | string, params?: any): never;
     throwArgumentError(message: string, name: string, value: any): never;
     assert(condition: any, message: string, code?: ErrorCode, params?: any): void;
     assertArgument(condition: any, message: string, name: string, value: any): void;

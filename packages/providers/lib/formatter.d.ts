@@ -1,4 +1,4 @@
-import { Block, TransactionReceipt, TransactionResponse } from "@ethersproject/abstract-provider";
+import { Block, TransactionReceipt, TransactionResponse, HederaTransactionRecord } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { AccessList } from "@ethersproject/transactions";
 export declare type FormatFunc = (value: any) => any;
@@ -41,6 +41,8 @@ export declare class Formatter {
     transaction(value: any): any;
     receiptLog(value: any): any;
     receipt(value: any): TransactionReceipt;
+    responseFromRecord(record: HederaTransactionRecord): TransactionResponse;
+    receiptFromResponse(response: TransactionResponse): TransactionReceipt;
     topics(value: any): any;
     filter(value: any): any;
     filterLog(value: any): any;

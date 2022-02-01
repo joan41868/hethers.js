@@ -3,12 +3,17 @@
 import { ethers } from "ethers";
 
 import { version } from "./_version";
+import { TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { BytesLike } from "@ethersproject/bytes";
 
 const logger = new ethers.utils.Logger(version);
 
 // @TODO: Keep a per-NonceManager pool of sent but unmined transactions for
 //        rebroadcasting, in case we overrun the transaction pool
 
+/**
+ * TODO: This class and it's usage in the hedera network must be explored.
+ */
 export class NonceManager extends ethers.Signer {
     readonly signer: ethers.Signer;
 
@@ -31,17 +36,7 @@ export class NonceManager extends ethers.Signer {
         return this.signer.getAddress();
     }
 
-    getTransactionCount(blockTag?: ethers.providers.BlockTag): Promise<number> {
-        if (blockTag === "pending") {
-            if (!this._initialPromise) {
-                this._initialPromise = this.signer.getTransactionCount("pending");
-            }
-            const deltaCount = this._deltaCount;
-            return this._initialPromise.then((initial) => (initial + deltaCount));
-        }
 
-        return this.signer.getTransactionCount(blockTag);
-    }
 
     setTransactionCount(transactionCount: ethers.BigNumberish | Promise<ethers.BigNumberish>): void {
         this._initialPromise = Promise.resolve(transactionCount).then((nonce) => {
@@ -58,21 +53,20 @@ export class NonceManager extends ethers.Signer {
         return this.signer.signMessage(message);;
     }
 
-    signTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<string> {
+    signTransaction(transaction: TransactionRequest): Promise<string> {
         return this.signer.signTransaction(transaction);
     }
 
-    sendTransaction(transaction: ethers.utils.Deferrable<ethers.providers.TransactionRequest>): Promise<ethers.providers.TransactionResponse> {
-        if (transaction.nonce == null) {
-            transaction = ethers.utils.shallowCopy(transaction);
-            transaction.nonce = this.getTransactionCount("pending");
-            this.incrementTransactionCount();
-        } else {
-            this.setTransactionCount(transaction.nonce);
-        }
-
+    sendTransaction(transaction: TransactionRequest): Promise<ethers.providers.TransactionResponse> {
         return this.signer.sendTransaction(transaction).then((tx) => {
             return tx;
         });
     }
+
+    async createAccount(pubKey: BytesLike, initialBalance?: BigInt): Promise<TransactionResponse> {
+        // @ts-ignore
+        return logger.throwError("Unsupported operation", ethers.errors.UNSUPPORTED_OPERATION, {
+            operation: "createAccount"
+        });
+    };
 }

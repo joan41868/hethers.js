@@ -13,11 +13,11 @@ import { pbkdf2 } from "@ethersproject/pbkdf2";
 import { defineReadOnly } from "@ethersproject/properties";
 import { SigningKey } from "@ethersproject/signing-key";
 import { computeHmac, ripemd160, sha256, SupportedAlgorithm } from "@ethersproject/sha2";
-import { computeAddress } from "@ethersproject/transactions";
 import { Wordlist, wordlists } from "@ethersproject/wordlists";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
+import {computeAlias} from "@ethersproject/transactions";
 const logger = new Logger(version);
 
 const N = BigNumber.from("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
@@ -70,7 +70,7 @@ export interface Mnemonic {
     readonly phrase: string;
     readonly path: string;
     readonly locale: string;
-};
+}
 
 export class HDNode implements ExternallyOwnedAccount {
     readonly privateKey: string;
@@ -79,7 +79,7 @@ export class HDNode implements ExternallyOwnedAccount {
     readonly fingerprint: string;
     readonly parentFingerprint: string;
 
-    readonly address: string;
+    readonly alias: string;
 
     readonly mnemonic?: Mnemonic;
     readonly path: string;
@@ -108,16 +108,15 @@ export class HDNode implements ExternallyOwnedAccount {
             const signingKey = new SigningKey(privateKey);
             defineReadOnly(this, "privateKey", signingKey.privateKey);
             defineReadOnly(this, "publicKey", signingKey.compressedPublicKey);
+            defineReadOnly(this, "alias", computeAlias(this.privateKey));
         } else {
             defineReadOnly(this, "privateKey", null);
+            defineReadOnly(this, "alias", null);
             defineReadOnly(this, "publicKey", hexlify(publicKey));
         }
 
         defineReadOnly(this, "parentFingerprint", parentFingerprint);
         defineReadOnly(this, "fingerprint", hexDataSlice(ripemd160(sha256(this.publicKey)), 0, 4));
-
-        defineReadOnly(this, "address", computeAddress(this.publicKey));
-
         defineReadOnly(this, "chainCode", chainCode);
 
         defineReadOnly(this, "index", index);

@@ -7,7 +7,7 @@ import { ethers } from "ethers";
 import contractData from "./test-contract.json";
 
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
-const provider = ethers.getDefaultProvider("rinkeby");
+const provider = ethers.getDefaultProvider("testnet");
 
 const TIMEOUT_PERIOD = 120000;
 
@@ -168,7 +168,7 @@ describe("Test Contract Transaction Population", function() {
     const fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
 
     const contract = new ethers.Contract(testAddress, abi);
-    const contractConnected = contract.connect(ethers.getDefaultProvider("homestead"));
+    const contractConnected = contract.connect(ethers.getDefaultProvider("testnet"));
 
     xit("standard population", async function() {
         const tx = await contract.populateTransaction.balanceOf(testAddress);
@@ -291,6 +291,21 @@ describe("Test Contract Transaction Population", function() {
         assert.equal(tx.from, testAddressCheck.toLowerCase(), "from address matches");
     });
 
+    it("should return an array of transactions on getDeployTransactions call", async function () {
+        const hederaEoa = {
+            account: "0.0.1280",
+            privateKey: "0x074cc0bd198d1bc91f668c59b46a1e74fd13215661e5a7bd42ad0d324476295d"
+        };
+        const provider = ethers.providers.getDefaultProvider('previewnet');
+        // @ts-ignore
+        const wallet = new ethers.Wallet(hederaEoa, provider);
+
+        const contractFactory = new ethers.ContractFactory(abi, "", wallet);
+        const transactions = contractFactory.getDeployTransactions();
+
+        assert.strictEqual(Array.isArray(transactions), true);
+        assert.strictEqual(transactions.length, 2);
+    });
 });
 
 /*

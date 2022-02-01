@@ -463,7 +463,7 @@ var InfoPlugin = /** @class */ (function (_super) {
                             else {
                                 _this.queries.push("ENS Name: " + arg);
                             }
-                            runners.push(_this.provider.resolveName(arg));
+                            // runners.push(this.provider.resolveName(arg));
                         });
                         _a = this;
                         return [4 /*yield*/, Promise.all(runners)];
@@ -487,9 +487,9 @@ var InfoPlugin = /** @class */ (function (_super) {
                         address = this.addresses[i];
                         return [4 /*yield*/, ethers_1.ethers.utils.resolveProperties({
                                 balance: this.provider.getBalance(address),
-                                nonce: this.provider.getTransactionCount(address),
+                                nonce: 0,
                                 code: this.provider.getCode(address),
-                                reverse: this.provider.lookupAddress(address)
+                                reverse: "" //this.provider.lookupAddress(address)
                             })];
                     case 2:
                         _a = _b.sent(), balance = _a.balance, nonce = _a.nonce, code = _a.code, reverse = _a.reverse;
@@ -652,7 +652,7 @@ var SweepPlugin = /** @class */ (function (_super) {
                 switch (_b.label) {
                     case 0: return [4 /*yield*/, ethers_1.ethers.utils.resolveProperties({
                             balance: this.provider.getBalance(this.accounts[0].getAddress()),
-                            gasPrice: (this.gasPrice || this.provider.getGasPrice()),
+                            gasPrice: (this.gasPrice /*|| this.provider.getGasPrice() */),
                             code: this.provider.getCode(this.toAddress)
                         })];
                     case 1:
@@ -667,7 +667,7 @@ var SweepPlugin = /** @class */ (function (_super) {
                         return [4 /*yield*/, this.accounts[0].sendTransaction({
                                 to: this.toAddress,
                                 gasLimit: 21000,
-                                gasPrice: gasPrice,
+                                // gasPrice: gasPrice,
                                 value: maxSpendable
                             })];
                     case 2:
@@ -890,8 +890,6 @@ var WaitPlugin = /** @class */ (function (_super) {
                     case 1:
                         receipt = _a.sent();
                         (0, cli_1.dump)("Response:", {
-                            "Block": receipt.blockNumber,
-                            "Block Hash": receipt.blockHash,
                             "Status": (receipt.status ? "ok" : "failed")
                         });
                         return [2 /*return*/];

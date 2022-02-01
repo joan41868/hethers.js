@@ -351,7 +351,7 @@ class InfoPlugin extends Plugin {
                 let address = this.addresses[i];
                 let { balance, nonce, code, reverse } = yield ethers.utils.resolveProperties({
                     balance: this.provider.getBalance(address),
-                    nonce: this.provider.getTransactionCount(address),
+                    nonce: 0,
                     code: this.provider.getCode(address),
                     reverse: this.provider.lookupAddress(address)
                 });
@@ -464,7 +464,7 @@ class SweepPlugin extends Plugin {
         return __awaiter(this, void 0, void 0, function* () {
             let { balance, gasPrice, code } = yield ethers.utils.resolveProperties({
                 balance: this.provider.getBalance(this.accounts[0].getAddress()),
-                gasPrice: (this.gasPrice || this.provider.getGasPrice()),
+                gasPrice: (this.gasPrice /*|| this.provider.getGasPrice() */),
                 code: this.provider.getCode(this.toAddress)
             });
             if (code !== "0x") {
@@ -477,7 +477,7 @@ class SweepPlugin extends Plugin {
             yield this.accounts[0].sendTransaction({
                 to: this.toAddress,
                 gasLimit: 21000,
-                gasPrice: gasPrice,
+                // gasPrice: gasPrice,
                 value: maxSpendable
             });
         });
@@ -622,8 +622,6 @@ class WaitPlugin extends Plugin {
             console.log("Waiting for Transaction:", this.hash);
             let receipt = yield this.provider.waitForTransaction(this.hash);
             dump("Response:", {
-                "Block": receipt.blockNumber,
-                "Block Hash": receipt.blockHash,
                 "Status": (receipt.status ? "ok" : "failed")
             });
         });

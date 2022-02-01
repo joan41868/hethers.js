@@ -5,12 +5,14 @@
 import fs from "fs";
 import { basename } from "path";
 
-import { ethers } from "ethers";
+import {ethers} from "ethers";
 import * as scrypt from "scrypt-js";
 
 import { getChoice, getPassword, getProgressBar } from "./prompt";
 
 import { version } from "./_version";
+import { TransactionResponse } from "@ethersproject/abstract-provider";
+import { BytesLike } from "@ethersproject/bytes";
 
 const logger = new ethers.utils.Logger(version);
 
@@ -172,7 +174,7 @@ class WrappedSigner extends ethers.Signer {
         transactionRequest = ethers.utils.shallowCopy(transactionRequest);
 
         if (this.plugin.gasPrice != null) {
-            transactionRequest.gasPrice = this.plugin.gasPrice;
+            // transactionRequest.gasPrice = this.plugin.gasPrice;
         }
 
         if (this.plugin.gasLimit != null) {
@@ -180,7 +182,7 @@ class WrappedSigner extends ethers.Signer {
         }
 
         if (this.plugin.nonce != null) {
-            transactionRequest.nonce = this.plugin.nonce;
+            // transactionRequest.nonce = this.plugin.nonce;
         }
 
         let signer = await getSigner(this);
@@ -198,10 +200,10 @@ class WrappedSigner extends ethers.Signer {
         if (tx.to != null) { info["To"] = tx.to; }
         if (tx.from != null) { info["From"] = tx.from; }
         info["Value"] = (ethers.utils.formatEther(tx.value || 0) + " ether");
-        if (tx.nonce != null) { info["Nonce"] = tx.nonce; }
+        // if (tx.nonce != null) { info["Nonce"] = tx.nonce; }
         info["Data"] = tx.data;
         info["Gas Limit"] = ethers.BigNumber.from(tx.gasLimit || 0).toString();
-        info["Gas Price"] = (ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
+        // info["Gas Price"] = (ethers.utils.formatUnits(tx.gasPrice || 0, "gwei") + " gwei"),
         info["Chain ID"] = (tx.chainId || 0);
         info["Network"] = network.name;
 
@@ -257,8 +259,6 @@ class WrappedSigner extends ethers.Signer {
             try {
                 let receipt = await response.wait();
                 dump("Success:", {
-                    "Block Number": receipt.blockNumber,
-                    "Block Hash": receipt.blockHash,
                     "Gas Used": ethers.utils.commify(receipt.gasUsed.toString()),
                     "Fee": (ethers.utils.formatEther(receipt.gasUsed.mul(tx.gasPrice)) + " ether")
                 });
@@ -271,6 +271,13 @@ class WrappedSigner extends ethers.Signer {
 
         return response;
     }
+
+    async createAccount(pubKey: BytesLike, initialBalance?: BigInt): Promise<TransactionResponse> {
+        // @ts-ignore
+        return logger.throwError("Unsupported operation", ethers.errors.UNSUPPORTED_OPERATION, {
+            operation: "createAccount"
+        });
+    };
 
     async unlock(): Promise<void> {
         await getSigner(this);
@@ -613,11 +620,11 @@ export abstract class Plugin {
                     break;
 
                 case "account-void": {
-                    let addressPromise = this.provider.resolveName(account.value);
-                    let signerPromise = addressPromise.then((addr) => {
-                        return new ethers.VoidSigner(addr, this.provider);
-                    });
-                    accounts.push(new WrappedSigner(addressPromise, () => signerPromise, this));
+                    // let addressPromise = this.provider.resolveName(account.value);
+                    // let signerPromise = addressPromise.then((addr) => {
+                    //     return new ethers.VoidSigner(addr, this.provider);
+                    // });
+                    // accounts.push(new WrappedSigner(addressPromise, () => signerPromise, this));
                     break;
                 }
             }
@@ -680,17 +687,18 @@ export abstract class Plugin {
             return Promise.resolve(ethers.utils.getAddress(addressOrName));
         } catch (error) { }
 
-        return this.provider.resolveName(addressOrName).then((address) => {
-            if (address == null) {
-                this.throwError("ENS name not configured - " + addressOrName);
-            }
-
-            if (address === ethers.constants.AddressZero && !allowZero) {
-                this.throwError(message || "cannot use the zero address");
-            }
-
-            return address;
-        });
+        return Promise.resolve("");
+        // return this.provider.resolveName(addressOrName).then((address) => {
+        //     if (address == null) {
+        //         this.throwError("ENS name not configured - " + addressOrName);
+        //     }
+        //
+        //     if (address === ethers.constants.AddressZero && !allowZero) {
+        //         this.throwError(message || "cannot use the zero address");
+        //     }
+        //
+        //     return address;
+        // });
     }
 
     // Dumps formatted data

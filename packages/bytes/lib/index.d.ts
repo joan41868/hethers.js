@@ -1,4 +1,4 @@
-export declare type Bytes = ArrayLike<number>;
+export declare type Bytes = ArrayLike<number> | Uint8Array;
 export declare type BytesLike = Bytes | string;
 export declare type DataOptions = {
     allowMissingPrefix?: boolean;
