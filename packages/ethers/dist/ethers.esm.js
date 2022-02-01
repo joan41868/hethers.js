@@ -93384,7 +93384,6 @@ function populateTransaction(contract, fragment, args) {
         // The ABI coded transaction
         const data = contract.interface.encodeFunctionData(fragment, resolved.args);
         const tx = {
-            gasLimit: 300000,
             data: data,
             to: resolved.address
         };

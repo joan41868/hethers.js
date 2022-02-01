@@ -204,7 +204,6 @@ function populateTransaction(contract, fragment, args) {
                     resolved = _a.sent();
                     data = contract.interface.encodeFunctionData(fragment, resolved.args);
                     tx = {
-                        gasLimit: 300000,
                         data: data,
                         to: resolved.address
                     };

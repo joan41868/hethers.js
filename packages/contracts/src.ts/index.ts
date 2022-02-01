@@ -220,7 +220,6 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
     // The ABI coded transaction
     const data = contract.interface.encodeFunctionData(fragment, resolved.args);
     const tx: TransactionRequest = {
-        gasLimit: 300000,
         data: data,
         to: resolved.address
     };
