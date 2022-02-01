@@ -8,7 +8,6 @@ import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { AccessList, accessListify, AccessListish } from "@ethersproject/transactions";
-import { splitInChunks } from "@ethersproject/strings";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -1174,7 +1173,7 @@ export class ContractFactory {
         defineReadOnly(this, "signer", signer || null);
     }
 
-    getDeployTransaction(...args: Array<any>): Array<TransactionRequest> {
+    getDeployTransaction(...args: Array<any>): TransactionRequest {
         let contractCreateTx: TransactionRequest = {};
         if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
             contractCreateTx = shallowCopy(args.pop());
@@ -1206,25 +1205,6 @@ export class ContractFactory {
         // Make sure the call matches the constructor signature
         logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
 
-        let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
-
-        const fileCreateTx: TransactionRequest = {
-            customData: {
-                fileChunk: chunks[0]
-            }
-        };
-
-        let fileAppendTxs: Array<any> = [];
-        for (let chunk of chunks.slice(1)) {
-            const fileAppendTx: TransactionRequest = {
-                customData: {
-                    fileChunk: chunk
-                }
-            };
-
-            fileAppendTxs.push(fileAppendTx);
-        }
-
         contractCreateTx = {
             ...contractCreateTx,
             data: hexlify(concat([
@@ -1234,7 +1214,7 @@ export class ContractFactory {
             customData: {}
         };
 
-        return [fileCreateTx, ...fileAppendTxs, contractCreateTx];
+        return contractCreateTx;
     }
 
     async deploy(...args: Array<any>): Promise<Contract> {
@@ -1254,8 +1234,7 @@ export class ContractFactory {
         params.push(overrides);
 
         // Get the deployment transaction (with optional overrides)
-        const unsignedTransactions = this.getDeployTransaction(...params);
-        const contractCreate = unsignedTransactions[unsignedTransactions.length -1];
+        const contractCreate = this.getDeployTransaction(...params);
         const contractCreateResponse = await this.signer.sendTransaction(contractCreate);
         const address = contractCreateResponse.customData.contractId;
         const contract = getStatic<(address: string, contractInterface: ContractInterface, signer?: Signer) => Contract>(this.constructor, "getContract")(address, this.interface, this.signer);

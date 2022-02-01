@@ -433,7 +433,7 @@ describe("Test Contract Transaction Population", function () {
     });
     it("should return an array of transactions on getDeployTransaction call", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var hederaEoa, provider, wallet, contractBytecode, contractFactory, transactions;
+            var hederaEoa, provider, wallet, contractBytecode, contractFactory, transaction;
             return __generator(this, function (_a) {
                 hederaEoa = {
                     account: '0.0.29562194',
@@ -443,19 +443,13 @@ describe("Test Contract Transaction Population", function () {
                 wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
                 contractBytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
                 contractFactory = new ethers_1.ethers.ContractFactory(abiWithArgs, contractBytecode, wallet);
-                transactions = contractFactory.getDeployTransaction(ethers_1.ethers.BigNumber.from("1000000"), {
+                transaction = contractFactory.getDeployTransaction(ethers_1.ethers.BigNumber.from("1000000"), {
                     gasLimit: 300000
                 });
-                assert_1.default.strictEqual(Array.isArray(transactions), true);
-                assert_1.default.strictEqual(transactions.length, 3);
-                (0, assert_1.default)('customData' in transactions[0]);
-                (0, assert_1.default)('fileChunk' in transactions[0].customData);
-                (0, assert_1.default)('customData' in transactions[1]);
-                (0, assert_1.default)('fileChunk' in transactions[1].customData);
-                (0, assert_1.default)('data' in transactions[2]);
-                (0, assert_1.default)('customData' in transactions[2]);
-                (0, assert_1.default)('gasLimit' in transactions[2]);
-                assert_1.default.strictEqual(300000, transactions[2].gasLimit);
+                (0, assert_1.default)('data' in transaction);
+                (0, assert_1.default)('customData' in transaction);
+                (0, assert_1.default)('gasLimit' in transaction);
+                assert_1.default.strictEqual(300000, transaction.gasLimit);
                 return [2 /*return*/];
             });
         });

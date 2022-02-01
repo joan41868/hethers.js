@@ -26,6 +26,5 @@ import {BigNumber} from "@ethersproject/bignumber";
      * Example 2. Using contractFactory.deploy()
      */
     const contract = await contractFactory.deploy(BigNumber.from("10000"), {gasLimit: 3000000});
-    // @ts-ignore
-    console.log(contract.deployTransaction.customData.contractId);
+    console.log(contract.address);
 })();

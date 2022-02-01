@@ -80,7 +80,6 @@ var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
 var transactions_1 = require("@ethersproject/transactions");
-var strings_1 = require("@ethersproject/strings");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
@@ -1127,27 +1126,11 @@ var ContractFactory = /** @class */ (function () {
         }
         // Make sure the call matches the constructor signature
         logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-        var chunks = (0, strings_1.splitInChunks)(Buffer.from(this.bytecode).toString(), 4096);
-        var fileCreateTx = {
-            customData: {
-                fileChunk: chunks[0]
-            }
-        };
-        var fileAppendTxs = [];
-        for (var _a = 0, _b = chunks.slice(1); _a < _b.length; _a++) {
-            var chunk = _b[_a];
-            var fileAppendTx = {
-                customData: {
-                    fileChunk: chunk
-                }
-            };
-            fileAppendTxs.push(fileAppendTx);
-        }
         contractCreateTx = __assign(__assign({}, contractCreateTx), { data: (0, bytes_1.hexlify)((0, bytes_1.concat)([
                 this.bytecode,
                 this.interface.encodeDeploy(args)
             ])), customData: {} });
-        return __spreadArray(__spreadArray([fileCreateTx], fileAppendTxs, true), [contractCreateTx], false);
+        return contractCreateTx;
     };
     ContractFactory.prototype.deploy = function () {
         var args = [];
@@ -1155,7 +1138,7 @@ var ContractFactory = /** @class */ (function () {
             args[_i] = arguments[_i];
         }
         return __awaiter(this, void 0, void 0, function () {
-            var overrides, params, unsignedTransactions, contractCreate, contractCreateResponse, address, contract;
+            var overrides, params, contractCreate, contractCreateResponse, address, contract;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1170,8 +1153,7 @@ var ContractFactory = /** @class */ (function () {
                     case 1:
                         params = _a.sent();
                         params.push(overrides);
-                        unsignedTransactions = this.getDeployTransaction.apply(this, params);
-                        contractCreate = unsignedTransactions[unsignedTransactions.length - 1];
+                        contractCreate = this.getDeployTransaction.apply(this, params);
                         return [4 /*yield*/, this.signer.sendTransaction(contractCreate)];
                     case 2:
                         contractCreateResponse = _a.sent();

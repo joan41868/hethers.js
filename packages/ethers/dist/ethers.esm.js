@@ -94151,26 +94151,11 @@ class ContractFactory {
         }
         // Make sure the call matches the constructor signature
         logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-        let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
-        const fileCreateTx = {
-            customData: {
-                fileChunk: chunks[0]
-            }
-        };
-        let fileAppendTxs = [];
-        for (let chunk of chunks.slice(1)) {
-            const fileAppendTx = {
-                customData: {
-                    fileChunk: chunk
-                }
-            };
-            fileAppendTxs.push(fileAppendTx);
-        }
         contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: hexlify(concat([
                 this.bytecode,
                 this.interface.encodeDeploy(args)
             ])), customData: {} });
-        return [fileCreateTx, ...fileAppendTxs, contractCreateTx];
+        return contractCreateTx;
     }
     deploy(...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
@@ -94185,8 +94170,7 @@ class ContractFactory {
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
             // Get the deployment transaction (with optional overrides)
-            const unsignedTransactions = this.getDeployTransaction(...params);
-            const contractCreate = unsignedTransactions[unsignedTransactions.length - 1];
+            const contractCreate = this.getDeployTransaction(...params);
             const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
             const address = contractCreateResponse.customData.contractId;
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
