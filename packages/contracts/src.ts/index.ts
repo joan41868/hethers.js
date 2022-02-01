@@ -7,7 +7,7 @@ import { getAddress } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
-import { AccessList, accessListify, AccessListish } from "@ethersproject/transactions";
+import { accessListify, AccessListish } from "@ethersproject/transactions";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -30,7 +30,7 @@ export interface PayableOverrides extends Overrides {
 }
 
 export interface CallOverrides extends PayableOverrides {
-    blockTag?: BlockTag | Promise<BlockTag>;
+    // blockTag?: BlockTag | Promise<BlockTag>;
     from?: string | Promise<string>;
 }
 
@@ -39,26 +39,26 @@ export interface CallOverrides extends PayableOverrides {
 //  - transactions:Transaction
 //  - transaction:UnsignedTransaction
 
-export interface PopulatedTransaction {
-    to?: string;
-    from?: string;
-    nonce?: number;
-
-    gasLimit?: BigNumber;
-    gasPrice?: BigNumber;
-
-    data?: string;
-    value?: BigNumber;
-    chainId?: number;
-
-    type?: number;
-    accessList?: AccessList;
-
-    maxFeePerGas?: BigNumber;
-    maxPriorityFeePerGas?: BigNumber;
-
-    customData?: Record<string, any>;
-};
+// export interface PopulatedTransaction {
+//     to?: string;
+//     from?: string;
+//     nonce?: number;
+//
+//     gasLimit?: BigNumber;
+//     gasPrice?: BigNumber;
+//
+//     data?: string;
+//     value?: BigNumber;
+//     chainId?: number;
+//
+//     type?: number;
+//     accessList?: AccessList;
+//
+//     maxFeePerGas?: BigNumber;
+//     maxPriorityFeePerGas?: BigNumber;
+//
+//     customData?: Record<string, any>;
+// };
 
 export type EventFilter = {
     address?: string;
@@ -174,7 +174,7 @@ async function resolveAddresses(resolver: Signer | Provider, value: any, paramTy
     return value;
 }
 
-async function populateTransaction(contract: Contract, fragment: FunctionFragment, args: Array<any>): Promise<PopulatedTransaction> {
+async function populateTransaction(contract: Contract, fragment: FunctionFragment, args: Array<any>): Promise<TransactionRequest> {
     // If an extra argument is given, it is overrides
     let overrides: CallOverrides = { };
     if (args.length === fragment.inputs.length + 1 && typeof(args[args.length - 1]) === "object") {
@@ -208,11 +208,6 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
 
     } else if (overrides.from) {
         overrides.from = resolveName(contract.provider, overrides.from);
-
-    //} else {
-        // Contracts without a signer can override "from", and if
-        // unspecified the zero address is used
-        //overrides.from = AddressZero;
     }
 
     // Wait for all dependencies to be resolved (prefer the signer over the provider)
@@ -224,22 +219,20 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
 
     // The ABI coded transaction
     const data = contract.interface.encodeFunctionData(fragment, resolved.args);
-    const tx: PopulatedTransaction = {
-      data: data,
-      to: resolved.address
+    const tx: TransactionRequest = {
+        gasLimit: 300000,
+        data: data,
+        to: resolved.address
     };
 
     // Resolved Overrides
     const ro = resolved.overrides;
 
     // Populate simple overrides
-    if (ro.nonce != null) { tx.nonce = BigNumber.from(ro.nonce).toNumber(); }
     if (ro.gasLimit != null) { tx.gasLimit = BigNumber.from(ro.gasLimit); }
-    if (ro.gasPrice != null) { tx.gasPrice = BigNumber.from(ro.gasPrice); }
     if (ro.maxFeePerGas != null) { tx.maxFeePerGas = BigNumber.from(ro.maxFeePerGas); }
     if (ro.maxPriorityFeePerGas != null) { tx.maxPriorityFeePerGas = BigNumber.from(ro.maxPriorityFeePerGas); }
     if (ro.from != null) { tx.from = ro.from; }
-
     if (ro.type != null) { tx.type = ro.type; }
     if (ro.accessList != null) { tx.accessList = accessListify(ro.accessList); }
 
@@ -276,18 +269,13 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
     }
 
     // Remove the overrides
-    delete overrides.nonce;
     delete overrides.gasLimit;
-    delete overrides.gasPrice;
     delete overrides.from;
     delete overrides.value;
-
     delete overrides.type;
     delete overrides.accessList;
-
     delete overrides.maxFeePerGas;
     delete overrides.maxPriorityFeePerGas;
-
     delete overrides.customData;
 
     // Make sure there are no stray overrides, which may indicate a
@@ -304,8 +292,8 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
 }
 
 
-function buildPopulate(contract: Contract, fragment: FunctionFragment): ContractFunction<PopulatedTransaction> {
-    return function(...args: Array<any>): Promise<PopulatedTransaction> {
+function buildPopulate(contract: Contract, fragment: FunctionFragment): ContractFunction<TransactionRequest> {
+    return function(...args: Array<any>): Promise<TransactionRequest> {
         return populateTransaction(contract, fragment, args);
     };
 }
@@ -370,20 +358,14 @@ function buildCall(contract: Contract, fragment: FunctionFragment, collapseSimpl
     const signer = contract.signer;
 
     return async function(...args: Array<any>): Promise<any> {
-        // Extract the "blockTag" override if present
-        let blockTag = undefined;
         if (args.length === fragment.inputs.length + 1 && typeof(args[args.length - 1]) === "object") {
             const overrides = shallowCopy(args.pop());
-            if (overrides.blockTag != null) {
-                blockTag = await overrides.blockTag;
-            }
-            delete overrides.blockTag;
             args.push(overrides);
         }
 
         // If the contract was just deployed, wait until it is mined
         if (contract.deployTransaction != null) {
-            await contract._deployed(blockTag);
+            await contract._deployed();
         }
 
         // Call a node and get the result
@@ -631,7 +613,7 @@ export class BaseContract {
 
     readonly callStatic: { [ name: string ]: ContractFunction };
     readonly estimateGas: { [ name: string ]: ContractFunction<BigNumber> };
-    readonly populateTransaction: { [ name: string ]: ContractFunction<PopulatedTransaction> };
+    readonly populateTransaction: { [ name: string ]: ContractFunction<TransactionRequest> };
 
     readonly filters: { [ name: string ]: (...args: Array<any>) => EventFilter };
 

@@ -290,8 +290,6 @@ describe("Test Contract Transaction Population", function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, contract.populateTransaction.mint({
                             gasLimit: 150000,
-                            gasPrice: 1900000000,
-                            nonce: 5,
                             value: 1234,
                             from: testAddress
                         })];
@@ -301,10 +299,8 @@ describe("Test Contract Transaction Population", function () {
                         assert_1.default.equal(Object.keys(tx).length, 7, "correct number of keys");
                         assert_1.default.equal(tx.data, "0x1249c58b", "data matches");
                         assert_1.default.equal(tx.to, testAddressCheck, "to address matches");
-                        assert_1.default.equal(tx.nonce, 5, "nonce address matches");
-                        assert_1.default.ok(tx.gasLimit.eq(150000), "gasLimit matches");
-                        assert_1.default.ok(tx.gasPrice.eq(1900000000), "gasPrice matches");
-                        assert_1.default.ok(tx.value.eq(1234), "value matches");
+                        assert_1.default.equal(tx.gasLimit.toString(), "150000", "gasLimit matches");
+                        assert_1.default.equal(tx.value.toString(), "1234", "value matches");
                         assert_1.default.equal(tx.from, testAddressCheck, "from address matches");
                         return [2 /*return*/];
                 }

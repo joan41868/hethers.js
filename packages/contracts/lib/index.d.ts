@@ -3,7 +3,7 @@ import { Block, BlockTag, Listener, Log, Provider, TransactionReceipt, Transacti
 import { Signer } from "@ethersproject/abstract-signer";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike } from "@ethersproject/bytes";
-import { AccessList, AccessListish } from "@ethersproject/transactions";
+import { AccessListish } from "@ethersproject/transactions";
 export interface Overrides {
     gasLimit?: BigNumberish | Promise<BigNumberish>;
     gasPrice?: BigNumberish | Promise<BigNumberish>;
@@ -18,23 +18,7 @@ export interface PayableOverrides extends Overrides {
     value?: BigNumberish | Promise<BigNumberish>;
 }
 export interface CallOverrides extends PayableOverrides {
-    blockTag?: BlockTag | Promise<BlockTag>;
     from?: string | Promise<string>;
-}
-export interface PopulatedTransaction {
-    to?: string;
-    from?: string;
-    nonce?: number;
-    gasLimit?: BigNumber;
-    gasPrice?: BigNumber;
-    data?: string;
-    value?: BigNumber;
-    chainId?: number;
-    type?: number;
-    accessList?: AccessList;
-    maxFeePerGas?: BigNumber;
-    maxPriorityFeePerGas?: BigNumber;
-    customData?: Record<string, any>;
 }
 export declare type EventFilter = {
     address?: string;
@@ -88,7 +72,7 @@ export declare class BaseContract {
         [name: string]: ContractFunction<BigNumber>;
     };
     readonly populateTransaction: {
-        [name: string]: ContractFunction<PopulatedTransaction>;
+        [name: string]: ContractFunction<TransactionRequest>;
     };
     readonly filters: {
         [name: string]: (...args: Array<any>) => EventFilter;

@@ -27,4 +27,10 @@ import {BigNumber} from "@ethersproject/bignumber";
      */
     const contract = await contractFactory.deploy(BigNumber.from("10000"), {gasLimit: 3000000});
     console.log(contract.address);
+
+    /**
+     * Example 3. Calling a contract method
+     */
+    const methodCall = await contract.getInternalCounter({gasLimit: 300000});
+    console.log(methodCall.toString());
 })();

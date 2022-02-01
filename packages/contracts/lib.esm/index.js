@@ -20,7 +20,6 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 ;
-;
 ///////////////////////////////
 const allowedTransactionKeys = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
@@ -110,10 +109,6 @@ function populateTransaction(contract, fragment, args) {
         }
         else if (overrides.from) {
             overrides.from = resolveName(contract.provider, overrides.from);
-            //} else {
-            // Contracts without a signer can override "from", and if
-            // unspecified the zero address is used
-            //overrides.from = AddressZero;
         }
         // Wait for all dependencies to be resolved (prefer the signer over the provider)
         const resolved = yield resolveProperties({
@@ -124,20 +119,15 @@ function populateTransaction(contract, fragment, args) {
         // The ABI coded transaction
         const data = contract.interface.encodeFunctionData(fragment, resolved.args);
         const tx = {
+            gasLimit: 300000,
             data: data,
             to: resolved.address
         };
         // Resolved Overrides
         const ro = resolved.overrides;
         // Populate simple overrides
-        if (ro.nonce != null) {
-            tx.nonce = BigNumber.from(ro.nonce).toNumber();
-        }
         if (ro.gasLimit != null) {
             tx.gasLimit = BigNumber.from(ro.gasLimit);
-        }
-        if (ro.gasPrice != null) {
-            tx.gasPrice = BigNumber.from(ro.gasPrice);
         }
         if (ro.maxFeePerGas != null) {
             tx.maxFeePerGas = BigNumber.from(ro.maxFeePerGas);
@@ -186,9 +176,7 @@ function populateTransaction(contract, fragment, args) {
             tx.customData = shallowCopy(ro.customData);
         }
         // Remove the overrides
-        delete overrides.nonce;
         delete overrides.gasLimit;
-        delete overrides.gasPrice;
         delete overrides.from;
         delete overrides.value;
         delete overrides.type;
@@ -269,19 +257,13 @@ function buildCall(contract, fragment, collapseSimple) {
     const signer = contract.signer;
     return function (...args) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Extract the "blockTag" override if present
-            let blockTag = undefined;
             if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
                 const overrides = shallowCopy(args.pop());
-                if (overrides.blockTag != null) {
-                    blockTag = yield overrides.blockTag;
-                }
-                delete overrides.blockTag;
                 args.push(overrides);
             }
             // If the contract was just deployed, wait until it is mined
             if (contract.deployTransaction != null) {
-                yield contract._deployed(blockTag);
+                yield contract._deployed();
             }
             // Call a node and get the result
             const tx = yield populateTransaction(contract, fragment, args);

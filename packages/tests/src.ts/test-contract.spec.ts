@@ -211,8 +211,6 @@ describe("Test Contract Transaction Population", function() {
     xit("allows send overrides", async function() {
         const tx = await contract.populateTransaction.mint({
             gasLimit: 150000,
-            gasPrice: 1900000000,
-            nonce: 5,
             value: 1234,
             from: testAddress
         });
@@ -221,10 +219,8 @@ describe("Test Contract Transaction Population", function() {
         assert.equal(Object.keys(tx).length, 7, "correct number of keys");
         assert.equal(tx.data, "0x1249c58b", "data matches");
         assert.equal(tx.to, testAddressCheck, "to address matches");
-        assert.equal(tx.nonce, 5, "nonce address matches");
-        assert.ok(tx.gasLimit.eq(150000), "gasLimit matches");
-        assert.ok(tx.gasPrice.eq(1900000000), "gasPrice matches");
-        assert.ok(tx.value.eq(1234), "value matches");
+        assert.equal(tx.gasLimit.toString(), "150000", "gasLimit matches");
+        assert.equal(tx.value.toString(), "1234", "value matches");
         assert.equal(tx.from, testAddressCheck, "from address matches");
     });
 

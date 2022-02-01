@@ -59,8 +59,6 @@ export {
     PayableOverrides,
     CallOverrides,
 
-    PopulatedTransaction,
-
     ContractInterface,
 
     BigNumberish,

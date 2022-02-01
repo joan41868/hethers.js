@@ -84,7 +84,6 @@ var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 ;
-;
 ///////////////////////////////
 var allowedTransactionKeys = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
@@ -195,10 +194,6 @@ function populateTransaction(contract, fragment, args) {
                     }
                     else if (overrides.from) {
                         overrides.from = resolveName(contract.provider, overrides.from);
-                        //} else {
-                        // Contracts without a signer can override "from", and if
-                        // unspecified the zero address is used
-                        //overrides.from = AddressZero;
                     }
                     return [4 /*yield*/, (0, properties_1.resolveProperties)({
                             args: resolveAddresses(contract.signer || contract.provider, args, fragment.inputs),
@@ -209,19 +204,14 @@ function populateTransaction(contract, fragment, args) {
                     resolved = _a.sent();
                     data = contract.interface.encodeFunctionData(fragment, resolved.args);
                     tx = {
+                        gasLimit: 300000,
                         data: data,
                         to: resolved.address
                     };
                     ro = resolved.overrides;
                     // Populate simple overrides
-                    if (ro.nonce != null) {
-                        tx.nonce = bignumber_1.BigNumber.from(ro.nonce).toNumber();
-                    }
                     if (ro.gasLimit != null) {
                         tx.gasLimit = bignumber_1.BigNumber.from(ro.gasLimit);
-                    }
-                    if (ro.gasPrice != null) {
-                        tx.gasPrice = bignumber_1.BigNumber.from(ro.gasPrice);
                     }
                     if (ro.maxFeePerGas != null) {
                         tx.maxFeePerGas = bignumber_1.BigNumber.from(ro.maxFeePerGas);
@@ -265,9 +255,7 @@ function populateTransaction(contract, fragment, args) {
                         tx.customData = (0, properties_1.shallowCopy)(ro.customData);
                     }
                     // Remove the overrides
-                    delete overrides.nonce;
                     delete overrides.gasLimit;
-                    delete overrides.gasPrice;
                     delete overrides.from;
                     delete overrides.value;
                     delete overrides.type;
@@ -369,33 +357,24 @@ function buildCall(contract, fragment, collapseSimple) {
             args[_i] = arguments[_i];
         }
         return __awaiter(this, void 0, void 0, function () {
-            var blockTag, overrides, tx, result, value;
+            var overrides, tx, result, value;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        blockTag = undefined;
-                        if (!(args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object")) return [3 /*break*/, 3];
-                        overrides = (0, properties_1.shallowCopy)(args.pop());
-                        if (!(overrides.blockTag != null)) return [3 /*break*/, 2];
-                        return [4 /*yield*/, overrides.blockTag];
+                        if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+                            overrides = (0, properties_1.shallowCopy)(args.pop());
+                            args.push(overrides);
+                        }
+                        if (!(contract.deployTransaction != null)) return [3 /*break*/, 2];
+                        return [4 /*yield*/, contract._deployed()];
                     case 1:
-                        blockTag = _a.sent();
-                        _a.label = 2;
-                    case 2:
-                        delete overrides.blockTag;
-                        args.push(overrides);
-                        _a.label = 3;
-                    case 3:
-                        if (!(contract.deployTransaction != null)) return [3 /*break*/, 5];
-                        return [4 /*yield*/, contract._deployed(blockTag)];
-                    case 4:
                         _a.sent();
-                        _a.label = 5;
-                    case 5: return [4 /*yield*/, populateTransaction(contract, fragment, args)];
-                    case 6:
+                        _a.label = 2;
+                    case 2: return [4 /*yield*/, populateTransaction(contract, fragment, args)];
+                    case 3:
                         tx = _a.sent();
                         return [4 /*yield*/, signer.call(tx)];
-                    case 7:
+                    case 4:
                         result = _a.sent();
                         try {
                             value = contract.interface.decodeFunctionResult(fragment, result);
