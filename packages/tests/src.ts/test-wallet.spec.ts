@@ -1,5 +1,3 @@
-// noinspection JSVoidFunctionReturnValueUsed
-
 'use strict';
 
 import assert from "assert";

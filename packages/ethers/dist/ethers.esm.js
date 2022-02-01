@@ -6849,11 +6849,13 @@ const version$6 = "address/5.5.0";
 "use strict";
 const logger$7 = new Logger(version$6);
 function getAccountFromTransactionId(transactionId) {
-    // TransactionId looks like this: '0.0.99999999-9999999999-999999999'
-    if (!transactionId.match(/^\d+?\.\d+?\.\d+-\d+-\d+$/)) {
+    // TransactionId look like this: '0.0.99999999-9999999999-999999999'
+    // or like this:                 '0.0.99999999@9999999999-999999999'
+    if (!transactionId.match(/^\d+?\.\d+?\.\d+[-|@]\d+-\d+$/)) {
         logger$7.throwArgumentError("invalid transactionId", "transactionId", transactionId);
     }
-    const account = transactionId.split('-');
+    let splitSymbol = transactionId.indexOf('@') === -1 ? '-' : '@';
+    const account = transactionId.split(splitSymbol);
     return account[0];
 }
 function asAccountString(accountLike) {
