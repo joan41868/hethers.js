@@ -632,18 +632,19 @@ export class BaseProvider extends Provider {
      * @param addressOrName The address to obtain the bytecode of
      */
     async getCode(addressOrName: string | Promise<string>, throwOnNonExisting?: boolean): Promise<string> {
-        await this.getNetwork();
+        if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
         addressOrName = await addressOrName;
         const { shard, realm, num } = getAccountFromAddress(addressOrName);
         const shardNum = BigNumber.from(shard).toNumber();
         const realmNum = BigNumber.from(realm).toNumber();
         const accountNum = BigNumber.from(num).toNumber();
-        const endpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
+        const contractsEndpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
         try {
-            let { data } = await axios.get(this._mirrorNodeUrl + endpoint);
+            let { data } = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
             return data.bytecode ? hexlify(data.bytecode) : `0x`;
         } catch (error) {
-            if (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting)) {            
+            if (error.response && error.response.status && 
+                (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {            
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "ContractByteCodeQuery",
                     params: {address: addressOrName},

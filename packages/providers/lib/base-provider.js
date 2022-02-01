@@ -698,30 +698,31 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getCode = function (addressOrName, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, shard, realm, num, shardNum, realmNum, accountNum, endpoint, data, error_3;
+            var _a, shard, realm, num, shardNum, realmNum, accountNum, contractsEndpoint, data, error_3;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _b.sent();
+                    case 0:
+                        if (!this._mirrorNodeUrl)
+                            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
                         return [4 /*yield*/, addressOrName];
-                    case 2:
+                    case 1:
                         addressOrName = _b.sent();
                         _a = (0, address_1.getAccountFromAddress)(addressOrName), shard = _a.shard, realm = _a.realm, num = _a.num;
                         shardNum = bignumber_1.BigNumber.from(shard).toNumber();
                         realmNum = bignumber_1.BigNumber.from(realm).toNumber();
                         accountNum = bignumber_1.BigNumber.from(num).toNumber();
-                        endpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
-                        _b.label = 3;
+                        contractsEndpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
+                        _b.label = 2;
+                    case 2:
+                        _b.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
                     case 3:
-                        _b.trys.push([3, 5, , 6]);
-                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + endpoint)];
-                    case 4:
                         data = (_b.sent()).data;
                         return [2 /*return*/, data.bytecode ? (0, bytes_1.hexlify)(data.bytecode) : "0x"];
-                    case 5:
+                    case 4:
                         error_3 = _b.sent();
-                        if (error_3.response.status != 404 || (error_3.response.status == 404 && throwOnNonExisting)) {
+                        if (error_3.response && error_3.response.status &&
+                            (error_3.response.status != 404 || (error_3.response.status == 404 && throwOnNonExisting))) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "ContractByteCodeQuery",
                                 params: { address: addressOrName },
@@ -729,7 +730,7 @@ var BaseProvider = /** @class */ (function (_super) {
                             });
                         }
                         return [2 /*return*/, "0x"];
-                    case 6: return [2 /*return*/];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
