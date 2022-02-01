@@ -673,7 +673,7 @@ export class BaseContract {
         }
 
         defineReadOnly(this, "callStatic", { });
-        defineReadOnly(this, "estimateGas", { });
+        // defineReadOnly(this, "estimateGas", { });
         defineReadOnly(this, "functions", { });
         defineReadOnly(this, "populateTransaction", { });
 
