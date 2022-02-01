@@ -19,12 +19,13 @@ import {version} from "./_version";
 const logger = new Logger(version);
 
 export function getAccountFromTransactionId(transactionId: string): string {
-    // TransactionId looks like this: '0.0.99999999-9999999999-999999999'
-    if (!transactionId.match(/^\d+?\.\d+?\.\d+-\d+-\d+$/)) {
+    // TransactionId look like this: '0.0.99999999-9999999999-999999999'
+    // or like this:                 '0.0.99999999@9999999999-999999999'
+    if (!transactionId.match(/^\d+?\.\d+?\.\d+[-|@]\d+-\d+$/)) {
         logger.throwArgumentError("invalid transactionId", "transactionId", transactionId);
     }
-
-    const account = transactionId.split('-');
+    let splitSymbol = transactionId.indexOf('@') === -1 ? '-' : '@';
+    const account = transactionId.split(splitSymbol);
     return account[0];
 }
 

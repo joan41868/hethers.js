@@ -9,11 +9,13 @@ var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 function getAccountFromTransactionId(transactionId) {
-    // TransactionId looks like this: '0.0.99999999-9999999999-999999999'
-    if (!transactionId.match(/^\d+?\.\d+?\.\d+-\d+-\d+$/)) {
+    // TransactionId look like this: '0.0.99999999-9999999999-999999999'
+    // or like this:                 '0.0.99999999@9999999999-999999999'
+    if (!transactionId.match(/^\d+?\.\d+?\.\d+[-|@]\d+-\d+$/)) {
         logger.throwArgumentError("invalid transactionId", "transactionId", transactionId);
     }
-    var account = transactionId.split('-');
+    var splitSymbol = transactionId.indexOf('@') === -1 ? '-' : '@';
+    var account = transactionId.split(splitSymbol);
     return account[0];
 }
 exports.getAccountFromTransactionId = getAccountFromTransactionId;
