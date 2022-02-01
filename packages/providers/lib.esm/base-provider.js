@@ -25,7 +25,7 @@ import { Formatter } from "./formatter";
 import { asAccountString } from "@ethersproject/address";
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
-import { keccak256 } from "@ethersproject/keccak256";
+import { base64 } from "ethers/lib/utils";
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -82,6 +82,9 @@ function stall(duration) {
     return new Promise((resolve) => {
         setTimeout(resolve, duration);
     });
+}
+function base64ToHex(hash) {
+    return hexlify(base64.decode(hash));
 }
 //////////////////////////////
 // Provider Object
@@ -683,7 +686,10 @@ export class BaseProvider extends Provider {
                         if (transactionName === 'CRYPTOCREATEACCOUNT') {
                             record.from = getAccountFromTransactionId(transactionId);
                             record.timestamp = filtered[0].consensus_timestamp;
-                            record.hash = keccak256(toUtf8Bytes(filtered[0].transaction_hash));
+                            // Different endpoints of the mirror node API returns hashes in different formats.
+                            // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
+                            // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
+                            record.hash = base64ToHex(filtered[0].transaction_hash);
                             record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                         }
                         else {
