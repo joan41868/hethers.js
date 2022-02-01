@@ -760,9 +760,6 @@ var BaseContract = /** @class */ (function () {
             }
         });
     }
-    BaseContract.getContractAddress = function (transaction) {
-        return (0, address_1.getContractAddress)(transaction);
-    };
     BaseContract.getInterface = function (contractInterface) {
         if (abi_1.Interface.isInterface(contractInterface)) {
             return contractInterface;
@@ -1213,9 +1210,6 @@ var ContractFactory = /** @class */ (function () {
     };
     ContractFactory.getInterface = function (contractInterface) {
         return Contract.getInterface(contractInterface);
-    };
-    ContractFactory.getContractAddress = function (tx) {
-        return (0, address_1.getContractAddress)(tx);
     };
     ContractFactory.getContract = function (address, contractInterface, signer) {
         return new Contract(address, contractInterface, signer);

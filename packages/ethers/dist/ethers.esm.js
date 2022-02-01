@@ -93807,9 +93807,6 @@ class BaseContract {
             }
         });
     }
-    static getContractAddress(transaction) {
-        return getContractAddress(transaction);
-    }
     static getInterface(contractInterface) {
         if (Interface.isInterface(contractInterface)) {
             return contractInterface;
@@ -94224,9 +94221,6 @@ class ContractFactory {
     }
     static getInterface(contractInterface) {
         return Contract.getInterface(contractInterface);
-    }
-    static getContractAddress(tx) {
-        return getContractAddress(tx);
     }
     static getContract(address, contractInterface, signer) {
         return new Contract(address, contractInterface, signer);
