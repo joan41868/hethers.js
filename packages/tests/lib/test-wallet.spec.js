@@ -727,33 +727,35 @@ describe("Wallet createAccount", function () {
     var _this = this;
     var wallet, newAccount, newAccountPublicKey, provider;
     var timeout = 60000;
-    before(function () { return __awaiter(_this, void 0, void 0, function () {
-        var account;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    account = {
-                        "operator": {
-                            "accountId": "0.0.1065",
-                            "publicKey": "302a300506032b65700321006286f3cfa771a803f1ff90a3ee5d227002ac209d934f7b47fa41288e71938095",
-                            "privateKey": "302e020100300506032b657004220420f24f8a15fc36ec3cee05c99c2e71bda086977885eeeebbec17654c5d3a6c35b5"
-                        },
-                        "network": {
-                            "35.231.208.148:50211": "0.0.3",
-                            "35.199.15.177:50211": "0.0.4",
-                            "35.225.201.195:50211": "0.0.5",
-                            "35.247.109.135:50211": "0.0.6"
-                        }
-                    };
-                    this.timeout(timeout);
-                    provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
-                    return [4 /*yield*/, createWalletFromED25519(account, provider)];
-                case 1:
-                    wallet = _a.sent();
-                    return [2 /*return*/];
-            }
+    before(function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var account;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        account = {
+                            "operator": {
+                                "accountId": "0.0.19041642",
+                                "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
+                                "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
+                            },
+                            "network": {
+                                "0.testnet.hedera.com:50211": "0.0.3",
+                                "1.testnet.hedera.com:50211": "0.0.4",
+                                "2.testnet.hedera.com:50211": "0.0.5",
+                                "3.testnet.hedera.com:50211": "0.0.6"
+                            }
+                        };
+                        this.timeout(timeout);
+                        provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                        return [4 /*yield*/, createWalletFromED25519(account, provider)];
+                    case 1:
+                        wallet = _a.sent();
+                        return [2 /*return*/];
+                }
+            });
         });
-    }); });
+    });
     beforeEach(function () { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             newAccount = ethers_1.ethers.Wallet.createRandom();
