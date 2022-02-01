@@ -1037,7 +1037,7 @@ describe("Test Hedera Provider", function () {
             });
         });
     }).timeout(timeout);
-    describe("Sign & Send Transacton, Wait for receipt", function () {
+    describe("Sign & Send Transaction, Wait for receipt", function () {
         var _this = this;
         var signedTx;
         beforeEach(function () { return __awaiter(_this, void 0, void 0, function () {
@@ -1098,7 +1098,7 @@ describe("Test Hedera Provider", function () {
                         case 1: return [4 /*yield*/, _b.apply(_a, [_c.sent()])];
                         case 2:
                             sendTransactionResponse = _c.sent();
-                            return [4 /*yield*/, sendTransactionResponse.wait(timeout)];
+                            return [4 /*yield*/, sendTransactionResponse.wait(timeout * 2)];
                         case 3:
                             receipt = _c.sent();
                             // assert.strict(receipt.logs.length > 0);
@@ -1110,7 +1110,7 @@ describe("Test Hedera Provider", function () {
                     }
                 });
             });
-        }).timeout(timeout * 4);
+        }).timeout(timeout * 10);
         it("Should throw timeout exceeded", function () {
             return __awaiter(this, void 0, void 0, function () {
                 var insufficientTimeout;
