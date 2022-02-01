@@ -83,7 +83,7 @@ var formatter_1 = require("./formatter");
 var address_2 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
-var keccak256_1 = require("@ethersproject/keccak256");
+var utils_1 = require("ethers/lib/utils");
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -140,6 +140,9 @@ function stall(duration) {
     return new Promise(function (resolve) {
         setTimeout(resolve, duration);
     });
+}
+function base64ToHex(hash) {
+    return (0, bytes_1.hexlify)(utils_1.base64.decode(hash));
 }
 //////////////////////////////
 // Provider Object
@@ -909,7 +912,10 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (!(transactionName === 'CRYPTOCREATEACCOUNT')) return [3 /*break*/, 4];
                         record.from = (0, address_1.getAccountFromTransactionId)(transactionId);
                         record.timestamp = filtered[0].consensus_timestamp;
-                        record.hash = (0, keccak256_1.keccak256)((0, strings_1.toUtf8Bytes)(filtered[0].transaction_hash));
+                        // Different endpoints of the mirror node API returns hashes in different formats.
+                        // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
+                        // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
+                        record.hash = base64ToHex(filtered[0].transaction_hash);
                         record.accountAddress = (0, address_1.getAddressFromAccount)(filtered[0].entity_id);
                         return [3 /*break*/, 6];
                     case 4:

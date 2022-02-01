@@ -1355,7 +1355,7 @@ describe("Test Hedera Provider", function () {
                         mintedTransaction = _a.sent();
                         assert_1.default.notStrictEqual(mintedTransaction, null, "getTransaction returns the transaction");
                         assert_1.default.strictEqual(mintedTransaction.transactionId, '0.0.29562746-1643299484-861748482', "transactionId is correct");
-                        assert_1.default.strictEqual(mintedTransaction.hash, '0x40c9c93d45355e4fd6d3889da3baa7d5eca8b897e1107aa4c589495fdf531b55', "hash is correct");
+                        assert_1.default.strictEqual(mintedTransaction.hash, '0xe8b564272a683b6404bb8cbd0029c9fdd56d7362f567f91cac8f608467171a23ea483e0889f44c595812b83802ab3c87', "hash is correct");
                         assert_1.default.notStrictEqual(mintedTransaction.customData, null, "customData exists");
                         assert_1.default.strictEqual(mintedTransaction.customData.accountAddress, '0x0000000000000000000000000000000001c31782', "customData.accountAddress exists");
                         assert_1.default.strictEqual(mintedTransaction.customData.result, 'SUCCESS', "customData.result is correct");
