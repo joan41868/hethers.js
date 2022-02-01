@@ -65,6 +65,49 @@ var utils = __importStar(require("./utils"));
 var utils_1 = require("ethers/lib/utils");
 var sdk_1 = require("@hashgraph/sdk");
 var fs_1 = require("fs");
+var proto_1 = require("@hashgraph/proto");
+/**
+ * Helper function that returns a Wallet instance from the provided ED25519 credentials,
+ * provided from portal.hedera.com
+ * @param account
+ * @param provider
+ */
+var createWalletFromED25519 = function (account, provider) { return __awaiter(void 0, void 0, void 0, function () {
+    var edPrivateKey, client, randomWallet, protoKey, newAccountKey, accountCreate, receipt, newAccountId, hederaEoa;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                edPrivateKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
+                client = sdk_1.Client.forNetwork(account.network);
+                randomWallet = ethers_1.ethers.Wallet.createRandom();
+                protoKey = proto_1.Key.create({
+                    ECDSASecp256k1: (0, utils_1.arrayify)(randomWallet._signingKey().compressedPublicKey)
+                });
+                newAccountKey = sdk_1.Key._fromProtobufKey(protoKey);
+                return [4 /*yield*/, new sdk_1.AccountCreateTransaction()
+                        .setKey(newAccountKey)
+                        .setTransactionId(sdk_1.TransactionId.generate(account.operator.accountId))
+                        .setInitialBalance(new sdk_1.Hbar(10))
+                        .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
+                        .freeze()
+                        .sign(edPrivateKey)];
+            case 1: return [4 /*yield*/, (_a.sent())
+                    .execute(client)];
+            case 2:
+                accountCreate = _a.sent();
+                return [4 /*yield*/, accountCreate.getReceipt(client)];
+            case 3:
+                receipt = _a.sent();
+                newAccountId = receipt.accountId.toString();
+                hederaEoa = {
+                    account: newAccountId,
+                    privateKey: randomWallet.privateKey
+                };
+                // @ts-ignore
+                return [2 /*return*/, new ethers_1.ethers.Wallet(hederaEoa, provider)];
+        }
+    });
+}); };
 describe('Test JSON Wallets', function () {
     var tests = (0, testcases_1.loadTests)('wallets');
     tests.forEach(function (test) {
@@ -692,20 +735,20 @@ describe("Wallet createAccount", function () {
                     case 0:
                         account = {
                             "operator": {
-                                "accountId": "0.0.1261",
-                                "publicKey": "302a300506032b65700321006286f3cfa771a803f1ff90a3ee5d227002ac209d934f7b47fa41288e71938095",
-                                "privateKey": "302e020100300506032b657004220420f24f8a15fc36ec3cee05c99c2e71bda086977885eeeebbec17654c5d3a6c35b5"
+                                "accountId": "0.0.19041642",
+                                "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
+                                "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
                             },
                             "network": {
-                                "35.231.208.148:50211": "0.0.3",
-                                "35.199.15.177:50211": "0.0.4",
-                                "35.225.201.195:50211": "0.0.5",
-                                "35.247.109.135:50211": "0.0.6"
+                                "0.testnet.hedera.com:50211": "0.0.3",
+                                "1.testnet.hedera.com:50211": "0.0.4",
+                                "2.testnet.hedera.com:50211": "0.0.5",
+                                "3.testnet.hedera.com:50211": "0.0.6"
                             }
                         };
                         this.timeout(timeout);
-                        provider = ethers_1.ethers.providers.getDefaultProvider('previewnet');
-                        return [4 /*yield*/, utils.createWalletFromED25519(account, provider, 10)];
+                        provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                        return [4 /*yield*/, createWalletFromED25519(account, provider)];
                     case 1:
                         wallet = _a.sent();
                         return [2 /*return*/];

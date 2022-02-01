@@ -14,6 +14,17 @@ var __extends = (this && this.__extends) || (function () {
         d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
     };
 })();
+var __assign = (this && this.__assign) || function () {
+    __assign = Object.assign || function(t) {
+        for (var s, i = 1, n = arguments.length; i < n; i++) {
+            s = arguments[i];
+            for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+                t[p] = s[p];
+        }
+        return t;
+    };
+    return __assign.apply(this, arguments);
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -76,12 +87,12 @@ var logger = new logger_1.Logger(_version_1.version);
 ;
 ;
 ///////////////////////////////
-// const allowedTransactionKeys: { [ key: string ]: boolean } = {
-//     chainId: true, data: true, from: true, gasLimit: true, gasPrice:true, nonce: true, to: true, value: true,
-//     type: true, accessList: true,
-//     maxFeePerGas: true, maxPriorityFeePerGas: true,
-//     customData: true
-// }
+var allowedTransactionKeys = {
+    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
+    type: true,
+    maxFeePerGas: true, maxPriorityFeePerGas: true,
+    customData: true, nodeId: true,
+};
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function () {
@@ -741,9 +752,6 @@ var BaseContract = /** @class */ (function () {
             }
         });
     }
-    BaseContract.getContractAddress = function (transaction) {
-        return (0, address_1.getContractAddress)(transaction);
-    };
     BaseContract.getInterface = function (contractInterface) {
         if (abi_1.Interface.isInterface(contractInterface)) {
             return contractInterface;
@@ -1079,33 +1087,59 @@ var ContractFactory = /** @class */ (function () {
         (0, properties_1.defineReadOnly)(this, "interface", (0, properties_1.getStatic)(_newTarget, "getInterface")(contractInterface));
         (0, properties_1.defineReadOnly)(this, "signer", signer || null);
     }
-    ContractFactory.prototype.getDeployTransactions = function () {
+    ContractFactory.prototype.getDeployTransaction = function () {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
+        var contractCreateTx = {};
+        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+            contractCreateTx = (0, properties_1.shallowCopy)(args.pop());
+            for (var key in contractCreateTx) {
+                if (!allowedTransactionKeys[key]) {
+                    throw new Error("unknown transaction override " + key);
+                }
+            }
+        }
+        // Allow only these to be overwritten in a deployment transaction
+        Object.keys(contractCreateTx).forEach(function (key) {
+            if (["gasLimit", "value"].indexOf(key) > -1) {
+                return;
+            }
+            logger.throwError("cannot override " + key, logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
+        });
+        if (contractCreateTx.value) {
+            var value = bignumber_1.BigNumber.from(contractCreateTx.value);
+            if (!value.isZero() && !this.interface.deploy.payable) {
+                logger.throwError("non-payable constructor cannot override value", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "overrides.value",
+                    value: contractCreateTx.value
+                });
+            }
+        }
+        // Make sure the call matches the constructor signature
+        logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
         var chunks = (0, strings_1.splitInChunks)(Buffer.from(this.bytecode).toString(), 4096);
-        var fileCreate = {
+        var fileCreateTx = {
             customData: {
                 fileChunk: chunks[0]
             }
         };
-        var fileAppends = [];
+        var fileAppendTxs = [];
         for (var _a = 0, _b = chunks.slice(1); _a < _b.length; _a++) {
             var chunk = _b[_a];
-            var fileAppend = {
+            var fileAppendTx = {
                 customData: {
                     fileChunk: chunk
                 }
             };
-            fileAppends.push(fileAppend);
+            fileAppendTxs.push(fileAppendTx);
         }
-        var contractCreate = {
-            gasLimit: 500000,
-            data: this.interface.encodeDeploy(args),
-            customData: {}
-        };
-        return __spreadArray(__spreadArray([fileCreate], fileAppends, true), [contractCreate], false);
+        contractCreateTx = __assign(__assign({}, contractCreateTx), { data: (0, bytes_1.hexlify)((0, bytes_1.concat)([
+                this.bytecode,
+                this.interface.encodeDeploy(args)
+            ])), customData: {} });
+        return __spreadArray(__spreadArray([fileCreateTx], fileAppendTxs, true), [contractCreateTx], false);
     };
     ContractFactory.prototype.deploy = function () {
         var args = [];
@@ -1113,9 +1147,9 @@ var ContractFactory = /** @class */ (function () {
             args[_i] = arguments[_i];
         }
         return __awaiter(this, void 0, void 0, function () {
-            var overrides, params, unsignedTransactions, fc, signedFc, fcResponse, fileId, _a, _b, fa, signedFa, cc, signedCc, ccResponse, address, contract;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var overrides, params, unsignedTransactions, contractCreate, contractCreateResponse, address, contract;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         overrides = {};
                         // If 1 extra parameter was passed in, it contains overrides
@@ -1126,47 +1160,18 @@ var ContractFactory = /** @class */ (function () {
                         logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
                         return [4 /*yield*/, resolveAddresses(this.signer, args, this.interface.deploy.inputs)];
                     case 1:
-                        params = _c.sent();
+                        params = _a.sent();
                         params.push(overrides);
-                        unsignedTransactions = this.getDeployTransactions.apply(this, args);
-                        fc = unsignedTransactions[0];
-                        return [4 /*yield*/, this.signer.signTransaction(fc)];
+                        unsignedTransactions = this.getDeployTransaction.apply(this, params);
+                        contractCreate = unsignedTransactions[unsignedTransactions.length - 1];
+                        return [4 /*yield*/, this.signer.sendTransaction(contractCreate)];
                     case 2:
-                        signedFc = _c.sent();
-                        return [4 /*yield*/, this.signer.provider.sendTransaction(signedFc)];
-                    case 3:
-                        fcResponse = _c.sent();
-                        fileId = fcResponse.customData.fileId;
-                        _a = 0, _b = unsignedTransactions.slice(1, unsignedTransactions.length - 1);
-                        _c.label = 4;
-                    case 4:
-                        if (!(_a < _b.length)) return [3 /*break*/, 8];
-                        fa = _b[_a];
-                        fa.customData.fileId = fileId;
-                        return [4 /*yield*/, this.signer.signTransaction(fa)];
-                    case 5:
-                        signedFa = _c.sent();
-                        return [4 /*yield*/, this.signer.provider.sendTransaction(signedFa)];
-                    case 6:
-                        _c.sent();
-                        _c.label = 7;
-                    case 7:
-                        _a++;
-                        return [3 /*break*/, 4];
-                    case 8:
-                        cc = unsignedTransactions[unsignedTransactions.length - 1];
-                        cc.customData.bytecodeFileId = fileId;
-                        return [4 /*yield*/, this.signer.signTransaction(cc)];
-                    case 9:
-                        signedCc = _c.sent();
-                        return [4 /*yield*/, this.signer.provider.sendTransaction(signedCc)];
-                    case 10:
-                        ccResponse = _c.sent();
-                        address = ccResponse.customData.contractId;
+                        contractCreateResponse = _a.sent();
+                        address = contractCreateResponse.customData.contractId;
                         contract = (0, properties_1.getStatic)(this.constructor, "getContract")(address, this.interface, this.signer);
                         // Add the modified wait that wraps events
-                        addContractWait(contract, ccResponse);
-                        (0, properties_1.defineReadOnly)(contract, "deployTransaction", ccResponse);
+                        addContractWait(contract, contractCreateResponse);
+                        (0, properties_1.defineReadOnly)(contract, "deployTransaction", contractCreateResponse);
                         return [2 /*return*/, contract];
                 }
             });
@@ -1197,9 +1202,6 @@ var ContractFactory = /** @class */ (function () {
     };
     ContractFactory.getInterface = function (contractInterface) {
         return Contract.getInterface(contractInterface);
-    };
-    ContractFactory.getContractAddress = function (tx) {
-        return (0, address_1.getContractAddress)(tx);
     };
     ContractFactory.getContract = function (address, contractInterface, signer) {
         return new Contract(address, contractInterface, signer);
