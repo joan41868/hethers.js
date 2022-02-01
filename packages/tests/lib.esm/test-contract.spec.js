@@ -9,10 +9,20 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import assert from "assert";
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 import contractData from "./test-contract.json";
+import fs from "fs";
+// @ts-ignore
+import * as abi from '../../../examples/assets/abi/GLDToken_abi.json';
+// @ts-ignore
+import * as abiWithArgs from '../../../examples/assets/abi/GLDTokenWithConstructorArgs_abi.json';
+// @ts-ignore
+abi = abi.default;
+// @ts-ignore
+abiWithArgs = abiWithArgs.default;
+import { arrayify } from "ethers/lib/utils";
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
-const provider = ethers.getDefaultProvider("rinkeby");
+const provider = ethers.getDefaultProvider("testnet");
 const TIMEOUT_PERIOD = 120000;
 const contract = (function () {
     return new ethers.Contract(contractData.contractAddress, contractData.interface, provider);
@@ -152,17 +162,11 @@ function TestContractEvents() {
 // });
 // @TODO: Exapnd this
 describe("Test Contract Transaction Population", function () {
-    const abi = [
-        "function transfer(address to, uint amount)",
-        "function unstake() nonpayable",
-        "function mint() payable",
-        "function balanceOf(address owner) view returns (uint)"
-    ];
     const testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03";
     const testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     const fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
     const contract = new ethers.Contract(testAddress, abi);
-    const contractConnected = contract.connect(ethers.getDefaultProvider("homestead"));
+    const contractConnected = contract.connect(ethers.getDefaultProvider("testnet"));
     xit("standard population", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const tx = yield contract.populateTransaction.balanceOf(testAddress);
@@ -289,5 +293,52 @@ describe("Test Contract Transaction Population", function () {
             assert.equal(tx.from, testAddressCheck.toLowerCase(), "from address matches");
         });
     });
+    it("should return an array of transactions on getDeployTransaction call", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const hederaEoa = {
+                account: '0.0.29562194',
+                privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+            };
+            const provider = ethers.providers.getDefaultProvider('testnet');
+            // @ts-ignore
+            const wallet = new ethers.Wallet(hederaEoa, provider);
+            const contractBytecode = fs.readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+            const contractFactory = new ethers.ContractFactory(abiWithArgs, contractBytecode, wallet);
+            const transaction = contractFactory.getDeployTransaction(ethers.BigNumber.from("1000000"), {
+                gasLimit: 300000
+            });
+            assert('data' in transaction);
+            assert('customData' in transaction);
+            assert('gasLimit' in transaction);
+            assert.strictEqual(300000, transaction.gasLimit);
+        });
+    });
+    it("should be able to deploy a contract", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const hederaEoa = {
+                account: '0.0.29562194',
+                privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+            };
+            const provider = ethers.providers.getDefaultProvider('testnet');
+            // @ts-ignore
+            const wallet = new ethers.Wallet(hederaEoa, provider);
+            const bytecode = fs.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+            const contractFactory = new ethers.ContractFactory(abi, bytecode, wallet);
+            const contract = yield contractFactory.deploy({ gasLimit: 300000 });
+            assert.notStrictEqual(contract, null, "nullified contract");
+            assert.notStrictEqual(contract.deployTransaction, "missing deploy transaction");
+            assert.notStrictEqual(contract.address, null, 'missing address');
+            const params = contract.interface.encodeFunctionData('balanceOf', [
+                wallet.address
+            ]);
+            const balance = yield wallet.call({
+                from: wallet.address,
+                to: contract.address,
+                data: arrayify(params),
+                gasLimit: 300000
+            });
+            assert.strictEqual(BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
+        });
+    }).timeout(60000);
 });
 //# sourceMappingURL=test-contract.spec.js.map

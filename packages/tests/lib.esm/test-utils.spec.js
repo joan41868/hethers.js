@@ -15,6 +15,8 @@ import { loadTests } from "@ethersproject/testcases";
 import * as utils from './utils';
 import { AccountId, ContractCreateTransaction, ContractExecuteTransaction, ContractFunctionParameters, Hbar, TransactionId, TransferTransaction } from "@hashgraph/sdk";
 import { getAddressFromAccount, hexlify } from "ethers/lib/utils";
+import { asAccountString } from "@ethersproject/address";
+import { Logger } from "@ethersproject/logger";
 // @ts-ignore
 function equals(a, b) {
     if (Array.isArray(a)) {
@@ -588,6 +590,50 @@ describe("Base58 Coder", function () {
         assert.equal(ethers.utils.base58.encode(ethers.utils.toUtf8Bytes("Hello World")), "JxF12TrwUP45BMd");
     });
 });
+describe("Account like to string", function () {
+    it('Is usable for ethereum addresses', function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const contractAddr = '0000000000000000000000000000000001b34cbb';
+            const accStr = asAccountString(contractAddr);
+            // should not be touched
+            assert.strictEqual(accStr, '0.0.28527803');
+        });
+    });
+    it('Is able to convert hedera account to string', function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const accLike = {
+                shard: BigInt(0),
+                realm: BigInt(0),
+                num: BigInt(420),
+            };
+            let accStr = asAccountString(accLike);
+            const split = accStr.split('.');
+            assert.notStrictEqual(accStr, "");
+            assert.strictEqual(split[0], "0");
+            assert.strictEqual(split[1], "0");
+            assert.strictEqual(split[2], "420");
+            const accLike2 = "0.0.69";
+            accStr = asAccountString(accLike2);
+            const split2 = accStr.split('.');
+            assert.notStrictEqual(accStr, "");
+            assert.strictEqual(split2[0], "0");
+            assert.strictEqual(split2[1], "0");
+            assert.strictEqual(split2[2], "69");
+        });
+    });
+    it("Should throw on random string", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const notReallyAccountLike = "foo";
+            try {
+                asAccountString(notReallyAccountLike);
+            }
+            catch (e) {
+                assert.strictEqual(e.code, Logger.errors.INVALID_ARGUMENT);
+                assert.notStrictEqual(e, null);
+            }
+        });
+    });
+});
 /*
 describe("Web Fetch", function() {
     it("fetches JSON", async function() {
@@ -616,8 +662,7 @@ describe("EIP-712", function () {
         it(`signing ${test.name}`, function () {
             return __awaiter(this, void 0, void 0, function* () {
                 const wallet = new ethers.Wallet(test.privateKey);
-                const signature = yield wallet._signTypedData(test.domain, test.types, test.data);
-                assert.equal(signature, test.signature, "signature");
+                yield assert.rejects(wallet._signTypedData(test.domain, test.types, test.data), '_signTypedData not supported');
             });
         });
     });
