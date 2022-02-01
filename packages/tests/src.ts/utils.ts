@@ -3,9 +3,8 @@
 'use strict';
 
 import { ethers } from "ethers";
-import {AccountCreateTransaction, AccountId, Client, Hbar, PrivateKey, TransactionId} from "@hashgraph/sdk";
+import {AccountCreateTransaction, AccountId, Client, Hbar, PrivateKey, TransactionId, Key as HederaKey} from "@hashgraph/sdk";
 import {Key} from "@hashgraph/proto";
-import {Key as HederaKey} from "@hashgraph/sdk/lib/exports";
 import { arrayify } from "ethers/lib/utils";
 
 function randomBytes(seed: string, lower: number, upper?: number): Uint8Array {
@@ -67,25 +66,22 @@ function equals(a: any, b: any): boolean {
 
 const defaultAccount = {
     "operator": {
-        "accountId": "0.0.1261",
-        "publicKey": "302a300506032b65700321006286f3cfa771a803f1ff90a3ee5d227002ac209d934f7b47fa41288e71938095",
-        "privateKey": "302e020100300506032b657004220420f24f8a15fc36ec3cee05c99c2e71bda086977885eeeebbec17654c5d3a6c35b5"
+        "accountId": "0.0.19041642",
+        "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
+        "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
     },
     "network": {
-        "35.231.208.148:50211": "0.0.3",
-        "35.199.15.177:50211": "0.0.4",
-        "35.225.201.195:50211": "0.0.5",
-        "35.247.109.135:50211": "0.0.6"
+        "0.testnet.hedera.com:50211": "0.0.3",
+        "1.testnet.hedera.com:50211": "0.0.4",
+        "2.testnet.hedera.com:50211": "0.0.5",
+        "3.testnet.hedera.com:50211": "0.0.6"
     }
 };
 
 /**
- * Helper function that returns a Wallet instance from the provided ED25519 credentials,
- * provided from portal.hedera.com
- * @param account
- * @param provider
+ * Helper function that returns a Wallet instance from the provided ED25519 credentials, provided from portal.hedera.com
  */
-const createWalletFromED25519 = async (account: any, provider: ethers.providers.BaseProvider, initialBalance: number = 0) => {
+const createWalletFromED25519 = async (provider: ethers.providers.BaseProvider, account?: any, initialBalance?: number) => {
     if (!account) account = defaultAccount;
     const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
     const client = Client.forNetwork(account.network);

@@ -8,52 +8,14 @@ import { BytesLike } from "@ethersproject/bytes";
 import * as utils from './utils';
 import { arrayify, getAddressFromAccount, Logger } from "ethers/lib/utils";
 import {
-    AccountCreateTransaction, AccountId,
-    Client,
     ContractCreateTransaction,
     ContractExecuteTransaction,
     FileAppendTransaction,
-    FileCreateTransaction, Hbar, PrivateKey, PublicKey, Transaction, TransactionId,
-    Key as HederaKey
+    FileCreateTransaction,
+    PublicKey,
+    Transaction
 } from "@hashgraph/sdk";
 import { readFileSync } from "fs";
-import { Key } from "@hashgraph/proto";
-
-/**
- * Helper function that returns a Wallet instance from the provided ED25519 credentials,
- * provided from portal.hedera.com
- * @param account
- * @param provider
- */
-const createWalletFromED25519 = async (account: any, provider: ethers.providers.BaseProvider) => {
-    const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
-    const client = Client.forNetwork(account.network);
-    const randomWallet = ethers.Wallet.createRandom();
-    const protoKey = Key.create({
-        ECDSASecp256k1: arrayify(randomWallet._signingKey().compressedPublicKey)
-    });
-
-    const newAccountKey = HederaKey._fromProtobufKey(protoKey);
-    const accountCreate = await (await new AccountCreateTransaction()
-        .setKey(newAccountKey)
-        .setTransactionId(TransactionId.generate(account.operator.accountId))
-        .setInitialBalance(new Hbar(10))
-        .setNodeAccountIds([new AccountId(0,0,3)])
-        .freeze()
-        .sign(edPrivateKey))
-        .execute(client);
-    const receipt = await accountCreate.getReceipt(client);
-    // @ts-ignore
-    const newAccountId = receipt.accountId.toString();
-
-    const hederaEoa = {
-        account: newAccountId,
-        privateKey: randomWallet.privateKey
-    };
-
-    // @ts-ignore
-    return new ethers.Wallet(hederaEoa, provider);
-}
 
 describe('Test JSON Wallets', function() {
 
@@ -586,22 +548,9 @@ describe("Wallet createAccount", function () {
     const timeout = 60000;
 
     before( async function() {
-        const account = {
-            "operator": {
-                "accountId": "0.0.19041642",
-                "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
-                "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
-            },
-            "network": {
-                "0.testnet.hedera.com:50211": "0.0.3",
-                "1.testnet.hedera.com:50211": "0.0.4",
-                "2.testnet.hedera.com:50211": "0.0.5",
-                "3.testnet.hedera.com:50211": "0.0.6"
-            }
-        };
         this.timeout(timeout);
         provider = ethers.providers.getDefaultProvider('testnet');
-        wallet = await createWalletFromED25519(account, provider);
+        wallet = await utils.createWalletFromED25519(provider);
     });
 
     beforeEach(async () => {

@@ -41,7 +41,6 @@ exports.createWalletFromED25519 = exports.equals = exports.randomNumber = export
 var ethers_1 = require("ethers");
 var sdk_1 = require("@hashgraph/sdk");
 var proto_1 = require("@hashgraph/proto");
-var exports_1 = require("@hashgraph/sdk/lib/exports");
 var utils_1 = require("ethers/lib/utils");
 function randomBytes(seed, lower, upper) {
     if (!upper) {
@@ -105,50 +104,59 @@ function equals(a, b) {
     return a === b;
 }
 exports.equals = equals;
-/**
- * Helper function that returns a Wallet instance from the provided ED25519 credentials,
- * provided from portal.hedera.com
- * @param account
- * @param provider
- */
-var createWalletFromED25519 = function (account, provider, initialBalance) {
-    if (initialBalance === void 0) { initialBalance = 0; }
-    return __awaiter(void 0, void 0, void 0, function () {
-        var edPrivateKey, client, randomWallet, protoKey, newAccountKey, accountCreate, receipt, newAccountId, hederaEoa;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    edPrivateKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
-                    client = sdk_1.Client.forNetwork(account.network);
-                    randomWallet = ethers_1.ethers.Wallet.createRandom();
-                    protoKey = proto_1.Key.create({
-                        ECDSASecp256k1: (0, utils_1.arrayify)(randomWallet._signingKey().compressedPublicKey)
-                    });
-                    newAccountKey = exports_1.Key._fromProtobufKey(protoKey);
-                    return [4 /*yield*/, new sdk_1.AccountCreateTransaction()
-                            .setKey(newAccountKey)
-                            .setTransactionId(sdk_1.TransactionId.generate(account.operator.accountId))
-                            .setInitialBalance(new sdk_1.Hbar(initialBalance))
-                            .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
-                            .freeze()
-                            .sign(edPrivateKey)];
-                case 1: return [4 /*yield*/, (_a.sent())
-                        .execute(client)];
-                case 2:
-                    accountCreate = _a.sent();
-                    return [4 /*yield*/, accountCreate.getReceipt(client)];
-                case 3:
-                    receipt = _a.sent();
-                    newAccountId = receipt.accountId.toString();
-                    hederaEoa = {
-                        account: newAccountId,
-                        privateKey: randomWallet.privateKey
-                    };
-                    // @ts-ignore
-                    return [2 /*return*/, new ethers_1.ethers.Wallet(hederaEoa, provider)];
-            }
-        });
-    });
+var defaultAccount = {
+    "operator": {
+        "accountId": "0.0.19041642",
+        "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
+        "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
+    },
+    "network": {
+        "0.testnet.hedera.com:50211": "0.0.3",
+        "1.testnet.hedera.com:50211": "0.0.4",
+        "2.testnet.hedera.com:50211": "0.0.5",
+        "3.testnet.hedera.com:50211": "0.0.6"
+    }
 };
+/**
+ * Helper function that returns a Wallet instance from the provided ED25519 credentials, provided from portal.hedera.com
+ */
+var createWalletFromED25519 = function (provider, account, initialBalance) { return __awaiter(void 0, void 0, void 0, function () {
+    var edPrivateKey, client, randomWallet, protoKey, newAccountKey, accountCreate, receipt, newAccountId, hederaEoa;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0:
+                if (!account)
+                    account = defaultAccount;
+                edPrivateKey = sdk_1.PrivateKey.fromString(account.operator.privateKey);
+                client = sdk_1.Client.forNetwork(account.network);
+                randomWallet = ethers_1.ethers.Wallet.createRandom();
+                protoKey = proto_1.Key.create({
+                    ECDSASecp256k1: (0, utils_1.arrayify)(randomWallet._signingKey().compressedPublicKey)
+                });
+                newAccountKey = sdk_1.Key._fromProtobufKey(protoKey);
+                return [4 /*yield*/, new sdk_1.AccountCreateTransaction()
+                        .setKey(newAccountKey)
+                        .setTransactionId(sdk_1.TransactionId.generate(account.operator.accountId))
+                        .setInitialBalance(new sdk_1.Hbar(initialBalance))
+                        .setNodeAccountIds([new sdk_1.AccountId(0, 0, 3)])
+                        .freeze()
+                        .sign(edPrivateKey)];
+            case 1: return [4 /*yield*/, (_a.sent())
+                    .execute(client)];
+            case 2:
+                accountCreate = _a.sent();
+                return [4 /*yield*/, accountCreate.getReceipt(client)];
+            case 3:
+                receipt = _a.sent();
+                newAccountId = receipt.accountId.toString();
+                hederaEoa = {
+                    account: newAccountId,
+                    privateKey: randomWallet.privateKey
+                };
+                // @ts-ignore
+                return [2 /*return*/, new ethers_1.ethers.Wallet(hederaEoa, provider)];
+        }
+    });
+}); };
 exports.createWalletFromED25519 = createWalletFromED25519;
 //# sourceMappingURL=utils.js.map

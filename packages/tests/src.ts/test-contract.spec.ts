@@ -349,6 +349,42 @@ describe("Test Contract Transaction Population", function() {
     }).timeout(60000);
 });
 
+describe("contract.deployed", function() {
+    const hederaEoa = {
+        account: '0.0.29562194',
+        privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+    };
+    const provider = ethers.providers.getDefaultProvider('testnet');
+    // @ts-ignore
+    const wallet = new ethers.Wallet(hederaEoa, provider);
+    const bytecode = fs.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+
+    it("should work for already deployed contracts", async function() {
+        const contract = ethers.ContractFactory.getContract('0000000000000000000000000000000001c3903b', abi, wallet);
+        const contractDeployed = await contract.deployed();
+
+        assert.notStrictEqual(contractDeployed, null, "deployed returns the contract");
+        assert.strictEqual(contractDeployed.address, contract.address, "deployed returns the same contract instance");
+    });
+
+
+    it("should work if contract is just now deployed", async function() {
+        const contractFactory = new ethers.ContractFactory(abi, bytecode, wallet);
+        const contract = await contractFactory.deploy( { gasLimit: 300000 });
+
+        assert.notStrictEqual(contract, null, "nullified contract");
+        assert.notStrictEqual(contract.deployTransaction, "missing deploy transaction");
+        assert.notStrictEqual(contract.address, null, 'missing address');
+
+        const contractDeployed = await contract.deployed();
+
+        assert.notStrictEqual(contractDeployed, null, "deployed returns the contract");
+        assert.strictEqual(contractDeployed.address, contract.address, "deployed returns the same contract instance");
+
+    }).timeout(60000);
+
+});
+
 
 /*
 // Test Contract interaction inside Grid-deployed Geth
