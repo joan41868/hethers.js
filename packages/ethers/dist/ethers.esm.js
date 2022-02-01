@@ -6848,16 +6848,6 @@ const version$6 = "address/5.5.0";
 
 "use strict";
 const logger$7 = new Logger(version$6);
-function getAccountFromTransactionId(transactionId) {
-    // TransactionId look like this: '0.0.99999999-9999999999-999999999'
-    // or like this:                 '0.0.99999999@9999999999-999999999'
-    if (!transactionId.match(/^\d+?\.\d+?\.\d+[-|@]\d+-\d+$/)) {
-        logger$7.throwArgumentError("invalid transactionId", "transactionId", transactionId);
-    }
-    let splitSymbol = transactionId.indexOf('@') === -1 ? '-' : '@';
-    const account = transactionId.split(splitSymbol);
-    return account[0];
-}
 function asAccountString(accountLike) {
     let parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
     return `${parsedAccount.shard}.${parsedAccount.realm}.${parsedAccount.num}`;
@@ -7031,7 +7021,6 @@ function parseAccount(account) {
 
 var lib_esm$5 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
-	getAccountFromTransactionId: getAccountFromTransactionId,
 	asAccountString: asAccountString,
 	getChecksumAddress: getChecksumAddress,
 	getAddress: getAddress,
@@ -22449,6 +22438,9 @@ var dependencies = {
 	"minimalistic-assert": "^1.0.1",
 	"minimalistic-crypto-utils": "^1.0.1"
 };
+var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
+var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
+var _from = "elliptic@6.5.4";
 var require$$0 = {
 	name: name,
 	version: version$b,
@@ -22463,7 +22455,10 @@ var require$$0 = {
 	bugs: bugs,
 	homepage: homepage,
 	devDependencies: devDependencies,
-	dependencies: dependencies
+	dependencies: dependencies,
+	_resolved: _resolved,
+	_integrity: _integrity,
+	_from: _from
 };
 
 var minimalisticAssert = assert;
@@ -39700,7 +39695,7 @@ const COST_QUERY = [];
 /**
  * The ID for a crypto-currency contract on Hedera.
  */
-class ContractId extends Key$1 {
+class ContractId extends Key {
     /**
      * @param {number | Long | import("../EntityIdHelper").IEntityId} props
      * @param {(number | Long)=} realm
@@ -40176,6 +40171,10 @@ class TokenDecimalMap extends ObjectMap {
  * @typedef {object} AccountBalanceJson
  * @property {string} hbars
  * @property {TokenBalanceJson[]} tokens
+ */
+
+/**
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  */
 
 class AccountBalance {
@@ -43468,7 +43467,7 @@ class TransactionHashMap extends ObjectMap {
  */
 class NodeAccountIdSignatureMap extends ObjectMap {
     constructor() {
-        super((s) => PublicKey$1.fromString(s));
+        super((s) => PublicKey.fromString(s));
     }
 
     /**
@@ -43481,18 +43480,11 @@ class NodeAccountIdSignatureMap extends ObjectMap {
         const sigPairs = sigMap.sigPair != null ? sigMap.sigPair : [];
 
         for (const sigPair of sigPairs) {
-            if (sigPair.pubKeyPrefix != null) {
-                if (sigPair.ed25519 != null) {
-                    signatures._set(
-                        PublicKey$1.fromBytesED25519(sigPair.pubKeyPrefix),
-                        sigPair.ed25519
-                    );
-                } else if (sigPair.ECDSASecp256k1 != null) {
-                    signatures._set(
-                        PublicKey$1.fromBytesECDSA(sigPair.pubKeyPrefix),
-                        sigPair.ECDSASecp256k1
-                    );
-                }
+            if (sigPair.pubKeyPrefix != null && sigPair.ed25519 != null) {
+                signatures._set(
+                    PublicKey.fromBytes(sigPair.pubKeyPrefix),
+                    sigPair.ed25519
+                );
             }
         }
 
@@ -44310,11 +44302,7 @@ class Transaction extends Executable {
             this._nextTransactionIndex * this._nodeIds.length +
             this._nextNodeIndex;
 
-        if (this._signOnDemand) {
-            await this._buildTransactionAsync(index);
-        } else {
-            this._buildTransaction(index);
-        }
+        await this._buildTransactionAsync(index);
 
         return /** @type {proto.ITransaction} */ (this._transactions[index]);
     }
@@ -44398,8 +44386,6 @@ class Transaction extends Executable {
                 this._transactions.push(null);
             }
         }
-
-        // console.log(JSON.stringify(this._signedTransactions[index]));
 
         this._transactions[index] = {
             signedTransactionBytes: lib.SignedTransaction.encode(
@@ -46981,13 +46967,14 @@ QUERY_REGISTRY.set("contractGetBytecode", ContractByteCodeQuery._fromProtobuf);
 // https://github.com/MaiaVictor/eth-lib/blob/da0971f5b09964d9c8449975fa87933f0c9fef35/src/hash.js
 //  - added type declarations
 //  - switched to es6 module syntax
-//
-// Disable linting for entire file because it's nearly all pure JS
-// eslint-disable
 
-const HEX_CHARS$1 = "0123456789abcdef".split("");
+/** @type {number[]} */
 const KECCAK_PADDING$1 = [1, 256, 65536, 16777216];
+
+/** @type {number[]} */
 const SHIFT$1 = [0, 8, 16, 24];
+
+/** @type {number[]} */
 const RC$1 = [
     1, 0, 32898, 0, 32906, 2147483648, 2147516416, 2147483648, 32907, 0,
     2147483649, 0, 2147516545, 2147483648, 32777, 2147483648, 138, 0, 136, 0,
@@ -46998,7 +46985,7 @@ const RC$1 = [
 ];
 
 /**
- * @typedef {object} KeccakT
+ * @typedef {object} Keccak
  * @property {number[]} blocks
  * @property {number} blockCount
  * @property {number} outputBlocks
@@ -47006,23 +46993,45 @@ const RC$1 = [
  * @property {number} start
  * @property {number} block
  * @property {boolean} reset
- * @property {number=} lastByteIndex
+ * @property {?number} lastByteIndex
  */
 
-/** @type {(bits: number) => KeccakT} */
-const Keccak$1 = (bits) => ({
-    blocks: [],
-    reset: true,
-    block: 0,
-    start: 0,
-    blockCount: (1600 - (bits << 1)) >> 5,
-    outputBlocks: bits >> 5,
-    // @ts-ignore
-    s: ((s) => [].concat(s, s, s, s, s))([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-});
+/**
+ * @param {number} bits
+ * @returns {Keccak}
+ */
+function createKeccakState(bits) {
+    return {
+        blocks: [],
+        reset: true,
+        block: 0,
+        start: 0,
+        lastByteIndex: null,
+        blockCount: (1600 - (bits << 1)) >> 5,
+        outputBlocks: bits >> 5,
+        s: zeroFill(50),
+    };
+}
 
-/** @type {(state: KeccakT, message: string | number[]) => string} */
-const update$1 = (state, /** @type {string | number[]} */ message) => {
+/**
+ * @param {number} n
+ * @returns {number[]}
+ */
+function zeroFill(n) {
+    /** @type {number[]} */
+    let arr = Array(n);
+
+    for (let i = 0; i < n; ++i) arr[i] = 0;
+
+    return arr;
+}
+
+/**
+ * @param {Keccak} state
+ * @param {string | Uint8Array} message
+ * @returns {Uint8Array}
+ */
+function update$1(state, message) {
     var length = message.length,
         blocks = state.blocks,
         byteCount = state.blockCount << 2,
@@ -47030,7 +47039,7 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
         outputBlocks = state.outputBlocks,
         s = state.s,
         index = 0,
-        i,
+        i = 0,
         code;
 
     // update
@@ -47042,35 +47051,35 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
                 blocks[i] = 0;
             }
         }
-        if (typeof message !== "string") {
-            for (i = state.start; index < length && i < byteCount; ++index) {
-                blocks[i >> 2] |= message[index] << SHIFT$1[i++ & 3];
-            }
-        } else {
-            for (i = state.start; index < length && i < byteCount; ++index) {
-                code = message.charCodeAt(index);
-                if (code < 0x80) {
-                    blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
-                } else if (code < 0x800) {
-                    blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-                } else if (code < 0xd800 || code >= 0xe000) {
-                    blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |=
-                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-                } else {
-                    code =
-                        0x10000 +
-                        (((code & 0x3ff) << 10) |
-                            (message.charCodeAt(++index) & 0x3ff));
-                    blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |=
-                        (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |=
-                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-                }
+        for (i = state.start; index < length && i < byteCount; ++index) {
+            code =
+                typeof message === "string"
+                    ? message.charCodeAt(index)
+                    : message[index];
+            if (code < 0x80) {
+                blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
+            } else if (code < 0x800) {
+                blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+            } else if (code < 0xd800 || code >= 0xe000) {
+                blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |=
+                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+            } else {
+                code =
+                    0x10000 +
+                    (((code & 0x3ff) << 10) |
+                        ((typeof message === "string"
+                            ? message.charCodeAt(++index)
+                            : message[++index]) &
+                            0x3ff));
+                blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |=
+                    (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |=
+                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
             }
         }
         state.lastByteIndex = i;
@@ -47088,9 +47097,9 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
     }
 
     // finalize
-    i = state.lastByteIndex;
-    // @ts-ignore
+    i = /** @type {number} */ (state.lastByteIndex);
     blocks[i >> 2] |= KECCAK_PADDING$1[i & 3];
+
     if (state.lastByteIndex === byteCount) {
         blocks[0] = blocks[blockCount];
         for (i = 1; i < blockCount + 1; ++i) {
@@ -47101,37 +47110,33 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
     for (i = 0; i < blockCount; ++i) {
         s[i] ^= blocks[i];
     }
+
     f$2(s);
 
-    // toString
-    var hex = "";
-    var block;
-    var j = 0;
+    const buffer = new ArrayBuffer(outputBlocks * 4);
+    const view = new DataView(buffer);
+
     i = 0;
+    var j = 0;
+
     while (j < outputBlocks) {
         for (i = 0; i < blockCount && j < outputBlocks; ++i, ++j) {
-            block = s[i];
-            hex +=
-                HEX_CHARS$1[(block >> 4) & 0x0f] +
-                HEX_CHARS$1[block & 0x0f] +
-                HEX_CHARS$1[(block >> 12) & 0x0f] +
-                HEX_CHARS$1[(block >> 8) & 0x0f] +
-                HEX_CHARS$1[(block >> 20) & 0x0f] +
-                HEX_CHARS$1[(block >> 16) & 0x0f] +
-                HEX_CHARS$1[(block >> 28) & 0x0f] +
-                HEX_CHARS$1[(block >> 24) & 0x0f];
+            view.setInt32(i * 4, s[i], true);
         }
+
         if (j % blockCount === 0) {
             f$2(s);
             i = 0;
         }
     }
-    // @ts-ignore
-    return "0x" + hex;
-};
 
-/** @type {(s: number[]) => void} */
-const f$2 = (s) => {
+    return new Uint8Array(buffer);
+}
+
+/**
+ * @param {number[]} s
+ */
+function f$2(s) {
     var h,
         l,
         n,
@@ -47374,25 +47379,19 @@ const f$2 = (s) => {
         s[0] ^= RC$1[n];
         s[1] ^= RC$1[n + 1];
     }
-};
-
-const keccak$1 = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
-    var msg;
-    if (str.slice(0, 2) === "0x") {
-        msg = [];
-        for (var i = 2, l = str.length; i < l; i += 2)
-            msg.push(parseInt(str.slice(i, i + 2), 16));
-    } else {
-        msg = str;
-    }
-    // @ts-ignore
-    return update$1(Keccak$1(bits, bits), msg);
-};
+}
 
 /**
- * @type {(message: string) => string}
+ * @param {number} bits
+ * @returns {(message: string | Uint8Array) => Uint8Array}
  */
-const keccak256$2 = keccak$1(256);
+function createKeccak(bits) {
+    return function (message) {
+        return update$1(createKeccakState(bits), message);
+    };
+}
+
+const keccak256$2 = createKeccak(256);
 
 /**
  * @enum {number}
@@ -47661,8 +47660,7 @@ class ContractFunctionSelector {
             throw new Error("`name` required for ContractFunctionSelector");
         }
 
-        const func = encode$4(encode$5(this.toString()));
-        return decode$5(keccak256$2(`0x${func}`)).slice(0, 4);
+        return new Uint8Array(keccak256$2(this.toString()).slice(0, 4));
     }
 
     /**
@@ -49318,6 +49316,7 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../account/AccountId.js").default} AccountId
@@ -52730,6 +52729,7 @@ TRANSACTION_REGISTRY.set(
  */
 
 /**
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
@@ -57198,6 +57198,7 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
  * @typedef {import("./CustomFee.js").default} CustomFee
@@ -58696,6 +58697,9 @@ TRANSACTION_REGISTRY.set(
  * @typedef {import("@hashgraph/proto").IDuration} proto.IDuration
  */
 
+/**
+ * @typedef {import("@hashgraph/cryptography").Key} Key
+ */
 class TokenNftInfo {
     /**
      * @private
@@ -80780,6 +80784,9 @@ var files$1 = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
+var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
+var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
+var _from$1 = "@grpc/grpc-js@1.5.1";
 var require$$0$2 = {
 	name: name$1,
 	version: version$c,
@@ -80796,7 +80803,10 @@ var require$$0$2 = {
 	contributors: contributors,
 	scripts: scripts$1,
 	dependencies: dependencies$1,
-	files: files$1
+	files: files$1,
+	_resolved: _resolved$1,
+	_integrity: _integrity$1,
+	_from: _from$1
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -92039,11 +92049,12 @@ class Wallet extends Signer {
     }
     signTransaction(transaction) {
         this._checkAddress('signTransaction');
-        this.checkTransaction(transaction);
-        return this.populateTransaction(transaction).then((readyTx) => __awaiter$4(this, void 0, void 0, function* () {
-            const tx = serializeHederaTransaction(readyTx);
-            const pkey = PrivateKey$1.fromStringECDSA(this._signingKey().privateKey);
-            const signed = yield tx.sign(pkey);
+        let tx = this.checkTransaction(transaction);
+        return this.populateTransaction(tx).then((readyTx) => __awaiter$4(this, void 0, void 0, function* () {
+            const pubKey = PublicKey$1.fromString(this._signingKey().compressedPublicKey);
+            const tx = serializeHederaTransaction(readyTx, pubKey);
+            const privKey = PrivateKey$1.fromStringECDSA(this._signingKey().privateKey);
+            const signed = yield tx.sign(privKey);
             return hexlify(signed.toBytes());
         }));
     }
@@ -92093,6 +92104,20 @@ class Wallet extends Signer {
         const mnemonic = entropyToMnemonic(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     }
+    createAccount(pubKey, initialBalance) {
+        return __awaiter$4(this, void 0, void 0, function* () {
+            if (!initialBalance)
+                initialBalance = BigInt(0);
+            const signed = yield this.signTransaction({
+                customData: {
+                    publicKey: pubKey,
+                    initialBalance
+                }
+            });
+            return this.provider.sendTransaction(signed);
+        });
+    }
+    ;
     static fromEncryptedJson(json, password, progressCallback) {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
             return new Wallet(account);
@@ -92605,7 +92630,7 @@ var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatBytes32String = exports.Utf8ErrorFuncs = exports.toUtf8String = exports.toUtf8CodePoints = exports.toUtf8Bytes = exports._toEscapedUtf8String = exports.nameprep = exports.hexDataSlice = exports.hexDataLength = exports.hexZeroPad = exports.hexValue = exports.hexStripZeros = exports.hexConcat = exports.isHexString = exports.hexlify = exports.base64 = exports.base58 = exports.TransactionDescription = exports.LogDescription = exports.Interface = exports.SigningKey = exports.HDNode = exports.defaultPath = exports.isBytesLike = exports.isBytes = exports.zeroPad = exports.stripZeros = exports.concat = exports.arrayify = exports.shallowCopy = exports.resolveProperties = exports.getStatic = exports.defineReadOnly = exports.deepCopy = exports.checkProperties = exports.poll = exports.fetchJson = exports._fetchData = exports.RLP = exports.Logger = exports.checkResultErrors = exports.FormatTypes = exports.ParamType = exports.FunctionFragment = exports.EventFragment = exports.ErrorFragment = exports.ConstructorFragment = exports.Fragment = exports.defaultAbiCoder = exports.AbiCoder = void 0;
 exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAlias = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.serializeTransaction = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseEther = exports.formatEther = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getChecksumAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.isValidName = exports.namehash = exports.hashMessage = exports.parseBytes32String = void 0;
-exports.getAccountFromTransactionId = exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = void 0;
+exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = void 0;
 
 Object.defineProperty(exports, "AbiCoder", { enumerable: true, get: function () { return abi_1.AbiCoder; } });
 Object.defineProperty(exports, "checkResultErrors", { enumerable: true, get: function () { return abi_1.checkResultErrors; } });
@@ -92631,7 +92656,6 @@ Object.defineProperty(exports, "isAddress", { enumerable: true, get: function ()
 Object.defineProperty(exports, "getAccountFromAddress", { enumerable: true, get: function () { return address_1.getAccountFromAddress; } });
 Object.defineProperty(exports, "getAddressFromAccount", { enumerable: true, get: function () { return address_1.getAddressFromAccount; } });
 Object.defineProperty(exports, "parseAccount", { enumerable: true, get: function () { return address_1.parseAccount; } });
-Object.defineProperty(exports, "getAccountFromTransactionId", { enumerable: true, get: function () { return address_1.getAccountFromTransactionId; } });
 var base64 = __importStar(require$$0$3);
 exports.base64 = base64;
 
@@ -93194,12 +93218,12 @@ const logger$s = new Logger(version$o);
 ;
 ;
 ///////////////////////////////
-// const allowedTransactionKeys: { [ key: string ]: boolean } = {
-//     chainId: true, data: true, from: true, gasLimit: true, gasPrice:true, nonce: true, to: true, value: true,
-//     type: true, accessList: true,
-//     maxFeePerGas: true, maxPriorityFeePerGas: true,
-//     customData: true
-// }
+const allowedTransactionKeys$2 = {
+    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
+    type: true,
+    maxFeePerGas: true, maxPriorityFeePerGas: true,
+    customData: true, nodeId: true,
+};
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter$8(this, void 0, void 0, function* () {
@@ -94099,28 +94123,39 @@ class ContractFactory {
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         defineReadOnly(this, "signer", signer || null);
     }
-    getDeployTransactions(...args) {
-        let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
-        const fileCreate = {
-            customData: {
-                fileChunk: chunks[0]
-            }
-        };
-        let fileAppends = [];
-        for (let chunk of chunks.slice(1)) {
-            const fileAppend = {
-                customData: {
-                    fileChunk: chunk
+    getDeployTransaction(...args) {
+        let contractCreateTx = {};
+        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+            contractCreateTx = shallowCopy(args.pop());
+            for (const key in contractCreateTx) {
+                if (!allowedTransactionKeys$2[key]) {
+                    throw new Error("unknown transaction override " + key);
                 }
-            };
-            fileAppends.push(fileAppend);
+            }
         }
-        const contractCreate = {
-            gasLimit: 300000,
-            data: this.interface.encodeDeploy(args),
-            customData: {}
-        };
-        return [fileCreate, ...fileAppends, contractCreate];
+        // Allow only these to be overwritten in a deployment transaction
+        Object.keys(contractCreateTx).forEach((key) => {
+            if (["gasLimit", "value"].indexOf(key) > -1) {
+                return;
+            }
+            logger$s.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
+        });
+        if (contractCreateTx.value) {
+            const value = BigNumber.from(contractCreateTx.value);
+            if (!value.isZero() && !this.interface.deploy.payable) {
+                logger$s.throwError("non-payable constructor cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "overrides.value",
+                    value: contractCreateTx.value
+                });
+            }
+        }
+        // Make sure the call matches the constructor signature
+        logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
+        contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: hexlify(concat([
+                this.bytecode,
+                this.interface.encodeDeploy(args)
+            ])), customData: {} });
+        return contractCreateTx;
     }
     deploy(...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
@@ -94135,14 +94170,13 @@ class ContractFactory {
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
             // Get the deployment transaction (with optional overrides)
-            const unsignedTx = this.getDeployTransactions();
-            // Send the deployment transaction
-            const tx = yield this.signer.sendTransaction(unsignedTx[0]);
-            const address = getStatic(this.constructor, "getContractAddress")(tx);
+            const contractCreate = this.getDeployTransaction(...params);
+            const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
+            const address = contractCreateResponse.customData.contractId;
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
             // Add the modified wait that wraps events
-            addContractWait(contract, tx);
-            defineReadOnly(contract, "deployTransaction", tx);
+            addContractWait(contract, contractCreateResponse);
+            defineReadOnly(contract, "deployTransaction", contractCreateResponse);
             return contract;
         });
     }
@@ -94799,31 +94833,30 @@ class Formatter {
     }
     responseFromRecord(record) {
         return {
-            chainId: record.chainId ? record.chainId : null,
-            hash: record.hash ? record.hash : null,
-            timestamp: record.timestamp ? record.timestamp : null,
-            transactionId: record.transactionId ? record.transactionId : null,
-            from: record.from ? record.from : null,
-            to: record.to ? record.to : null,
-            data: record.call_result ? record.call_result : null,
-            gasLimit: typeof record.gas_limit !== 'undefined' ? BigNumber.from(record.gas_limit) : null,
-            value: typeof record.amount !== 'undefined' ? BigNumber.from(record.amount) : null,
+            chainId: record.chainId,
+            hash: record.hash,
+            timestamp: record.timestamp,
+            transactionId: record.transactionId,
+            from: record.from,
+            to: record.to,
+            data: record.call_result,
+            gasLimit: BigNumber.from(record.gas_limit),
+            value: BigNumber.from(record.amount),
             customData: {
-                gas_used: record.gas_used ? record.gas_used : null,
-                logs: record.logs ? record.logs : null,
-                result: record.result ? record.result : null,
-                accountAddress: record.accountAddress ? record.accountAddress : null
+                gas_used: record.gas_used,
+                logs: record.logs,
+                result: record.result
             },
-            wait: null,
+            wait: null
         };
     }
     receiptFromResponse(response) {
-        var _a, _b, _c, _d, _e, _f;
+        var _a, _b, _c, _d;
         let contractAddress = null;
         let to = null;
         let logs = [];
         response.data != '0x' ? contractAddress = response.to : to = response.to;
-        (_b = (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs) === null || _b === void 0 ? void 0 : _b.forEach(function (log) {
+        (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
             const values = {
                 timestamp: response.timestamp,
                 address: log.address,
@@ -94839,16 +94872,15 @@ class Formatter {
             from: response.from,
             timestamp: response.timestamp,
             contractAddress: contractAddress,
-            gasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
+            gasUsed: (_b = response.customData) === null || _b === void 0 ? void 0 : _b.gas_used,
             logsBloom: null,
             transactionId: response.transactionId,
             transactionHash: response.hash,
             logs: logs,
-            cumulativeGasUsed: (_d = response.customData) === null || _d === void 0 ? void 0 : _d.gas_used,
+            cumulativeGasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
             type: 0,
             byzantium: true,
-            status: ((_e = response.customData) === null || _e === void 0 ? void 0 : _e.result) === 'SUCCESS' ? 1 : 0,
-            accountAddress: ((_f = response.customData) === null || _f === void 0 ? void 0 : _f.accountAddress) ? response.customData.accountAddress : null
+            status: ((_d = response.customData) === null || _d === void 0 ? void 0 : _d.result) === 'SUCCESS' ? 1 : 0
         };
     }
     topics(value) {
@@ -98629,9 +98661,6 @@ function stall(duration) {
         setTimeout(resolve, duration);
     });
 }
-function base64ToHex(hash) {
-    return hexlify(utils$1.base64.decode(hash));
-}
 //////////////////////////////
 // Provider Object
 /**
@@ -99221,27 +99250,9 @@ class BaseProvider extends Provider {
                 if (data) {
                     const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
                     if (filtered.length > 0) {
-                        let record;
-                        record = {
-                            chainId: this._network.chainId,
-                            transactionId: transactionId,
-                            result: filtered[0].result,
-                        };
-                        const transactionName = filtered[0].name;
-                        if (transactionName === 'CRYPTOCREATEACCOUNT') {
-                            record.from = getAccountFromTransactionId(transactionId);
-                            record.timestamp = filtered[0].consensus_timestamp;
-                            // Different endpoints of the mirror node API returns hashes in different formats.
-                            // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
-                            // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
-                            record.hash = base64ToHex(filtered[0].transaction_hash);
-                            record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
-                        }
-                        else {
-                            const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
-                            const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
-                            record = Object.assign({}, record, Object.assign({}, dataWithLogs.data));
-                        }
+                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                        const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
+                        const record = Object.assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
                         return this.formatter.responseFromRecord(record);
                     }
                 }
