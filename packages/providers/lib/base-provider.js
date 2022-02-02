@@ -819,7 +819,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (filter.address != null) {
                             result.address = filter.address;
                         }
-                        ["blockHash", "topics"].forEach(function (key) {
+                        ["topics"].forEach(function (key) {
                             if (filter[key] == null) {
                                 return;
                             }

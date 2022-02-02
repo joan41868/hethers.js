@@ -617,7 +617,7 @@ export class BaseProvider extends Provider {
             if (filter.address != null) {
                 result.address = filter.address;
             }
-            ["blockHash", "topics"].forEach((key) => {
+            ["topics"].forEach((key) => {
                 if (filter[key] == null) {
                     return;
                 }

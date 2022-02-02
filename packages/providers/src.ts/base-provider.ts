@@ -719,7 +719,7 @@ export class BaseProvider extends Provider {
             result.address = filter.address;
         }
 
-        ["blockHash", "topics"].forEach((key) => {
+        ["topics"].forEach((key) => {
             if ((<any>filter)[key] == null) { return; }
             result[key] = (<any>filter)[key];
         });

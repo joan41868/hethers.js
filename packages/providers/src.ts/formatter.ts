@@ -52,37 +52,16 @@ export class Formatter {
 
         formats.transaction = {
             hash: hash48,
-
-            type: type,
             accessList: Formatter.allowNull(this.accessList.bind(this), null),
-
-            blockHash: Formatter.allowNull(hash48, null),
-            blockNumber: Formatter.allowNull(number, null),
-            transactionIndex: Formatter.allowNull(number, null),
-
-            confirmations: Formatter.allowNull(number, null),
-
             from: address,
-
-            // either (gasPrice) or (maxPriorityFeePerGas + maxFeePerGas)
-            // must be set
-            gasPrice: Formatter.allowNull(bigNumber),
-            maxPriorityFeePerGas: Formatter.allowNull(bigNumber),
-            maxFeePerGas: Formatter.allowNull(bigNumber),
-
             gasLimit: bigNumber,
             to: Formatter.allowNull(address, null),
             value: bigNumber,
-            nonce: number,
             data: data,
 
             r: Formatter.allowNull(this.uint256),
             s: Formatter.allowNull(this.uint256),
             v: Formatter.allowNull(number),
-
-            creates: Formatter.allowNull(address, null),
-
-            raw: Formatter.allowNull(data),
         };
 
         formats.transactionRequest = {
@@ -101,31 +80,23 @@ export class Formatter {
 
         formats.receiptLog = {
             transactionIndex: number,
-            blockNumber: number,
             transactionHash: hash48,
             address: address,
             topics: Formatter.arrayOf(hash32),
             data: data,
             logIndex: number,
-            blockHash: hash48,
         };
 
         formats.receipt = {
             to: Formatter.allowNull(this.address, null),
             from: Formatter.allowNull(this.address, null),
             contractAddress: Formatter.allowNull(address, null),
-            transactionIndex: number,
-            // should be allowNull(hash), but broken-EIP-658 support is handled in receipt
-            root: Formatter.allowNull(hex),
+            timestamp: timestamp,
             gasUsed: bigNumber,
             logsBloom: Formatter.allowNull(data),// @TODO: should this be data?
-            blockHash: hash48,
             transactionHash: hash48,
             logs: Formatter.arrayOf(this.receiptLog.bind(this)),
-            blockNumber: number,
-            confirmations: Formatter.allowNull(number, null),
             cumulativeGasUsed: bigNumber,
-            effectiveGasPrice: Formatter.allowNull(bigNumber),
             status: Formatter.allowNull(number),
             type: type
         };
@@ -156,7 +127,6 @@ export class Formatter {
         formats.filter = {
             fromTimestamp: Formatter.allowNull(timestamp, undefined),
             toTimestamp: Formatter.allowNull(timestamp, undefined),
-            blockHash: Formatter.allowNull(hash48, undefined),
             address: Formatter.allowNull(address, undefined),
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
