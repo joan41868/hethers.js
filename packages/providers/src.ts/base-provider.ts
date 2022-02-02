@@ -1,16 +1,8 @@
 "use strict";
 
 import {
-    BlockTag,
-    EventType,
-    Filter,
-    // FilterByBlockHash,
-    Listener,
-    Log,
-    Provider,
-    TransactionReceipt,
-    TransactionRequest,
-    TransactionResponse
+    EventType, Filter, Listener, Log, Provider,
+    TransactionReceipt, TransactionRequest, TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
@@ -410,7 +402,7 @@ export class Resolver implements EnsResolver {
 
 let defaultFormatter: Formatter = null;
 const MIRROR_NODE_TRANSACTIONS_ENDPOINT =  '/api/v1/transactions/';
-const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
+const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 
 export class BaseProvider extends Provider {
     _networkPromise: Promise<Network>;
@@ -530,11 +522,15 @@ export class BaseProvider extends Provider {
 
     // @TODO: Remove this and just use getNetwork
     static getNetwork(network: Networkish): Network {
-        return getNetwork((network == null) ? "mainnet" : network);
+        return getNetwork((network == null) ? "mainnet": network);
     }
 
     get network(): Network {
         return this._network;
+    }
+
+    public _checkMirrorNode(): void {
+        if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
     }
 
     // This method should query the network if the underlying network
@@ -637,20 +633,30 @@ export class BaseProvider extends Provider {
         }
     }
 
-    async getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
-        await this.getNetwork();
-        const params = await resolveProperties({
-            address: this._getAddress(addressOrName),
-        });
-
-        const result = await this.perform("getCode", params);
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
+     */
+    async getCode(accountLike: AccountLike | Promise<AccountLike>, throwOnNonExisting?: boolean): Promise<string> {
+        this._checkMirrorNode();
+        accountLike = await accountLike;
+        const account = asAccountString(accountLike);
         try {
-            return hexlify(result);
+            let { data } = await axios.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account);
+            return data.bytecode ? hexlify(data.bytecode) : `0x`;
         } catch (error) {
-            return logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                method: "getCode",
-                params, result, error
-            });
+            if (error.response && error.response.status &&
+                (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {
+                logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    method: "ContractByteCodeQuery",
+                    params: {address: accountLike},
+                    error
+                });
+            }
+            return "0x";
         }
     }
 
@@ -767,7 +773,7 @@ export class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
-        if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+        this._checkMirrorNode();
         transactionId = await transactionId;
         const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
         try {
@@ -870,7 +876,7 @@ export class BaseProvider extends Provider {
                     error
                 });
             }
-        } 
+        }
         return null;
     }
 

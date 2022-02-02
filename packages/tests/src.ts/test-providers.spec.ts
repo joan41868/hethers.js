@@ -1054,6 +1054,7 @@ describe("Test Hedera Provider", function () {
     const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
     const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
     const solAddr = getAddressFromAccount(accountConfig);
+    const nonExistingAddress = "0x0000000000000000000000000000000000000000";
     const timeout = 15000;
 
     it('Gets the balance', async function () {
@@ -1344,6 +1345,36 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(mintedTransaction.timestamp, '1643299496.863374000', "timestamp is correct");
 
     });
+
+    it("Should get bytecode of contract", async function() {
+        const contractAccountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(16645669)};
+        const contractAddress = getAddressFromAccount(contractAccountConfig);
+        let result = await provider.getCode(contractAddress);
+        assert.strict((typeof result === "string" && result != "0x"),  `returns bytecode of contract - ` + contractAddress);
+    }).timeout(timeout * 4);
+
+    it("Should return 0x of non-existing contract", async function() {
+        let result = await provider.getCode(solAddr);
+        assert.strictEqual(result, "0x", `returns 0x of account - ` + solAddr);
+        result = await provider.getCode(nonExistingAddress);
+        assert.strictEqual(result, "0x", `returns 0x of non-existing account/contract - ` + nonExistingAddress);
+    }).timeout(timeout * 4);
+
+    it("Should throw with optional parameter", async function() {
+        await assert.rejects(
+            async () => {
+                await provider.getCode(nonExistingAddress, true);
+            },
+            (err) => {
+              assert.strictEqual(err.name, 'Error');
+              assert.strictEqual(err.reason, 'bad result from backend');
+              assert.strictEqual(err.method, 'ContractByteCodeQuery');
+              assert.strictEqual(err.error.response.status, 404);
+              assert.strictEqual(err.error.response.statusText, 'Not Found');
+              return true;
+            }
+        );
+    }).timeout(timeout * 4);
 });
 
 describe("Test Hedera Provider Formatters", function () {

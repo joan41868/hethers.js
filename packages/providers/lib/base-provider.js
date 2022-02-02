@@ -425,7 +425,7 @@ var Resolver = /** @class */ (function () {
 exports.Resolver = Resolver;
 var defaultFormatter = null;
 var MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
-var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
+var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 var BaseProvider = /** @class */ (function (_super) {
     __extends(BaseProvider, _super);
     /**
@@ -554,6 +554,10 @@ var BaseProvider = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
+    BaseProvider.prototype._checkMirrorNode = function () {
+        if (!this._mirrorNodeUrl)
+            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+    };
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
     // With the current hedera implementation, we do not support a changeable networks,
@@ -693,34 +697,43 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.getCode = function (addressOrName, blockTag) {
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
+     */
+    BaseProvider.prototype.getCode = function (accountLike, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, result;
+            var account, data, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 0:
+                        this._checkMirrorNode();
+                        return [4 /*yield*/, accountLike];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                address: this._getAddress(addressOrName),
-                            })];
+                        accountLike = _a.sent();
+                        account = (0, address_2.asAccountString)(accountLike);
+                        _a.label = 2;
                     case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("getCode", params)];
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account)];
                     case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, (0, bytes_1.hexlify)(result)];
+                        data = (_a.sent()).data;
+                        return [2 /*return*/, data.bytecode ? (0, bytes_1.hexlify)(data.bytecode) : "0x"];
+                    case 4:
+                        error_3 = _a.sent();
+                        if (error_3.response && error_3.response.status &&
+                            (error_3.response.status != 404 || (error_3.response.status == 404 && throwOnNonExisting))) {
+                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                method: "ContractByteCodeQuery",
+                                params: { address: accountLike },
+                                error: error_3
+                            });
                         }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getCode",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
+                        return [2 /*return*/, "0x"];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -776,7 +789,7 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, hederaTx, ethersTx, txHash, _b, resp, receipt, error_3, err;
+            var txBytes, hederaTx, ethersTx, txHash, _b, resp, receipt, error_4, err;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, signedTransaction];
@@ -802,8 +815,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         receipt = _c.sent();
                         return [2 /*return*/, this._wrapTransaction(ethersTx, txHash, receipt)];
                     case 7:
-                        error_3 = _c.sent();
-                        err = logger.makeError(error_3.message, (_a = error_3.status) === null || _a === void 0 ? void 0 : _a.toString());
+                        error_4 = _c.sent();
+                        err = logger.makeError(error_4.message, (_a = error_4.status) === null || _a === void 0 ? void 0 : _a.toString());
                         err.transaction = ethersTx;
                         err.transactionHash = txHash;
                         throw err;
@@ -884,12 +897,11 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var transactionsEndpoint, data, filtered, record, transactionName, contractsEndpoint, dataWithLogs, error_4;
+            var transactionsEndpoint, data, filtered, record, transactionName, contractsEndpoint, dataWithLogs, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this._mirrorNodeUrl)
-                            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+                        this._checkMirrorNode();
                         return [4 /*yield*/, transactionId];
                     case 1:
                         transactionId = _a.sent();
@@ -929,11 +941,11 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 6: return [2 /*return*/, this.formatter.responseFromRecord(record)];
                     case 7: return [3 /*break*/, 9];
                     case 8:
-                        error_4 = _a.sent();
-                        if (error_4 && error_4.response && error_4.response.status != 404) {
+                        error_5 = _a.sent();
+                        if (error_5 && error_5.response && error_5.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "TransactionResponseQuery",
-                                error: error_4
+                                error: error_5
                             });
                         }
                         return [3 /*break*/, 9];
@@ -973,7 +985,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, mappedLogs, error_5;
+            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, mappedLogs, error_6;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1008,11 +1020,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [3 /*break*/, 5];
                     case 4:
-                        error_5 = _a.sent();
-                        if (error_5 && error_5.response && error_5.response.status != 404) {
+                        error_6 = _a.sent();
+                        if (error_6 && error_6.response && error_6.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "ContractLogsQuery",
-                                error: error_5
+                                error: error_6
                             });
                         }
                         return [3 /*break*/, 5];
@@ -1031,7 +1043,7 @@ var BaseProvider = /** @class */ (function (_super) {
     // TODO FIXME
     BaseProvider.prototype.getResolver = function (name) {
         return __awaiter(this, void 0, void 0, function () {
-            var address, error_6;
+            var address, error_7;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1044,8 +1056,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [2 /*return*/, new Resolver(this, address, name)];
                     case 2:
-                        error_6 = _a.sent();
-                        if (error_6.code === logger_1.Logger.errors.CALL_EXCEPTION) {
+                        error_7 = _a.sent();
+                        if (error_7.code === logger_1.Logger.errors.CALL_EXCEPTION) {
                             return [2 /*return*/, null];
                         }
                         return [2 /*return*/, null];

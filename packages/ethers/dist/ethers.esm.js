@@ -93820,7 +93820,7 @@ class BaseContract {
                 // @TODO: Once we allow a timeout to be passed in, we will wait
                 // up to that many blocks for getCode
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this.address, blockTag).then((code) => {
+                this._deployedPromise = this.provider.getCode(this.address).then((code) => {
                     if (code === "0x") {
                         logger$s.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: this.address,
@@ -98930,7 +98930,7 @@ class Resolver {
 }
 let defaultFormatter = null;
 const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
-const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
+const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 class BaseProvider extends Provider {
     /**
      *  ready
@@ -99037,6 +99037,10 @@ class BaseProvider extends Provider {
     get network() {
         return this._network;
     }
+    _checkMirrorNode() {
+        if (!this._mirrorNodeUrl)
+            logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+    }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
     // With the current hedera implementation, we do not support a changeable networks,
@@ -99137,21 +99141,32 @@ class BaseProvider extends Provider {
             }
         });
     }
-    getCode(addressOrName, blockTag) {
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
+     */
+    getCode(accountLike, throwOnNonExisting) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                address: this._getAddress(addressOrName),
-            });
-            const result = yield this.perform("getCode", params);
+            this._checkMirrorNode();
+            accountLike = yield accountLike;
+            const account = asAccountString(accountLike);
             try {
-                return hexlify(result);
+                let { data } = yield axios$1.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account);
+                return data.bytecode ? hexlify(data.bytecode) : `0x`;
             }
             catch (error) {
-                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getCode",
-                    params, result, error
-                });
+                if (error.response && error.response.status &&
+                    (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {
+                    logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "ContractByteCodeQuery",
+                        params: { address: accountLike },
+                        error
+                    });
+                }
+                return "0x";
             }
         });
     }
@@ -99270,8 +99285,7 @@ class BaseProvider extends Provider {
      */
     getTransaction(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            if (!this._mirrorNodeUrl)
-                logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            this._checkMirrorNode();
             transactionId = yield transactionId;
             const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
             try {
