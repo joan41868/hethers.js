@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { checkResultErrors, Indexed, Interface } from "@ethersproject/abi";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
-import { getAddress } from "@ethersproject/address";
+import { getAddress, getAddressFromAccount } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
@@ -28,6 +28,20 @@ const allowedTransactionKeys = {
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true, nodeId: true,
 };
+function requireAddressSet(address) {
+    if (!address || address == "") {
+        logger.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, address);
+    }
+}
+function ensureSolidityAddress(addr) {
+    if (addr.toString().split(".").length > 1) {
+        addr = getAddressFromAccount(addr);
+    }
+    else {
+        addr = getAddress(addr.toString());
+    }
+    return addr;
+}
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -473,11 +487,9 @@ class WildcardRunningEvent extends RunningEvent {
     }
 }
 export class BaseContract {
-    // TODO: permute address first; make default value for address for hedera context
     constructor(address, contractInterface, signerOrProvider) {
         logger.checkNew(new.target, Contract);
-        // @TODO: Maybe still check the addressOrName looks like a valid _address or name?
-        //_address = getAddress(_address);
+        this.address = address || "";
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         if (signerOrProvider == null) {
             defineReadOnly(this, "provider", null);
@@ -504,7 +516,7 @@ export class BaseContract {
                 const event = this.interface.events[eventSignature];
                 defineReadOnly(this.filters, eventSignature, (...args) => {
                     return {
-                        address: this._address,
+                        address: ensureSolidityAddress(this._address),
                         topics: this.interface.encodeFilterTopics(event, args)
                     };
                 });
@@ -525,9 +537,6 @@ export class BaseContract {
         }
         defineReadOnly(this, "_runningEvents", {});
         defineReadOnly(this, "_wrappedEmits", {});
-        if (address) {
-            this.address = address;
-        }
         const uniqueNames = {};
         const uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -608,6 +617,8 @@ export class BaseContract {
         return this._deployed();
     }
     _deployed(blockTag) {
+        requireAddressSet(this._address);
+        const addr = ensureSolidityAddress(this._address);
         if (!this._deployedPromise) {
             // If we were just deployed, we know the transaction we should occur in
             if (this.deployTransaction) {
@@ -619,7 +630,7 @@ export class BaseContract {
                 // @TODO: Once we allow a timeout to be passed in, we will wait
                 // up to that many blocks for getCode
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this._address.toString(), blockTag).then((code) => {
+                this._deployedPromise = this.provider.getCode(addr, blockTag).then((code) => {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: this._address,
@@ -678,6 +689,14 @@ export class BaseContract {
         return runningEvent;
     }
     _getRunningEvent(eventName) {
+        let addr = this._address;
+        // parse address
+        if (addr.toString().split(".").length > 1) {
+            addr = getAddressFromAccount(addr);
+        }
+        else {
+            addr = getAddress(addr.toString());
+        }
         if (typeof (eventName) === "string") {
             // Listen for "error" events (if your contract has an error event, include
             // the full signature to bypass this special event keyword)
@@ -690,11 +709,11 @@ export class BaseContract {
             }
             // Listen for any event
             if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
+                return this._normalizeRunningEvent(new WildcardRunningEvent(addr, this.interface));
             }
             // Get the event Fragment (throws if ambiguous/unknown event)
             const fragment = this.interface.getEvent(eventName);
-            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment));
+            return this._normalizeRunningEvent(new FragmentRunningEvent(addr, this.interface, fragment));
         }
         // We have topics to filter by...
         if (eventName.topics && eventName.topics.length > 0) {
@@ -705,17 +724,17 @@ export class BaseContract {
                     throw new Error("invalid topic"); // @TODO: May happen for anonymous events
                 }
                 const fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment, eventName.topics));
+                return this._normalizeRunningEvent(new FragmentRunningEvent(addr, this.interface, fragment, eventName.topics));
             }
             catch (error) { }
             // Filter by the unknown topichash
             const filter = {
-                address: this._address.toString(),
+                address: addr,
                 topics: eventName.topics
             };
             return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
         }
-        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
+        return this._normalizeRunningEvent(new WildcardRunningEvent(addr, this.interface));
     }
     _checkRunningEvents(runningEvent) {
         if (runningEvent.listenerCount() === 0) {
@@ -787,6 +806,7 @@ export class BaseContract {
         }
     }
     queryFilter(event, fromBlockOrBlockhash, toBlock) {
+        requireAddressSet(this._address);
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
         if (typeof (fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
@@ -804,10 +824,12 @@ export class BaseContract {
         });
     }
     on(event, listener) {
+        requireAddressSet(this._address);
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }
     once(event, listener) {
+        requireAddressSet(this._address);
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     }
@@ -815,6 +837,7 @@ export class BaseContract {
         if (!this.provider) {
             return false;
         }
+        requireAddressSet(this._address);
         const runningEvent = this._getRunningEvent(eventName);
         const result = (runningEvent.run(args) > 0);
         // May have drained all the "once" events; check for living events
@@ -830,6 +853,7 @@ export class BaseContract {
                 return accum + this._runningEvents[key].listenerCount();
             }, 0);
         }
+        requireAddressSet(this._address);
         return this._getRunningEvent(eventName).listenerCount();
     }
     listeners(eventName) {
@@ -845,6 +869,7 @@ export class BaseContract {
             }
             return result;
         }
+        requireAddressSet(this._address);
         return this._getRunningEvent(eventName).listeners();
     }
     removeAllListeners(eventName) {
@@ -859,6 +884,7 @@ export class BaseContract {
             }
             return this;
         }
+        requireAddressSet(this._address);
         // Delete any listeners
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeAllListeners();
@@ -869,12 +895,14 @@ export class BaseContract {
         if (!this.provider) {
             return this;
         }
+        requireAddressSet(this._address);
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
         return this;
     }
     removeListener(eventName, listener) {
+        requireAddressSet(this._address);
         return this.off(eventName, listener);
     }
 }

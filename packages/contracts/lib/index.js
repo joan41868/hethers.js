@@ -92,6 +92,20 @@ var allowedTransactionKeys = {
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true, nodeId: true,
 };
+function requireAddressSet(address) {
+    if (!address || address == "") {
+        logger.throwArgumentError("Missing address", logger_1.Logger.errors.INVALID_ARGUMENT, address);
+    }
+}
+function ensureSolidityAddress(addr) {
+    if (addr.toString().split(".").length > 1) {
+        addr = (0, address_1.getAddressFromAccount)(addr);
+    }
+    else {
+        addr = (0, address_1.getAddress)(addr.toString());
+    }
+    return addr;
+}
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function () {
@@ -615,13 +629,11 @@ var WildcardRunningEvent = /** @class */ (function (_super) {
     return WildcardRunningEvent;
 }(RunningEvent));
 var BaseContract = /** @class */ (function () {
-    // TODO: permute address first; make default value for address for hedera context
     function BaseContract(address, contractInterface, signerOrProvider) {
         var _newTarget = this.constructor;
         var _this = this;
         logger.checkNew(_newTarget, Contract);
-        // @TODO: Maybe still check the addressOrName looks like a valid _address or name?
-        //_address = getAddress(_address);
+        this.address = address || "";
         (0, properties_1.defineReadOnly)(this, "interface", (0, properties_1.getStatic)(_newTarget, "getInterface")(contractInterface));
         if (signerOrProvider == null) {
             (0, properties_1.defineReadOnly)(this, "provider", null);
@@ -652,7 +664,7 @@ var BaseContract = /** @class */ (function () {
                         args[_i] = arguments[_i];
                     }
                     return {
-                        address: _this._address,
+                        address: ensureSolidityAddress(_this._address),
                         topics: _this.interface.encodeFilterTopics(event, args)
                     };
                 });
@@ -673,9 +685,6 @@ var BaseContract = /** @class */ (function () {
         }
         (0, properties_1.defineReadOnly)(this, "_runningEvents", {});
         (0, properties_1.defineReadOnly)(this, "_wrappedEmits", {});
-        if (address) {
-            this.address = address;
-        }
         var uniqueNames = {};
         var uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach(function (signature) {
@@ -761,6 +770,8 @@ var BaseContract = /** @class */ (function () {
     };
     BaseContract.prototype._deployed = function (blockTag) {
         var _this = this;
+        requireAddressSet(this._address);
+        var addr = ensureSolidityAddress(this._address);
         if (!this._deployedPromise) {
             // If we were just deployed, we know the transaction we should occur in
             if (this.deployTransaction) {
@@ -772,7 +783,7 @@ var BaseContract = /** @class */ (function () {
                 // @TODO: Once we allow a timeout to be passed in, we will wait
                 // up to that many blocks for getCode
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this._address.toString(), blockTag).then(function (code) {
+                this._deployedPromise = this.provider.getCode(addr, blockTag).then(function (code) {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: _this._address,
@@ -832,6 +843,14 @@ var BaseContract = /** @class */ (function () {
         return runningEvent;
     };
     BaseContract.prototype._getRunningEvent = function (eventName) {
+        var addr = this._address;
+        // parse address
+        if (addr.toString().split(".").length > 1) {
+            addr = (0, address_1.getAddressFromAccount)(addr);
+        }
+        else {
+            addr = (0, address_1.getAddress)(addr.toString());
+        }
         if (typeof (eventName) === "string") {
             // Listen for "error" events (if your contract has an error event, include
             // the full signature to bypass this special event keyword)
@@ -844,11 +863,11 @@ var BaseContract = /** @class */ (function () {
             }
             // Listen for any event
             if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
+                return this._normalizeRunningEvent(new WildcardRunningEvent(addr, this.interface));
             }
             // Get the event Fragment (throws if ambiguous/unknown event)
             var fragment = this.interface.getEvent(eventName);
-            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment));
+            return this._normalizeRunningEvent(new FragmentRunningEvent(addr, this.interface, fragment));
         }
         // We have topics to filter by...
         if (eventName.topics && eventName.topics.length > 0) {
@@ -859,17 +878,17 @@ var BaseContract = /** @class */ (function () {
                     throw new Error("invalid topic"); // @TODO: May happen for anonymous events
                 }
                 var fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment, eventName.topics));
+                return this._normalizeRunningEvent(new FragmentRunningEvent(addr, this.interface, fragment, eventName.topics));
             }
             catch (error) { }
             // Filter by the unknown topichash
             var filter = {
-                address: this._address.toString(),
+                address: addr,
                 topics: eventName.topics
             };
             return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
         }
-        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
+        return this._normalizeRunningEvent(new WildcardRunningEvent(addr, this.interface));
     };
     BaseContract.prototype._checkRunningEvents = function (runningEvent) {
         if (runningEvent.listenerCount() === 0) {
@@ -944,6 +963,7 @@ var BaseContract = /** @class */ (function () {
     };
     BaseContract.prototype.queryFilter = function (event, fromBlockOrBlockhash, toBlock) {
         var _this = this;
+        requireAddressSet(this._address);
         var runningEvent = this._getRunningEvent(event);
         var filter = (0, properties_1.shallowCopy)(runningEvent.filter);
         if (typeof (fromBlockOrBlockhash) === "string" && (0, bytes_1.isHexString)(fromBlockOrBlockhash, 32)) {
@@ -961,10 +981,12 @@ var BaseContract = /** @class */ (function () {
         });
     };
     BaseContract.prototype.on = function (event, listener) {
+        requireAddressSet(this._address);
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     };
     BaseContract.prototype.once = function (event, listener) {
+        requireAddressSet(this._address);
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     };
@@ -976,6 +998,7 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return false;
         }
+        requireAddressSet(this._address);
         var runningEvent = this._getRunningEvent(eventName);
         var result = (runningEvent.run(args) > 0);
         // May have drained all the "once" events; check for living events
@@ -992,6 +1015,7 @@ var BaseContract = /** @class */ (function () {
                 return accum + _this._runningEvents[key].listenerCount();
             }, 0);
         }
+        requireAddressSet(this._address);
         return this._getRunningEvent(eventName).listenerCount();
     };
     BaseContract.prototype.listeners = function (eventName) {
@@ -1007,6 +1031,7 @@ var BaseContract = /** @class */ (function () {
             }
             return result_1;
         }
+        requireAddressSet(this._address);
         return this._getRunningEvent(eventName).listeners();
     };
     BaseContract.prototype.removeAllListeners = function (eventName) {
@@ -1021,6 +1046,7 @@ var BaseContract = /** @class */ (function () {
             }
             return this;
         }
+        requireAddressSet(this._address);
         // Delete any listeners
         var runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeAllListeners();
@@ -1031,12 +1057,14 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return this;
         }
+        requireAddressSet(this._address);
         var runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
         return this;
     };
     BaseContract.prototype.removeListener = function (eventName, listener) {
+        requireAddressSet(this._address);
         return this.off(eventName, listener);
     };
     return BaseContract;
