@@ -12,7 +12,7 @@ const provider = ethers.getDefaultProvider("testnet");
 const TIMEOUT_PERIOD = 120000;
 
 const contract = (function() {
-    return new ethers.Contract(contractData.interface, provider);
+    return new ethers.Contract(contractData.interface, '', provider);
 })();
 
 function equals(name: string, actual: any, expected: any): void {

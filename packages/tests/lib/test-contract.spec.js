@@ -46,7 +46,7 @@ var test_contract_json_1 = __importDefault(require("./test-contract.json"));
 var provider = ethers_1.ethers.getDefaultProvider("testnet");
 var TIMEOUT_PERIOD = 120000;
 var contract = (function () {
-    return new ethers_1.ethers.Contract(test_contract_json_1.default.interface, provider);
+    return new ethers_1.ethers.Contract(test_contract_json_1.default.interface, '', provider);
 })();
 function equals(name, actual, expected) {
     if (Array.isArray(expected)) {

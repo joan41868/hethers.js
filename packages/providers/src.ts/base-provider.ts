@@ -709,7 +709,7 @@ export class BaseProvider extends Provider {
         const result: any = { };
 
         if (filter.address != null) {
-            result.address = this._getAddress(filter.address);
+            result.address = this._getAddress(filter.address.toString());
         }
 
         ["blockHash", "topics"].forEach((key) => {

@@ -1,6 +1,7 @@
 import { Fragment, Indexed, Interface, JsonFragment, Result } from "@ethersproject/abi";
 import { Block, BlockTag, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { Signer } from "@ethersproject/abstract-signer";
+import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike } from "@ethersproject/bytes";
 import { AccessList, AccessListish } from "@ethersproject/transactions";
@@ -37,7 +38,7 @@ export interface PopulatedTransaction {
     customData?: Record<string, any>;
 }
 export declare type EventFilter = {
-    address?: string;
+    address?: AccountLike;
     topics?: Array<string | Array<string>>;
 };
 export declare type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
@@ -102,9 +103,9 @@ export declare class BaseContract {
     _wrappedEmits: {
         [eventTag: string]: (...args: Array<any>) => void;
     };
-    constructor(contractInterface: ContractInterface, signerOrProvider?: Signer | Provider);
-    set address(val: string);
-    get address(): string;
+    constructor(contractInterface: ContractInterface, address?: AccountLike, signerOrProvider?: Signer | Provider);
+    set address(val: AccountLike);
+    get address(): AccountLike;
     static getInterface(contractInterface: ContractInterface): Interface;
     deployed(): Promise<Contract>;
     _deployed(blockTag?: BlockTag): Promise<Contract>;
@@ -143,7 +144,7 @@ export declare class ContractFactory {
     connect(signer: Signer): ContractFactory;
     static fromSolidity(compilerOutput: any, signer?: Signer): ContractFactory;
     static getInterface(contractInterface: ContractInterface): Interface;
-    static getContract(address: string, contractInterface: ContractInterface, signer?: Signer): Contract;
+    static getContract(address: AccountLike, contractInterface: ContractInterface, signer?: Signer): Contract;
 }
 export {};
 //# sourceMappingURL=index.d.ts.map

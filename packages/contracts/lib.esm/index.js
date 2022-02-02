@@ -474,7 +474,7 @@ class WildcardRunningEvent extends RunningEvent {
     }
 }
 export class BaseContract {
-    constructor(contractInterface, signerOrProvider) {
+    constructor(contractInterface, address, signerOrProvider) {
         logger.checkNew(new.target, Contract);
         // @TODO: Maybe still check the addressOrName looks like a valid _address or name?
         //_address = getAddress(_address);
@@ -495,7 +495,6 @@ export class BaseContract {
             logger.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
         }
         defineReadOnly(this, "callStatic", {});
-        defineReadOnly(this, "estimateGas", {});
         defineReadOnly(this, "functions", {});
         defineReadOnly(this, "populateTransaction", {});
         defineReadOnly(this, "filters", {});
@@ -526,6 +525,9 @@ export class BaseContract {
         }
         defineReadOnly(this, "_runningEvents", {});
         defineReadOnly(this, "_wrappedEmits", {});
+        if (address) {
+            this.address = address;
+        }
         const uniqueNames = {};
         const uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -617,7 +619,7 @@ export class BaseContract {
                 // @TODO: Once we allow a timeout to be passed in, we will wait
                 // up to that many blocks for getCode
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this._address, blockTag).then((code) => {
+                this._deployedPromise = this.provider.getCode(this._address.toString(), blockTag).then((code) => {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: this._address,
@@ -655,8 +657,7 @@ export class BaseContract {
         if (typeof (signerOrProvider) === "string") {
             signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
         }
-        const contract = new (this.constructor)(this.interface, signerOrProvider);
-        contract.address = this._address;
+        const contract = new (this.constructor)(this.interface, this.address, signerOrProvider);
         if (this.deployTransaction) {
             defineReadOnly(contract, "deployTransaction", this.deployTransaction);
         }
@@ -664,9 +665,7 @@ export class BaseContract {
     }
     // Re-attach to a different on-chain instance of this contract
     attach(addressOrName) {
-        const contract = new (this.constructor)(this.interface, this.signer || this.provider);
-        contract.address = addressOrName;
-        return contract;
+        return new (this.constructor)(this.interface, addressOrName, this.signer || this.provider);
     }
     static isIndexed(value) {
         return Indexed.isIndexed(value);
@@ -691,11 +690,11 @@ export class BaseContract {
             }
             // Listen for any event
             if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
+                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
             }
             // Get the event Fragment (throws if ambiguous/unknown event)
             const fragment = this.interface.getEvent(eventName);
-            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment));
+            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment));
         }
         // We have topics to filter by...
         if (eventName.topics && eventName.topics.length > 0) {
@@ -706,17 +705,17 @@ export class BaseContract {
                     throw new Error("invalid topic"); // @TODO: May happen for anonymous events
                 }
                 const fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment, eventName.topics));
+                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment, eventName.topics));
             }
             catch (error) { }
             // Filter by the unknown topichash
             const filter = {
-                address: this._address,
+                address: this._address.toString(),
                 topics: eventName.topics
             };
             return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
         }
-        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
+        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
     }
     _checkRunningEvents(runningEvent) {
         if (runningEvent.listenerCount() === 0) {
@@ -962,9 +961,7 @@ export class ContractFactory {
         });
     }
     attach(address) {
-        const contract = (this.constructor).getContract(address, this.interface, this.signer);
-        contract.address = address;
-        return contract;
+        return new (this.constructor).getContract(address, this.interface, this.signer);
     }
     connect(signer) {
         return new (this.constructor)(this.interface, this.bytecode, signer);
@@ -990,9 +987,7 @@ export class ContractFactory {
         return Contract.getInterface(contractInterface);
     }
     static getContract(address, contractInterface, signer) {
-        const contract = new Contract(contractInterface, signer);
-        contract.address = address;
-        return contract;
+        return new Contract(contractInterface, address, signer);
     }
 }
 //# sourceMappingURL=index.js.map

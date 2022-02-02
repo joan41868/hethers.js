@@ -533,7 +533,6 @@ describe("Test ParamType Parser", function () {
     });
 });
 describe('Test EIP-838 Error Codes', function () {
-    // @ts-ignore
     var addr = "0xbd0B4B009a76CA97766360F04f75e05A3E449f1E";
     xit("testError1", function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -547,7 +546,7 @@ describe('Test EIP-838 Error Codes', function () {
                             "function testError2(bool pass, bytes data) pure returns (bool)",
                             "error TestError1(address addr, uint256 value)",
                             "error TestError2(bytes data)",
-                        ], provider);
+                        ], addr, provider);
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);

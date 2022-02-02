@@ -605,7 +605,7 @@ var WildcardRunningEvent = /** @class */ (function (_super) {
     return WildcardRunningEvent;
 }(RunningEvent));
 var BaseContract = /** @class */ (function () {
-    function BaseContract(contractInterface, signerOrProvider) {
+    function BaseContract(contractInterface, address, signerOrProvider) {
         var _newTarget = this.constructor;
         var _this = this;
         logger.checkNew(_newTarget, Contract);
@@ -628,7 +628,6 @@ var BaseContract = /** @class */ (function () {
             logger.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
         }
         (0, properties_1.defineReadOnly)(this, "callStatic", {});
-        (0, properties_1.defineReadOnly)(this, "estimateGas", {});
         (0, properties_1.defineReadOnly)(this, "functions", {});
         (0, properties_1.defineReadOnly)(this, "populateTransaction", {});
         (0, properties_1.defineReadOnly)(this, "filters", {});
@@ -663,6 +662,9 @@ var BaseContract = /** @class */ (function () {
         }
         (0, properties_1.defineReadOnly)(this, "_runningEvents", {});
         (0, properties_1.defineReadOnly)(this, "_wrappedEmits", {});
+        if (address) {
+            this.address = address;
+        }
         var uniqueNames = {};
         var uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach(function (signature) {
@@ -759,7 +761,7 @@ var BaseContract = /** @class */ (function () {
                 // @TODO: Once we allow a timeout to be passed in, we will wait
                 // up to that many blocks for getCode
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this._address, blockTag).then(function (code) {
+                this._deployedPromise = this.provider.getCode(this._address.toString(), blockTag).then(function (code) {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: _this._address,
@@ -798,8 +800,7 @@ var BaseContract = /** @class */ (function () {
         if (typeof (signerOrProvider) === "string") {
             signerOrProvider = new abstract_signer_1.VoidSigner(signerOrProvider, this.provider);
         }
-        var contract = new (this.constructor)(this.interface, signerOrProvider);
-        contract.address = this._address;
+        var contract = new (this.constructor)(this.interface, this.address, signerOrProvider);
         if (this.deployTransaction) {
             (0, properties_1.defineReadOnly)(contract, "deployTransaction", this.deployTransaction);
         }
@@ -807,9 +808,7 @@ var BaseContract = /** @class */ (function () {
     };
     // Re-attach to a different on-chain instance of this contract
     BaseContract.prototype.attach = function (addressOrName) {
-        var contract = new (this.constructor)(this.interface, this.signer || this.provider);
-        contract.address = addressOrName;
-        return contract;
+        return new (this.constructor)(this.interface, addressOrName, this.signer || this.provider);
     };
     BaseContract.isIndexed = function (value) {
         return abi_1.Indexed.isIndexed(value);
@@ -834,11 +833,11 @@ var BaseContract = /** @class */ (function () {
             }
             // Listen for any event
             if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
+                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
             }
             // Get the event Fragment (throws if ambiguous/unknown event)
             var fragment = this.interface.getEvent(eventName);
-            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment));
+            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment));
         }
         // We have topics to filter by...
         if (eventName.topics && eventName.topics.length > 0) {
@@ -849,17 +848,17 @@ var BaseContract = /** @class */ (function () {
                     throw new Error("invalid topic"); // @TODO: May happen for anonymous events
                 }
                 var fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment, eventName.topics));
+                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment, eventName.topics));
             }
             catch (error) { }
             // Filter by the unknown topichash
             var filter = {
-                address: this._address,
+                address: this._address.toString(),
                 topics: eventName.topics
             };
             return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
         }
-        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
+        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
     };
     BaseContract.prototype._checkRunningEvents = function (runningEvent) {
         if (runningEvent.listenerCount() === 0) {
@@ -1138,9 +1137,7 @@ var ContractFactory = /** @class */ (function () {
         });
     };
     ContractFactory.prototype.attach = function (address) {
-        var contract = (this.constructor).getContract(address, this.interface, this.signer);
-        contract.address = address;
-        return contract;
+        return new (this.constructor).getContract(address, this.interface, this.signer);
     };
     ContractFactory.prototype.connect = function (signer) {
         return new (this.constructor)(this.interface, this.bytecode, signer);
@@ -1166,9 +1163,7 @@ var ContractFactory = /** @class */ (function () {
         return Contract.getInterface(contractInterface);
     };
     ContractFactory.getContract = function (address, contractInterface, signer) {
-        var contract = new Contract(contractInterface, signer);
-        contract.address = address;
-        return contract;
+        return new Contract(contractInterface, address, signer);
     };
     return ContractFactory;
 }());

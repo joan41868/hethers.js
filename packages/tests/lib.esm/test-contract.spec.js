@@ -15,7 +15,7 @@ import contractData from "./test-contract.json";
 const provider = ethers.getDefaultProvider("testnet");
 const TIMEOUT_PERIOD = 120000;
 const contract = (function () {
-    return new ethers.Contract(contractData.interface, provider);
+    return new ethers.Contract(contractData.interface, '', provider);
 })();
 function equals(name, actual, expected) {
     if (Array.isArray(expected)) {

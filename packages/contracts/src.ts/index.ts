@@ -3,7 +3,7 @@
 import { checkResultErrors, EventFragment, Fragment, FunctionFragment, Indexed, Interface, JsonFragment, LogDescription, ParamType, Result } from "@ethersproject/abi";
 import { Block, BlockTag, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
-import { getAddress } from "@ethersproject/address";
+import { AccountLike, getAddress } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
@@ -62,7 +62,7 @@ export interface PopulatedTransaction {
 };
 
 export type EventFilter = {
-    address?: string;
+    address?: AccountLike;
     topics?: Array<string|Array<string>>;
 };
 
@@ -623,7 +623,7 @@ type InterfaceFunc = (contractInterface: ContractInterface) => Interface;
 
 
 export class BaseContract {
-    private _address: string;
+    private _address: AccountLike;
     readonly interface: Interface;
 
     readonly signer: Signer;
@@ -652,7 +652,7 @@ export class BaseContract {
     // Wrapped functions to call emit and allow deregistration from the provider
     _wrappedEmits: { [ eventTag: string ]: (...args: Array<any>) => void };
 
-    constructor(contractInterface: ContractInterface, signerOrProvider?: Signer | Provider) {
+    constructor(contractInterface: ContractInterface, address?:AccountLike, signerOrProvider?: Signer | Provider) {
         logger.checkNew(new.target, Contract);
 
         // @TODO: Maybe still check the addressOrName looks like a valid _address or name?
@@ -673,7 +673,6 @@ export class BaseContract {
         }
 
         defineReadOnly(this, "callStatic", { });
-        // defineReadOnly(this, "estimateGas", { });
         defineReadOnly(this, "functions", { });
         defineReadOnly(this, "populateTransaction", { });
 
@@ -705,7 +704,9 @@ export class BaseContract {
 
         defineReadOnly(this, "_runningEvents", { });
         defineReadOnly(this, "_wrappedEmits", { });
-
+        if (address) {
+            this.address = address;
+        }
         const uniqueNames: { [ name: string ]: Array<string> } = { };
         const uniqueSignatures: { [ signature: string ]: boolean } = { };
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -778,11 +779,11 @@ export class BaseContract {
         });
     }
 
-    set address(val: string) {
+    set address(val: AccountLike) {
         this._address = val;
     }
 
-    get address(): string {
+    get address(): AccountLike {
         return this._address;
     }
 
@@ -812,7 +813,7 @@ export class BaseContract {
                 // up to that many blocks for getCode
 
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this._address, blockTag).then((code) => {
+                this._deployedPromise = this.provider.getCode(this._address.toString(), blockTag).then((code) => {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: this._address,
@@ -857,8 +858,7 @@ export class BaseContract {
             signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
         }
 
-        const contract = new (<{ new(...args: any[]): Contract }>(this.constructor))(this.interface, signerOrProvider);
-        contract.address = this._address;
+        const contract = new (<{ new(...args: any[]): Contract }>(this.constructor))(this.interface, this.address, signerOrProvider);
         if (this.deployTransaction) {
             defineReadOnly(contract, "deployTransaction", this.deployTransaction);
         }
@@ -867,9 +867,7 @@ export class BaseContract {
 
     // Re-attach to a different on-chain instance of this contract
     attach(addressOrName: string): Contract {
-        const contract = new (<{ new(...args: any[]): Contract }>(this.constructor))(this.interface, this.signer || this.provider);
-        contract.address = addressOrName;
-        return contract;
+        return new (<{ new(...args: any[]): Contract }>(this.constructor))(this.interface, addressOrName, this.signer || this.provider);
     }
 
     static isIndexed(value: any): value is Indexed {
@@ -900,12 +898,12 @@ export class BaseContract {
 
             // Listen for any event
             if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
+                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
             }
 
             // Get the event Fragment (throws if ambiguous/unknown event)
             const fragment = this.interface.getEvent(eventName)
-            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment));
+            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment));
         }
 
         // We have topics to filter by...
@@ -918,19 +916,19 @@ export class BaseContract {
                     throw new Error("invalid topic"); // @TODO: May happen for anonymous events
                 }
                 const fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment, eventName.topics));
+                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment, eventName.topics));
             } catch (error) { }
 
             // Filter by the unknown topichash
             const filter: EventFilter = {
-                address: this._address,
+                address: this._address.toString(),
                 topics: eventName.topics
             }
 
             return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
         }
 
-        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
+        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
     }
 
     _checkRunningEvents(runningEvent: RunningEvent): void {
@@ -1027,7 +1025,6 @@ export class BaseContract {
              (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
              (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
         }
-
         return this.provider.getLogs(filter).then((logs) => {
             return logs.map((log) => this._wrapEvent(runningEvent, log, null));
         });
@@ -1222,9 +1219,7 @@ export class ContractFactory {
     }
 
     attach(address: string): Contract {
-        const contract = (<any>(this.constructor)).getContract(address, this.interface, this.signer);
-        contract.address = address;
-        return contract;
+        return new (<any>(this.constructor)).getContract(address, this.interface, this.signer);
     }
 
     connect(signer: Signer) {
@@ -1256,9 +1251,7 @@ export class ContractFactory {
         return Contract.getInterface(contractInterface);
     }
 
-    static getContract(address: string, contractInterface: ContractInterface, signer?: Signer): Contract {
-        const contract = new Contract(contractInterface, signer);
-        contract.address = address;
-        return contract;
+    static getContract(address: AccountLike, contractInterface: ContractInterface, signer?: Signer): Contract {
+        return new Contract(contractInterface, address, signer);
     }
 }

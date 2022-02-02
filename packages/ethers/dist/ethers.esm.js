@@ -93669,7 +93669,7 @@ class WildcardRunningEvent extends RunningEvent {
     }
 }
 class BaseContract {
-    constructor(contractInterface, signerOrProvider) {
+    constructor(contractInterface, address, signerOrProvider) {
         logger$s.checkNew(new.target, Contract);
         // @TODO: Maybe still check the addressOrName looks like a valid _address or name?
         //_address = getAddress(_address);
@@ -93690,7 +93690,6 @@ class BaseContract {
             logger$s.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
         }
         defineReadOnly(this, "callStatic", {});
-        defineReadOnly(this, "estimateGas", {});
         defineReadOnly(this, "functions", {});
         defineReadOnly(this, "populateTransaction", {});
         defineReadOnly(this, "filters", {});
@@ -93721,6 +93720,9 @@ class BaseContract {
         }
         defineReadOnly(this, "_runningEvents", {});
         defineReadOnly(this, "_wrappedEmits", {});
+        if (address) {
+            this.address = address;
+        }
         const uniqueNames = {};
         const uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -93812,7 +93814,7 @@ class BaseContract {
                 // @TODO: Once we allow a timeout to be passed in, we will wait
                 // up to that many blocks for getCode
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this._address, blockTag).then((code) => {
+                this._deployedPromise = this.provider.getCode(this._address.toString(), blockTag).then((code) => {
                     if (code === "0x") {
                         logger$s.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: this._address,
@@ -93850,8 +93852,7 @@ class BaseContract {
         if (typeof (signerOrProvider) === "string") {
             signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
         }
-        const contract = new (this.constructor)(this.interface, signerOrProvider);
-        contract.address = this._address;
+        const contract = new (this.constructor)(this.interface, this.address, signerOrProvider);
         if (this.deployTransaction) {
             defineReadOnly(contract, "deployTransaction", this.deployTransaction);
         }
@@ -93859,9 +93860,7 @@ class BaseContract {
     }
     // Re-attach to a different on-chain instance of this contract
     attach(addressOrName) {
-        const contract = new (this.constructor)(this.interface, this.signer || this.provider);
-        contract.address = addressOrName;
-        return contract;
+        return new (this.constructor)(this.interface, addressOrName, this.signer || this.provider);
     }
     static isIndexed(value) {
         return Indexed.isIndexed(value);
@@ -93886,11 +93885,11 @@ class BaseContract {
             }
             // Listen for any event
             if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
+                return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
             }
             // Get the event Fragment (throws if ambiguous/unknown event)
             const fragment = this.interface.getEvent(eventName);
-            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment));
+            return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment));
         }
         // We have topics to filter by...
         if (eventName.topics && eventName.topics.length > 0) {
@@ -93901,17 +93900,17 @@ class BaseContract {
                     throw new Error("invalid topic"); // @TODO: May happen for anonymous events
                 }
                 const fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address, this.interface, fragment, eventName.topics));
+                return this._normalizeRunningEvent(new FragmentRunningEvent(this._address.toString(), this.interface, fragment, eventName.topics));
             }
             catch (error) { }
             // Filter by the unknown topichash
             const filter = {
-                address: this._address,
+                address: this._address.toString(),
                 topics: eventName.topics
             };
             return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
         }
-        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address, this.interface));
+        return this._normalizeRunningEvent(new WildcardRunningEvent(this._address.toString(), this.interface));
     }
     _checkRunningEvents(runningEvent) {
         if (runningEvent.listenerCount() === 0) {
@@ -94157,9 +94156,7 @@ class ContractFactory {
         });
     }
     attach(address) {
-        const contract = (this.constructor).getContract(address, this.interface, this.signer);
-        contract.address = address;
-        return contract;
+        return new (this.constructor).getContract(address, this.interface, this.signer);
     }
     connect(signer) {
         return new (this.constructor)(this.interface, this.bytecode, signer);
@@ -94185,9 +94182,7 @@ class ContractFactory {
         return Contract.getInterface(contractInterface);
     }
     static getContract(address, contractInterface, signer) {
-        const contract = new Contract(contractInterface, signer);
-        contract.address = address;
-        return contract;
+        return new Contract(contractInterface, address, signer);
     }
 }
 
@@ -99175,7 +99170,7 @@ class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = this._getAddress(filter.address);
+                result.address = this._getAddress(filter.address.toString());
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
