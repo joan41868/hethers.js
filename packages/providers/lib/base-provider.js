@@ -950,7 +950,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, toTimestampFilter, fromTimestampFilter, epContractsLogs, requestUrl, data, mappedLogs, error_5;
+            var params, fromTimestampFilter, toTimestampFilter, epContractsLogs, requestUrl, data, mappedLogs, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -959,19 +959,9 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({ filter: this._getFilter(filter) })];
                     case 1:
                         params = _a.sent();
-                        toTimestampFilter = "";
-                        fromTimestampFilter = "";
+                        fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
+                        toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
                         epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
-                        // @ts-ignore
-                        if (params.filter.toTimestamp) {
-                            //@ts-ignore
-                            toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
-                        }
-                        //@ts-ignore
-                        if (params.filter.fromTimestamp) {
-                            //@ts-ignore
-                            fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
-                        }
                         requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
                         _a.label = 2;
                     case 2:

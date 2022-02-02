@@ -720,19 +720,9 @@ export class BaseProvider extends Provider {
             if (!this._mirrorNodeUrl)
                 logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
-            let toTimestampFilter = "";
-            let fromTimestampFilter = "";
+            const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
+            const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
             const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
-            // @ts-ignore
-            if (params.filter.toTimestamp) {
-                //@ts-ignore
-                toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
-            }
-            //@ts-ignore
-            if (params.filter.fromTimestamp) {
-                //@ts-ignore
-                fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
-            }
             const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
             try {
                 let { data } = yield axios.get(requestUrl);
