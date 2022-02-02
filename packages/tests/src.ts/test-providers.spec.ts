@@ -1054,6 +1054,7 @@ describe("Test Hedera Provider", function () {
     const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
     const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
     const solAddr = getAddressFromAccount(accountConfig);
+    const nonExistingAddress = "0x0000000000000000000000000000000000000000";
     const timeout = 15000;
 
     it('Gets the balance', async function () {
@@ -1176,14 +1177,14 @@ describe("Test Hedera Provider", function () {
 
         it("Should populate transaction receipt with timeout", async function (){
             const sendTransactionResponse = await provider.sendTransaction(await signedTx);
-            const receipt = await sendTransactionResponse.wait(timeout);
+            const receipt = await sendTransactionResponse.wait(timeout * 2);
             // assert.strict(receipt.logs.length > 0);
             assert.strictEqual(receipt.to, null);
             assert.strictEqual(receipt.contractAddress, '0x'+sendTransactionResponse.customData.contractId);
             assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
             assert.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
-        }).timeout(timeout * 4);
-    
+        }).timeout(timeout * 10);
+
         it("Should throw timeout exceeded", async function () {
             const insufficientTimeout = 500;
             await assert.rejects(
@@ -1195,7 +1196,7 @@ describe("Test Hedera Provider", function () {
                     assert.strictEqual(err.name, 'Error');
                     assert.strictEqual(err.reason, 'timeout exceeded');
                     assert.strictEqual(err.code, 'TIMEOUT');
-                    assert.strictEqual(err.timeout, insufficientTimeout);    
+                    assert.strictEqual(err.timeout, insufficientTimeout);
                     return true;
                 }
             );
@@ -1316,6 +1317,36 @@ describe("Test Hedera Provider", function () {
         const record2 = await provider2.getTransaction(txId);
         assert.notStrictEqual(record2, null, "Record is null")
     }).timeout(timeout*4);
+
+    it("Should get bytecode of contract", async function() {
+        const contractAccountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(16645669)};
+        const contractAddress = getAddressFromAccount(contractAccountConfig);
+        let result = await provider.getCode(contractAddress);
+        assert.strict((typeof result === "string" && result != "0x"),  `returns bytecode of contract - ` + contractAddress);
+    }).timeout(timeout * 4);
+
+    it("Should return 0x of non-existing contract", async function() {
+        let result = await provider.getCode(solAddr);
+        assert.strictEqual(result, "0x", `returns 0x of account - ` + solAddr);
+        result = await provider.getCode(nonExistingAddress);
+        assert.strictEqual(result, "0x", `returns 0x of non-existing account/contract - ` + nonExistingAddress);
+    }).timeout(timeout * 4);
+
+    it("Should throw with optional parameter", async function() {
+        await assert.rejects(
+            async () => {
+                await provider.getCode(nonExistingAddress, true);
+            },
+            (err) => {
+              assert.strictEqual(err.name, 'Error');
+              assert.strictEqual(err.reason, 'bad result from backend');
+              assert.strictEqual(err.method, 'ContractByteCodeQuery');
+              assert.strictEqual(err.error.response.status, 404);
+              assert.strictEqual(err.error.response.statusText, 'Not Found');
+              return true;
+            }
+        );
+    }).timeout(timeout * 4);
 });
 
 describe("Test Hedera Provider Formatters", function () {
@@ -1375,14 +1406,14 @@ describe("Test Hedera Provider Formatters", function () {
             transactionId: null,
             to: null,
             value: null,
-            customData: { 
+            customData: {
                 gas_used: 0,
                 logs: {},
                 result: null
             },
             wait: null
         }
-        
+
         transactionResponse = provider.formatter.responseFromRecord(hederaTransactionRecord);
 
         assert.strictEqual(transactionResponse.chainId, hederaTransactionRecord.chainId);
@@ -1411,7 +1442,7 @@ describe("Test Hedera Provider Formatters", function () {
             transactionId: "0.0.28540924-1642692847-203890635",
             to: null,
             value: BigNumber.from(0),
-            customData: { 
+            customData: {
                 gas_used: 93420,
                 logs: [
                     {
@@ -1465,7 +1496,7 @@ describe("Test Hedera Provider Formatters", function () {
             type: 0,
             status: 0
         }
-        
+
         receipt = provider.formatter.receiptFromResponse(transactionResponse);
 
         assert.strictEqual(receipt.to, transactionResponse.to);
@@ -1477,7 +1508,7 @@ describe("Test Hedera Provider Formatters", function () {
         assert.strictEqual(receipt.cumulativeGasUsed, transactionResponse.customData.gas_used);
         assert.strictEqual(receipt.gasUsed, transactionResponse.customData.gas_used);
         assert.strictEqual(receipt.status, 1);
-        
+
         assert.strictEqual(receipt.logs.length, 2);
         assert.strictEqual(receipt.logs[0].timestamp, transactionResponse.timestamp);
         assert.strictEqual(receipt.logs[0].address, transactionResponse.customData.logs[0].address);

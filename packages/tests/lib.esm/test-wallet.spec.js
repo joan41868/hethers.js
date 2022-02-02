@@ -12,8 +12,42 @@ import assert from "assert";
 import { ethers } from "ethers";
 import { loadTests } from "@ethersproject/testcases";
 import * as utils from './utils';
-import { arrayify, getAddressFromAccount } from "ethers/lib/utils";
-import { PublicKey, Transaction } from "@hashgraph/sdk";
+import { arrayify, getAddressFromAccount, Logger } from "ethers/lib/utils";
+import { AccountCreateTransaction, AccountId, Client, Hbar, PrivateKey, PublicKey, Transaction, TransactionId, Key as HederaKey } from "@hashgraph/sdk";
+import { readFileSync } from "fs";
+import { Key } from "@hashgraph/proto";
+/**
+ * Helper function that returns a Wallet instance from the provided ED25519 credentials,
+ * provided from portal.hedera.com
+ * @param account
+ * @param provider
+ */
+const createWalletFromED25519 = (account, provider) => __awaiter(void 0, void 0, void 0, function* () {
+    const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
+    const client = Client.forNetwork(account.network);
+    const randomWallet = ethers.Wallet.createRandom();
+    const protoKey = Key.create({
+        ECDSASecp256k1: arrayify(randomWallet._signingKey().compressedPublicKey)
+    });
+    const newAccountKey = HederaKey._fromProtobufKey(protoKey);
+    const accountCreate = yield (yield new AccountCreateTransaction()
+        .setKey(newAccountKey)
+        .setTransactionId(TransactionId.generate(account.operator.accountId))
+        .setInitialBalance(new Hbar(10))
+        .setNodeAccountIds([new AccountId(0, 0, 3)])
+        .freeze()
+        .sign(edPrivateKey))
+        .execute(client);
+    const receipt = yield accountCreate.getReceipt(client);
+    // @ts-ignore
+    const newAccountId = receipt.accountId.toString();
+    const hederaEoa = {
+        account: newAccountId,
+        privateKey: randomWallet.privateKey
+    };
+    // @ts-ignore
+    return new ethers.Wallet(hederaEoa, provider);
+});
 describe('Test JSON Wallets', function () {
     let tests = loadTests('wallets');
     tests.forEach(function (test) {
@@ -259,8 +293,9 @@ describe('Test Signing Messages', function () {
     tests.forEach(function (test) {
         it(('verifies a message "' + test.name + '"'), function () {
             this.timeout(120000);
-            let address = ethers.utils.verifyMessage(test.message, test.signature);
-            assert.equal(address, test.address, 'verifies message signature');
+            let wallet = new ethers.Wallet(test.privateKey);
+            const publicKey = ethers.utils.verifyMessage(test.message, test.signature);
+            assert.strictEqual(wallet.publicKey, publicKey);
         });
     });
     tests.forEach(function (test) {
@@ -399,5 +434,160 @@ describe("Wallet tx signing", function () {
             assert.ok(fa.fileId.toString() == tx.customData.fileId, "FileId mismatch");
         });
     });
+});
+describe("Wallet getters", function () {
+    it("Should get proper mainnet chainId", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const provider = ethers.providers.getDefaultProvider("mainnet");
+            const wallet = ethers.Wallet.createRandom().connect(provider);
+            const chainId = yield wallet.getChainId();
+            assert.strictEqual(chainId, 290);
+        });
+    });
+    it("Should get proper testnet chainId", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const provider = ethers.providers.getDefaultProvider("testnet");
+            const wallet = ethers.Wallet.createRandom().connect(provider);
+            const chainId = yield wallet.getChainId();
+            assert.strictEqual(chainId, 291);
+        });
+    });
+    it("Should get proper previewnet chainId", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const provider = ethers.providers.getDefaultProvider("previewnet");
+            const wallet = ethers.Wallet.createRandom().connect(provider);
+            const chainId = yield wallet.getChainId();
+            assert.strictEqual(chainId, 292);
+        });
+    });
+});
+describe("Wallet local calls", function () {
+    return __awaiter(this, void 0, void 0, function* () {
+        const hederaEoa = {
+            account: '0.0.29511337',
+            privateKey: '0x409836c5c296fe800fcac721093c68c78c4c03a1f88cb10bbdf01ecc49247132'
+        };
+        const provider = ethers.providers.getDefaultProvider('testnet');
+        // @ts-ignore
+        const wallet = new ethers.Wallet(hederaEoa, provider);
+        const contractAddr = '0000000000000000000000000000000001b34cbb';
+        const abi = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
+        const contract = ethers.ContractFactory.getContract(contractAddr, abi, wallet);
+        const balanceOfParams = contract.interface.encodeFunctionData('balanceOf', [
+            yield wallet.getAddress()
+        ]);
+        // skipped - no balance in account
+        xit("Should be able to perform local call", function () {
+            return __awaiter(this, void 0, void 0, function* () {
+                const balanceOfTx = {
+                    to: contractAddr,
+                    gasLimit: 30000,
+                    data: arrayify(balanceOfParams),
+                };
+                const response = yield wallet.call(balanceOfTx);
+                assert.notStrictEqual(response, null);
+            });
+        });
+        // skipped - no balance in account
+        xit('should fail on contract revert', function () {
+            return __awaiter(this, void 0, void 0, function* () {
+                this.timeout(60000);
+                const balanceOfTx = {
+                    to: contractAddr,
+                    gasLimit: 50000,
+                    data: "0x",
+                    nodeId: "0.0.3"
+                };
+                try {
+                    yield wallet.call(balanceOfTx);
+                }
+                catch (err) {
+                    assert.strictEqual(err.code, Logger.errors.UNPREDICTABLE_GAS_LIMIT);
+                }
+            });
+        });
+        it('should fail on insufficient gas', function () {
+            return __awaiter(this, void 0, void 0, function* () {
+                this.timeout(60000);
+                const balanceOfTx = {
+                    to: contractAddr,
+                    gasLimit: 100,
+                    data: arrayify(balanceOfParams),
+                    nodeId: "0.0.3"
+                };
+                try {
+                    yield wallet.call(balanceOfTx);
+                }
+                catch (err) {
+                    assert.strictEqual(err.code, Logger.errors.INSUFFICIENT_FUNDS);
+                }
+            });
+        });
+        it('should fail on invalid contract', function () {
+            return __awaiter(this, void 0, void 0, function* () {
+                this.timeout(60000);
+                const balanceOfTx = {
+                    // incorrect addr
+                    to: 'z000000000000000000000000000000001b34cbb',
+                    gasLimit: 30000,
+                    data: arrayify(balanceOfParams),
+                    nodeId: "0.0.3"
+                };
+                try {
+                    yield wallet.call(balanceOfTx);
+                }
+                catch (err) {
+                    assert.strictEqual(err.code, Logger.errors.INVALID_ARGUMENT);
+                }
+            });
+        });
+    });
+});
+describe("Wallet createAccount", function () {
+    let wallet, newAccount, newAccountPublicKey, provider;
+    const timeout = 60000;
+    before(function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const account = {
+                "operator": {
+                    "accountId": "0.0.19041642",
+                    "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
+                    "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
+                },
+                "network": {
+                    "0.testnet.hedera.com:50211": "0.0.3",
+                    "1.testnet.hedera.com:50211": "0.0.4",
+                    "2.testnet.hedera.com:50211": "0.0.5",
+                    "3.testnet.hedera.com:50211": "0.0.6"
+                }
+            };
+            this.timeout(timeout);
+            provider = ethers.providers.getDefaultProvider('testnet');
+            wallet = yield createWalletFromED25519(account, provider);
+        });
+    });
+    beforeEach(() => __awaiter(this, void 0, void 0, function* () {
+        newAccount = ethers.Wallet.createRandom();
+        newAccountPublicKey = newAccount._signingKey().compressedPublicKey;
+    }));
+    it("Should create an account", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const tx = yield wallet.createAccount(newAccountPublicKey);
+            assert.ok(tx, 'tx exists');
+            assert.ok(tx.customData, 'tx.customData exists');
+            assert.ok(tx.customData.accountId, 'accountId exists');
+        });
+    }).timeout(timeout);
+    it("Should add initial balance if provided", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const tx = yield wallet.createAccount(newAccountPublicKey, BigInt(123));
+            assert.ok(tx, 'tx exists');
+            assert.ok(tx.customData, 'tx.customData exists');
+            assert.ok(tx.customData.accountId, 'accountId exists');
+            const newAccountAddress = getAddressFromAccount(tx.customData.accountId.toString());
+            const newAccBalance = yield provider.getBalance(newAccountAddress);
+            assert.strictEqual(BigInt(123).toString(), newAccBalance.toString(), 'The initial balance is correct');
+        });
+    }).timeout(timeout);
 });
 //# sourceMappingURL=test-wallet.spec.js.map
