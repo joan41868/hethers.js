@@ -1,8 +1,8 @@
 "use strict";
 
 import {
-    EventType, Filter, FilterByBlockHash,
-    Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
+    EventType, Filter, Listener, Log, Provider,
+    TransactionReceipt, TransactionRequest, TransactionResponse
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
@@ -16,6 +16,7 @@ import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
+import {getAccountFromTransactionId, getAddressFromAccount} from "@ethersproject/address";
 import { version } from "./_version";
 const logger = new Logger(version);
 
@@ -23,6 +24,7 @@ import { Formatter } from "./formatter";
 import { AccountLike, asAccountString } from "@ethersproject/address";
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
+import {base64} from "ethers/lib/utils";
 
 //////////////////////////////
 // Event Serializeing
@@ -85,6 +87,10 @@ function stall(duration: number): Promise<void> {
     return new Promise((resolve) => {
         setTimeout(resolve, duration);
     });
+}
+
+function base64ToHex(hash: string): string {
+    return hexlify(base64.decode(hash));
 }
 
 //////////////////////////////
@@ -643,15 +649,15 @@ export class BaseProvider extends Provider {
             let { data } = await axios.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account);
             return data.bytecode ? hexlify(data.bytecode) : `0x`;
         } catch (error) {
-            if (error.response && error.response.status && 
-                (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {            
+            if (error.response && error.response.status &&
+                (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "ContractByteCodeQuery",
                     params: {address: accountLike},
                     error
                 });
-            } 
-            return "0x";         
+            }
+            return "0x";
         }
     }
 
@@ -718,7 +724,7 @@ export class BaseProvider extends Provider {
         }
     }
 
-    async _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash> {
+    async _getFilter(filter: Filter | Promise<Filter>): Promise<Filter> {
         filter = await filter;
 
         const result: any = { };
@@ -732,8 +738,9 @@ export class BaseProvider extends Provider {
             result[key] = (<any>filter)[key];
         });
 
-        ["fromBlock", "toBlock"].forEach((key) => {
+        ["fromTimestamp", "toTimestamp"].forEach((key) => {
             if ((<any>filter)[key] == null) { return; }
+            result[key] = (<any>filter)[key];
         });
 
         return this.formatter.filter(await resolveProperties(result));
@@ -775,14 +782,31 @@ export class BaseProvider extends Provider {
             if (data) {
                 const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
                 if (filtered.length > 0) {
-                    const contractsResultsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
-                    const dataWithLogs = await axios.get(this._mirrorNodeUrl + contractsResultsEndpoint);
-                    const record = {
+                    let record: any;
+                    record = {
                         chainId: this._network.chainId,
                         transactionId: transactionId,
                         result: filtered[0].result,
-                        ...dataWithLogs.data
                     };
+
+                    const transactionName = filtered[0].name;
+                    if (transactionName === 'CRYPTOCREATEACCOUNT') {
+                        record.from = getAccountFromTransactionId(transactionId);
+                        record.timestamp = filtered[0].consensus_timestamp;
+
+                        // Different endpoints of the mirror node API returns hashes in different formats.
+                        // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
+                        // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
+                        record.hash = base64ToHex(filtered[0].transaction_hash);
+
+                        record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
+                    }
+                    else {
+                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                        const dataWithLogs = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
+                        record = Object.assign({}, record, {...dataWithLogs.data});
+                    }
+
                     return this.formatter.responseFromRecord(record);
                 }
             }
@@ -823,11 +847,38 @@ export class BaseProvider extends Provider {
         // }
     }
 
-    async getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>> {
-        await this.getNetwork();
+    async getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>> {
+        if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
         const params = await resolveProperties({ filter: this._getFilter(filter) });
-        const logs: Array<Log> = await this.perform("getLogs", params);
-        return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
+        let toTimestampFilter = "";
+        let fromTimestampFilter = "";
+        const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
+        // @ts-ignore
+        if (params.filter.toTimestamp) {
+            //@ts-ignore
+            toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
+        }
+        //@ts-ignore
+        if (params.filter.fromTimestamp) {
+            //@ts-ignore
+            fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+        }
+        const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+        try {
+            let { data } = await axios.get(requestUrl);
+            if (data) {
+                const mappedLogs = this.formatter.logsMapper(data.logs);
+                return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
+            }
+        } catch (error) {
+            if (error && error.response && error.response.status != 404) {
+                logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    method: "ContractLogsQuery",
+                    error
+                });
+            }
+        }
+        return null;
     }
 
     async getHbarPrice(): Promise<number> {

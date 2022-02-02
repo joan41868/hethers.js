@@ -1,5 +1,5 @@
 "use strict";
-import { getAddress, getContractAddress } from "@ethersproject/address";
+import { getAddress, getAddressFromAccount, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@ethersproject/constants";
@@ -17,18 +17,19 @@ export class Formatter {
         const formats = ({});
         const address = this.address.bind(this);
         const bigNumber = this.bigNumber.bind(this);
-        const blockTag = this.blockTag.bind(this);
         const data = this.data.bind(this);
-        const hash = this.hash.bind(this);
+        const hash_48 = this.hash_48.bind(this);
+        const hash_32 = this.hash_32.bind(this);
         const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
+        const timestamp = this.timestamp.bind(this);
         const strictData = (v) => { return this.data(v, true); };
         formats.transaction = {
-            hash: hash,
+            hash: hash_48,
             type: type,
             accessList: Formatter.allowNull(this.accessList.bind(this), null),
-            blockHash: Formatter.allowNull(hash, null),
+            blockHash: Formatter.allowNull(hash_48, null),
             blockNumber: Formatter.allowNull(number, null),
             transactionIndex: Formatter.allowNull(number, null),
             confirmations: Formatter.allowNull(number, null),
@@ -65,12 +66,12 @@ export class Formatter {
         formats.receiptLog = {
             transactionIndex: number,
             blockNumber: number,
-            transactionHash: hash,
+            transactionHash: hash_48,
             address: address,
-            topics: Formatter.arrayOf(hash),
+            topics: Formatter.arrayOf(hash_32),
             data: data,
             logIndex: number,
-            blockHash: hash,
+            blockHash: hash_48,
         };
         formats.receipt = {
             to: Formatter.allowNull(this.address, null),
@@ -81,8 +82,8 @@ export class Formatter {
             root: Formatter.allowNull(hex),
             gasUsed: bigNumber,
             logsBloom: Formatter.allowNull(data),
-            blockHash: hash,
-            transactionHash: hash,
+            blockHash: hash_48,
+            transactionHash: hash_48,
             logs: Formatter.arrayOf(this.receiptLog.bind(this)),
             blockNumber: number,
             confirmations: Formatter.allowNull(number, null),
@@ -92,8 +93,8 @@ export class Formatter {
             type: type
         };
         formats.block = {
-            hash: hash,
-            parentHash: hash,
+            hash: hash_48,
+            parentHash: hash_48,
             number: number,
             timestamp: number,
             nonce: Formatter.allowNull(hex),
@@ -102,30 +103,49 @@ export class Formatter {
             gasUsed: bigNumber,
             miner: address,
             extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash)),
+            transactions: Formatter.allowNull(Formatter.arrayOf(hash_48)),
             baseFeePerGas: Formatter.allowNull(bigNumber)
         };
         formats.blockWithTransactions = shallowCopy(formats.block);
         formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
         formats.filter = {
-            fromBlock: Formatter.allowNull(blockTag, undefined),
-            toBlock: Formatter.allowNull(blockTag, undefined),
-            blockHash: Formatter.allowNull(hash, undefined),
+            fromTimestamp: Formatter.allowNull(timestamp, undefined),
+            toTimestamp: Formatter.allowNull(timestamp, undefined),
+            blockHash: Formatter.allowNull(hash_48, undefined),
             address: Formatter.allowNull(address, undefined),
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
         formats.filterLog = {
-            blockNumber: Formatter.allowNull(number),
-            blockHash: Formatter.allowNull(hash),
-            transactionIndex: number,
-            removed: Formatter.allowNull(this.boolean.bind(this)),
+            timestamp: timestamp,
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
-            topics: Formatter.arrayOf(hash),
-            transactionHash: hash,
+            topics: Formatter.arrayOf(hash_32),
+            transactionHash: Formatter.allowNull(hash_48, undefined),
             logIndex: number,
+            transactionIndex: number
         };
         return formats;
+    }
+    logsMapper(values) {
+        let logs = [];
+        values.forEach(function (log) {
+            const mapped = {
+                timestamp: log.timestamp,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                //@ts-ignore
+                transactionHash: null,
+                logIndex: log.index,
+                transactionIndex: log.index,
+            };
+            logs.push(mapped);
+        });
+        return logs;
+    }
+    //TODO propper validation needed?
+    timestamp(value) {
+        return value;
     }
     accessList(accessList) {
         return accessListify(accessList || []);
@@ -185,7 +205,11 @@ export class Formatter {
     // Requires an address
     // Strict! Used on input.
     address(value) {
-        return getAddress(value);
+        let address = value.toString();
+        if (address.indexOf(".") !== -1) {
+            address = getAddressFromAccount(address);
+        }
+        return getAddress(address);
     }
     callAddress(value) {
         if (!isHexString(value, 32)) {
@@ -214,10 +238,18 @@ export class Formatter {
         throw new Error("invalid blockTag");
     }
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
-    hash(value, strict) {
+    hash_48(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
+        }
+        return result;
+    }
+    //hedera topics hash has length 32
+    hash_32(value, strict) {
+        const result = this.hex(value, strict);
+        if (hexDataLength(result) !== 32) {
+            return logger.throwArgumentError("invalid topics hash", "value", value);
         }
         return result;
     }
@@ -326,37 +358,39 @@ export class Formatter {
     }
     responseFromRecord(record) {
         return {
-            chainId: record.chainId,
+            chainId: record.chainId ? record.chainId : null,
             hash: record.hash,
             timestamp: record.timestamp,
-            transactionId: record.transactionId,
+            transactionId: record.transactionId ? record.transactionId : null,
             from: record.from,
-            to: record.to,
-            data: record.call_result,
-            gasLimit: BigNumber.from(record.gas_limit),
-            value: BigNumber.from(record.amount),
+            to: record.to ? record.to : null,
+            data: record.call_result ? record.call_result : null,
+            gasLimit: typeof record.gas_limit !== 'undefined' ? BigNumber.from(record.gas_limit) : null,
+            value: BigNumber.from(record.amount || 0),
             customData: {
-                gas_used: record.gas_used,
-                logs: record.logs,
-                result: record.result
+                gas_used: record.gas_used ? record.gas_used : null,
+                logs: record.logs ? record.logs : null,
+                result: record.result ? record.result : null,
+                accountAddress: record.accountAddress ? record.accountAddress : null
             },
-            wait: null
+            wait: null,
         };
     }
     receiptFromResponse(response) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
         let contractAddress = null;
         let to = null;
         let logs = [];
         response.data != '0x' ? contractAddress = response.to : to = response.to;
-        (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
+        (_b = (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs) === null || _b === void 0 ? void 0 : _b.forEach(function (log) {
             const values = {
                 timestamp: response.timestamp,
                 address: log.address,
                 data: log.data,
                 topics: log.topics,
                 transactionHash: response.hash,
-                logIndex: log.index
+                logIndex: log.index,
+                transactionIndex: log.index,
             };
             logs.push(values);
         });
@@ -365,15 +399,16 @@ export class Formatter {
             from: response.from,
             timestamp: response.timestamp,
             contractAddress: contractAddress,
-            gasUsed: (_b = response.customData) === null || _b === void 0 ? void 0 : _b.gas_used,
+            gasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
             logsBloom: null,
             transactionId: response.transactionId,
             transactionHash: response.hash,
             logs: logs,
-            cumulativeGasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
+            cumulativeGasUsed: (_d = response.customData) === null || _d === void 0 ? void 0 : _d.gas_used,
             type: 0,
             byzantium: true,
-            status: ((_d = response.customData) === null || _d === void 0 ? void 0 : _d.result) === 'SUCCESS' ? 1 : 0
+            status: ((_e = response.customData) === null || _e === void 0 ? void 0 : _e.result) === 'SUCCESS' ? 1 : 0,
+            accountAddress: ((_f = response.customData) === null || _f === void 0 ? void 0 : _f.accountAddress) ? response.customData.accountAddress : null
         };
     }
     topics(value) {
@@ -381,7 +416,7 @@ export class Formatter {
             return value.map((v) => this.topics(v));
         }
         else if (value != null) {
-            return this.hash(value, true);
+            return this.hash_32(value, true);
         }
         return null;
     }

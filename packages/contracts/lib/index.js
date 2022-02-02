@@ -956,16 +956,15 @@ var BaseContract = /** @class */ (function () {
         var _this = this;
         var runningEvent = this._getRunningEvent(event);
         var filter = (0, properties_1.shallowCopy)(runningEvent.filter);
-        if (typeof (fromBlockOrBlockhash) === "string" && (0, bytes_1.isHexString)(fromBlockOrBlockhash, 32)) {
-            if (toBlock != null) {
-                logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-            }
-            filter.blockHash = fromBlockOrBlockhash;
-        }
-        else {
-            filter.fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash : 0);
-            filter.toBlock = ((toBlock != null) ? toBlock : "latest");
-        }
+        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
+        //     if (toBlock != null) {
+        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
+        //     }
+        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
+        // } else {
+        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
+        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
+        // }
         return this.provider.getLogs(filter).then(function (logs) {
             return logs.map(function (log) { return _this._wrapEvent(runningEvent, log, null); });
         });

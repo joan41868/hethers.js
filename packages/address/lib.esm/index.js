@@ -6,6 +6,16 @@ import { encode } from "@ethersproject/rlp";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
+export function getAccountFromTransactionId(transactionId) {
+    // TransactionId look like this: '0.0.99999999-9999999999-999999999'
+    // or like this:                 '0.0.99999999@9999999999-999999999'
+    if (!transactionId.match(/^\d+?\.\d+?\.\d+[-|@]\d+-\d+$/)) {
+        logger.throwArgumentError("invalid transactionId", "transactionId", transactionId);
+    }
+    let splitSymbol = transactionId.indexOf('@') === -1 ? '-' : '@';
+    const account = transactionId.split(splitSymbol);
+    return account[0];
+}
 export function asAccountString(accountLike) {
     let parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
     return `${parsedAccount.shard}.${parsedAccount.realm}.${parsedAccount.num}`;

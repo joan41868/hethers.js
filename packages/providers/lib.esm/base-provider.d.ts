@@ -1,4 +1,4 @@
-import { EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { EventType, Filter, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
@@ -72,7 +72,7 @@ export declare class BaseProvider extends Provider {
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
     get network(): Network;
-    checkMirrorNode(): void;
+    _checkMirrorNode(): void;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
     get pollingInterval(): number;
@@ -90,14 +90,15 @@ export declare class BaseProvider extends Provider {
      *  Get contract bytecode implementation, using the REST Api.
      *  It returns the bytecode, or a default value as string.
      *
-     * @param addressOrName The address to obtain the bytecode of
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
      */
     getCode(accountLike: AccountLike | Promise<AccountLike>, throwOnNonExisting?: boolean): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
     getHederaClient(): Client;
     getHederaNetworkConfig(): AccountId[];
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
-    _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;
+    _getFilter(filter: Filter | Promise<Filter>): Promise<Filter>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     _getAddress(addressOrName: string | Promise<string>): Promise<string>;
     /**
@@ -112,7 +113,7 @@ export declare class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
-    getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
+    getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
     getResolver(name: string): Promise<null | Resolver>;
     _getResolver(name: string): Promise<string>;

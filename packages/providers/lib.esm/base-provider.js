@@ -18,12 +18,14 @@ import { sha256 } from "@ethersproject/sha2";
 import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import bech32 from "bech32";
 import { Logger } from "@ethersproject/logger";
+import { getAccountFromTransactionId, getAddressFromAccount } from "@ethersproject/address";
 import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
 import { asAccountString } from "@ethersproject/address";
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
+import { base64 } from "ethers/lib/utils";
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -80,6 +82,9 @@ function stall(duration) {
     return new Promise((resolve) => {
         setTimeout(resolve, duration);
     });
+}
+function base64ToHex(hash) {
+    return hexlify(base64.decode(hash));
 }
 //////////////////////////////
 // Provider Object
@@ -430,7 +435,7 @@ export class BaseProvider extends Provider {
     get network() {
         return this._network;
     }
-    checkMirrorNode() {
+    _checkMirrorNode() {
         if (!this._mirrorNodeUrl)
             logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
     }
@@ -538,11 +543,12 @@ export class BaseProvider extends Provider {
      *  Get contract bytecode implementation, using the REST Api.
      *  It returns the bytecode, or a default value as string.
      *
-     * @param addressOrName The address to obtain the bytecode of
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
      */
     getCode(accountLike, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.checkMirrorNode();
+            this._checkMirrorNode();
             accountLike = yield accountLike;
             const account = asAccountString(accountLike);
             try {
@@ -630,7 +636,6 @@ export class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                // result.address = this._getAddress(filter.address);
                 result.address = filter.address;
             }
             ["blockHash", "topics"].forEach((key) => {
@@ -639,10 +644,11 @@ export class BaseProvider extends Provider {
                 }
                 result[key] = filter[key];
             });
-            ["fromBlock", "toBlock"].forEach((key) => {
+            ["fromTimestamp", "toTimestamp"].forEach((key) => {
                 if (filter[key] == null) {
                     return;
                 }
+                result[key] = filter[key];
             });
             return this.formatter.filter(yield resolveProperties(result));
         });
@@ -677,7 +683,7 @@ export class BaseProvider extends Provider {
      */
     getTransaction(transactionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.checkMirrorNode();
+            this._checkMirrorNode();
             transactionId = yield transactionId;
             const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
             try {
@@ -685,9 +691,27 @@ export class BaseProvider extends Provider {
                 if (data) {
                     const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
                     if (filtered.length > 0) {
-                        const contractsResultsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
-                        const dataWithLogs = yield axios.get(this._mirrorNodeUrl + contractsResultsEndpoint);
-                        const record = Object.assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
+                        let record;
+                        record = {
+                            chainId: this._network.chainId,
+                            transactionId: transactionId,
+                            result: filtered[0].result,
+                        };
+                        const transactionName = filtered[0].name;
+                        if (transactionName === 'CRYPTOCREATEACCOUNT') {
+                            record.from = getAccountFromTransactionId(transactionId);
+                            record.timestamp = filtered[0].consensus_timestamp;
+                            // Different endpoints of the mirror node API returns hashes in different formats.
+                            // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
+                            // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
+                            record.hash = base64ToHex(filtered[0].transaction_hash);
+                            record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
+                        }
+                        else {
+                            const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                            const dataWithLogs = yield axios.get(this._mirrorNodeUrl + contractsEndpoint);
+                            record = Object.assign({}, record, Object.assign({}, dataWithLogs.data));
+                        }
                         return this.formatter.responseFromRecord(record);
                     }
                 }
@@ -731,10 +755,39 @@ export class BaseProvider extends Provider {
     }
     getLogs(filter) {
         return __awaiter(this, void 0, void 0, function* () {
-            yield this.getNetwork();
+            if (!this._mirrorNodeUrl)
+                logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
-            const logs = yield this.perform("getLogs", params);
-            return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
+            let toTimestampFilter = "";
+            let fromTimestampFilter = "";
+            const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
+            // @ts-ignore
+            if (params.filter.toTimestamp) {
+                //@ts-ignore
+                toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
+            }
+            //@ts-ignore
+            if (params.filter.fromTimestamp) {
+                //@ts-ignore
+                fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+            }
+            const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+            try {
+                let { data } = yield axios.get(requestUrl);
+                if (data) {
+                    const mappedLogs = this.formatter.logsMapper(data.logs);
+                    return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
+                }
+            }
+            catch (error) {
+                if (error && error.response && error.response.status != 404) {
+                    logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "ContractLogsQuery",
+                        error
+                    });
+                }
+            }
+            return null;
         });
     }
     getHbarPrice() {

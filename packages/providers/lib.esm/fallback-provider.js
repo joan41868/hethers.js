@@ -237,30 +237,26 @@ function getProcessFunc(provider, method, params) {
             };
             break;
         // We drop the confirmations from transactions as it is approximate
-        case "getBlock":
-            // We drop the confirmations from transactions as it is approximate
-            if (params.includeTransactions) {
-                normalize = function (block) {
-                    if (block == null) {
-                        return null;
-                    }
-                    block = shallowCopy(block);
-                    block.transactions = block.transactions.map((tx) => {
-                        tx = shallowCopy(tx);
-                        return tx;
-                    });
-                    return serialize(block);
-                };
-            }
-            else {
-                normalize = function (block) {
-                    if (block == null) {
-                        return null;
-                    }
-                    return serialize(block);
-                };
-            }
-            break;
+        // case "getBlock":
+        //     // We drop the confirmations from transactions as it is approximate
+        //     if (params.includeTransactions) {
+        //         normalize = function(block: BlockWithTransactions): string {
+        //             if (block == null) { return null; }
+        //             block = shallowCopy(block);
+        //             block.transactions = block.transactions.map((tx) => {
+        //                 tx = shallowCopy(tx);
+        //                 tx.confirmations = -1;
+        //                 return tx;
+        //             });
+        //             return serialize(block);
+        //         };
+        //     } else {
+        //         normalize = function(block: Block): string {
+        //             if (block == null) { return null; }
+        //             return serialize(block);
+        //         }
+        //     }
+        //     break;
         default:
             throw new Error("unknown method: " + method);
     }

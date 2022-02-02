@@ -23,25 +23,26 @@ export declare type HederaTransactionRecord = {
     chainId: number;
     transactionId: string;
     result: string;
-    amount: number;
-    call_result: string;
-    contract_id: string;
-    created_contract_ids: string[];
-    error_message: string;
+    amount?: number;
+    call_result?: string;
+    contract_id?: string;
+    created_contract_ids?: string[];
+    error_message?: string;
     from: string;
-    function_parameters: string;
-    gas_limit: number;
-    gas_used: number;
+    function_parameters?: string;
+    gas_limit?: number;
+    gas_used?: number;
     timestamp: string;
-    to: string;
-    block_hash: string;
-    block_number: number;
+    to?: string;
+    block_hash?: string;
+    block_number?: number;
     hash: string;
-    logs: {};
+    logs?: {};
+    accountAddress?: string;
 };
 export interface TransactionResponse extends Transaction {
     hash: string;
-    timestamp?: string;
+    timestamp: string;
     from: string;
     raw?: string;
     wait: (timestamp?: number) => Promise<TransactionReceipt>;
@@ -77,6 +78,7 @@ export interface Log {
     topics: Array<string>;
     transactionHash: string;
     logIndex: number;
+    transactionIndex: number;
 }
 export interface TransactionReceipt {
     to: string;
@@ -92,6 +94,7 @@ export interface TransactionReceipt {
     byzantium: true;
     type: 0;
     status?: number;
+    accountAddress?: string;
 }
 export interface FeeData {
     maxFeePerGas: null | BigNumber;
@@ -99,12 +102,12 @@ export interface FeeData {
     gasPrice: null | BigNumber;
 }
 export interface EventFilter {
-    address?: string;
+    address?: AccountLike;
     topics?: Array<string | Array<string> | null>;
 }
 export interface Filter extends EventFilter {
-    fromBlock?: BlockTag;
-    toBlock?: BlockTag;
+    fromTimestamp?: string;
+    toTimestamp?: string;
 }
 export interface FilterByBlockHash extends EventFilter {
     blockHash?: string;

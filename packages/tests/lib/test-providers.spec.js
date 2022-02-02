@@ -1037,6 +1037,95 @@ describe("Test Hedera Provider", function () {
             });
         });
     }).timeout(timeout);
+    it('Should filter logs by timestamp and address', function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var fromTimestamp, toTimestamp, address, account, filterParams, logsResponse, logs, filterParamsAccount, logs2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        fromTimestamp = "1642065156.264170833";
+                        toTimestamp = "1642080642.176149864";
+                        address = "0x000000000000000000000000000000000186fb1A";
+                        account = "0.0.25623322";
+                        filterParams = {
+                            address: address,
+                            fromTimestamp: fromTimestamp,
+                            toTimestamp: toTimestamp
+                        };
+                        logsResponse = [
+                            {
+                                "address": "0x000000000000000000000000000000000186fb1a",
+                                "contract_id": "0.0.25623322",
+                                "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+                                "index": 0,
+                                "topics": [
+                                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                                    "0x0000000000000000000000000000000000000000000000000000000000179977"
+                                ],
+                                "root_contract_id": "0.0.25623322",
+                                "timestamp": "1642080642.176149864"
+                            },
+                            {
+                                "address": "0x000000000000000000000000000000000186fb1a",
+                                "contract_id": "0.0.25623322",
+                                "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+                                "index": 0,
+                                "topics": [
+                                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                                    "0x0000000000000000000000000000000000000000000000000000000000000000",
+                                    "0x0000000000000000000000000000000000000000000000000000000000179977"
+                                ],
+                                "root_contract_id": "0.0.25623322",
+                                "timestamp": "1642065156.264170833"
+                            }
+                        ];
+                        return [4 /*yield*/, provider.getLogs(filterParams)];
+                    case 1:
+                        logs = _a.sent();
+                        assert_1.default.strictEqual(logs.length, 2);
+                        assert_1.default.strictEqual(logs[0].timestamp, logsResponse[0].timestamp);
+                        assert_1.default.strictEqual(logs[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
+                        assert_1.default.strictEqual(logs[0].data, logsResponse[0].data);
+                        assert_1.default.deepStrictEqual(logs[0].topics, logsResponse[0].topics);
+                        assert_1.default.strictEqual(logs[0].transactionHash, undefined);
+                        assert_1.default.strictEqual(logs[0].logIndex, logsResponse[0].index);
+                        assert_1.default.strictEqual(logs[0].transactionIndex, logsResponse[0].index);
+                        assert_1.default.strictEqual(logs[1].timestamp, logsResponse[1].timestamp);
+                        assert_1.default.strictEqual(logs[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
+                        assert_1.default.strictEqual(logs[1].data, logsResponse[1].data);
+                        assert_1.default.deepStrictEqual(logs[1].topics, logsResponse[1].topics);
+                        assert_1.default.strictEqual(logs[1].transactionHash, undefined);
+                        assert_1.default.strictEqual(logs[1].logIndex, logsResponse[1].index);
+                        assert_1.default.strictEqual(logs[1].transactionIndex, logsResponse[1].index);
+                        filterParamsAccount = {
+                            address: account,
+                            fromTimestamp: fromTimestamp,
+                            toTimestamp: toTimestamp
+                        };
+                        return [4 /*yield*/, provider.getLogs(filterParamsAccount)];
+                    case 2:
+                        logs2 = _a.sent();
+                        assert_1.default.strictEqual(logs.length, 2);
+                        assert_1.default.strictEqual(logs2[0].timestamp, logsResponse[0].timestamp);
+                        assert_1.default.strictEqual(logs2[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
+                        assert_1.default.strictEqual(logs2[0].data, logsResponse[0].data);
+                        assert_1.default.deepStrictEqual(logs2[0].topics, logsResponse[0].topics);
+                        assert_1.default.strictEqual(logs2[0].transactionHash, undefined);
+                        assert_1.default.strictEqual(logs2[0].logIndex, logsResponse[0].index);
+                        assert_1.default.strictEqual(logs2[0].transactionIndex, logsResponse[0].index);
+                        assert_1.default.strictEqual(logs2[1].timestamp, logsResponse[1].timestamp);
+                        assert_1.default.strictEqual(logs2[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
+                        assert_1.default.strictEqual(logs2[1].data, logsResponse[1].data);
+                        assert_1.default.deepStrictEqual(logs2[1].topics, logsResponse[1].topics);
+                        assert_1.default.strictEqual(logs2[1].transactionHash, undefined);
+                        assert_1.default.strictEqual(logs2[1].logIndex, logsResponse[1].index);
+                        assert_1.default.strictEqual(logs2[1].transactionIndex, logsResponse[1].index);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout * 4);
     describe("Sign & Send Transaction, Wait for receipt", function () {
         var _this = this;
         var signedTx;
@@ -1343,6 +1432,29 @@ describe("Test Hedera Provider", function () {
             });
         });
     }).timeout(timeout * 4);
+    it("provider.getTransaction should be able to work with CRYPTOCREATEACCOUNT transactions", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var defaultProvider, mintedTransaction;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        defaultProvider = ethers_1.ethers.providers.getDefaultProvider(default_hedera_provider_1.HederaNetworks.TESTNET);
+                        return [4 /*yield*/, defaultProvider.getTransaction("0.0.29562746-1643299484-861748482")];
+                    case 1:
+                        mintedTransaction = _a.sent();
+                        assert_1.default.notStrictEqual(mintedTransaction, null, "getTransaction returns the transaction");
+                        assert_1.default.strictEqual(mintedTransaction.transactionId, '0.0.29562746-1643299484-861748482', "transactionId is correct");
+                        assert_1.default.strictEqual(mintedTransaction.hash, '0xe8b564272a683b6404bb8cbd0029c9fdd56d7362f567f91cac8f608467171a23ea483e0889f44c595812b83802ab3c87', "hash is correct");
+                        assert_1.default.notStrictEqual(mintedTransaction.customData, null, "customData exists");
+                        assert_1.default.strictEqual(mintedTransaction.customData.accountAddress, '0x0000000000000000000000000000000001c31782', "customData.accountAddress exists");
+                        assert_1.default.strictEqual(mintedTransaction.customData.result, 'SUCCESS', "customData.result is correct");
+                        assert_1.default.strictEqual(mintedTransaction.from, '0.0.29562746', "from is correct");
+                        assert_1.default.strictEqual(mintedTransaction.timestamp, '1643299496.863374000', "timestamp is correct");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
     it("Should get bytecode of contract", function () {
         return __awaiter(this, void 0, void 0, function () {
             var contractAccountConfig, contractAddress, result;
@@ -1464,6 +1576,7 @@ describe("Test Hedera Provider Formatters", function () {
                     gasLimit: null,
                     hash: null,
                     transactionId: null,
+                    timestamp: null,
                     to: null,
                     value: null,
                     customData: {
@@ -1548,7 +1661,8 @@ describe("Test Hedera Provider Formatters", function () {
                             data: null,
                             topics: [],
                             transactionHash: null,
-                            logIndex: 0
+                            logIndex: 0,
+                            transactionIndex: 0
                         }
                     ],
                     cumulativeGasUsed: null,
@@ -1559,8 +1673,8 @@ describe("Test Hedera Provider Formatters", function () {
                 receipt = provider.formatter.receiptFromResponse(transactionResponse);
                 assert_1.default.strictEqual(receipt.to, transactionResponse.to);
                 assert_1.default.strictEqual(receipt.from, transactionResponse.from);
-                assert_1.default.strictEqual(receipt.timestamp, transactionResponse.timestamp),
-                    assert_1.default.strictEqual(receipt.contractAddress, null);
+                assert_1.default.strictEqual(receipt.timestamp, transactionResponse.timestamp);
+                assert_1.default.strictEqual(receipt.contractAddress, null);
                 assert_1.default.strictEqual(receipt.transactionId, transactionResponse.transactionId);
                 assert_1.default.strictEqual(receipt.transactionHash, transactionResponse.hash);
                 assert_1.default.strictEqual(receipt.cumulativeGasUsed, transactionResponse.customData.gas_used);
@@ -1573,12 +1687,14 @@ describe("Test Hedera Provider Formatters", function () {
                 assert_1.default.deepStrictEqual(receipt.logs[0].topics, transactionResponse.customData.logs[0].topics);
                 assert_1.default.strictEqual(receipt.logs[0].transactionHash, transactionResponse.hash);
                 assert_1.default.strictEqual(receipt.logs[0].logIndex, transactionResponse.customData.logs[0].index);
+                assert_1.default.strictEqual(receipt.logs[0].transactionIndex, transactionResponse.customData.logs[0].index);
                 assert_1.default.strictEqual(receipt.logs[1].timestamp, transactionResponse.timestamp);
                 assert_1.default.strictEqual(receipt.logs[1].address, transactionResponse.customData.logs[1].address);
                 assert_1.default.strictEqual(receipt.logs[1].data, transactionResponse.customData.logs[1].data);
                 assert_1.default.deepStrictEqual(receipt.logs[1].topics, transactionResponse.customData.logs[1].topics);
                 assert_1.default.strictEqual(receipt.logs[1].transactionHash, transactionResponse.hash);
                 assert_1.default.strictEqual(receipt.logs[1].logIndex, transactionResponse.customData.logs[1].index);
+                assert_1.default.strictEqual(receipt.logs[1].transactionIndex, transactionResponse.customData.logs[1].index);
                 return [2 /*return*/];
             });
         });
