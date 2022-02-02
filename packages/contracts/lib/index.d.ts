@@ -103,7 +103,7 @@ export declare class BaseContract {
     _wrappedEmits: {
         [eventTag: string]: (...args: Array<any>) => void;
     };
-    constructor(contractInterface: ContractInterface, address?: AccountLike, signerOrProvider?: Signer | Provider);
+    constructor(address: AccountLike | null, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider);
     set address(val: AccountLike);
     get address(): AccountLike;
     static getInterface(contractInterface: ContractInterface): Interface;

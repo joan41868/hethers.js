@@ -93669,7 +93669,8 @@ class WildcardRunningEvent extends RunningEvent {
     }
 }
 class BaseContract {
-    constructor(contractInterface, address, signerOrProvider) {
+    // TODO: permute address first; make default value for address for hedera context
+    constructor(address, contractInterface, signerOrProvider) {
         logger$s.checkNew(new.target, Contract);
         // @TODO: Maybe still check the addressOrName looks like a valid _address or name?
         //_address = getAddress(_address);
@@ -93852,7 +93853,7 @@ class BaseContract {
         if (typeof (signerOrProvider) === "string") {
             signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
         }
-        const contract = new (this.constructor)(this.interface, this.address, signerOrProvider);
+        const contract = new (this.constructor)(this.address, this.interface, signerOrProvider);
         if (this.deployTransaction) {
             defineReadOnly(contract, "deployTransaction", this.deployTransaction);
         }
@@ -93860,7 +93861,7 @@ class BaseContract {
     }
     // Re-attach to a different on-chain instance of this contract
     attach(addressOrName) {
-        return new (this.constructor)(this.interface, addressOrName, this.signer || this.provider);
+        return new (this.constructor)(addressOrName, this.interface, this.signer || this.provider);
     }
     static isIndexed(value) {
         return Indexed.isIndexed(value);
@@ -94192,7 +94193,7 @@ class ContractFactory {
         return Contract.getInterface(contractInterface);
     }
     static getContract(address, contractInterface, signer) {
-        return new Contract(contractInterface, address, signer);
+        return new Contract(address, contractInterface, signer);
     }
 }
 

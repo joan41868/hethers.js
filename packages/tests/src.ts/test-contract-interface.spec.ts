@@ -620,12 +620,12 @@ describe('Test EIP-838 Error Codes', function() {
     const addr = "0xbd0B4B009a76CA97766360F04f75e05A3E449f1E";
     xit("testError1", async function () {
         const provider = ethers.providers.getDefaultProvider(); // new ethers.providers.InfuraProvider("ropsten", "49a0efa3aaee4fd99797bfa94d8ce2f1");
-        const contract = new ethers.Contract([
+        const contract = new ethers.Contract(addr, [
             "function testError1(bool pass, address addr, uint256 value) pure returns (bool)",
             "function testError2(bool pass, bytes data) pure returns (bool)",
             "error TestError1(address addr, uint256 value)",
             "error TestError2(bytes data)",
-        ], addr,provider);
+        ],provider);
 
         try {
             const result = await contract.testError1(false, addr, 42);

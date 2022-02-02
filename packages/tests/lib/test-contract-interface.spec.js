@@ -541,12 +541,12 @@ describe('Test EIP-838 Error Codes', function () {
                 switch (_a.label) {
                     case 0:
                         provider = ethers_1.ethers.providers.getDefaultProvider();
-                        contract = new ethers_1.ethers.Contract([
+                        contract = new ethers_1.ethers.Contract(addr, [
                             "function testError1(bool pass, address addr, uint256 value) pure returns (bool)",
                             "function testError2(bool pass, bytes data) pure returns (bool)",
                             "error TestError1(address addr, uint256 value)",
                             "error TestError2(bytes data)",
-                        ], addr, provider);
+                        ], provider);
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);

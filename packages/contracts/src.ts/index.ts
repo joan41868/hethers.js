@@ -650,8 +650,8 @@ export class BaseContract {
 
     // Wrapped functions to call emit and allow deregistration from the provider
     _wrappedEmits: { [ eventTag: string ]: (...args: Array<any>) => void };
-
-    constructor(contractInterface: ContractInterface, address?:AccountLike, signerOrProvider?: Signer | Provider) {
+    // TODO: permute address first; make default value for address for hedera context
+    constructor(address: AccountLike| null, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider) {
         logger.checkNew(new.target, Contract);
 
         // @TODO: Maybe still check the addressOrName looks like a valid _address or name?
@@ -857,7 +857,7 @@ export class BaseContract {
             signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
         }
 
-        const contract = new (<{ new(...args: any[]): Contract }>(this.constructor))(this.interface, this.address, signerOrProvider);
+        const contract = new (<{ new(...args: any[]): Contract }>(this.constructor))(this.address, this.interface, signerOrProvider);
         if (this.deployTransaction) {
             defineReadOnly(contract, "deployTransaction", this.deployTransaction);
         }
@@ -866,7 +866,7 @@ export class BaseContract {
 
     // Re-attach to a different on-chain instance of this contract
     attach(addressOrName: string): Contract {
-        return new (<{ new(...args: any[]): Contract }>(this.constructor))(this.interface, addressOrName, this.signer || this.provider);
+        return new (<{ new(...args: any[]): Contract }>(this.constructor))(addressOrName, this.interface, this.signer || this.provider);
     }
 
     static isIndexed(value: any): value is Indexed {
@@ -1263,6 +1263,6 @@ export class ContractFactory {
     }
 
     static getContract(address: AccountLike, contractInterface: ContractInterface, signer?: Signer): Contract {
-        return new Contract(contractInterface, address, signer);
+        return new Contract(address, contractInterface, signer);
     }
 }

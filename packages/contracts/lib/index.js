@@ -615,7 +615,8 @@ var WildcardRunningEvent = /** @class */ (function (_super) {
     return WildcardRunningEvent;
 }(RunningEvent));
 var BaseContract = /** @class */ (function () {
-    function BaseContract(contractInterface, address, signerOrProvider) {
+    // TODO: permute address first; make default value for address for hedera context
+    function BaseContract(address, contractInterface, signerOrProvider) {
         var _newTarget = this.constructor;
         var _this = this;
         logger.checkNew(_newTarget, Contract);
@@ -810,7 +811,7 @@ var BaseContract = /** @class */ (function () {
         if (typeof (signerOrProvider) === "string") {
             signerOrProvider = new abstract_signer_1.VoidSigner(signerOrProvider, this.provider);
         }
-        var contract = new (this.constructor)(this.interface, this.address, signerOrProvider);
+        var contract = new (this.constructor)(this.address, this.interface, signerOrProvider);
         if (this.deployTransaction) {
             (0, properties_1.defineReadOnly)(contract, "deployTransaction", this.deployTransaction);
         }
@@ -818,7 +819,7 @@ var BaseContract = /** @class */ (function () {
     };
     // Re-attach to a different on-chain instance of this contract
     BaseContract.prototype.attach = function (addressOrName) {
-        return new (this.constructor)(this.interface, addressOrName, this.signer || this.provider);
+        return new (this.constructor)(addressOrName, this.interface, this.signer || this.provider);
     };
     BaseContract.isIndexed = function (value) {
         return abi_1.Indexed.isIndexed(value);
@@ -1183,7 +1184,7 @@ var ContractFactory = /** @class */ (function () {
         return Contract.getInterface(contractInterface);
     };
     ContractFactory.getContract = function (address, contractInterface, signer) {
-        return new Contract(contractInterface, address, signer);
+        return new Contract(address, contractInterface, signer);
     };
     return ContractFactory;
 }());
