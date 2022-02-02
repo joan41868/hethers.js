@@ -7693,6 +7693,16 @@ function toUtf8String(bytes, onError) {
 function toUtf8CodePoints(str, form = UnicodeNormalizationForm.current) {
     return getUtf8CodePoints(toUtf8Bytes(str, form));
 }
+function splitInChunks(data, chunkSize) {
+    const chunks = [];
+    let num = 0;
+    while (num <= data.length) {
+        const slice = data.slice(num, chunkSize + num);
+        num += chunkSize;
+        chunks.push(slice);
+    }
+    return chunks;
+}
 
 "use strict";
 function formatBytes32String(text) {
@@ -7923,7 +7933,8 @@ var lib_esm$6 = /*#__PURE__*/Object.freeze({
 	get UnicodeNormalizationForm () { return UnicodeNormalizationForm; },
 	formatBytes32String: formatBytes32String,
 	parseBytes32String: parseBytes32String,
-	nameprep: nameprep
+	nameprep: nameprep,
+	splitInChunks: splitInChunks
 });
 
 "use strict";
@@ -86679,16 +86690,6 @@ class VoidSigner extends Signer {
         return new VoidSigner(this.address, provider);
     }
 }
-function splitInChunks(data, chunkSize) {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
-}
 /**
  * Generates a random integer in the given range
  * @param min - range start
@@ -92038,11 +92039,12 @@ class Wallet extends Signer {
     }
     signTransaction(transaction) {
         this._checkAddress('signTransaction');
-        this.checkTransaction(transaction);
-        return this.populateTransaction(transaction).then((readyTx) => __awaiter$4(this, void 0, void 0, function* () {
-            const tx = serializeHederaTransaction(readyTx);
-            const pkey = PrivateKey$1.fromStringECDSA(this._signingKey().privateKey);
-            const signed = yield tx.sign(pkey);
+        let tx = this.checkTransaction(transaction);
+        return this.populateTransaction(tx).then((readyTx) => __awaiter$4(this, void 0, void 0, function* () {
+            const pubKey = PublicKey$1.fromString(this._signingKey().compressedPublicKey);
+            const tx = serializeHederaTransaction(readyTx, pubKey);
+            const privKey = PrivateKey$1.fromStringECDSA(this._signingKey().privateKey);
+            const signed = yield tx.sign(privKey);
             return hexlify(signed.toBytes());
         }));
     }
@@ -92092,6 +92094,20 @@ class Wallet extends Signer {
         const mnemonic = entropyToMnemonic(entropy, options.locale);
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     }
+    createAccount(pubKey, initialBalance) {
+        return __awaiter$4(this, void 0, void 0, function* () {
+            if (!initialBalance)
+                initialBalance = BigInt(0);
+            const signed = yield this.signTransaction({
+                customData: {
+                    publicKey: pubKey,
+                    initialBalance
+                }
+            });
+            return this.provider.sendTransaction(signed);
+        });
+    }
+    ;
     static fromEncryptedJson(json, password, progressCallback) {
         return decryptJsonWallet(json, password, progressCallback).then((account) => {
             return new Wallet(account);
@@ -92974,7 +92990,7 @@ function serialize(transaction, signature) {
         transactionType: transaction.type
     });
 }
-function serializeHederaTransaction(transaction) {
+function serializeHederaTransaction(transaction, pubKey) {
     var _a, _b;
     let tx;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
@@ -93008,7 +93024,8 @@ function serializeHederaTransaction(transaction) {
                     .setContents(transaction.customData.fileChunk)
                     .setKeys([transaction.customData.fileKey ?
                         transaction.customData.fileKey :
-                        PublicKey$1.fromString(this._signingKey().compressedPublicKey)]);
+                        pubKey
+                ]);
             }
             else if (transaction.customData.publicKey) {
                 const { publicKey, initialBalance } = transaction.customData;
@@ -93193,10 +93210,10 @@ const logger$s = new Logger(version$o);
 ;
 ///////////////////////////////
 const allowedTransactionKeys$2 = {
-    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, nonce: true, to: true, value: true,
-    type: true, accessList: true,
+    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
+    type: true,
     maxFeePerGas: true, maxPriorityFeePerGas: true,
-    customData: true
+    customData: true, nodeId: true,
 };
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
@@ -93781,9 +93798,6 @@ class BaseContract {
             }
         });
     }
-    static getContractAddress(transaction) {
-        return getContractAddress(transaction);
-    }
     static getInterface(contractInterface) {
         if (Interface.isInterface(contractInterface)) {
             return contractInterface;
@@ -93976,16 +93990,15 @@ class BaseContract {
     queryFilter(event, fromBlockOrBlockhash, toBlock) {
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
-        if (typeof (fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-            if (toBlock != null) {
-                logger$s.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-            }
-            filter.blockHash = fromBlockOrBlockhash;
-        }
-        else {
-            filter.fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash : 0);
-            filter.toBlock = ((toBlock != null) ? toBlock : "latest");
-        }
+        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
+        //     if (toBlock != null) {
+        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
+        //     }
+        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
+        // } else {
+        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
+        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
+        // }
         return this.provider.getLogs(filter).then((logs) => {
             return logs.map((log) => this._wrapEvent(runningEvent, log, null));
         });
@@ -94100,42 +94113,39 @@ class ContractFactory {
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         defineReadOnly(this, "signer", signer || null);
     }
-    // @TODO: Future; rename to populateTransaction?
     getDeployTransaction(...args) {
-        let tx = {};
-        // If we have 1 additional argument, we allow transaction overrides
+        let contractCreateTx = {};
         if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-            tx = shallowCopy(args.pop());
-            for (const key in tx) {
+            contractCreateTx = shallowCopy(args.pop());
+            for (const key in contractCreateTx) {
                 if (!allowedTransactionKeys$2[key]) {
                     throw new Error("unknown transaction override " + key);
                 }
             }
         }
-        // Do not allow these to be overridden in a deployment transaction
-        ["data", "from", "to"].forEach((key) => {
-            if (tx[key] == null) {
+        // Allow only these to be overwritten in a deployment transaction
+        Object.keys(contractCreateTx).forEach((key) => {
+            if (["gasLimit", "value"].indexOf(key) > -1) {
                 return;
             }
             logger$s.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
         });
-        if (tx.value) {
-            const value = BigNumber.from(tx.value);
+        if (contractCreateTx.value) {
+            const value = BigNumber.from(contractCreateTx.value);
             if (!value.isZero() && !this.interface.deploy.payable) {
                 logger$s.throwError("non-payable constructor cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
                     operation: "overrides.value",
-                    value: tx.value
+                    value: contractCreateTx.value
                 });
             }
         }
         // Make sure the call matches the constructor signature
         logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-        // Set the data to the bytecode + the encoded constructor arguments
-        tx.data = hexlify(concat([
-            this.bytecode,
-            this.interface.encodeDeploy(args)
-        ]));
-        return tx;
+        contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: hexlify(concat([
+                this.bytecode,
+                this.interface.encodeDeploy(args)
+            ])), customData: {} });
+        return contractCreateTx;
     }
     deploy(...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
@@ -94150,14 +94160,13 @@ class ContractFactory {
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
             // Get the deployment transaction (with optional overrides)
-            const unsignedTx = this.getDeployTransaction(...params);
-            // Send the deployment transaction
-            const tx = yield this.signer.sendTransaction(unsignedTx);
-            const address = getStatic(this.constructor, "getContractAddress")(tx);
+            const contractCreate = this.getDeployTransaction(...params);
+            const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
+            const address = contractCreateResponse.customData.contractId;
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
             // Add the modified wait that wraps events
-            addContractWait(contract, tx);
-            defineReadOnly(contract, "deployTransaction", tx);
+            addContractWait(contract, contractCreateResponse);
+            defineReadOnly(contract, "deployTransaction", contractCreateResponse);
             return contract;
         });
     }
@@ -94186,9 +94195,6 @@ class ContractFactory {
     }
     static getInterface(contractInterface) {
         return Contract.getInterface(contractInterface);
-    }
-    static getContractAddress(tx) {
-        return getContractAddress(tx);
     }
     static getContract(address, contractInterface, signer) {
         return new Contract(address, contractInterface, signer);
@@ -94508,18 +94514,19 @@ class Formatter {
         const formats = ({});
         const address = this.address.bind(this);
         const bigNumber = this.bigNumber.bind(this);
-        const blockTag = this.blockTag.bind(this);
         const data = this.data.bind(this);
-        const hash = this.hash.bind(this);
+        const hash_48 = this.hash_48.bind(this);
+        const hash_32 = this.hash_32.bind(this);
         const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
+        const timestamp = this.timestamp.bind(this);
         const strictData = (v) => { return this.data(v, true); };
         formats.transaction = {
-            hash: hash,
+            hash: hash_48,
             type: type,
             accessList: Formatter.allowNull(this.accessList.bind(this), null),
-            blockHash: Formatter.allowNull(hash, null),
+            blockHash: Formatter.allowNull(hash_48, null),
             blockNumber: Formatter.allowNull(number, null),
             transactionIndex: Formatter.allowNull(number, null),
             confirmations: Formatter.allowNull(number, null),
@@ -94556,12 +94563,12 @@ class Formatter {
         formats.receiptLog = {
             transactionIndex: number,
             blockNumber: number,
-            transactionHash: hash,
+            transactionHash: hash_48,
             address: address,
-            topics: Formatter.arrayOf(hash),
+            topics: Formatter.arrayOf(hash_32),
             data: data,
             logIndex: number,
-            blockHash: hash,
+            blockHash: hash_48,
         };
         formats.receipt = {
             to: Formatter.allowNull(this.address, null),
@@ -94572,8 +94579,8 @@ class Formatter {
             root: Formatter.allowNull(hex),
             gasUsed: bigNumber,
             logsBloom: Formatter.allowNull(data),
-            blockHash: hash,
-            transactionHash: hash,
+            blockHash: hash_48,
+            transactionHash: hash_48,
             logs: Formatter.arrayOf(this.receiptLog.bind(this)),
             blockNumber: number,
             confirmations: Formatter.allowNull(number, null),
@@ -94583,8 +94590,8 @@ class Formatter {
             type: type
         };
         formats.block = {
-            hash: hash,
-            parentHash: hash,
+            hash: hash_48,
+            parentHash: hash_48,
             number: number,
             timestamp: number,
             nonce: Formatter.allowNull(hex),
@@ -94593,30 +94600,49 @@ class Formatter {
             gasUsed: bigNumber,
             miner: address,
             extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash)),
+            transactions: Formatter.allowNull(Formatter.arrayOf(hash_48)),
             baseFeePerGas: Formatter.allowNull(bigNumber)
         };
         formats.blockWithTransactions = shallowCopy(formats.block);
         formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
         formats.filter = {
-            fromBlock: Formatter.allowNull(blockTag, undefined),
-            toBlock: Formatter.allowNull(blockTag, undefined),
-            blockHash: Formatter.allowNull(hash, undefined),
+            fromTimestamp: Formatter.allowNull(timestamp, undefined),
+            toTimestamp: Formatter.allowNull(timestamp, undefined),
+            blockHash: Formatter.allowNull(hash_48, undefined),
             address: Formatter.allowNull(address, undefined),
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
         formats.filterLog = {
-            blockNumber: Formatter.allowNull(number),
-            blockHash: Formatter.allowNull(hash),
-            transactionIndex: number,
-            removed: Formatter.allowNull(this.boolean.bind(this)),
+            timestamp: timestamp,
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
-            topics: Formatter.arrayOf(hash),
-            transactionHash: hash,
+            topics: Formatter.arrayOf(hash_32),
+            transactionHash: Formatter.allowNull(hash_48, undefined),
             logIndex: number,
+            transactionIndex: number
         };
         return formats;
+    }
+    logsMapper(values) {
+        let logs = [];
+        values.forEach(function (log) {
+            const mapped = {
+                timestamp: log.timestamp,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                //@ts-ignore
+                transactionHash: null,
+                logIndex: log.index,
+                transactionIndex: log.index,
+            };
+            logs.push(mapped);
+        });
+        return logs;
+    }
+    //TODO propper validation needed?
+    timestamp(value) {
+        return value;
     }
     accessList(accessList) {
         return accessListify(accessList || []);
@@ -94676,7 +94702,11 @@ class Formatter {
     // Requires an address
     // Strict! Used on input.
     address(value) {
-        return getAddress(value);
+        let address = value.toString();
+        if (address.indexOf(".") !== -1) {
+            address = getAddressFromAccount(address);
+        }
+        return getAddress(address);
     }
     callAddress(value) {
         if (!isHexString(value, 32)) {
@@ -94705,10 +94735,18 @@ class Formatter {
         throw new Error("invalid blockTag");
     }
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
-    hash(value, strict) {
+    hash_48(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 48) {
             return logger$u.throwArgumentError("invalid hash", "value", value);
+        }
+        return result;
+    }
+    //hedera topics hash has length 32
+    hash_32(value, strict) {
+        const result = this.hex(value, strict);
+        if (hexDataLength(result) !== 32) {
+            return logger$u.throwArgumentError("invalid topics hash", "value", value);
         }
         return result;
     }
@@ -94818,14 +94856,14 @@ class Formatter {
     responseFromRecord(record) {
         return {
             chainId: record.chainId ? record.chainId : null,
-            hash: record.hash ? record.hash : null,
-            timestamp: record.timestamp ? record.timestamp : null,
+            hash: record.hash,
+            timestamp: record.timestamp,
             transactionId: record.transactionId ? record.transactionId : null,
-            from: record.from ? record.from : null,
+            from: record.from,
             to: record.to ? record.to : null,
             data: record.call_result ? record.call_result : null,
             gasLimit: typeof record.gas_limit !== 'undefined' ? BigNumber.from(record.gas_limit) : null,
-            value: typeof record.amount !== 'undefined' ? BigNumber.from(record.amount) : null,
+            value: BigNumber.from(record.amount || 0),
             customData: {
                 gas_used: record.gas_used ? record.gas_used : null,
                 logs: record.logs ? record.logs : null,
@@ -94848,7 +94886,8 @@ class Formatter {
                 data: log.data,
                 topics: log.topics,
                 transactionHash: response.hash,
-                logIndex: log.index
+                logIndex: log.index,
+                transactionIndex: log.index,
             };
             logs.push(values);
         });
@@ -94874,7 +94913,7 @@ class Formatter {
             return value.map((v) => this.topics(v));
         }
         else if (value != null) {
-            return this.hash(value, true);
+            return this.hash_32(value, true);
         }
         return null;
     }
@@ -99184,7 +99223,7 @@ class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = this._getAddress(filter.address);
+                result.address = filter.address;
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -99192,10 +99231,11 @@ class BaseProvider extends Provider {
                 }
                 result[key] = filter[key];
             });
-            ["fromBlock", "toBlock"].forEach((key) => {
+            ["fromTimestamp", "toTimestamp"].forEach((key) => {
                 if (filter[key] == null) {
                     return;
                 }
+                result[key] = filter[key];
             });
             return this.formatter.filter(yield resolveProperties(result));
         });
@@ -99303,10 +99343,39 @@ class BaseProvider extends Provider {
     }
     getLogs(filter) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
+            if (!this._mirrorNodeUrl)
+                logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
-            const logs = yield this.perform("getLogs", params);
-            return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
+            let toTimestampFilter = "";
+            let fromTimestampFilter = "";
+            const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
+            // @ts-ignore
+            if (params.filter.toTimestamp) {
+                //@ts-ignore
+                toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
+            }
+            //@ts-ignore
+            if (params.filter.fromTimestamp) {
+                //@ts-ignore
+                fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+            }
+            const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+            try {
+                let { data } = yield axios$1.get(requestUrl);
+                if (data) {
+                    const mappedLogs = this.formatter.logsMapper(data.logs);
+                    return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
+                }
+            }
+            catch (error) {
+                if (error && error.response && error.response.status != 404) {
+                    logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "ContractLogsQuery",
+                        error
+                    });
+                }
+            }
+            return null;
         });
     }
     getHbarPrice() {
