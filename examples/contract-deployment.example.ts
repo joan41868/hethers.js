@@ -31,8 +31,8 @@ import {BigNumber} from "@ethersproject/bignumber";
     /**
      * Example 3. Calling a contract method
      */
-    const methodCall = await contract.getInternalCounter({gasLimit: 300000});
-    console.log(methodCall.toString());
+    const viewMethodCall = await contract.getInternalCounter({gasLimit: 300000});
+    console.log(viewMethodCall.toString());
 
     /**
      * Example 4. Try out the populateTransaction
@@ -41,4 +41,10 @@ import {BigNumber} from "@ethersproject/bignumber";
     const signedTransaction = await wallet.signTransaction(populatedTx);
     const tx = await wallet.provider.sendTransaction(signedTransaction);
     console.log(tx.transactionId);
+
+    /**
+     * Example 5. Calling a contract method
+     */
+    const transferMethodCall = await contract.transfer(contract.address, 1, {gasLimit: 300000});
+    console.log(transferMethodCall.transactionId);
 })();
