@@ -158,7 +158,7 @@ function resolveAddresses(resolver, value, paramType) {
 }
 function populateTransaction(contract, fragment, args) {
     return __awaiter(this, void 0, void 0, function () {
-        var overrides, resolved, data, tx, ro, intrinsic, bytes, i, roValue, leftovers;
+        var overrides, resolved, data, tx, ro, intrinsic, contractCreationExtraGasCost, bytes, i, txGas, roValue, leftovers;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -230,14 +230,16 @@ function populateTransaction(contract, fragment, args) {
                     // If there was no "gasLimit" override, but the ABI specifies a default, use it
                     if (tx.gasLimit == null && fragment.gas != null) {
                         intrinsic = 21000;
+                        contractCreationExtraGasCost = 11000;
                         bytes = (0, bytes_1.arrayify)(data);
                         for (i = 0; i < bytes.length; i++) {
                             intrinsic += 4;
                             if (bytes[i]) {
-                                intrinsic += 64;
+                                intrinsic += 16;
                             }
                         }
-                        tx.gasLimit = bignumber_1.BigNumber.from(fragment.gas).add(intrinsic);
+                        txGas = tx.to != null ? intrinsic : intrinsic + contractCreationExtraGasCost;
+                        tx.gasLimit = bignumber_1.BigNumber.from(fragment.gas).add(txGas);
                     }
                     // Populate "value" override
                     if (ro.value) {

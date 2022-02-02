@@ -145,20 +145,17 @@ function populateTransaction(contract, fragment, args) {
         }
         // If there was no "gasLimit" override, but the ABI specifies a default, use it
         if (tx.gasLimit == null && fragment.gas != null) {
-            // Compute the intrinsic gas cost for this transaction
-            // @TODO: This is based on the yellow paper as of Petersburg; this is something
-            // we may wish to parameterize in v6 as part of the Network object. Since this
-            // is always a non-nil to address, we can ignore G_create, but may wish to add
-            // similar logic to the ContractFactory.
             let intrinsic = 21000;
+            let contractCreationExtraGasCost = 11000;
             const bytes = arrayify(data);
             for (let i = 0; i < bytes.length; i++) {
                 intrinsic += 4;
                 if (bytes[i]) {
-                    intrinsic += 64;
+                    intrinsic += 16;
                 }
             }
-            tx.gasLimit = BigNumber.from(fragment.gas).add(intrinsic);
+            const txGas = tx.to != null ? intrinsic : intrinsic + contractCreationExtraGasCost;
+            tx.gasLimit = BigNumber.from(fragment.gas).add(txGas);
         }
         // Populate "value" override
         if (ro.value) {
