@@ -18,18 +18,18 @@ export class Formatter {
         const address = this.address.bind(this);
         const bigNumber = this.bigNumber.bind(this);
         const data = this.data.bind(this);
-        const hash_48 = this.hash_48.bind(this);
-        const hash_32 = this.hash_32.bind(this);
+        const hash48 = this.hash48.bind(this);
+        const hash32 = this.hash32.bind(this);
         const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
         const timestamp = this.timestamp.bind(this);
         const strictData = (v) => { return this.data(v, true); };
         formats.transaction = {
-            hash: hash_48,
+            hash: hash48,
             type: type,
             accessList: Formatter.allowNull(this.accessList.bind(this), null),
-            blockHash: Formatter.allowNull(hash_48, null),
+            blockHash: Formatter.allowNull(hash48, null),
             blockNumber: Formatter.allowNull(number, null),
             transactionIndex: Formatter.allowNull(number, null),
             confirmations: Formatter.allowNull(number, null),
@@ -66,12 +66,12 @@ export class Formatter {
         formats.receiptLog = {
             transactionIndex: number,
             blockNumber: number,
-            transactionHash: hash_48,
+            transactionHash: hash48,
             address: address,
-            topics: Formatter.arrayOf(hash_32),
+            topics: Formatter.arrayOf(hash32),
             data: data,
             logIndex: number,
-            blockHash: hash_48,
+            blockHash: hash48,
         };
         formats.receipt = {
             to: Formatter.allowNull(this.address, null),
@@ -82,8 +82,8 @@ export class Formatter {
             root: Formatter.allowNull(hex),
             gasUsed: bigNumber,
             logsBloom: Formatter.allowNull(data),
-            blockHash: hash_48,
-            transactionHash: hash_48,
+            blockHash: hash48,
+            transactionHash: hash48,
             logs: Formatter.arrayOf(this.receiptLog.bind(this)),
             blockNumber: number,
             confirmations: Formatter.allowNull(number, null),
@@ -93,8 +93,8 @@ export class Formatter {
             type: type
         };
         formats.block = {
-            hash: hash_48,
-            parentHash: hash_48,
+            hash: hash48,
+            parentHash: hash48,
             number: number,
             timestamp: number,
             nonce: Formatter.allowNull(hex),
@@ -103,7 +103,7 @@ export class Formatter {
             gasUsed: bigNumber,
             miner: address,
             extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash_48)),
+            transactions: Formatter.allowNull(Formatter.arrayOf(hash48)),
             baseFeePerGas: Formatter.allowNull(bigNumber)
         };
         formats.blockWithTransactions = shallowCopy(formats.block);
@@ -111,7 +111,7 @@ export class Formatter {
         formats.filter = {
             fromTimestamp: Formatter.allowNull(timestamp, undefined),
             toTimestamp: Formatter.allowNull(timestamp, undefined),
-            blockHash: Formatter.allowNull(hash_48, undefined),
+            blockHash: Formatter.allowNull(hash48, undefined),
             address: Formatter.allowNull(address, undefined),
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
@@ -119,8 +119,8 @@ export class Formatter {
             timestamp: timestamp,
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
-            topics: Formatter.arrayOf(hash_32),
-            transactionHash: Formatter.allowNull(hash_48, undefined),
+            topics: Formatter.arrayOf(hash32),
+            transactionHash: Formatter.allowNull(hash48, undefined),
             logIndex: number,
             transactionIndex: number
         };
@@ -241,7 +241,7 @@ export class Formatter {
         throw new Error("invalid blockTag");
     }
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
-    hash_48(value, strict) {
+    hash48(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
@@ -249,7 +249,7 @@ export class Formatter {
         return result;
     }
     //hedera topics hash has length 32
-    hash_32(value, strict) {
+    hash32(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 32) {
             return logger.throwArgumentError("invalid topics hash", "value", value);
@@ -417,7 +417,7 @@ export class Formatter {
             return value.map((v) => this.topics(v));
         }
         else if (value != null) {
-            return this.hash_32(value, true);
+            return this.hash32(value, true);
         }
         return null;
     }
