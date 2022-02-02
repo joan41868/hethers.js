@@ -72,6 +72,7 @@ export declare class BaseProvider extends Provider {
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
     get network(): Network;
+    checkMirrorNode(): void;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
     get pollingInterval(): number;
@@ -91,7 +92,7 @@ export declare class BaseProvider extends Provider {
      *
      * @param addressOrName The address to obtain the bytecode of
      */
-    getCode(addressOrName: string | Promise<string>, throwOnNonExisting?: boolean): Promise<string>;
+    getCode(accountLike: AccountLike | Promise<AccountLike>, throwOnNonExisting?: boolean): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
     getHederaClient(): Client;
     getHederaNetworkConfig(): AccountId[];

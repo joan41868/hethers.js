@@ -21,7 +21,7 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
-import { asAccountString, getAccountFromAddress } from "@ethersproject/address";
+import { asAccountString } from "@ethersproject/address";
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
 //////////////////////////////
@@ -322,7 +322,8 @@ export class Resolver {
 }
 let defaultFormatter = null;
 const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
-const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
+const MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
+const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 export class BaseProvider extends Provider {
     /**
      *  ready
@@ -428,6 +429,10 @@ export class BaseProvider extends Provider {
     }
     get network() {
         return this._network;
+    }
+    checkMirrorNode() {
+        if (!this._mirrorNodeUrl)
+            logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
     }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
@@ -535,18 +540,13 @@ export class BaseProvider extends Provider {
      *
      * @param addressOrName The address to obtain the bytecode of
      */
-    getCode(addressOrName, throwOnNonExisting) {
+    getCode(accountLike, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this._mirrorNodeUrl)
-                logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
-            addressOrName = yield addressOrName;
-            const { shard, realm, num } = getAccountFromAddress(addressOrName);
-            const shardNum = BigNumber.from(shard).toNumber();
-            const realmNum = BigNumber.from(realm).toNumber();
-            const accountNum = BigNumber.from(num).toNumber();
-            const contractsEndpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
+            this.checkMirrorNode();
+            accountLike = yield accountLike;
+            const account = asAccountString(accountLike);
             try {
-                let { data } = yield axios.get(this._mirrorNodeUrl + contractsEndpoint);
+                let { data } = yield axios.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account);
                 return data.bytecode ? hexlify(data.bytecode) : `0x`;
             }
             catch (error) {
@@ -554,7 +554,7 @@ export class BaseProvider extends Provider {
                     (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {
                     logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                         method: "ContractByteCodeQuery",
-                        params: { address: addressOrName },
+                        params: { address: accountLike },
                         error
                     });
                 }
@@ -630,7 +630,8 @@ export class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = this._getAddress(filter.address);
+                // result.address = this._getAddress(filter.address);
+                result.address = filter.address;
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -676,8 +677,7 @@ export class BaseProvider extends Provider {
      */
     getTransaction(transactionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            if (!this._mirrorNodeUrl)
-                logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            this.checkMirrorNode();
             transactionId = yield transactionId;
             const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
             try {
@@ -685,8 +685,8 @@ export class BaseProvider extends Provider {
                 if (data) {
                     const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
                     if (filtered.length > 0) {
-                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
-                        const dataWithLogs = yield axios.get(this._mirrorNodeUrl + contractsEndpoint);
+                        const contractsResultsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                        const dataWithLogs = yield axios.get(this._mirrorNodeUrl + contractsResultsEndpoint);
                         const record = Object.assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
                         return this.formatter.responseFromRecord(record);
                     }

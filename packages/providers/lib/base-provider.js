@@ -420,7 +420,8 @@ var Resolver = /** @class */ (function () {
 exports.Resolver = Resolver;
 var defaultFormatter = null;
 var MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
-var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
+var MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
+var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 var BaseProvider = /** @class */ (function (_super) {
     __extends(BaseProvider, _super);
     /**
@@ -549,6 +550,10 @@ var BaseProvider = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
+    BaseProvider.prototype.checkMirrorNode = function () {
+        if (!this._mirrorNodeUrl)
+            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+    };
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
     // With the current hedera implementation, we do not support a changeable networks,
@@ -694,36 +699,31 @@ var BaseProvider = /** @class */ (function (_super) {
      *
      * @param addressOrName The address to obtain the bytecode of
      */
-    BaseProvider.prototype.getCode = function (addressOrName, throwOnNonExisting) {
+    BaseProvider.prototype.getCode = function (accountLike, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, shard, realm, num, shardNum, realmNum, accountNum, contractsEndpoint, data, error_3;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var account, data, error_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
-                        if (!this._mirrorNodeUrl)
-                            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
-                        return [4 /*yield*/, addressOrName];
+                        this.checkMirrorNode();
+                        return [4 /*yield*/, accountLike];
                     case 1:
-                        addressOrName = _b.sent();
-                        _a = (0, address_1.getAccountFromAddress)(addressOrName), shard = _a.shard, realm = _a.realm, num = _a.num;
-                        shardNum = bignumber_1.BigNumber.from(shard).toNumber();
-                        realmNum = bignumber_1.BigNumber.from(realm).toNumber();
-                        accountNum = bignumber_1.BigNumber.from(num).toNumber();
-                        contractsEndpoint = '/api/v1/contracts/' + shardNum + '.' + realmNum + '.' + accountNum;
-                        _b.label = 2;
+                        accountLike = _a.sent();
+                        account = (0, address_1.asAccountString)(accountLike);
+                        _a.label = 2;
                     case 2:
-                        _b.trys.push([2, 4, , 5]);
-                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account)];
                     case 3:
-                        data = (_b.sent()).data;
+                        data = (_a.sent()).data;
                         return [2 /*return*/, data.bytecode ? (0, bytes_1.hexlify)(data.bytecode) : "0x"];
                     case 4:
-                        error_3 = _b.sent();
+                        error_3 = _a.sent();
                         if (error_3.response && error_3.response.status &&
                             (error_3.response.status != 404 || (error_3.response.status == 404 && throwOnNonExisting))) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "ContractByteCodeQuery",
-                                params: { address: addressOrName },
+                                params: { address: accountLike },
                                 error: error_3
                             });
                         }
@@ -830,7 +830,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         filter = _c.sent();
                         result = {};
                         if (filter.address != null) {
-                            result.address = this._getAddress(filter.address);
+                            // result.address = this._getAddress(filter.address);
+                            result.address = filter.address;
                         }
                         ["blockHash", "topics"].forEach(function (key) {
                             if (filter[key] == null) {
@@ -891,12 +892,11 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var transactionsEndpoint, data, filtered, contractsEndpoint, dataWithLogs, record, error_5;
+            var transactionsEndpoint, data, filtered, contractsResultsEndpoint, dataWithLogs, record, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this._mirrorNodeUrl)
-                            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+                        this.checkMirrorNode();
                         return [4 /*yield*/, transactionId];
                     case 1:
                         transactionId = _a.sent();
@@ -910,8 +910,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (!data) return [3 /*break*/, 5];
                         filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
                         if (!(filtered.length > 0)) return [3 /*break*/, 5];
-                        contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
-                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
+                        contractsResultsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsResultsEndpoint)];
                     case 4:
                         dataWithLogs = _a.sent();
                         record = __assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
