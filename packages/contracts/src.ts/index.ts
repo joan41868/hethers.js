@@ -3,7 +3,7 @@
 import { checkResultErrors, EventFragment, Fragment, FunctionFragment, Indexed, Interface, JsonFragment, LogDescription, ParamType, Result } from "@ethersproject/abi";
 import { Block, BlockTag, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
-import { getAddress } from "@ethersproject/address";
+import { AccountLike, getAddress } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
@@ -33,31 +33,25 @@ export interface CallOverrides extends PayableOverrides {
     from?: string | Promise<string>;
 }
 
-// @TODO: Better hierarchy with: (in v6)
-//  - abstract-provider:TransactionRequest
-//  - transactions:Transaction
-//  - transaction:UnsignedTransaction
+export interface PopulatedTransaction {
+    to?: AccountLike;
+    from?: AccountLike;
 
-// export interface PopulatedTransaction {
-//     to?: string;
-//     from?: string;
-//     nonce?: number;
-//
-//     gasLimit?: BigNumber;
-//     gasPrice?: BigNumber;
-//
-//     data?: string;
-//     value?: BigNumber;
-//     chainId?: number;
-//
-//     type?: number;
-//     accessList?: AccessList;
-//
-//     maxFeePerGas?: BigNumber;
-//     maxPriorityFeePerGas?: BigNumber;
-//
-//     customData?: Record<string, any>;
-// };
+    gasLimit?: BigNumber;
+
+    data?: BytesLike;
+    value?: BigNumberish;
+    chainId?: number;
+
+    type?: number;
+    accessList?: AccessListish;
+
+    maxFeePerGas?: BigNumberish;
+    maxPriorityFeePerGas?: BigNumberish;
+
+    customData?: Record<string, any>;
+    nodeId?: AccountLike;
+}
 
 export type EventFilter = {
     address?: string;
@@ -173,7 +167,7 @@ async function resolveAddresses(resolver: Signer | Provider, value: any, paramTy
     return value;
 }
 
-async function populateTransaction(contract: Contract, fragment: FunctionFragment, args: Array<any>): Promise<TransactionRequest> {
+async function populateTransaction(contract: Contract, fragment: FunctionFragment, args: Array<any>): Promise<PopulatedTransaction> {
     // If an extra argument is given, it is overrides
     let overrides: CallOverrides = { };
     if (args.length === fragment.inputs.length + 1 && typeof(args[args.length - 1]) === "object") {
@@ -218,7 +212,7 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
 
     // The ABI coded transaction
     const data = contract.interface.encodeFunctionData(fragment, resolved.args);
-    const tx: TransactionRequest = {
+    const tx: PopulatedTransaction = {
         data: data,
         to: resolved.address
     };
@@ -287,8 +281,8 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
 }
 
 
-function buildPopulate(contract: Contract, fragment: FunctionFragment): ContractFunction<TransactionRequest> {
-    return function(...args: Array<any>): Promise<TransactionRequest> {
+function buildPopulate(contract: Contract, fragment: FunctionFragment): ContractFunction<PopulatedTransaction> {
+    return function(...args: Array<any>): Promise<PopulatedTransaction> {
         return populateTransaction(contract, fragment, args);
     };
 }
@@ -608,7 +602,7 @@ export class BaseContract {
 
     readonly callStatic: { [ name: string ]: ContractFunction };
     readonly estimateGas: { [ name: string ]: ContractFunction<BigNumber> };
-    readonly populateTransaction: { [ name: string ]: ContractFunction<TransactionRequest> };
+    readonly populateTransaction: { [ name: string ]: ContractFunction<PopulatedTransaction> };
 
     readonly filters: { [ name: string ]: (...args: Array<any>) => EventFilter };
 

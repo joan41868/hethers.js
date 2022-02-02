@@ -5,8 +5,6 @@ import {BigNumber} from "@ethersproject/bignumber";
 // main
 (async () => {
     const provider = hethers.providers.getDefaultProvider('testnet');
-
-    // This account has around 1.7k HBars.
     const hederaEoa = {
         account: '0.0.29562194',
         privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'

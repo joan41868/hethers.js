@@ -1,6 +1,7 @@
 import { Fragment, Indexed, Interface, JsonFragment, Result } from "@ethersproject/abi";
 import { Block, BlockTag, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { Signer } from "@ethersproject/abstract-signer";
+import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike } from "@ethersproject/bytes";
 import { AccessListish } from "@ethersproject/transactions";
@@ -19,6 +20,20 @@ export interface PayableOverrides extends Overrides {
 }
 export interface CallOverrides extends PayableOverrides {
     from?: string | Promise<string>;
+}
+export interface PopulatedTransaction {
+    to?: AccountLike;
+    from?: AccountLike;
+    gasLimit?: BigNumber;
+    data?: BytesLike;
+    value?: BigNumberish;
+    chainId?: number;
+    type?: number;
+    accessList?: AccessListish;
+    maxFeePerGas?: BigNumberish;
+    maxPriorityFeePerGas?: BigNumberish;
+    customData?: Record<string, any>;
+    nodeId?: AccountLike;
 }
 export declare type EventFilter = {
     address?: string;
@@ -72,7 +87,7 @@ export declare class BaseContract {
         [name: string]: ContractFunction<BigNumber>;
     };
     readonly populateTransaction: {
-        [name: string]: ContractFunction<TransactionRequest>;
+        [name: string]: ContractFunction<PopulatedTransaction>;
     };
     readonly filters: {
         [name: string]: (...args: Array<any>) => EventFilter;
