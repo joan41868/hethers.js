@@ -33,4 +33,12 @@ import {BigNumber} from "@ethersproject/bignumber";
      */
     const methodCall = await contract.getInternalCounter({gasLimit: 300000});
     console.log(methodCall.toString());
+
+    /**
+     * Example 4. Try out the populateTransaction
+     */
+    const populatedTx = await contract.populateTransaction.transfer(contract.address, 1, {gasLimit: 300000});
+    const signedTransaction = await wallet.signTransaction(populatedTx);
+    const tx = await wallet.provider.sendTransaction(signedTransaction);
+    console.log(tx.transactionId);
 })();
