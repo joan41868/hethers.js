@@ -72,7 +72,7 @@ export declare class BaseProvider extends Provider {
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
     get network(): Network;
-    checkMirrorNode(): void;
+    _checkMirrorNode(): void;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
     get pollingInterval(): number;
@@ -90,7 +90,8 @@ export declare class BaseProvider extends Provider {
      *  Get contract bytecode implementation, using the REST Api.
      *  It returns the bytecode, or a default value as string.
      *
-     * @param addressOrName The address to obtain the bytecode of
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
      */
     getCode(accountLike: AccountLike | Promise<AccountLike>, throwOnNonExisting?: boolean): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;

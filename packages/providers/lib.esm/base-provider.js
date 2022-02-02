@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -430,7 +431,7 @@ export class BaseProvider extends Provider {
     get network() {
         return this._network;
     }
-    checkMirrorNode() {
+    _checkMirrorNode() {
         if (!this._mirrorNodeUrl)
             logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
     }
@@ -538,11 +539,12 @@ export class BaseProvider extends Provider {
      *  Get contract bytecode implementation, using the REST Api.
      *  It returns the bytecode, or a default value as string.
      *
-     * @param addressOrName The address to obtain the bytecode of
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
      */
     getCode(accountLike, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.checkMirrorNode();
+            this._checkMirrorNode();
             accountLike = yield accountLike;
             const account = asAccountString(accountLike);
             try {
@@ -630,8 +632,7 @@ export class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                // result.address = this._getAddress(filter.address);
-                result.address = filter.address;
+                result.address = this._getAddress(filter.address.toString());
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -677,7 +678,7 @@ export class BaseProvider extends Provider {
      */
     getTransaction(transactionId) {
         return __awaiter(this, void 0, void 0, function* () {
-            this.checkMirrorNode();
+            this._checkMirrorNode();
             transactionId = yield transactionId;
             const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
             try {

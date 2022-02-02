@@ -1,3 +1,4 @@
+// @ts-nocheck
 "use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
@@ -697,7 +698,8 @@ var BaseProvider = /** @class */ (function (_super) {
      *  Get contract bytecode implementation, using the REST Api.
      *  It returns the bytecode, or a default value as string.
      *
-     * @param addressOrName The address to obtain the bytecode of
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
      */
     BaseProvider.prototype.getCode = function (accountLike, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function () {
@@ -830,8 +832,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         filter = _c.sent();
                         result = {};
                         if (filter.address != null) {
-                            // result.address = this._getAddress(filter.address);
-                            result.address = filter.address;
+                            result.address = this._getAddress(filter.address.toString());
                         }
                         ["blockHash", "topics"].forEach(function (key) {
                             if (filter[key] == null) {
