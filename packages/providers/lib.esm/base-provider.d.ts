@@ -1,4 +1,4 @@
-import { BlockTag, EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
@@ -72,6 +72,7 @@ export declare class BaseProvider extends Provider {
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
     get network(): Network;
+    checkMirrorNode(): void;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
     get pollingInterval(): number;
@@ -85,7 +86,13 @@ export declare class BaseProvider extends Provider {
      * @param accountLike The address to check balance of
      */
     getBalance(accountLike: AccountLike | Promise<AccountLike>): Promise<BigNumber>;
-    getCode(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string>;
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param addressOrName The address to obtain the bytecode of
+     */
+    getCode(accountLike: AccountLike | Promise<AccountLike>, throwOnNonExisting?: boolean): Promise<string>;
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse;
     getHederaClient(): Client;
     getHederaNetworkConfig(): AccountId[];

@@ -22384,36 +22384,50 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$1 = keccak(256);
 
-var name = "elliptic";
-var version$b = "6.5.4";
-var description = "EC cryptography";
-var main = "lib/elliptic.js";
-var files = [
-	"lib"
-];
-var scripts = {
-	lint: "eslint lib test",
-	"lint:fix": "npm run lint -- --fix",
-	unit: "istanbul test _mocha --reporter=spec test/index.js",
-	test: "npm run lint && npm run unit",
-	version: "grunt dist && git add dist/"
+var _from = "elliptic@6.5.4";
+var _id = "elliptic@6.5.4";
+var _inBundle = false;
+var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
+var _location = "/elliptic";
+var _phantomChildren = {
 };
-var repository = {
-	type: "git",
-	url: "git@github.com:indutny/elliptic"
+var _requested = {
+	type: "version",
+	registry: true,
+	raw: "elliptic@6.5.4",
+	name: "elliptic",
+	escapedName: "elliptic",
+	rawSpec: "6.5.4",
+	saveSpec: null,
+	fetchSpec: "6.5.4"
 };
-var keywords = [
-	"EC",
-	"Elliptic",
-	"curve",
-	"Cryptography"
+var _requiredBy = [
+	"/",
+	"/@hashgraph/cryptography"
 ];
-var author = "Fedor Indutny <fedor@indutny.com>";
-var license = "MIT";
+var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
+var _shasum = "da37cebd31e79a1367e941b592ed1fbebd58abbb";
+var _spec = "elliptic@6.5.4";
+var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
+var author = {
+	name: "Fedor Indutny",
+	email: "fedor@indutny.com"
+};
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
-var homepage = "https://github.com/indutny/elliptic";
+var bundleDependencies = false;
+var dependencies = {
+	"bn.js": "^4.11.9",
+	brorand: "^1.1.0",
+	"hash.js": "^1.0.0",
+	"hmac-drbg": "^1.0.1",
+	inherits: "^2.0.4",
+	"minimalistic-assert": "^1.0.1",
+	"minimalistic-crypto-utils": "^1.0.1"
+};
+var deprecated = false;
+var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
 	coveralls: "^3.1.0",
@@ -22429,36 +22443,60 @@ var devDependencies = {
 	istanbul: "^0.4.5",
 	mocha: "^8.0.1"
 };
-var dependencies = {
-	"bn.js": "^4.11.9",
-	brorand: "^1.1.0",
-	"hash.js": "^1.0.0",
-	"hmac-drbg": "^1.0.1",
-	inherits: "^2.0.4",
-	"minimalistic-assert": "^1.0.1",
-	"minimalistic-crypto-utils": "^1.0.1"
+var files = [
+	"lib"
+];
+var homepage = "https://github.com/indutny/elliptic";
+var keywords = [
+	"EC",
+	"Elliptic",
+	"curve",
+	"Cryptography"
+];
+var license = "MIT";
+var main = "lib/elliptic.js";
+var name = "elliptic";
+var repository = {
+	type: "git",
+	url: "git+ssh://git@github.com/indutny/elliptic.git"
 };
-var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
-var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
-var _from = "elliptic@6.5.4";
+var scripts = {
+	lint: "eslint lib test",
+	"lint:fix": "npm run lint -- --fix",
+	test: "npm run lint && npm run unit",
+	unit: "istanbul test _mocha --reporter=spec test/index.js",
+	version: "grunt dist && git add dist/"
+};
+var version$b = "6.5.4";
 var require$$0 = {
-	name: name,
-	version: version$b,
-	description: description,
-	main: main,
-	files: files,
-	scripts: scripts,
-	repository: repository,
-	keywords: keywords,
-	author: author,
-	license: license,
-	bugs: bugs,
-	homepage: homepage,
-	devDependencies: devDependencies,
-	dependencies: dependencies,
-	_resolved: _resolved,
+	_from: _from,
+	_id: _id,
+	_inBundle: _inBundle,
 	_integrity: _integrity,
-	_from: _from
+	_location: _location,
+	_phantomChildren: _phantomChildren,
+	_requested: _requested,
+	_requiredBy: _requiredBy,
+	_resolved: _resolved,
+	_shasum: _shasum,
+	_spec: _spec,
+	_where: _where,
+	author: author,
+	bugs: bugs,
+	bundleDependencies: bundleDependencies,
+	dependencies: dependencies,
+	deprecated: deprecated,
+	description: description,
+	devDependencies: devDependencies,
+	files: files,
+	homepage: homepage,
+	keywords: keywords,
+	license: license,
+	main: main,
+	name: name,
+	repository: repository,
+	scripts: scripts,
+	version: version$b
 };
 
 var minimalisticAssert = assert;
@@ -39695,7 +39733,7 @@ const COST_QUERY = [];
 /**
  * The ID for a crypto-currency contract on Hedera.
  */
-class ContractId extends Key {
+class ContractId extends Key$1 {
     /**
      * @param {number | Long | import("../EntityIdHelper").IEntityId} props
      * @param {(number | Long)=} realm
@@ -40171,10 +40209,6 @@ class TokenDecimalMap extends ObjectMap {
  * @typedef {object} AccountBalanceJson
  * @property {string} hbars
  * @property {TokenBalanceJson[]} tokens
- */
-
-/**
- * @typedef {import("@hashgraph/cryptography").Key} Key
  */
 
 class AccountBalance {
@@ -43467,7 +43501,7 @@ class TransactionHashMap extends ObjectMap {
  */
 class NodeAccountIdSignatureMap extends ObjectMap {
     constructor() {
-        super((s) => PublicKey.fromString(s));
+        super((s) => PublicKey$1.fromString(s));
     }
 
     /**
@@ -43480,11 +43514,18 @@ class NodeAccountIdSignatureMap extends ObjectMap {
         const sigPairs = sigMap.sigPair != null ? sigMap.sigPair : [];
 
         for (const sigPair of sigPairs) {
-            if (sigPair.pubKeyPrefix != null && sigPair.ed25519 != null) {
-                signatures._set(
-                    PublicKey.fromBytes(sigPair.pubKeyPrefix),
-                    sigPair.ed25519
-                );
+            if (sigPair.pubKeyPrefix != null) {
+                if (sigPair.ed25519 != null) {
+                    signatures._set(
+                        PublicKey$1.fromBytesED25519(sigPair.pubKeyPrefix),
+                        sigPair.ed25519
+                    );
+                } else if (sigPair.ECDSASecp256k1 != null) {
+                    signatures._set(
+                        PublicKey$1.fromBytesECDSA(sigPair.pubKeyPrefix),
+                        sigPair.ECDSASecp256k1
+                    );
+                }
             }
         }
 
@@ -44302,7 +44343,11 @@ class Transaction extends Executable {
             this._nextTransactionIndex * this._nodeIds.length +
             this._nextNodeIndex;
 
-        await this._buildTransactionAsync(index);
+        if (this._signOnDemand) {
+            await this._buildTransactionAsync(index);
+        } else {
+            this._buildTransaction(index);
+        }
 
         return /** @type {proto.ITransaction} */ (this._transactions[index]);
     }
@@ -44386,6 +44431,8 @@ class Transaction extends Executable {
                 this._transactions.push(null);
             }
         }
+
+        // console.log(JSON.stringify(this._signedTransactions[index]));
 
         this._transactions[index] = {
             signedTransactionBytes: lib.SignedTransaction.encode(
@@ -46967,14 +47014,13 @@ QUERY_REGISTRY.set("contractGetBytecode", ContractByteCodeQuery._fromProtobuf);
 // https://github.com/MaiaVictor/eth-lib/blob/da0971f5b09964d9c8449975fa87933f0c9fef35/src/hash.js
 //  - added type declarations
 //  - switched to es6 module syntax
+//
+// Disable linting for entire file because it's nearly all pure JS
+// eslint-disable
 
-/** @type {number[]} */
+const HEX_CHARS$1 = "0123456789abcdef".split("");
 const KECCAK_PADDING$1 = [1, 256, 65536, 16777216];
-
-/** @type {number[]} */
 const SHIFT$1 = [0, 8, 16, 24];
-
-/** @type {number[]} */
 const RC$1 = [
     1, 0, 32898, 0, 32906, 2147483648, 2147516416, 2147483648, 32907, 0,
     2147483649, 0, 2147516545, 2147483648, 32777, 2147483648, 138, 0, 136, 0,
@@ -46985,7 +47031,7 @@ const RC$1 = [
 ];
 
 /**
- * @typedef {object} Keccak
+ * @typedef {object} KeccakT
  * @property {number[]} blocks
  * @property {number} blockCount
  * @property {number} outputBlocks
@@ -46993,45 +47039,23 @@ const RC$1 = [
  * @property {number} start
  * @property {number} block
  * @property {boolean} reset
- * @property {?number} lastByteIndex
+ * @property {number=} lastByteIndex
  */
 
-/**
- * @param {number} bits
- * @returns {Keccak}
- */
-function createKeccakState(bits) {
-    return {
-        blocks: [],
-        reset: true,
-        block: 0,
-        start: 0,
-        lastByteIndex: null,
-        blockCount: (1600 - (bits << 1)) >> 5,
-        outputBlocks: bits >> 5,
-        s: zeroFill(50),
-    };
-}
+/** @type {(bits: number) => KeccakT} */
+const Keccak$1 = (bits) => ({
+    blocks: [],
+    reset: true,
+    block: 0,
+    start: 0,
+    blockCount: (1600 - (bits << 1)) >> 5,
+    outputBlocks: bits >> 5,
+    // @ts-ignore
+    s: ((s) => [].concat(s, s, s, s, s))([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+});
 
-/**
- * @param {number} n
- * @returns {number[]}
- */
-function zeroFill(n) {
-    /** @type {number[]} */
-    let arr = Array(n);
-
-    for (let i = 0; i < n; ++i) arr[i] = 0;
-
-    return arr;
-}
-
-/**
- * @param {Keccak} state
- * @param {string | Uint8Array} message
- * @returns {Uint8Array}
- */
-function update$1(state, message) {
+/** @type {(state: KeccakT, message: string | number[]) => string} */
+const update$1 = (state, /** @type {string | number[]} */ message) => {
     var length = message.length,
         blocks = state.blocks,
         byteCount = state.blockCount << 2,
@@ -47039,7 +47063,7 @@ function update$1(state, message) {
         outputBlocks = state.outputBlocks,
         s = state.s,
         index = 0,
-        i = 0,
+        i,
         code;
 
     // update
@@ -47051,35 +47075,35 @@ function update$1(state, message) {
                 blocks[i] = 0;
             }
         }
-        for (i = state.start; index < length && i < byteCount; ++index) {
-            code =
-                typeof message === "string"
-                    ? message.charCodeAt(index)
-                    : message[index];
-            if (code < 0x80) {
-                blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
-            } else if (code < 0x800) {
-                blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-            } else if (code < 0xd800 || code >= 0xe000) {
-                blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |=
-                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-            } else {
-                code =
-                    0x10000 +
-                    (((code & 0x3ff) << 10) |
-                        ((typeof message === "string"
-                            ? message.charCodeAt(++index)
-                            : message[++index]) &
-                            0x3ff));
-                blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |=
-                    (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |=
-                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+        if (typeof message !== "string") {
+            for (i = state.start; index < length && i < byteCount; ++index) {
+                blocks[i >> 2] |= message[index] << SHIFT$1[i++ & 3];
+            }
+        } else {
+            for (i = state.start; index < length && i < byteCount; ++index) {
+                code = message.charCodeAt(index);
+                if (code < 0x80) {
+                    blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
+                } else if (code < 0x800) {
+                    blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+                } else if (code < 0xd800 || code >= 0xe000) {
+                    blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |=
+                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+                } else {
+                    code =
+                        0x10000 +
+                        (((code & 0x3ff) << 10) |
+                            (message.charCodeAt(++index) & 0x3ff));
+                    blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |=
+                        (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |=
+                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+                }
             }
         }
         state.lastByteIndex = i;
@@ -47097,9 +47121,9 @@ function update$1(state, message) {
     }
 
     // finalize
-    i = /** @type {number} */ (state.lastByteIndex);
+    i = state.lastByteIndex;
+    // @ts-ignore
     blocks[i >> 2] |= KECCAK_PADDING$1[i & 3];
-
     if (state.lastByteIndex === byteCount) {
         blocks[0] = blocks[blockCount];
         for (i = 1; i < blockCount + 1; ++i) {
@@ -47110,33 +47134,37 @@ function update$1(state, message) {
     for (i = 0; i < blockCount; ++i) {
         s[i] ^= blocks[i];
     }
-
     f$2(s);
 
-    const buffer = new ArrayBuffer(outputBlocks * 4);
-    const view = new DataView(buffer);
-
-    i = 0;
+    // toString
+    var hex = "";
+    var block;
     var j = 0;
-
+    i = 0;
     while (j < outputBlocks) {
         for (i = 0; i < blockCount && j < outputBlocks; ++i, ++j) {
-            view.setInt32(i * 4, s[i], true);
+            block = s[i];
+            hex +=
+                HEX_CHARS$1[(block >> 4) & 0x0f] +
+                HEX_CHARS$1[block & 0x0f] +
+                HEX_CHARS$1[(block >> 12) & 0x0f] +
+                HEX_CHARS$1[(block >> 8) & 0x0f] +
+                HEX_CHARS$1[(block >> 20) & 0x0f] +
+                HEX_CHARS$1[(block >> 16) & 0x0f] +
+                HEX_CHARS$1[(block >> 28) & 0x0f] +
+                HEX_CHARS$1[(block >> 24) & 0x0f];
         }
-
         if (j % blockCount === 0) {
             f$2(s);
             i = 0;
         }
     }
+    // @ts-ignore
+    return "0x" + hex;
+};
 
-    return new Uint8Array(buffer);
-}
-
-/**
- * @param {number[]} s
- */
-function f$2(s) {
+/** @type {(s: number[]) => void} */
+const f$2 = (s) => {
     var h,
         l,
         n,
@@ -47379,19 +47407,25 @@ function f$2(s) {
         s[0] ^= RC$1[n];
         s[1] ^= RC$1[n + 1];
     }
-}
+};
+
+const keccak$1 = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
+    var msg;
+    if (str.slice(0, 2) === "0x") {
+        msg = [];
+        for (var i = 2, l = str.length; i < l; i += 2)
+            msg.push(parseInt(str.slice(i, i + 2), 16));
+    } else {
+        msg = str;
+    }
+    // @ts-ignore
+    return update$1(Keccak$1(bits, bits), msg);
+};
 
 /**
- * @param {number} bits
- * @returns {(message: string | Uint8Array) => Uint8Array}
+ * @type {(message: string) => string}
  */
-function createKeccak(bits) {
-    return function (message) {
-        return update$1(createKeccakState(bits), message);
-    };
-}
-
-const keccak256$2 = createKeccak(256);
+const keccak256$2 = keccak$1(256);
 
 /**
  * @enum {number}
@@ -47660,7 +47694,8 @@ class ContractFunctionSelector {
             throw new Error("`name` required for ContractFunctionSelector");
         }
 
-        return new Uint8Array(keccak256$2(this.toString()).slice(0, 4));
+        const func = encode$4(encode$5(this.toString()));
+        return decode$5(keccak256$2(`0x${func}`)).slice(0, 4);
     }
 
     /**
@@ -49316,7 +49351,6 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
- * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../account/AccountId.js").default} AccountId
@@ -52729,7 +52763,6 @@ TRANSACTION_REGISTRY.set(
  */
 
 /**
- * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
@@ -57198,7 +57231,6 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
- * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
  * @typedef {import("./CustomFee.js").default} CustomFee
@@ -58697,9 +58729,6 @@ TRANSACTION_REGISTRY.set(
  * @typedef {import("@hashgraph/proto").IDuration} proto.IDuration
  */
 
-/**
- * @typedef {import("@hashgraph/cryptography").Key} Key
- */
 class TokenNftInfo {
     /**
      * @private
@@ -80707,22 +80736,46 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var name$1 = "@grpc/grpc-js";
-var version$c = "1.5.1";
-var description$1 = "gRPC Library for Node - pure JS implementation";
-var homepage$1 = "https://grpc.io/";
-var repository$1 = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
-var main$1 = "build/src/index.js";
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var _from$1 = "@grpc/grpc-js@^1.4.4";
+var _id$1 = "@grpc/grpc-js@1.5.1";
+var _inBundle$1 = false;
+var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
+var _location$1 = "/@grpc/grpc-js";
+var _phantomChildren$1 = {
 };
-var keywords$1 = [
+var _requested$1 = {
+	type: "range",
+	registry: true,
+	raw: "@grpc/grpc-js@^1.4.4",
+	name: "@grpc/grpc-js",
+	escapedName: "@grpc%2fgrpc-js",
+	scope: "@grpc",
+	rawSpec: "^1.4.4",
+	saveSpec: null,
+	fetchSpec: "^1.4.4"
+};
+var _requiredBy$1 = [
+	"/@hashgraph/sdk"
 ];
+var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
+var _shasum$1 = "934571ae351e868e61d2bd1d56249b79ce8bd1f5";
+var _spec$1 = "@grpc/grpc-js@^1.4.4";
+var _where$1 = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js\\node_modules\\@hashgraph\\sdk";
 var author$1 = {
 	name: "Google Inc."
 };
-var types = "build/src/index.d.ts";
-var license$1 = "Apache-2.0";
+var bundleDependencies$1 = false;
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var dependencies$1 = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
+};
+var deprecated$1 = false;
+var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -80746,29 +80799,8 @@ var devDependencies$1 = {
 	"ts-node": "^8.3.0",
 	typescript: "^3.7.2"
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var scripts$1 = {
-	build: "npm run compile",
-	clean: "rimraf ./build",
-	compile: "tsc -p .",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	lint: "npm run check",
-	prepare: "npm run generate-types && npm run compile",
-	test: "gulp test",
-	check: "gts check src/**/*.ts",
-	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
-	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
-	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto"
-};
-var dependencies$1 = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
 var files$1 = [
 	"src/**/*.ts",
@@ -80784,29 +80816,64 @@ var files$1 = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
-var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
-var _from$1 = "@grpc/grpc-js@1.5.1";
+var homepage$1 = "https://grpc.io/";
+var keywords$1 = [
+];
+var license$1 = "Apache-2.0";
+var main$1 = "build/src/index.js";
+var name$1 = "@grpc/grpc-js";
+var repository$1 = {
+	type: "git",
+	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
+};
+var scripts$1 = {
+	build: "npm run compile",
+	check: "gts check src/**/*.ts",
+	clean: "rimraf ./build",
+	compile: "tsc -p .",
+	fix: "gts fix src/*.ts",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
+	lint: "npm run check",
+	posttest: "npm run check && madge -c ./build/src",
+	prepare: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
+	test: "gulp test"
+};
+var types = "build/src/index.d.ts";
+var version$c = "1.5.1";
 var require$$0$2 = {
-	name: name$1,
-	version: version$c,
-	description: description$1,
-	homepage: homepage$1,
-	repository: repository$1,
-	main: main$1,
-	engines: engines,
-	keywords: keywords$1,
-	author: author$1,
-	types: types,
-	license: license$1,
-	devDependencies: devDependencies$1,
-	contributors: contributors,
-	scripts: scripts$1,
-	dependencies: dependencies$1,
-	files: files$1,
-	_resolved: _resolved$1,
+	_from: _from$1,
+	_id: _id$1,
+	_inBundle: _inBundle$1,
 	_integrity: _integrity$1,
-	_from: _from$1
+	_location: _location$1,
+	_phantomChildren: _phantomChildren$1,
+	_requested: _requested$1,
+	_requiredBy: _requiredBy$1,
+	_resolved: _resolved$1,
+	_shasum: _shasum$1,
+	_spec: _spec$1,
+	_where: _where$1,
+	author: author$1,
+	bundleDependencies: bundleDependencies$1,
+	contributors: contributors,
+	dependencies: dependencies$1,
+	deprecated: deprecated$1,
+	description: description$1,
+	devDependencies: devDependencies$1,
+	engines: engines,
+	files: files$1,
+	homepage: homepage$1,
+	keywords: keywords$1,
+	license: license$1,
+	main: main$1,
+	name: name$1,
+	repository: repository$1,
+	scripts: scripts$1,
+	types: types,
+	version: version$c
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -93829,7 +93896,7 @@ class BaseContract {
                 // @TODO: Once we allow a timeout to be passed in, we will wait
                 // up to that many blocks for getCode
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this.address, blockTag).then((code) => {
+                this._deployedPromise = this.provider.getCode(this.address).then((code) => {
                     if (code === "0x") {
                         logger$s.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: this.address,
@@ -98902,7 +98969,8 @@ class Resolver {
 }
 let defaultFormatter = null;
 const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
-const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
+const MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
+const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 class BaseProvider extends Provider {
     /**
      *  ready
@@ -99009,6 +99077,10 @@ class BaseProvider extends Provider {
     get network() {
         return this._network;
     }
+    checkMirrorNode() {
+        if (!this._mirrorNodeUrl)
+            logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+    }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
     // With the current hedera implementation, we do not support a changeable networks,
@@ -99109,21 +99181,31 @@ class BaseProvider extends Provider {
             }
         });
     }
-    getCode(addressOrName, blockTag) {
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param addressOrName The address to obtain the bytecode of
+     */
+    getCode(accountLike, throwOnNonExisting) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                address: this._getAddress(addressOrName),
-            });
-            const result = yield this.perform("getCode", params);
+            this.checkMirrorNode();
+            accountLike = yield accountLike;
+            const account = asAccountString(accountLike);
             try {
-                return hexlify(result);
+                let { data } = yield axios$1.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account);
+                return data.bytecode ? hexlify(data.bytecode) : `0x`;
             }
             catch (error) {
-                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getCode",
-                    params, result, error
-                });
+                if (error.response && error.response.status &&
+                    (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {
+                    logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "ContractByteCodeQuery",
+                        params: { address: accountLike },
+                        error
+                    });
+                }
+                return "0x";
             }
         });
     }
@@ -99195,7 +99277,8 @@ class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = this._getAddress(filter.address);
+                // result.address = this._getAddress(filter.address);
+                result.address = filter.address;
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -99241,8 +99324,7 @@ class BaseProvider extends Provider {
      */
     getTransaction(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            if (!this._mirrorNodeUrl)
-                logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            this.checkMirrorNode();
             transactionId = yield transactionId;
             const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
             try {
@@ -99250,8 +99332,8 @@ class BaseProvider extends Provider {
                 if (data) {
                     const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
                     if (filtered.length > 0) {
-                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
-                        const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
+                        const contractsResultsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                        const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsResultsEndpoint);
                         const record = Object.assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
                         return this.formatter.responseFromRecord(record);
                     }
