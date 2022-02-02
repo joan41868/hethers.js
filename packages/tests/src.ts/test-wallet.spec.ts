@@ -588,9 +588,8 @@ describe("Wallet createAccount", function () {
     before( async function() {
         const account = {
             "operator": {
-                "accountId": "0.0.19041642",
-                "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
-                "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
+                "accountId": "0.0.29562194",
+                "privateKey": "0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d"
             },
             "network": {
                 "0.testnet.hedera.com:50211": "0.0.3",
