@@ -82,6 +82,7 @@ var formatter_1 = require("./formatter");
 var address_1 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
+var utils_1 = require("ethers/lib/utils");
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -138,6 +139,9 @@ function stall(duration) {
     return new Promise(function (resolve) {
         setTimeout(resolve, duration);
     });
+}
+function base64ToHex(hash) {
+    return (0, bytes_1.hexlify)(utils_1.base64.decode(hash));
 }
 //////////////////////////////
 // Provider Object
@@ -697,7 +701,8 @@ var BaseProvider = /** @class */ (function (_super) {
      *  Get contract bytecode implementation, using the REST Api.
      *  It returns the bytecode, or a default value as string.
      *
-     * @param addressOrName The address to obtain the bytecode of
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
      */
     BaseProvider.prototype.getCode = function (accountLike, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function () {
@@ -830,7 +835,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         filter = _c.sent();
                         result = {};
                         if (filter.address != null) {
-                            // result.address = this._getAddress(filter.address);
                             result.address = filter.address;
                         }
                         ["blockHash", "topics"].forEach(function (key) {
@@ -892,7 +896,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var transactionsEndpoint, data, filtered, contractsResultsEndpoint, dataWithLogs, record, error_5;
+            var transactionsEndpoint, data, filtered, record, transactionName, contractsEndpoint, dataWithLogs, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -903,21 +907,39 @@ var BaseProvider = /** @class */ (function (_super) {
                         transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
                         _a.label = 2;
                     case 2:
-                        _a.trys.push([2, 6, , 7]);
+                        _a.trys.push([2, 8, , 9]);
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + transactionsEndpoint)];
                     case 3:
                         data = (_a.sent()).data;
-                        if (!data) return [3 /*break*/, 5];
+                        if (!data) return [3 /*break*/, 7];
                         filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
-                        if (!(filtered.length > 0)) return [3 /*break*/, 5];
-                        contractsResultsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
-                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsResultsEndpoint)];
+                        if (!(filtered.length > 0)) return [3 /*break*/, 7];
+                        record = void 0;
+                        record = {
+                            chainId: this._network.chainId,
+                            transactionId: transactionId,
+                            result: filtered[0].result,
+                        };
+                        transactionName = filtered[0].name;
+                        if (!(transactionName === 'CRYPTOCREATEACCOUNT')) return [3 /*break*/, 4];
+                        record.from = (0, address_1.getAccountFromTransactionId)(transactionId);
+                        record.timestamp = filtered[0].consensus_timestamp;
+                        // Different endpoints of the mirror node API returns hashes in different formats.
+                        // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
+                        // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
+                        record.hash = base64ToHex(filtered[0].transaction_hash);
+                        record.accountAddress = (0, address_1.getAddressFromAccount)(filtered[0].entity_id);
+                        return [3 /*break*/, 6];
                     case 4:
+                        contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
+                    case 5:
                         dataWithLogs = _a.sent();
-                        record = __assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
-                        return [2 /*return*/, this.formatter.responseFromRecord(record)];
-                    case 5: return [3 /*break*/, 7];
-                    case 6:
+                        record = Object.assign({}, record, __assign({}, dataWithLogs.data));
+                        _a.label = 6;
+                    case 6: return [2 /*return*/, this.formatter.responseFromRecord(record)];
+                    case 7: return [3 /*break*/, 9];
+                    case 8:
                         error_5 = _a.sent();
                         if (error_5 && error_5.response && error_5.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
@@ -925,8 +947,8 @@ var BaseProvider = /** @class */ (function (_super) {
                                 error: error_5
                             });
                         }
-                        return [3 /*break*/, 7];
-                    case 7: return [2 /*return*/, null];
+                        return [3 /*break*/, 9];
+                    case 9: return [2 /*return*/, null];
                 }
             });
         });

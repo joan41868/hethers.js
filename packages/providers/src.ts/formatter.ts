@@ -397,21 +397,22 @@ export class Formatter {
 
     responseFromRecord(record: HederaTransactionRecord): TransactionResponse {
         return {
-            chainId: record.chainId,
+            chainId: record.chainId ? record.chainId : null,
             hash: record.hash,
             timestamp: record.timestamp,
-            transactionId: record.transactionId,
+            transactionId: record.transactionId ? record.transactionId : null,
             from: record.from,
-            to: record.to,
-            data: record.call_result,
-            gasLimit: BigNumber.from(record.gas_limit),
-            value: BigNumber.from(record.amount),
+            to: record.to ? record.to : null,
+            data: record.call_result ? record.call_result : null,
+            gasLimit: typeof record.gas_limit !== 'undefined' ? BigNumber.from(record.gas_limit) : null,
+            value: BigNumber.from(record.amount || 0),
             customData: {
-                gas_used: record.gas_used,
-                logs: record.logs,
-                result: record.result
+                gas_used: record.gas_used ? record.gas_used : null,
+                logs: record.logs ? record.logs : null,
+                result: record.result ? record.result : null,
+                accountAddress: record.accountAddress ? record.accountAddress : null
             },
-            wait: null
+            wait: null,
         }
     }
 
@@ -420,7 +421,7 @@ export class Formatter {
         let to = null;
         let logs: Log[] = [];
         response.data != '0x' ? contractAddress = response.to : to = response.to;
-        response.customData?.logs.forEach(function (log: any) {
+        response.customData?.logs?.forEach(function (log: any) {
             const values = {
                 timestamp: response.timestamp,
                 address: log.address,
@@ -444,7 +445,8 @@ export class Formatter {
             cumulativeGasUsed: response.customData?.gas_used,
             type: 0,
             byzantium: true,
-            status: response.customData?.result === 'SUCCESS' ? 1 : 0
+            status: response.customData?.result === 'SUCCESS' ? 1 : 0,
+            accountAddress: response.customData?.accountAddress ? response.customData.accountAddress : null
         }
     }
 
