@@ -831,7 +831,7 @@ export class BaseProvider extends Provider {
     }
 
     async getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>> {
-        if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+        this._checkMirrorNode();
         const params = await resolveProperties({ filter: this._getFilter(filter) });
         const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
         const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";

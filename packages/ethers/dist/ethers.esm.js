@@ -99392,8 +99392,7 @@ class BaseProvider extends Provider {
     }
     getLogs(filter) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            if (!this._mirrorNodeUrl)
-                logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
             const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
             const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
