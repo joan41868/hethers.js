@@ -481,8 +481,6 @@ var BaseProvider = /** @class */ (function (_super) {
             }
         }
         _this._pollingInterval = 3000;
-        _this._mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
-        _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(_this._network));
         return _this;
     }
     BaseProvider.prototype._ready = function () {

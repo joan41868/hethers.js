@@ -380,8 +380,6 @@ export class BaseProvider extends Provider {
             }
         }
         this._pollingInterval = 3000;
-        this._mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
-        this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(this._network));
     }
     _ready() {
         return __awaiter(this, void 0, void 0, function* () {

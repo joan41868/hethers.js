@@ -469,8 +469,6 @@ export class BaseProvider extends Provider {
         }
 
         this._pollingInterval = 3000;
-        this._mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
-        this.hederaClient = Client.forName(mapNetworkToHederaNetworkName(this._network));
     }
 
     async _ready(): Promise<Network> {
