@@ -327,14 +327,14 @@ export class Formatter {
     responseFromRecord(record) {
         return {
             chainId: record.chainId ? record.chainId : null,
-            hash: record.hash ? record.hash : null,
-            timestamp: record.timestamp ? record.timestamp : null,
+            hash: record.hash,
+            timestamp: record.timestamp,
             transactionId: record.transactionId ? record.transactionId : null,
-            from: record.from ? record.from : null,
+            from: record.from,
             to: record.to ? record.to : null,
             data: record.call_result ? record.call_result : null,
             gasLimit: typeof record.gas_limit !== 'undefined' ? BigNumber.from(record.gas_limit) : null,
-            value: typeof record.amount !== 'undefined' ? BigNumber.from(record.amount) : null,
+            value: BigNumber.from(record.amount || 0),
             customData: {
                 gas_used: record.gas_used ? record.gas_used : null,
                 logs: record.logs ? record.logs : null,
