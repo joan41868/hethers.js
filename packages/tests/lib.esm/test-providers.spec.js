@@ -967,7 +967,7 @@ describe("Test Hedera Provider", function () {
             assert.strictEqual(true, balance.gte(0));
         });
     }).timeout(timeout);
-    describe("Sign & Send Transacton, Wait for receipt", function () {
+    describe("Sign & Send Transaction, Wait for receipt", function () {
         let signedTx;
         beforeEach(() => __awaiter(this, void 0, void 0, function* () {
             const privateKey = PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
@@ -997,14 +997,14 @@ describe("Test Hedera Provider", function () {
         it("Should populate transaction receipt with timeout", function () {
             return __awaiter(this, void 0, void 0, function* () {
                 const sendTransactionResponse = yield provider.sendTransaction(yield signedTx);
-                const receipt = yield sendTransactionResponse.wait(timeout);
+                const receipt = yield sendTransactionResponse.wait(timeout * 2);
                 // assert.strict(receipt.logs.length > 0);
                 assert.strictEqual(receipt.to, null);
                 assert.strictEqual(receipt.contractAddress, '0x' + sendTransactionResponse.customData.contractId);
                 assert.strictEqual(receipt.from, getAddressFromAccount(hederaTestnetOperableAccount.operator.accountId));
                 assert.strictEqual(receipt.transactionHash, sendTransactionResponse.hash);
             });
-        }).timeout(timeout * 4);
+        }).timeout(timeout * 10);
         it("Should throw timeout exceeded", function () {
             return __awaiter(this, void 0, void 0, function* () {
                 const insufficientTimeout = 500;

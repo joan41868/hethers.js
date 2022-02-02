@@ -585,7 +585,7 @@ describe("Wallet createAccount", function () {
     let wallet: ethers.Wallet, newAccount: ethers.Wallet, newAccountPublicKey: BytesLike, provider: ethers.providers.BaseProvider;
     const timeout = 60000;
 
-    before(async () => {
+    before( async function() {
         const account = {
             "operator": {
                 "accountId": "0.0.19041642",

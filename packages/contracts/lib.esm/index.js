@@ -13,22 +13,21 @@ import { Provider } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { getAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
+import { arrayify, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { accessListify } from "@ethersproject/transactions";
-import { splitInChunks } from "@ethersproject/strings";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 ;
 ;
 ///////////////////////////////
-// const allowedTransactionKeys: { [ key: string ]: boolean } = {
-//     chainId: true, data: true, from: true, gasLimit: true, gasPrice:true, nonce: true, to: true, value: true,
-//     type: true, accessList: true,
-//     maxFeePerGas: true, maxPriorityFeePerGas: true,
-//     customData: true
-// }
+const allowedTransactionKeys = {
+    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
+    type: true,
+    maxFeePerGas: true, maxPriorityFeePerGas: true,
+    customData: true, nodeId: true,
+};
 // TODO FIXME
 function resolveName(resolver, nameOrPromise) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -913,28 +912,39 @@ export class ContractFactory {
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         defineReadOnly(this, "signer", signer || null);
     }
-    getDeployTransactions(...args) {
-        let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
-        const fileCreate = {
-            customData: {
-                fileChunk: chunks[0]
-            }
-        };
-        let fileAppends = [];
-        for (let chunk of chunks.slice(1)) {
-            const fileAppend = {
-                customData: {
-                    fileChunk: chunk
+    getDeployTransaction(...args) {
+        let contractCreateTx = {};
+        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+            contractCreateTx = shallowCopy(args.pop());
+            for (const key in contractCreateTx) {
+                if (!allowedTransactionKeys[key]) {
+                    throw new Error("unknown transaction override " + key);
                 }
-            };
-            fileAppends.push(fileAppend);
+            }
         }
-        const contractCreate = {
-            gasLimit: 300000,
-            data: this.interface.encodeDeploy(args),
-            customData: {}
-        };
-        return [fileCreate, ...fileAppends, contractCreate];
+        // Allow only these to be overwritten in a deployment transaction
+        Object.keys(contractCreateTx).forEach((key) => {
+            if (["gasLimit", "value"].indexOf(key) > -1) {
+                return;
+            }
+            logger.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
+        });
+        if (contractCreateTx.value) {
+            const value = BigNumber.from(contractCreateTx.value);
+            if (!value.isZero() && !this.interface.deploy.payable) {
+                logger.throwError("non-payable constructor cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "overrides.value",
+                    value: contractCreateTx.value
+                });
+            }
+        }
+        // Make sure the call matches the constructor signature
+        logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
+        contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: hexlify(concat([
+                this.bytecode,
+                this.interface.encodeDeploy(args)
+            ])), customData: {} });
+        return contractCreateTx;
     }
     deploy(...args) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -949,14 +959,13 @@ export class ContractFactory {
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
             // Get the deployment transaction (with optional overrides)
-            const unsignedTx = this.getDeployTransactions();
-            // Send the deployment transaction
-            const tx = yield this.signer.sendTransaction(unsignedTx[0]);
-            const address = getStatic(this.constructor, "getContractAddress")(tx);
+            const contractCreate = this.getDeployTransaction(...params);
+            const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
+            const address = contractCreateResponse.customData.contractId;
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
             // Add the modified wait that wraps events
-            addContractWait(contract, tx);
-            defineReadOnly(contract, "deployTransaction", tx);
+            addContractWait(contract, contractCreateResponse);
+            defineReadOnly(contract, "deployTransaction", contractCreateResponse);
             return contract;
         });
     }
