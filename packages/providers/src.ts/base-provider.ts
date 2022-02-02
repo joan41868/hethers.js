@@ -524,7 +524,7 @@ export class BaseProvider extends Provider {
         return this._network;
     }
 
-    public checkMirrorNode(): void {
+    public _checkMirrorNode(): void {
         if (!this._mirrorNodeUrl) logger.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
     }
 
@@ -632,10 +632,11 @@ export class BaseProvider extends Provider {
      *  Get contract bytecode implementation, using the REST Api.
      *  It returns the bytecode, or a default value as string.
      *
-     * @param addressOrName The address to obtain the bytecode of
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
      */
     async getCode(accountLike: AccountLike | Promise<AccountLike>, throwOnNonExisting?: boolean): Promise<string> {
-        this.checkMirrorNode();
+        this._checkMirrorNode();
         accountLike = await accountLike;
         const account = asAccountString(accountLike);
         try {
@@ -723,7 +724,6 @@ export class BaseProvider extends Provider {
         const result: any = { };
 
         if (filter.address != null) {
-            // result.address = this._getAddress(filter.address);
             result.address = filter.address;
         }
 
@@ -767,7 +767,7 @@ export class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
-        this.checkMirrorNode();
+        this._checkMirrorNode();
         transactionId = await transactionId;
         const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
         try {

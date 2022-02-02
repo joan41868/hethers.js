@@ -550,7 +550,7 @@ var BaseProvider = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
-    BaseProvider.prototype.checkMirrorNode = function () {
+    BaseProvider.prototype._checkMirrorNode = function () {
         if (!this._mirrorNodeUrl)
             logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
     };
@@ -705,7 +705,7 @@ var BaseProvider = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        this.checkMirrorNode();
+                        this._checkMirrorNode();
                         return [4 /*yield*/, accountLike];
                     case 1:
                         accountLike = _a.sent();
@@ -896,7 +896,7 @@ var BaseProvider = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        this.checkMirrorNode();
+                        this._checkMirrorNode();
                         return [4 /*yield*/, transactionId];
                     case 1:
                         transactionId = _a.sent();

@@ -72,7 +72,7 @@ export declare class BaseProvider extends Provider {
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
     get network(): Network;
-    checkMirrorNode(): void;
+    _checkMirrorNode(): void;
     detectNetwork(): Promise<Network>;
     getNetwork(): Promise<Network>;
     get pollingInterval(): number;
