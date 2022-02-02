@@ -94125,26 +94125,11 @@ class ContractFactory {
         }
         // Make sure the call matches the constructor signature
         logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-        let chunks = splitInChunks(Buffer.from(this.bytecode).toString(), 4096);
-        const fileCreateTx = {
-            customData: {
-                fileChunk: chunks[0]
-            }
-        };
-        let fileAppendTxs = [];
-        for (let chunk of chunks.slice(1)) {
-            const fileAppendTx = {
-                customData: {
-                    fileChunk: chunk
-                }
-            };
-            fileAppendTxs.push(fileAppendTx);
-        }
         contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: hexlify(concat([
                 this.bytecode,
                 this.interface.encodeDeploy(args)
             ])), customData: {} });
-        return [fileCreateTx, ...fileAppendTxs, contractCreateTx];
+        return contractCreateTx;
     }
     deploy(...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
@@ -94159,8 +94144,7 @@ class ContractFactory {
             const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
             params.push(overrides);
             // Get the deployment transaction (with optional overrides)
-            const unsignedTransactions = this.getDeployTransaction(...params);
-            const contractCreate = unsignedTransactions[unsignedTransactions.length - 1];
+            const contractCreate = this.getDeployTransaction(...params);
             const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
             const address = contractCreateResponse.customData.contractId;
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
@@ -98892,7 +98876,8 @@ class Resolver {
 }
 let defaultFormatter = null;
 const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
-const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
+const MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
+const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 class BaseProvider extends Provider {
     /**
      *  ready
@@ -98999,6 +98984,10 @@ class BaseProvider extends Provider {
     get network() {
         return this._network;
     }
+    _checkMirrorNode() {
+        if (!this._mirrorNodeUrl)
+            logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+    }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
     // With the current hedera implementation, we do not support a changeable networks,
@@ -99099,21 +99088,32 @@ class BaseProvider extends Provider {
             }
         });
     }
-    getCode(addressOrName) {
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
+     */
+    getCode(accountLike, throwOnNonExisting) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            yield this.getNetwork();
-            const params = yield resolveProperties({
-                address: this._getAddress(addressOrName),
-            });
-            const result = yield this.perform("getCode", params);
+            this._checkMirrorNode();
+            accountLike = yield accountLike;
+            const account = asAccountString(accountLike);
             try {
-                return hexlify(result);
+                let { data } = yield axios$1.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account);
+                return data.bytecode ? hexlify(data.bytecode) : `0x`;
             }
             catch (error) {
-                return logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                    method: "getCode",
-                    params, result, error
-                });
+                if (error.response && error.response.status &&
+                    (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {
+                    logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                        method: "ContractByteCodeQuery",
+                        params: { address: accountLike },
+                        error
+                    });
+                }
+                return "0x";
             }
         });
     }
@@ -99185,7 +99185,7 @@ class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = this._getAddress(filter.address);
+                result.address = filter.address;
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -99231,8 +99231,7 @@ class BaseProvider extends Provider {
      */
     getTransaction(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            if (!this._mirrorNodeUrl)
-                logger$v.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            this._checkMirrorNode();
             transactionId = yield transactionId;
             const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
             try {
@@ -99240,8 +99239,8 @@ class BaseProvider extends Provider {
                 if (data) {
                     const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
                     if (filtered.length > 0) {
-                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
-                        const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
+                        const contractsResultsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                        const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsResultsEndpoint);
                         const record = Object.assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
                         return this.formatter.responseFromRecord(record);
                     }

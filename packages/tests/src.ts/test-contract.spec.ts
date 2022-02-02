@@ -306,20 +306,13 @@ describe("Test Contract Transaction Population", function() {
 
         const contractBytecode = fs.readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
         const contractFactory = new ethers.ContractFactory(abiWithArgs, contractBytecode, wallet);
-        const transactions = contractFactory.getDeployTransaction(ethers.BigNumber.from("1000000"), {
+        const transaction = contractFactory.getDeployTransaction(ethers.BigNumber.from("1000000"), {
             gasLimit: 300000
         });
-
-        assert.strictEqual(Array.isArray(transactions), true);
-        assert.strictEqual(transactions.length, 3);
-        assert('customData' in transactions[0]);
-        assert('fileChunk' in transactions[0].customData);
-        assert('customData' in transactions[1]);
-        assert('fileChunk' in transactions[1].customData);
-        assert('data' in transactions[2]);
-        assert('customData' in transactions[2]);
-        assert('gasLimit' in transactions[2]);
-        assert.strictEqual(300000, transactions[2].gasLimit);
+        assert('data' in transaction);
+        assert('customData' in transaction);
+        assert('gasLimit' in transaction);
+        assert.strictEqual(300000, transaction.gasLimit);
     });
 
     it("should be able to deploy a contract", async function() {
@@ -384,6 +377,7 @@ describe("contract.deployed", function() {
     }).timeout(60000);
 
 });
+
 
 
 /*

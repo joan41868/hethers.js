@@ -137,7 +137,7 @@ export declare abstract class Provider {
     getHederaNetworkConfig(): AccountId[];
     getGasPrice(): Promise<BigNumber>;
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
-    abstract getCode(addressOrName: string | Promise<string>): Promise<string>;
+    abstract getCode(accountLike: AccountLike | Promise<AccountLike>, throwOnNonExisting?: boolean): Promise<string>;
     abstract sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     abstract estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     abstract getTransaction(transactionHash: string): Promise<TransactionResponse>;
