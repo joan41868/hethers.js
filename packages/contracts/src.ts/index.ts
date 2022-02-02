@@ -1,12 +1,41 @@
 "use strict";
 
-import { checkResultErrors, EventFragment, Fragment, FunctionFragment, Indexed, Interface, JsonFragment, LogDescription, ParamType, Result } from "@ethersproject/abi";
-import { Block, BlockTag, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import {
+    checkResultErrors,
+    EventFragment,
+    Fragment,
+    FunctionFragment,
+    Indexed,
+    Interface,
+    JsonFragment,
+    LogDescription,
+    ParamType,
+    Result
+} from "@ethersproject/abi";
+import {
+    Block,
+    BlockTag,
+    Filter,
+    FilterByBlockHash,
+    Listener,
+    Log,
+    Provider,
+    TransactionReceipt,
+    TransactionRequest,
+    TransactionResponse
+} from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { AccountLike, getAddress, getAddressFromAccount } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
-import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
+import {
+    deepCopy,
+    Deferrable,
+    defineReadOnly,
+    getStatic,
+    resolveProperties,
+    shallowCopy
+} from "@ethersproject/properties";
 import { AccessList, accessListify, AccessListish } from "@ethersproject/transactions";
 
 import { Logger } from "@ethersproject/logger";
@@ -111,21 +140,6 @@ const allowedTransactionKeys: { [ key: string ]: boolean } = {
     type: true, /*accessList: true,*/
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true, nodeId: true,
-}
-
-function requireAddressSet(address:AccountLike) {
-    if (!address || address == "") {
-        logger.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, address);
-    }
-}
-
-function ensureSolidityAddress(addr: AccountLike): string {
-    if (addr.toString().split(".").length > 1) {
-        addr = getAddressFromAccount(addr);
-    } else {
-        addr = getAddress(addr.toString());
-    }
-    return addr;
 }
 
 // TODO FIXME
@@ -637,7 +651,7 @@ type InterfaceFunc = (contractInterface: ContractInterface) => Interface;
 
 
 export class BaseContract {
-    private _address: AccountLike;
+    private _address: string;
     readonly interface: Interface;
 
     readonly signer: Signer;
@@ -668,7 +682,9 @@ export class BaseContract {
     constructor(address: AccountLike| null, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider) {
         logger.checkNew(new.target, Contract);
 
-        this.address = address || "";
+        if(address) {
+            this.address = getAddressFromAccount(address);
+        }
         defineReadOnly(this, "interface", getStatic<InterfaceFunc>(new.target, "getInterface")(contractInterface));
 
         if (signerOrProvider == null) {
@@ -696,7 +712,7 @@ export class BaseContract {
                 const event = this.interface.events[eventSignature];
                 defineReadOnly(this.filters, eventSignature, (...args: Array<any>) => {
                     return {
-                        address: ensureSolidityAddress(this._address),
+                        address: this.address,
                         topics: this.interface.encodeFilterTopics(event, args)
                    }
                 });
@@ -788,11 +804,11 @@ export class BaseContract {
         });
     }
 
-    set address(val: AccountLike) {
-        this._address = val;
+    set address(val: string) {
+        this._address = getAddressFromAccount(val);
     }
 
-    get address(): AccountLike {
+    get address(): string {
         return this._address;
     }
 
@@ -809,8 +825,8 @@ export class BaseContract {
     }
 
     _deployed(blockTag?: BlockTag): Promise<Contract> {
-        requireAddressSet(this._address);
-        const addr = ensureSolidityAddress(this._address);
+        this.requireAddressSet();
+
         if (!this._deployedPromise) {
 
             // If we were just deployed, we know the transaction we should occur in
@@ -824,7 +840,7 @@ export class BaseContract {
                 // up to that many blocks for getCode
 
                 // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(addr, blockTag).then((code) => {
+                this._deployedPromise = this.provider.getCode(this.address, blockTag).then((code) => {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: this._address,
@@ -894,13 +910,6 @@ export class BaseContract {
     }
 
     private _getRunningEvent(eventName: EventFilter | string): RunningEvent {
-        let addr = this._address;
-        // parse address
-        if (addr.toString().split(".").length > 1) {
-            addr = getAddressFromAccount(addr);
-        } else {
-            addr = getAddress(addr.toString());
-        }
         if (typeof(eventName) === "string") {
 
             // Listen for "error" events (if your contract has an error event, include
@@ -916,12 +925,12 @@ export class BaseContract {
 
             // Listen for any event
             if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(addr, this.interface));
+                return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
             }
 
             // Get the event Fragment (throws if ambiguous/unknown event)
             const fragment = this.interface.getEvent(eventName)
-            return this._normalizeRunningEvent(new FragmentRunningEvent(addr, this.interface, fragment));
+            return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment));
         }
 
         // We have topics to filter by...
@@ -934,19 +943,25 @@ export class BaseContract {
                     throw new Error("invalid topic"); // @TODO: May happen for anonymous events
                 }
                 const fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(addr, this.interface, fragment, eventName.topics));
+                return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment, eventName.topics));
             } catch (error) { }
 
             // Filter by the unknown topichash
             const filter: EventFilter = {
-                address: addr,
+                address: this.address,
                 topics: eventName.topics
             }
 
             return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
         }
 
-        return this._normalizeRunningEvent(new WildcardRunningEvent(addr, this.interface));
+        return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
+    }
+
+    requireAddressSet() {
+        if (!this.address || this.address == "") {
+            logger.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, this.address);
+        }
     }
 
     _checkRunningEvents(runningEvent: RunningEvent): void {
@@ -1031,7 +1046,7 @@ export class BaseContract {
     }
 
     queryFilter(event: EventFilter, fromBlockOrBlockhash?: BlockTag | string, toBlock?: BlockTag): Promise<Array<Event>> {
-        requireAddressSet(this._address);
+        this.requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
 
@@ -1050,20 +1065,23 @@ export class BaseContract {
     }
 
     on(event: EventFilter | string, listener: Listener): this {
-        requireAddressSet(this._address);
+        this.requireAddressSet();
+
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }
 
     once(event: EventFilter | string, listener: Listener): this {
-        requireAddressSet(this._address);
+        this.requireAddressSet();
+
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     }
 
     emit(eventName: EventFilter | string, ...args: Array<any>): boolean {
         if (!this.provider) { return false; }
-        requireAddressSet(this._address);
+        this.requireAddressSet();
+
         const runningEvent = this._getRunningEvent(eventName);
         const result = (runningEvent.run(args) > 0);
 
@@ -1080,7 +1098,8 @@ export class BaseContract {
                 return accum + this._runningEvents[key].listenerCount();
             }, 0);
         }
-        requireAddressSet(this._address);
+        this.requireAddressSet();
+
         return this._getRunningEvent(eventName).listenerCount();
     }
 
@@ -1096,7 +1115,8 @@ export class BaseContract {
             }
             return result;
         }
-        requireAddressSet(this._address);
+        this.requireAddressSet();
+
         return this._getRunningEvent(eventName).listeners();
     }
 
@@ -1111,7 +1131,8 @@ export class BaseContract {
             }
             return this;
         }
-        requireAddressSet(this._address);
+        this.requireAddressSet();
+
         // Delete any listeners
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeAllListeners();
@@ -1122,7 +1143,8 @@ export class BaseContract {
 
     off(eventName: EventFilter | string, listener: Listener): this {
         if (!this.provider) { return this; }
-        requireAddressSet(this._address);
+        this.requireAddressSet();
+
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
@@ -1130,7 +1152,7 @@ export class BaseContract {
     }
 
     removeListener(eventName: EventFilter | string, listener: Listener): this {
-        requireAddressSet(this._address);
+        this.requireAddressSet();
         return this.off(eventName, listener);
     }
 

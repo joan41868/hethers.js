@@ -104,8 +104,8 @@ export declare class BaseContract {
         [eventTag: string]: (...args: Array<any>) => void;
     };
     constructor(address: AccountLike | null, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider);
-    set address(val: AccountLike);
-    get address(): AccountLike;
+    set address(val: string);
+    get address(): string;
     static getInterface(contractInterface: ContractInterface): Interface;
     deployed(): Promise<Contract>;
     _deployed(blockTag?: BlockTag): Promise<Contract>;
@@ -115,6 +115,7 @@ export declare class BaseContract {
     static isIndexed(value: any): value is Indexed;
     private _normalizeRunningEvent;
     private _getRunningEvent;
+    requireAddressSet(): void;
     _checkRunningEvents(runningEvent: RunningEvent): void;
     _wrapEvent(runningEvent: RunningEvent, log: Log, listener: Listener): Event;
     private _addEventListener;
