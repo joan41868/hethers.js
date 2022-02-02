@@ -1401,6 +1401,7 @@ describe("Test Hedera Provider Formatters", function () {
             gasLimit: null,
             hash: null,
             transactionId: null,
+            timestamp: null,
             to: null,
             value: null,
             customData: {

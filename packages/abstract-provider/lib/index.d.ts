@@ -32,7 +32,7 @@ export declare type HederaTransactionRecord = {
     function_parameters?: string;
     gas_limit?: number;
     gas_used?: number;
-    timestamp?: string;
+    timestamp: string;
     to?: string;
     block_hash?: string;
     block_number?: number;
@@ -42,7 +42,7 @@ export declare type HederaTransactionRecord = {
 };
 export interface TransactionResponse extends Transaction {
     hash: string;
-    timestamp?: string;
+    timestamp: string;
     from: string;
     raw?: string;
     wait: (timestamp?: number) => Promise<TransactionReceipt>;
