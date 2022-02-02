@@ -327,6 +327,7 @@ export class Resolver {
 }
 let defaultFormatter = null;
 const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
+const MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
 const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 export class BaseProvider extends Provider {
     /**
@@ -707,7 +708,7 @@ export class BaseProvider extends Provider {
                             record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                         }
                         else {
-                            const contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                            const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
                             const dataWithLogs = yield axios.get(this._mirrorNodeUrl + contractsEndpoint);
                             record = Object.assign({}, record, Object.assign({}, dataWithLogs.data));
                         }

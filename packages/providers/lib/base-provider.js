@@ -425,6 +425,7 @@ var Resolver = /** @class */ (function () {
 exports.Resolver = Resolver;
 var defaultFormatter = null;
 var MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
+var MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
 var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 var BaseProvider = /** @class */ (function (_super) {
     __extends(BaseProvider, _super);
@@ -932,7 +933,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         record.accountAddress = (0, address_1.getAddressFromAccount)(filtered[0].entity_id);
                         return [3 /*break*/, 6];
                     case 4:
-                        contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
+                        contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
                     case 5:
                         dataWithLogs = _a.sent();
