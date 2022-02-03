@@ -1063,90 +1063,124 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(true, balance.gte(0));
     }).timeout(timeout);
 
-    it('Should filter logs by timestamp and address', async function () {
-        const fromTimestamp = "1642065156.264170833";
-        const toTimestamp = "1642080642.176149864";
-        const address = "0x000000000000000000000000000000000186fb1A";
-        const account = "0.0.25623322";
-        const filterParams = {
-            address: address,
-            fromTimestamp: fromTimestamp,
-            toTimestamp: toTimestamp
-        }
+    describe("Filter Contract Logs", function () {
 
-        const logsResponse = [
-            {
-                "address": "0x000000000000000000000000000000000186fb1a",
-                "contract_id": "0.0.25623322",
-                "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
-                "index": 0,
-                "topics": [
-                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-                    "0x0000000000000000000000000000000000000000000000000000000000000000",
-                    "0x0000000000000000000000000000000000000000000000000000000000179977"
-                ],
-                "root_contract_id": "0.0.25623322",
-                "timestamp": "1642080642.176149864"
-            },
-            {
-                "address": "0x000000000000000000000000000000000186fb1a",
-                "contract_id": "0.0.25623322",
-                "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
-                "index": 0,
-                "topics": [
-                    "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
-                    "0x0000000000000000000000000000000000000000000000000000000000000000",
-                    "0x0000000000000000000000000000000000000000000000000000000000179977"
-                ],
-                "root_contract_id": "0.0.25623322",
-                "timestamp": "1642065156.264170833"
+        it('Should filter logs by timestamp and address', async function () {
+            const fromTimestamp = "1642065156.264170833";
+            const toTimestamp = "1642080642.176149864";
+            const address = "0x000000000000000000000000000000000186fb1A";
+            const account = "0.0.25623322";
+            const filterParams = {
+                address: address,
+                fromTimestamp: fromTimestamp,
+                toTimestamp: toTimestamp
             }
-        ]
-
-        const logs = await provider.getLogs(filterParams);
-        assert.strictEqual(logs.length, 2);
-
-        assert.strictEqual(logs[0].timestamp, logsResponse[0].timestamp);
-        assert.strictEqual(logs[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
-        assert.strictEqual(logs[0].data, logsResponse[0].data);
-        assert.deepStrictEqual(logs[0].topics, logsResponse[0].topics);
-        assert.strictEqual(logs[0].transactionHash, undefined);
-        assert.strictEqual(logs[0].logIndex, logsResponse[0].index);
-        assert.strictEqual(logs[0].transactionIndex, logsResponse[0].index);
-
-        assert.strictEqual(logs[1].timestamp, logsResponse[1].timestamp);
-        assert.strictEqual(logs[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
-        assert.strictEqual(logs[1].data, logsResponse[1].data);
-        assert.deepStrictEqual(logs[1].topics, logsResponse[1].topics);
-        assert.strictEqual(logs[1].transactionHash, undefined);
-        assert.strictEqual(logs[1].logIndex, logsResponse[1].index);
-        assert.strictEqual(logs[1].transactionIndex, logsResponse[1].index);
-
-        const filterParamsAccount = {
-            address: account,
-            fromTimestamp: fromTimestamp,
-            toTimestamp: toTimestamp
-        }
-
-        const logs2 = await provider.getLogs(filterParamsAccount);
-        assert.strictEqual(logs.length, 2);
-
-        assert.strictEqual(logs2[0].timestamp, logsResponse[0].timestamp);
-        assert.strictEqual(logs2[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
-        assert.strictEqual(logs2[0].data, logsResponse[0].data);
-        assert.deepStrictEqual(logs2[0].topics, logsResponse[0].topics);
-        assert.strictEqual(logs2[0].transactionHash, undefined);
-        assert.strictEqual(logs2[0].logIndex, logsResponse[0].index);
-        assert.strictEqual(logs2[0].transactionIndex, logsResponse[0].index);
-
-        assert.strictEqual(logs2[1].timestamp, logsResponse[1].timestamp);
-        assert.strictEqual(logs2[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
-        assert.strictEqual(logs2[1].data, logsResponse[1].data);
-        assert.deepStrictEqual(logs2[1].topics, logsResponse[1].topics);
-        assert.strictEqual(logs2[1].transactionHash, undefined);
-        assert.strictEqual(logs2[1].logIndex, logsResponse[1].index);
-        assert.strictEqual(logs2[1].transactionIndex, logsResponse[1].index);
-    }).timeout(timeout * 4);
+    
+            const logsResponse = [
+                {
+                    "address": "0x000000000000000000000000000000000186fb1a",
+                    "contract_id": "0.0.25623322",
+                    "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+                    "index": 0,
+                    "topics": [
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                        "0x0000000000000000000000000000000000000000000000000000000000000000",
+                        "0x0000000000000000000000000000000000000000000000000000000000179977"
+                    ],
+                    "root_contract_id": "0.0.25623322",
+                    "timestamp": "1642080642.176149864"
+                },
+                {
+                    "address": "0x000000000000000000000000000000000186fb1a",
+                    "contract_id": "0.0.25623322",
+                    "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+                    "index": 0,
+                    "topics": [
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                        "0x0000000000000000000000000000000000000000000000000000000000000000",
+                        "0x0000000000000000000000000000000000000000000000000000000000179977"
+                    ],
+                    "root_contract_id": "0.0.25623322",
+                    "timestamp": "1642065156.264170833"
+                }
+            ]
+    
+            const logs = await provider.getLogs(filterParams);
+            assert.strictEqual(logs.length, 2);
+    
+            assert.strictEqual(logs[0].timestamp, logsResponse[0].timestamp);
+            assert.strictEqual(logs[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
+            assert.strictEqual(logs[0].data, logsResponse[0].data);
+            assert.deepStrictEqual(logs[0].topics, logsResponse[0].topics);
+            assert.strictEqual(logs[0].transactionHash, undefined);
+            assert.strictEqual(logs[0].logIndex, logsResponse[0].index);
+            assert.strictEqual(logs[0].transactionIndex, logsResponse[0].index);
+    
+            assert.strictEqual(logs[1].timestamp, logsResponse[1].timestamp);
+            assert.strictEqual(logs[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
+            assert.strictEqual(logs[1].data, logsResponse[1].data);
+            assert.deepStrictEqual(logs[1].topics, logsResponse[1].topics);
+            assert.strictEqual(logs[1].transactionHash, undefined);
+            assert.strictEqual(logs[1].logIndex, logsResponse[1].index);
+            assert.strictEqual(logs[1].transactionIndex, logsResponse[1].index);
+    
+            const filterParamsAccount = {
+                address: account,
+                fromTimestamp: fromTimestamp,
+                toTimestamp: toTimestamp
+            }
+    
+            const logs2 = await provider.getLogs(filterParamsAccount);
+            assert.strictEqual(logs2.length, 2);
+    
+            assert.strictEqual(logs2[0].timestamp, logsResponse[0].timestamp);
+            assert.strictEqual(logs2[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
+            assert.strictEqual(logs2[0].data, logsResponse[0].data);
+            assert.deepStrictEqual(logs2[0].topics, logsResponse[0].topics);
+            assert.strictEqual(logs2[0].transactionHash, undefined);
+            assert.strictEqual(logs2[0].logIndex, logsResponse[0].index);
+            assert.strictEqual(logs2[0].transactionIndex, logsResponse[0].index);
+    
+            assert.strictEqual(logs2[1].timestamp, logsResponse[1].timestamp);
+            assert.strictEqual(logs2[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
+            assert.strictEqual(logs2[1].data, logsResponse[1].data);
+            assert.deepStrictEqual(logs2[1].topics, logsResponse[1].topics);
+            assert.strictEqual(logs2[1].transactionHash, undefined);
+            assert.strictEqual(logs2[1].logIndex, logsResponse[1].index);
+            assert.strictEqual(logs2[1].transactionIndex, logsResponse[1].index);
+        }).timeout(timeout * 4);
+    
+        it('Should throw query result size limit exceeded', async function () {
+            const address = "0x000000000000000000000000000000000186fb1a";
+            const filterParams = {
+                address: address,
+            }
+    
+            await assert.rejects(
+                async () => {
+                    await provider.getLogs(filterParams);
+                },
+                (err) => {
+                    assert.strictEqual(err.name, 'Error');
+                    assert.strict(err.reason.includes('query returned more than 100 results'));
+                    assert.strictEqual(err.code, 'CALL_EXCEPTION');
+                    return true;
+                }
+            );
+        }).timeout(timeout * 4);
+    
+        it('Should return default value', async function () {
+            const address = "0x000000000000000000000000000000000186fb1b";
+            const filterParams = {
+                address: address,
+            }
+            
+            const logs = await provider.getLogs(filterParams);
+    
+            assert.notStrictEqual(logs, null);
+            assert.strictEqual(logs.length, 0);
+        }).timeout(timeout * 4);
+    });
 
     describe("Sign & Send Transacton, Wait for receipt", function () {
         let signedTx: string | Promise<string>;
