@@ -51,7 +51,7 @@ export type HederaTransactionRecord = {
     logs?: {},
     accountAddress?: string
 }
-  
+
 export interface TransactionResponse extends Transaction {
     hash: string;
     timestamp: string,
@@ -126,7 +126,7 @@ export interface FeeData {
 }
 
 export interface EventFilter {
-    address?: string;
+    address?: AccountLike;
     topics?: Array<string | Array<string> | null>;
 }
 

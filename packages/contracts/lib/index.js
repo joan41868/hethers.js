@@ -296,6 +296,7 @@ function buildPopulate(contract, fragment) {
         return populateTransaction(contract, fragment, args);
     };
 }
+// @ts-ignore
 function buildEstimate(contract, fragment) {
     var signerOrProvider = (contract.signer || contract.provider);
     return function () {
@@ -605,12 +606,13 @@ var WildcardRunningEvent = /** @class */ (function (_super) {
     return WildcardRunningEvent;
 }(RunningEvent));
 var BaseContract = /** @class */ (function () {
-    function BaseContract(addressOrName, contractInterface, signerOrProvider) {
+    function BaseContract(address, contractInterface, signerOrProvider) {
         var _newTarget = this.constructor;
         var _this = this;
         logger.checkNew(_newTarget, Contract);
-        // @TODO: Maybe still check the addressOrName looks like a valid address or name?
-        //address = getAddress(address);
+        if (address) {
+            this.address = (0, address_1.getAddressFromAccount)(address);
+        }
         (0, properties_1.defineReadOnly)(this, "interface", (0, properties_1.getStatic)(_newTarget, "getInterface")(contractInterface));
         if (signerOrProvider == null) {
             (0, properties_1.defineReadOnly)(this, "provider", null);
@@ -628,7 +630,6 @@ var BaseContract = /** @class */ (function () {
             logger.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
         }
         (0, properties_1.defineReadOnly)(this, "callStatic", {});
-        (0, properties_1.defineReadOnly)(this, "estimateGas", {});
         (0, properties_1.defineReadOnly)(this, "functions", {});
         (0, properties_1.defineReadOnly)(this, "populateTransaction", {});
         (0, properties_1.defineReadOnly)(this, "filters", {});
@@ -663,24 +664,6 @@ var BaseContract = /** @class */ (function () {
         }
         (0, properties_1.defineReadOnly)(this, "_runningEvents", {});
         (0, properties_1.defineReadOnly)(this, "_wrappedEmits", {});
-        if (addressOrName == null) {
-            logger.throwArgumentError("invalid contract address or ENS name", "addressOrName", addressOrName);
-        }
-        (0, properties_1.defineReadOnly)(this, "address", addressOrName);
-        if (this.provider) {
-            (0, properties_1.defineReadOnly)(this, "resolvedAddress", resolveName(this.provider, addressOrName));
-        }
-        else {
-            try {
-                (0, properties_1.defineReadOnly)(this, "resolvedAddress", Promise.resolve((0, address_1.getAddress)(addressOrName)));
-            }
-            catch (error) {
-                // Without a provider, we cannot use ENS names
-                logger.throwError("provider is required to use ENS name as contract address", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "new Contract"
-                });
-            }
-        }
         var uniqueNames = {};
         var uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach(function (signature) {
@@ -716,9 +699,6 @@ var BaseContract = /** @class */ (function () {
             if (_this.populateTransaction[signature] == null) {
                 (0, properties_1.defineReadOnly)(_this.populateTransaction, signature, buildPopulate(_this, fragment));
             }
-            if (_this.estimateGas[signature] == null) {
-                (0, properties_1.defineReadOnly)(_this.estimateGas, signature, buildEstimate(_this, fragment));
-            }
         });
         Object.keys(uniqueNames).forEach(function (name) {
             // Ambiguous names to not get attached as bare names
@@ -745,11 +725,18 @@ var BaseContract = /** @class */ (function () {
             if (_this.populateTransaction[name] == null) {
                 (0, properties_1.defineReadOnly)(_this.populateTransaction, name, _this.populateTransaction[signature]);
             }
-            if (_this.estimateGas[name] == null) {
-                (0, properties_1.defineReadOnly)(_this.estimateGas, name, _this.estimateGas[signature]);
-            }
         });
     }
+    Object.defineProperty(BaseContract.prototype, "address", {
+        get: function () {
+            return this._address;
+        },
+        set: function (val) {
+            this._address = (0, address_1.getAddressFromAccount)(val);
+        },
+        enumerable: false,
+        configurable: true
+    });
     BaseContract.getInterface = function (contractInterface) {
         if (abi_1.Interface.isInterface(contractInterface)) {
             return contractInterface;
@@ -762,6 +749,7 @@ var BaseContract = /** @class */ (function () {
     };
     BaseContract.prototype._deployed = function () {
         var _this = this;
+        this._requireAddressSet();
         if (!this._deployedPromise) {
             // If we were just deployed, we know the transaction we should occur in
             if (this.deployTransaction) {
@@ -776,7 +764,7 @@ var BaseContract = /** @class */ (function () {
                 this._deployedPromise = this.provider.getCode(this.address).then(function (code) {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                            contractAddress: _this.address,
+                            contractAddress: _this._address,
                             operation: "getDeployed"
                         });
                     }
@@ -872,6 +860,11 @@ var BaseContract = /** @class */ (function () {
         }
         return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
     };
+    BaseContract.prototype._requireAddressSet = function () {
+        if (!this.address || this.address == "") {
+            logger.throwArgumentError("Missing address", logger_1.Logger.errors.INVALID_ARGUMENT, this.address);
+        }
+    };
     BaseContract.prototype._checkRunningEvents = function (runningEvent) {
         if (runningEvent.listenerCount() === 0) {
             delete this._runningEvents[runningEvent.tag];
@@ -945,6 +938,7 @@ var BaseContract = /** @class */ (function () {
     };
     BaseContract.prototype.queryFilter = function (event, fromBlockOrBlockhash, toBlock) {
         var _this = this;
+        this._requireAddressSet();
         var runningEvent = this._getRunningEvent(event);
         var filter = (0, properties_1.shallowCopy)(runningEvent.filter);
         if (typeof (fromBlockOrBlockhash) === "string" && (0, bytes_1.isHexString)(fromBlockOrBlockhash, 32)) {
@@ -962,10 +956,12 @@ var BaseContract = /** @class */ (function () {
         });
     };
     BaseContract.prototype.on = function (event, listener) {
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     };
     BaseContract.prototype.once = function (event, listener) {
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     };
@@ -977,6 +973,7 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return false;
         }
+        this._requireAddressSet();
         var runningEvent = this._getRunningEvent(eventName);
         var result = (runningEvent.run(args) > 0);
         // May have drained all the "once" events; check for living events
@@ -988,6 +985,7 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return 0;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             return Object.keys(this._runningEvents).reduce(function (accum, key) {
                 return accum + _this._runningEvents[key].listenerCount();
@@ -999,6 +997,7 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return [];
         }
+        this._requireAddressSet();
         if (eventName == null) {
             var result_1 = [];
             for (var tag in this._runningEvents) {
@@ -1014,6 +1013,7 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return this;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             for (var tag in this._runningEvents) {
                 var runningEvent_1 = this._runningEvents[tag];
@@ -1032,12 +1032,14 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return this;
         }
+        this._requireAddressSet();
         var runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
         return this;
     };
     BaseContract.prototype.removeListener = function (eventName, listener) {
+        this._requireAddressSet();
         return this.off(eventName, listener);
     };
     return BaseContract;
@@ -1159,7 +1161,7 @@ var ContractFactory = /** @class */ (function () {
         });
     };
     ContractFactory.prototype.attach = function (address) {
-        return (this.constructor).getContract(address, this.interface, this.signer);
+        return new (this.constructor).getContract(address, this.interface, this.signer);
     };
     ContractFactory.prototype.connect = function (signer) {
         return new (this.constructor)(this.interface, this.bytecode, signer);

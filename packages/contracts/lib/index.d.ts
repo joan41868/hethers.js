@@ -1,6 +1,7 @@
 import { Fragment, Indexed, Interface, JsonFragment, Result } from "@ethersproject/abi";
 import { Block, BlockTag, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { Signer } from "@ethersproject/abstract-signer";
+import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike } from "@ethersproject/bytes";
 import { AccessList, AccessListish } from "@ethersproject/transactions";
@@ -37,7 +38,7 @@ export interface PopulatedTransaction {
     customData?: Record<string, any>;
 }
 export declare type EventFilter = {
-    address?: string;
+    address?: AccountLike;
     topics?: Array<string | Array<string>>;
 };
 export declare type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
@@ -74,7 +75,7 @@ declare class RunningEvent {
 }
 export declare type ContractInterface = string | ReadonlyArray<Fragment | JsonFragment | string> | Interface;
 export declare class BaseContract {
-    readonly address: string;
+    private _address;
     readonly interface: Interface;
     readonly signer: Signer;
     readonly provider: Provider;
@@ -102,7 +103,9 @@ export declare class BaseContract {
     _wrappedEmits: {
         [eventTag: string]: (...args: Array<any>) => void;
     };
-    constructor(addressOrName: string, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider);
+    constructor(address: AccountLike | null, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider);
+    set address(val: string);
+    get address(): string;
     static getInterface(contractInterface: ContractInterface): Interface;
     deployed(): Promise<Contract>;
     _deployed(): Promise<Contract>;
@@ -112,6 +115,7 @@ export declare class BaseContract {
     static isIndexed(value: any): value is Indexed;
     private _normalizeRunningEvent;
     private _getRunningEvent;
+    _requireAddressSet(): void;
     _checkRunningEvents(runningEvent: RunningEvent): void;
     _wrapEvent(runningEvent: RunningEvent, log: Log, listener: Listener): Event;
     private _addEventListener;
@@ -141,7 +145,7 @@ export declare class ContractFactory {
     connect(signer: Signer): ContractFactory;
     static fromSolidity(compilerOutput: any, signer?: Signer): ContractFactory;
     static getInterface(contractInterface: ContractInterface): Interface;
-    static getContract(address: string, contractInterface: ContractInterface, signer?: Signer): Contract;
+    static getContract(address: AccountLike, contractInterface: ContractInterface, signer?: Signer): Contract;
 }
 export {};
 //# sourceMappingURL=index.d.ts.map

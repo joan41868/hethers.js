@@ -25,7 +25,7 @@ import { arrayify } from "ethers/lib/utils";
 const provider = ethers.getDefaultProvider("testnet");
 const TIMEOUT_PERIOD = 120000;
 const contract = (function () {
-    return new ethers.Contract(contractData.contractAddress, contractData.interface, provider);
+    return new ethers.Contract('', contractData.interface, provider);
 })();
 function equals(name, actual, expected) {
     if (Array.isArray(expected)) {
@@ -165,7 +165,7 @@ describe("Test Contract Transaction Population", function () {
     const testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03";
     const testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     const fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
-    const contract = new ethers.Contract(testAddress, abi);
+    const contract = new ethers.Contract(null, abi);
     const contractConnected = contract.connect(ethers.getDefaultProvider("testnet"));
     xit("standard population", function () {
         return __awaiter(this, void 0, void 0, function* () {

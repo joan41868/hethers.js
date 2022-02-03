@@ -1,12 +1,41 @@
 "use strict";
 
-import { checkResultErrors, EventFragment, Fragment, FunctionFragment, Indexed, Interface, JsonFragment, LogDescription, ParamType, Result } from "@ethersproject/abi";
-import { Block, BlockTag, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import {
+    checkResultErrors,
+    EventFragment,
+    Fragment,
+    FunctionFragment,
+    Indexed,
+    Interface,
+    JsonFragment,
+    LogDescription,
+    ParamType,
+    Result
+} from "@ethersproject/abi";
+import {
+    Block,
+    BlockTag,
+    Filter,
+    FilterByBlockHash,
+    Listener,
+    Log,
+    Provider,
+    TransactionReceipt,
+    TransactionRequest,
+    TransactionResponse
+} from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
-import { getAddress } from "@ethersproject/address";
+import { AccountLike, getAddress, getAddressFromAccount } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
-import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
+import {
+    deepCopy,
+    Deferrable,
+    defineReadOnly,
+    getStatic,
+    resolveProperties,
+    shallowCopy
+} from "@ethersproject/properties";
 import { AccessList, accessListify, AccessListish } from "@ethersproject/transactions";
 
 import { Logger } from "@ethersproject/logger";
@@ -61,7 +90,7 @@ export interface PopulatedTransaction {
 };
 
 export type EventFilter = {
-    address?: string;
+    address?: AccountLike;
     topics?: Array<string|Array<string>>;
 };
 
@@ -310,6 +339,7 @@ function buildPopulate(contract: Contract, fragment: FunctionFragment): Contract
     };
 }
 
+// @ts-ignore
 function buildEstimate(contract: Contract, fragment: FunctionFragment): ContractFunction<BigNumber> {
     const signerOrProvider = (contract.signer || contract.provider);
     return async function(...args: Array<any>): Promise<BigNumber> {
@@ -615,7 +645,7 @@ type InterfaceFunc = (contractInterface: ContractInterface) => Interface;
 
 
 export class BaseContract {
-    readonly address: string;
+    private _address: string;
     readonly interface: Interface;
 
     readonly signer: Signer;
@@ -629,8 +659,8 @@ export class BaseContract {
 
     readonly filters: { [ name: string ]: (...args: Array<any>) => EventFilter };
 
-    // This will always be an address. This will only differ from
-    // address if an ENS name was used in the constructor
+    // This will always be an _address. This will only differ from
+    // _address if an ENS name was used in the constructor
     readonly resolvedAddress: Promise<string>;
 
     // This is only set if the contract was created with a call to deploy
@@ -643,12 +673,12 @@ export class BaseContract {
 
     // Wrapped functions to call emit and allow deregistration from the provider
     _wrappedEmits: { [ eventTag: string ]: (...args: Array<any>) => void };
-
-    constructor(addressOrName: string, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider) {
+    constructor(address: AccountLike| null, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider) {
         logger.checkNew(new.target, Contract);
 
-        // @TODO: Maybe still check the addressOrName looks like a valid address or name?
-        //address = getAddress(address);
+        if(address) {
+            this.address = getAddressFromAccount(address);
+        }
         defineReadOnly(this, "interface", getStatic<InterfaceFunc>(new.target, "getInterface")(contractInterface));
 
         if (signerOrProvider == null) {
@@ -665,7 +695,6 @@ export class BaseContract {
         }
 
         defineReadOnly(this, "callStatic", { });
-        defineReadOnly(this, "estimateGas", { });
         defineReadOnly(this, "functions", { });
         defineReadOnly(this, "populateTransaction", { });
 
@@ -697,25 +726,6 @@ export class BaseContract {
 
         defineReadOnly(this, "_runningEvents", { });
         defineReadOnly(this, "_wrappedEmits", { });
-
-        if (addressOrName == null) {
-            logger.throwArgumentError("invalid contract address or ENS name", "addressOrName", addressOrName);
-        }
-
-        defineReadOnly(this, "address", addressOrName);
-        if (this.provider) {
-            defineReadOnly(this, "resolvedAddress", resolveName(this.provider, addressOrName));
-        } else {
-            try {
-                defineReadOnly(this, "resolvedAddress", Promise.resolve(getAddress(addressOrName)));
-            } catch (error) {
-                // Without a provider, we cannot use ENS names
-                logger.throwError("provider is required to use ENS name as contract address", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "new Contract"
-                });
-            }
-        }
-
         const uniqueNames: { [ name: string ]: Array<string> } = { };
         const uniqueSignatures: { [ signature: string ]: boolean } = { };
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -755,10 +765,6 @@ export class BaseContract {
             if (this.populateTransaction[signature] == null) {
                 defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
             }
-
-            if (this.estimateGas[signature] == null) {
-                defineReadOnly(this.estimateGas, signature, buildEstimate(this, fragment));
-            }
         });
 
         Object.keys(uniqueNames).forEach((name) => {
@@ -789,11 +795,15 @@ export class BaseContract {
             if (this.populateTransaction[name] == null) {
                 defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
             }
-
-            if (this.estimateGas[name] == null) {
-                defineReadOnly(this.estimateGas, name, this.estimateGas[signature]);
-            }
         });
+    }
+
+    set address(val: string) {
+        this._address = getAddressFromAccount(val);
+    }
+
+    get address(): string {
+        return this._address;
     }
 
     static getInterface(contractInterface: ContractInterface): Interface {
@@ -825,7 +835,7 @@ export class BaseContract {
                 this._deployedPromise = this.provider.getCode(this.address).then((code) => {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
-                            contractAddress: this.address,
+                            contractAddress: this._address,
                             operation: "getDeployed"
                         });
                     }
@@ -940,6 +950,12 @@ export class BaseContract {
         return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
     }
 
+    _requireAddressSet() {
+        if (!this.address || this.address == "") {
+            logger.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, this.address);
+        }
+    }
+
     _checkRunningEvents(runningEvent: RunningEvent): void {
         if (runningEvent.listenerCount() === 0) {
             delete this._runningEvents[runningEvent.tag];
@@ -1022,6 +1038,7 @@ export class BaseContract {
     }
 
     queryFilter(event: EventFilter, fromBlockOrBlockhash?: BlockTag | string, toBlock?: BlockTag): Promise<Array<Event>> {
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
 
@@ -1034,24 +1051,28 @@ export class BaseContract {
              (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
              (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
         }
-
         return this.provider.getLogs(filter).then((logs) => {
             return logs.map((log) => this._wrapEvent(runningEvent, log, null));
         });
     }
 
     on(event: EventFilter | string, listener: Listener): this {
+        this._requireAddressSet();
+
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }
 
     once(event: EventFilter | string, listener: Listener): this {
+        this._requireAddressSet();
+
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     }
 
     emit(eventName: EventFilter | string, ...args: Array<any>): boolean {
         if (!this.provider) { return false; }
+        this._requireAddressSet();
 
         const runningEvent = this._getRunningEvent(eventName);
         const result = (runningEvent.run(args) > 0);
@@ -1064,16 +1085,19 @@ export class BaseContract {
 
     listenerCount(eventName?: EventFilter | string): number {
         if (!this.provider) { return 0; }
+        this._requireAddressSet();
         if (eventName == null) {
             return Object.keys(this._runningEvents).reduce((accum, key) => {
                 return accum + this._runningEvents[key].listenerCount();
             }, 0);
         }
+
         return this._getRunningEvent(eventName).listenerCount();
     }
 
     listeners(eventName?: EventFilter | string): Array<Listener> {
         if (!this.provider) { return []; }
+        this._requireAddressSet();
 
         if (eventName == null) {
             const result: Array<Listener> = [ ];
@@ -1090,6 +1114,7 @@ export class BaseContract {
 
     removeAllListeners(eventName?: EventFilter | string): this {
         if (!this.provider) { return this; }
+        this._requireAddressSet();
 
         if (eventName == null) {
             for (const tag in this._runningEvents) {
@@ -1110,6 +1135,8 @@ export class BaseContract {
 
     off(eventName: EventFilter | string, listener: Listener): this {
         if (!this.provider) { return this; }
+        this._requireAddressSet();
+
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
@@ -1117,6 +1144,7 @@ export class BaseContract {
     }
 
     removeListener(eventName: EventFilter | string, listener: Listener): this {
+        this._requireAddressSet();
         return this.off(eventName, listener);
     }
 
@@ -1241,7 +1269,7 @@ export class ContractFactory {
     }
 
     attach(address: string): Contract {
-        return (<any>(this.constructor)).getContract(address, this.interface, this.signer);
+        return new (<any>(this.constructor)).getContract(address, this.interface, this.signer);
     }
 
     connect(signer: Signer) {
@@ -1273,7 +1301,7 @@ export class ContractFactory {
         return Contract.getInterface(contractInterface);
     }
 
-    static getContract(address: string, contractInterface: ContractInterface, signer?: Signer): Contract {
+    static getContract(address: AccountLike, contractInterface: ContractInterface, signer?: Signer): Contract {
         return new Contract(address, contractInterface, signer);
     }
 }

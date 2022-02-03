@@ -101,7 +101,7 @@ export interface FeeData {
     gasPrice: null | BigNumber;
 }
 export interface EventFilter {
-    address?: string;
+    address?: AccountLike;
     topics?: Array<string | Array<string> | null>;
 }
 export interface Filter extends EventFilter {
