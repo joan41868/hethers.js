@@ -835,7 +835,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         filter = _c.sent();
                         result = {};
                         if (filter.address != null) {
-                            result.address = filter.address;
+                            result.address = this._getAddress(filter.address.toString());
                         }
                         ["blockHash", "topics"].forEach(function (key) {
                             if (filter[key] == null) {
