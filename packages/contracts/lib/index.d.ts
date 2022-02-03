@@ -105,7 +105,7 @@ export declare class BaseContract {
     constructor(addressOrName: string, contractInterface: ContractInterface, signerOrProvider?: Signer | Provider);
     static getInterface(contractInterface: ContractInterface): Interface;
     deployed(): Promise<Contract>;
-    _deployed(blockTag?: BlockTag): Promise<Contract>;
+    _deployed(): Promise<Contract>;
     fallback(overrides?: TransactionRequest): Promise<TransactionResponse>;
     connect(signerOrProvider: Signer | Provider | string): Contract;
     attach(addressOrName: string): Contract;

@@ -269,19 +269,13 @@ function buildCall(contract, fragment, collapseSimple) {
     const signer = contract.signer;
     return function (...args) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Extract the "blockTag" override if present
-            let blockTag = undefined;
             if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
                 const overrides = shallowCopy(args.pop());
-                if (overrides.blockTag != null) {
-                    blockTag = yield overrides.blockTag;
-                }
-                delete overrides.blockTag;
                 args.push(overrides);
             }
             // If the contract was just deployed, wait until it is mined
             if (contract.deployTransaction != null) {
-                yield contract._deployed(blockTag);
+                yield contract._deployed();
             }
             // Call a node and get the result
             const tx = yield populateTransaction(contract, fragment, args);
@@ -621,7 +615,7 @@ export class BaseContract {
     deployed() {
         return this._deployed();
     }
-    _deployed(blockTag) {
+    _deployed() {
         if (!this._deployedPromise) {
             // If we were just deployed, we know the transaction we should occur in
             if (this.deployTransaction) {

@@ -65,6 +65,5 @@ export {
     randomBytes,
     randomHexString,
     randomNumber,
-
     equals
 }

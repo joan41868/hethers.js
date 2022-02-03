@@ -648,15 +648,15 @@ export class BaseProvider extends Provider {
             let { data } = await axios.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account);
             return data.bytecode ? hexlify(data.bytecode) : `0x`;
         } catch (error) {
-            if (error.response && error.response.status && 
-                (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {            
+            if (error.response && error.response.status &&
+                (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "ContractByteCodeQuery",
                     params: {address: accountLike},
                     error
                 });
-            } 
-            return "0x";         
+            }
+            return "0x";
         }
     }
 
