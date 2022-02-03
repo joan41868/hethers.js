@@ -373,7 +373,6 @@ function buildCall(contract, fragment, collapseSimple) {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        // Extract the "blockTag" override if present
                         if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
                             overrides = (0, properties_1.shallowCopy)(args.pop());
                             args.push(overrides);
