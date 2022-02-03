@@ -340,6 +340,56 @@ describe("Test Contract Transaction Population", function() {
         });
         assert.strictEqual(BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
     }).timeout(60000);
+
+   it('should have a .wait function', async function() {
+       const hederaEoa = {
+           account: '0.0.29562194',
+           privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+       };
+       const provider = ethers.providers.getDefaultProvider('testnet');
+       // @ts-ignore
+       const wallet = new ethers.Wallet(hederaEoa, provider);
+       const bytecode = fs.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+       const contractFactory = new ethers.ContractFactory(abi, bytecode, wallet);
+       const contract = await contractFactory.deploy( { gasLimit: 300000 });
+       const receipt = await contract.deployTransaction.wait();
+
+       assert.notStrictEqual(receipt, null, "wait returns a receipt");
+       assert.notStrictEqual(receipt.transactionId, null, "receipt.transactionId exists");
+       assert.notStrictEqual(receipt.transactionHash, null, "receipt.transactionHash exists");
+       assert.notStrictEqual(receipt.logs, null, "receipt.logs exists");
+       assert.strictEqual(receipt.logs.length, 2);
+       // @ts-ignore
+       assert.notStrictEqual(receipt.events, null, "receipt.events exists");
+       // @ts-ignore
+       assert.strictEqual(receipt.events.length, 2);
+
+       // @ts-ignore
+       const event = receipt.events[0];
+
+       assert.notStrictEqual(event.getTransaction, null, 'events have a method `getTransaction`');
+       assert.notStrictEqual(event.getTransactionReceipt, null, 'events have a method `getTransactionReceipt`');
+
+       const eventTx = await event.getTransaction();
+       assert.notStrictEqual(eventTx, null, 'event.getTransaction() returns a result');
+       assert.notStrictEqual(eventTx.chainId, null);
+       assert.notStrictEqual(eventTx.hash, null);
+       assert.notStrictEqual(eventTx.timestamp, null);
+       assert.notStrictEqual(eventTx.transactionId, null);
+       assert.notStrictEqual(eventTx.from, null);
+       assert.notStrictEqual(eventTx.to, null);
+       assert.notStrictEqual(eventTx.value, null);
+       assert.notStrictEqual(eventTx.customData, null);
+
+       const eventRc = await event.getTransactionReceipt();
+       assert.notStrictEqual(eventRc, null, 'event.getTransactionReceipt() returns a result');
+       assert.notStrictEqual(eventRc.from, null);
+       assert.notStrictEqual(eventRc.timestamp, null);
+       assert.notStrictEqual(eventRc.contractAddress, null);
+       assert.notStrictEqual(eventRc.gasUsed, null);
+       assert.notStrictEqual(eventRc.transactionId, null);
+       assert.notStrictEqual(eventRc.transactionHash, null);
+   }).timeout(60000);
 });
 
 describe("contract.deployed", function() {
