@@ -6848,6 +6848,16 @@ const version$6 = "address/5.5.0";
 
 "use strict";
 const logger$7 = new Logger(version$6);
+function getAccountFromTransactionId(transactionId) {
+    // TransactionId look like this: '0.0.99999999-9999999999-999999999'
+    // or like this:                 '0.0.99999999@9999999999-999999999'
+    if (!transactionId.match(/^\d+?\.\d+?\.\d+[-|@]\d+-\d+$/)) {
+        logger$7.throwArgumentError("invalid transactionId", "transactionId", transactionId);
+    }
+    let splitSymbol = transactionId.indexOf('@') === -1 ? '-' : '@';
+    const account = transactionId.split(splitSymbol);
+    return account[0];
+}
 function asAccountString(accountLike) {
     let parsedAccount = typeof (accountLike) === "string" ? parseAccount(accountLike) : accountLike;
     return `${parsedAccount.shard}.${parsedAccount.realm}.${parsedAccount.num}`;
@@ -7021,6 +7031,7 @@ function parseAccount(account) {
 
 var lib_esm$5 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
+	getAccountFromTransactionId: getAccountFromTransactionId,
 	asAccountString: asAccountString,
 	getChecksumAddress: getChecksumAddress,
 	getAddress: getAddress,
@@ -93476,6 +93487,7 @@ function buildPopulate(contract, fragment) {
         return populateTransaction(contract, fragment, args);
     };
 }
+// @ts-ignore
 function buildEstimate(contract, fragment) {
     const signerOrProvider = (contract.signer || contract.provider);
     return function (...args) {
@@ -93532,19 +93544,13 @@ function buildCall(contract, fragment, collapseSimple) {
     const signer = contract.signer;
     return function (...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
-            // Extract the "blockTag" override if present
-            let blockTag = undefined;
             if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
                 const overrides = shallowCopy(args.pop());
-                if (overrides.blockTag != null) {
-                    blockTag = yield overrides.blockTag;
-                }
-                delete overrides.blockTag;
                 args.push(overrides);
             }
             // If the contract was just deployed, wait until it is mined
             if (contract.deployTransaction != null) {
-                yield contract._deployed(blockTag);
+                yield contract._deployed();
             }
             // Call a node and get the result
             const tx = yield populateTransaction(contract, fragment, args);
@@ -93735,10 +93741,11 @@ class WildcardRunningEvent extends RunningEvent {
     }
 }
 class BaseContract {
-    constructor(addressOrName, contractInterface, signerOrProvider) {
+    constructor(address, contractInterface, signerOrProvider) {
         logger$s.checkNew(new.target, Contract);
-        // @TODO: Maybe still check the addressOrName looks like a valid address or name?
-        //address = getAddress(address);
+        if (address) {
+            this.address = getAddressFromAccount(address);
+        }
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         if (signerOrProvider == null) {
             defineReadOnly(this, "provider", null);
@@ -93756,7 +93763,6 @@ class BaseContract {
             logger$s.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
         }
         defineReadOnly(this, "callStatic", {});
-        defineReadOnly(this, "estimateGas", {});
         defineReadOnly(this, "functions", {});
         defineReadOnly(this, "populateTransaction", {});
         defineReadOnly(this, "filters", {});
@@ -93787,24 +93793,6 @@ class BaseContract {
         }
         defineReadOnly(this, "_runningEvents", {});
         defineReadOnly(this, "_wrappedEmits", {});
-        if (addressOrName == null) {
-            logger$s.throwArgumentError("invalid contract address or ENS name", "addressOrName", addressOrName);
-        }
-        defineReadOnly(this, "address", addressOrName);
-        if (this.provider) {
-            defineReadOnly(this, "resolvedAddress", resolveName(this.provider, addressOrName));
-        }
-        else {
-            try {
-                defineReadOnly(this, "resolvedAddress", Promise.resolve(getAddress(addressOrName)));
-            }
-            catch (error) {
-                // Without a provider, we cannot use ENS names
-                logger$s.throwError("provider is required to use ENS name as contract address", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "new Contract"
-                });
-            }
-        }
         const uniqueNames = {};
         const uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -93840,9 +93828,6 @@ class BaseContract {
             if (this.populateTransaction[signature] == null) {
                 defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
             }
-            if (this.estimateGas[signature] == null) {
-                defineReadOnly(this.estimateGas, signature, buildEstimate(this, fragment));
-            }
         });
         Object.keys(uniqueNames).forEach((name) => {
             // Ambiguous names to not get attached as bare names
@@ -93869,10 +93854,13 @@ class BaseContract {
             if (this.populateTransaction[name] == null) {
                 defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
             }
-            if (this.estimateGas[name] == null) {
-                defineReadOnly(this.estimateGas, name, this.estimateGas[signature]);
-            }
         });
+    }
+    set address(val) {
+        this._address = getAddressFromAccount(val);
+    }
+    get address() {
+        return this._address;
     }
     static getInterface(contractInterface) {
         if (Interface.isInterface(contractInterface)) {
@@ -93884,7 +93872,7 @@ class BaseContract {
     deployed() {
         return this._deployed();
     }
-    _deployed(blockTag) {
+    _deployed() {
         if (!this._deployedPromise) {
             // If we were just deployed, we know the transaction we should occur in
             if (this.deployTransaction) {
@@ -93899,7 +93887,7 @@ class BaseContract {
                 this._deployedPromise = this.provider.getCode(this.address).then((code) => {
                     if (code === "0x") {
                         logger$s.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
-                            contractAddress: this.address,
+                            contractAddress: this._address,
                             operation: "getDeployed"
                         });
                     }
@@ -93994,6 +93982,11 @@ class BaseContract {
         }
         return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
     }
+    _requireAddressSet() {
+        if (!this.address || this.address == "") {
+            logger$s.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, this.address);
+        }
+    }
     _checkRunningEvents(runningEvent) {
         if (runningEvent.listenerCount() === 0) {
             delete this._runningEvents[runningEvent.tag];
@@ -94064,6 +94057,7 @@ class BaseContract {
         }
     }
     queryFilter(event, fromBlockOrBlockhash, toBlock) {
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
         // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
@@ -94080,10 +94074,12 @@ class BaseContract {
         });
     }
     on(event, listener) {
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }
     once(event, listener) {
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     }
@@ -94091,6 +94087,7 @@ class BaseContract {
         if (!this.provider) {
             return false;
         }
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(eventName);
         const result = (runningEvent.run(args) > 0);
         // May have drained all the "once" events; check for living events
@@ -94101,6 +94098,7 @@ class BaseContract {
         if (!this.provider) {
             return 0;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             return Object.keys(this._runningEvents).reduce((accum, key) => {
                 return accum + this._runningEvents[key].listenerCount();
@@ -94112,6 +94110,7 @@ class BaseContract {
         if (!this.provider) {
             return [];
         }
+        this._requireAddressSet();
         if (eventName == null) {
             const result = [];
             for (let tag in this._runningEvents) {
@@ -94127,6 +94126,7 @@ class BaseContract {
         if (!this.provider) {
             return this;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             for (const tag in this._runningEvents) {
                 const runningEvent = this._runningEvents[tag];
@@ -94145,12 +94145,14 @@ class BaseContract {
         if (!this.provider) {
             return this;
         }
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
         return this;
     }
     removeListener(eventName, listener) {
+        this._requireAddressSet();
         return this.off(eventName, listener);
     }
 }
@@ -94247,7 +94249,7 @@ class ContractFactory {
         });
     }
     attach(address) {
-        return (this.constructor).getContract(address, this.interface, this.signer);
+        return new (this.constructor).getContract(address, this.interface, this.signer);
     }
     connect(signer) {
         return new (this.constructor)(this.interface, this.bytecode, signer);
@@ -94912,30 +94914,31 @@ class Formatter {
     }
     responseFromRecord(record) {
         return {
-            chainId: record.chainId,
+            chainId: record.chainId ? record.chainId : null,
             hash: record.hash,
             timestamp: record.timestamp,
-            transactionId: record.transactionId,
+            transactionId: record.transactionId ? record.transactionId : null,
             from: record.from,
-            to: record.to,
-            data: record.call_result,
-            gasLimit: BigNumber.from(record.gas_limit),
-            value: BigNumber.from(record.amount),
+            to: record.to ? record.to : null,
+            data: record.call_result ? record.call_result : null,
+            gasLimit: typeof record.gas_limit !== 'undefined' ? BigNumber.from(record.gas_limit) : null,
+            value: BigNumber.from(record.amount || 0),
             customData: {
-                gas_used: record.gas_used,
-                logs: record.logs,
-                result: record.result
+                gas_used: record.gas_used ? record.gas_used : null,
+                logs: record.logs ? record.logs : null,
+                result: record.result ? record.result : null,
+                accountAddress: record.accountAddress ? record.accountAddress : null
             },
-            wait: null
+            wait: null,
         };
     }
     receiptFromResponse(response) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
         let contractAddress = null;
         let to = null;
         let logs = [];
         response.data != '0x' ? contractAddress = response.to : to = response.to;
-        (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
+        (_b = (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs) === null || _b === void 0 ? void 0 : _b.forEach(function (log) {
             const values = {
                 timestamp: response.timestamp,
                 address: log.address,
@@ -94952,15 +94955,16 @@ class Formatter {
             from: response.from,
             timestamp: response.timestamp,
             contractAddress: contractAddress,
-            gasUsed: (_b = response.customData) === null || _b === void 0 ? void 0 : _b.gas_used,
+            gasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
             logsBloom: null,
             transactionId: response.transactionId,
             transactionHash: response.hash,
             logs: logs,
-            cumulativeGasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
+            cumulativeGasUsed: (_d = response.customData) === null || _d === void 0 ? void 0 : _d.gas_used,
             type: 0,
             byzantium: true,
-            status: ((_d = response.customData) === null || _d === void 0 ? void 0 : _d.result) === 'SUCCESS' ? 1 : 0
+            status: ((_e = response.customData) === null || _e === void 0 ? void 0 : _e.result) === 'SUCCESS' ? 1 : 0,
+            accountAddress: ((_f = response.customData) === null || _f === void 0 ? void 0 : _f.accountAddress) ? response.customData.accountAddress : null
         };
     }
     topics(value) {
@@ -98741,6 +98745,9 @@ function stall(duration) {
         setTimeout(resolve, duration);
     });
 }
+function base64ToHex(hash) {
+    return hexlify(utils$1.base64.decode(hash));
+}
 //////////////////////////////
 // Provider Object
 /**
@@ -99291,7 +99298,7 @@ class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = filter.address;
+                result.address = this._getAddress(filter.address.toString());
             }
             ["topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -99346,9 +99353,27 @@ class BaseProvider extends Provider {
                 if (data) {
                     const filtered = data.transactions.filter((e) => e.result != 'DUPLICATE_TRANSACTION');
                     if (filtered.length > 0) {
-                        const contractsResultsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
-                        const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsResultsEndpoint);
-                        const record = Object.assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
+                        let record;
+                        record = {
+                            chainId: this._network.chainId,
+                            transactionId: transactionId,
+                            result: filtered[0].result,
+                        };
+                        const transactionName = filtered[0].name;
+                        if (transactionName === 'CRYPTOCREATEACCOUNT') {
+                            record.from = getAccountFromTransactionId(transactionId);
+                            record.timestamp = filtered[0].consensus_timestamp;
+                            // Different endpoints of the mirror node API returns hashes in different formats.
+                            // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
+                            // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
+                            record.hash = base64ToHex(filtered[0].transaction_hash);
+                            record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
+                        }
+                        else {
+                            const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                            const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
+                            record = Object.assign({}, record, Object.assign({}, dataWithLogs.data));
+                        }
                         return this.formatter.responseFromRecord(record);
                     }
                 }

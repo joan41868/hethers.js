@@ -75,7 +75,7 @@ var utils_1 = require("ethers/lib/utils");
 var provider = ethers_1.ethers.getDefaultProvider("testnet");
 var TIMEOUT_PERIOD = 120000;
 var contract = (function () {
-    return new ethers_1.ethers.Contract(test_contract_json_1.default.contractAddress, test_contract_json_1.default.interface, provider);
+    return new ethers_1.ethers.Contract('', test_contract_json_1.default.interface, provider);
 })();
 function equals(name, actual, expected) {
     if (Array.isArray(expected)) {
@@ -222,7 +222,7 @@ describe("Test Contract Transaction Population", function () {
     var testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03";
     var testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     var fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
-    var contract = new ethers_1.ethers.Contract(testAddress, abi);
+    var contract = new ethers_1.ethers.Contract(null, abi);
     var contractConnected = contract.connect(ethers_1.ethers.getDefaultProvider("testnet"));
     xit("standard population", function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -486,6 +486,56 @@ describe("Test Contract Transaction Population", function () {
                     case 2:
                         balance = _a.sent();
                         assert_1.default.strictEqual(ethers_1.BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(60000);
+});
+describe("contract.deployed", function () {
+    var hederaEoa = {
+        account: '0.0.29562194',
+        privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+    };
+    var provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+    // @ts-ignore
+    var wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
+    var bytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+    it("should work for already deployed contracts", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var contract, contractDeployed;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        contract = ethers_1.ethers.ContractFactory.getContract('0000000000000000000000000000000001c3903b', abi, wallet);
+                        return [4 /*yield*/, contract.deployed()];
+                    case 1:
+                        contractDeployed = _a.sent();
+                        assert_1.default.notStrictEqual(contractDeployed, null, "deployed returns the contract");
+                        assert_1.default.strictEqual(contractDeployed.address, contract.address, "deployed returns the same contract instance");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
+    it("should work if contract is just now deployed", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var contractFactory, contract, contractDeployed;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        contractFactory = new ethers_1.ethers.ContractFactory(abi, bytecode, wallet);
+                        return [4 /*yield*/, contractFactory.deploy({ gasLimit: 300000 })];
+                    case 1:
+                        contract = _a.sent();
+                        assert_1.default.notStrictEqual(contract, null, "nullified contract");
+                        assert_1.default.notStrictEqual(contract.deployTransaction, "missing deploy transaction");
+                        assert_1.default.notStrictEqual(contract.address, null, 'missing address');
+                        return [4 /*yield*/, contract.deployed()];
+                    case 2:
+                        contractDeployed = _a.sent();
+                        assert_1.default.notStrictEqual(contractDeployed, null, "deployed returns the contract");
+                        assert_1.default.strictEqual(contractDeployed.address, contract.address, "deployed returns the same contract instance");
                         return [2 /*return*/];
                 }
             });

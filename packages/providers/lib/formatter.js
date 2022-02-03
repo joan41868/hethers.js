@@ -343,30 +343,31 @@ var Formatter = /** @class */ (function () {
     };
     Formatter.prototype.responseFromRecord = function (record) {
         return {
-            chainId: record.chainId,
+            chainId: record.chainId ? record.chainId : null,
             hash: record.hash,
             timestamp: record.timestamp,
-            transactionId: record.transactionId,
+            transactionId: record.transactionId ? record.transactionId : null,
             from: record.from,
-            to: record.to,
-            data: record.call_result,
-            gasLimit: bignumber_1.BigNumber.from(record.gas_limit),
-            value: bignumber_1.BigNumber.from(record.amount),
+            to: record.to ? record.to : null,
+            data: record.call_result ? record.call_result : null,
+            gasLimit: typeof record.gas_limit !== 'undefined' ? bignumber_1.BigNumber.from(record.gas_limit) : null,
+            value: bignumber_1.BigNumber.from(record.amount || 0),
             customData: {
-                gas_used: record.gas_used,
-                logs: record.logs,
-                result: record.result
+                gas_used: record.gas_used ? record.gas_used : null,
+                logs: record.logs ? record.logs : null,
+                result: record.result ? record.result : null,
+                accountAddress: record.accountAddress ? record.accountAddress : null
             },
-            wait: null
+            wait: null,
         };
     };
     Formatter.prototype.receiptFromResponse = function (response) {
-        var _a, _b, _c, _d;
+        var _a, _b, _c, _d, _e, _f;
         var contractAddress = null;
         var to = null;
         var logs = [];
         response.data != '0x' ? contractAddress = response.to : to = response.to;
-        (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs.forEach(function (log) {
+        (_b = (_a = response.customData) === null || _a === void 0 ? void 0 : _a.logs) === null || _b === void 0 ? void 0 : _b.forEach(function (log) {
             var values = {
                 timestamp: response.timestamp,
                 address: log.address,
@@ -383,15 +384,16 @@ var Formatter = /** @class */ (function () {
             from: response.from,
             timestamp: response.timestamp,
             contractAddress: contractAddress,
-            gasUsed: (_b = response.customData) === null || _b === void 0 ? void 0 : _b.gas_used,
+            gasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
             logsBloom: null,
             transactionId: response.transactionId,
             transactionHash: response.hash,
             logs: logs,
-            cumulativeGasUsed: (_c = response.customData) === null || _c === void 0 ? void 0 : _c.gas_used,
+            cumulativeGasUsed: (_d = response.customData) === null || _d === void 0 ? void 0 : _d.gas_used,
             type: 0,
             byzantium: true,
-            status: ((_d = response.customData) === null || _d === void 0 ? void 0 : _d.result) === 'SUCCESS' ? 1 : 0
+            status: ((_e = response.customData) === null || _e === void 0 ? void 0 : _e.result) === 'SUCCESS' ? 1 : 0,
+            accountAddress: ((_f = response.customData) === null || _f === void 0 ? void 0 : _f.accountAddress) ? response.customData.accountAddress : null
         };
     };
     Formatter.prototype.topics = function (value) {
