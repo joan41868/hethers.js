@@ -370,7 +370,6 @@ function buildCall(contract: Contract, fragment: FunctionFragment, collapseSimpl
     const signer = contract.signer;
 
     return async function(...args: Array<any>): Promise<any> {
-        // Extract the "blockTag" override if present
         if (args.length === fragment.inputs.length + 1 && typeof(args[args.length - 1]) === "object") {
             const overrides = shallowCopy(args.pop());
             args.push(overrides);
