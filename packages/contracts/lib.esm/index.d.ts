@@ -115,7 +115,7 @@ export declare class BaseContract {
     static isIndexed(value: any): value is Indexed;
     private _normalizeRunningEvent;
     private _getRunningEvent;
-    requireAddressSet(): void;
+    _requireAddressSet(): void;
     _checkRunningEvents(runningEvent: RunningEvent): void;
     _wrapEvent(runningEvent: RunningEvent, log: Log, listener: Listener): Event;
     private _addEventListener;

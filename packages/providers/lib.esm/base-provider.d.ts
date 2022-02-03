@@ -18,18 +18,6 @@ export declare class Event {
     get filter(): Filter;
     pollable(): boolean;
 }
-export interface EnsResolver {
-    readonly name: string;
-    readonly address: string;
-    getAddress(coinType?: 60): Promise<null | string>;
-    getContentHash(): Promise<null | string>;
-    getText(key: string): Promise<null | string>;
-}
-export interface EnsProvider {
-    resolveName(name: string): Promise<null | string>;
-    lookupAddress(address: string): Promise<null | string>;
-    getResolver(name: string): Promise<null | EnsResolver>;
-}
 export interface Avatar {
     url: string;
     linkage: Array<{
@@ -37,7 +25,7 @@ export interface Avatar {
         content: string;
     }>;
 }
-export declare class Resolver implements EnsResolver {
+export declare class Resolver {
     readonly provider: BaseProvider;
     readonly name: string;
     readonly address: string;
@@ -100,7 +88,6 @@ export declare class BaseProvider extends Provider {
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
-    _getAddress(addressOrName: string | Promise<string>): Promise<string>;
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
@@ -117,8 +104,6 @@ export declare class BaseProvider extends Provider {
     getHbarPrice(): Promise<number>;
     getResolver(name: string): Promise<null | Resolver>;
     _getResolver(name: string): Promise<string>;
-    resolveName(name: string | Promise<string>): Promise<null | string>;
-    lookupAddress(address: string | Promise<string>): Promise<null | string>;
     perform(method: string, params: any): Promise<any>;
     _addEventListener(eventName: EventType, listener: Listener, once: boolean): this;
     on(eventName: EventType, listener: Listener): this;

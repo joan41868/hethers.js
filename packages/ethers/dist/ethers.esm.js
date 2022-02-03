@@ -8143,15 +8143,6 @@ function hashMessage(message) {
     ]));
 }
 
-var __awaiter$1 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 const logger$c = new Logger(version$8);
 const padding = new Uint8Array(32);
 padding.fill(0);
@@ -8483,44 +8474,6 @@ class TypedDataEncoder {
     }
     static hash(domain, types, value) {
         return keccak256(TypedDataEncoder.encode(domain, types, value));
-    }
-    // Replaces all address types with ENS names with their looked up address
-    static resolveNames(domain, types, value, resolveName) {
-        return __awaiter$1(this, void 0, void 0, function* () {
-            // Make a copy to isolate it from the object passed in
-            domain = shallowCopy(domain);
-            // Look up all ENS names
-            const ensCache = {};
-            // Do we need to look up the domain's verifyingContract?
-            if (domain.verifyingContract && !isHexString(domain.verifyingContract, 20)) {
-                ensCache[domain.verifyingContract] = "0x";
-            }
-            // We are going to use the encoder to visit all the base values
-            const encoder = TypedDataEncoder.from(types);
-            // Get a list of all the addresses
-            encoder.visit(value, (type, value) => {
-                if (type === "address" && !isHexString(value, 20)) {
-                    ensCache[value] = "0x";
-                }
-                return value;
-            });
-            // Lookup each name
-            for (const name in ensCache) {
-                ensCache[name] = yield resolveName(name);
-            }
-            // Replace the domain verifyingContract if needed
-            if (domain.verifyingContract && ensCache[domain.verifyingContract]) {
-                domain.verifyingContract = ensCache[domain.verifyingContract];
-            }
-            // Replace all ENS names with their address
-            value = encoder.visit(value, (type, value) => {
-                if (type === "address" && ensCache[value]) {
-                    return ensCache[value];
-                }
-                return value;
-            });
-            return { domain, value };
-        });
     }
     static getPayload(domain, types, value) {
         // Validate the domain fields
@@ -86395,7 +86348,7 @@ var lib$1 = createCommonjsModule(function (module, exports) {
 var index$4 = /*@__PURE__*/getDefaultExportFromCjs(lib$1);
 
 "use strict";
-var __awaiter$2 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$1 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -86442,7 +86395,7 @@ class Signer {
         defineReadOnly(this, "_isSigner", true);
     }
     getGasPrice() {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             this._checkProvider("getGasPrice");
             return yield this.provider.getGasPrice();
         });
@@ -86450,14 +86403,14 @@ class Signer {
     ///////////////////
     // Sub-classes MAY override these
     getBalance(blockTag) {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             this._checkProvider("getBalance");
             return yield this.provider.getBalance(this.getAddress(), blockTag);
         });
     }
     // Populates "from" if unspecified, and estimates the gas for the transaction
     estimateGas(transaction) {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             this._checkProvider("estimateGas");
             const tx = yield resolveProperties(this.checkTransaction(transaction));
             // cost-answer query on hedera
@@ -86466,7 +86419,7 @@ class Signer {
     }
     // super classes should override this for now
     call(txRequest) {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             this._checkProvider("call");
             const tx = yield resolveProperties(this.checkTransaction(txRequest));
             const to = asAccountString(tx.to);
@@ -86531,7 +86484,7 @@ class Signer {
      * @param transaction - the actual tx
      */
     sendTransaction(transaction) {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(transaction);
             if (tx.to) {
                 const signed = yield this.signTransaction(tx);
@@ -86570,7 +86523,7 @@ class Signer {
         });
     }
     getChainId() {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             this._checkProvider("getChainId");
             const network = yield this.provider.getNetwork();
             return network.chainId;
@@ -86623,10 +86576,10 @@ class Signer {
      * @param transaction
      */
     populateTransaction(transaction) {
-        return __awaiter$2(this, void 0, void 0, function* () {
+        return __awaiter$1(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(this.checkTransaction(transaction));
             if (tx.to != null) {
-                tx.to = Promise.resolve(tx.to).then((to) => __awaiter$2(this, void 0, void 0, function* () {
+                tx.to = Promise.resolve(tx.to).then((to) => __awaiter$1(this, void 0, void 0, function* () {
                     if (to == null) {
                         return null;
                     }
@@ -91416,7 +91369,7 @@ var lib_esm$e = /*#__PURE__*/Object.freeze({
 });
 
 "use strict";
-var __awaiter$3 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$2 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -91559,7 +91512,7 @@ function decryptSync(json, password) {
     return _getAccount(data, key);
 }
 function decrypt$1(json, password, progressCallback) {
-    return __awaiter$3(this, void 0, void 0, function* () {
+    return __awaiter$2(this, void 0, void 0, function* () {
         const data = JSON.parse(json);
         const key = yield _computeKdfKey(data, password, pbkdf2$1, scrypt.scrypt, progressCallback);
         return _getAccount(data, key);
@@ -91926,7 +91879,7 @@ var lib_esm$h = /*#__PURE__*/Object.freeze({
 
 const version$m = "wallet/5.5.0";
 
-var __awaiter$4 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$3 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -92040,7 +91993,7 @@ class Wallet extends Signer {
     signTransaction(transaction) {
         this._checkAddress('signTransaction');
         let tx = this.checkTransaction(transaction);
-        return this.populateTransaction(tx).then((readyTx) => __awaiter$4(this, void 0, void 0, function* () {
+        return this.populateTransaction(tx).then((readyTx) => __awaiter$3(this, void 0, void 0, function* () {
             const pubKey = PublicKey$1.fromString(this._signingKey().compressedPublicKey);
             const tx = serializeHederaTransaction(readyTx, pubKey);
             const privKey = PrivateKey$1.fromStringECDSA(this._signingKey().privateKey);
@@ -92049,12 +92002,12 @@ class Wallet extends Signer {
         }));
     }
     signMessage(message) {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             return joinSignature(this._signingKey().signDigest(hashMessage(message)));
         });
     }
     _signTypedData(domain, types, value) {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             return logger$p.throwError("_signTypedData not supported", Logger.errors.UNSUPPORTED_OPERATION, {
                 operation: '_signTypedData'
             });
@@ -92095,7 +92048,7 @@ class Wallet extends Signer {
         return Wallet.fromMnemonic(mnemonic, options.path, options.locale);
     }
     createAccount(pubKey, initialBalance) {
-        return __awaiter$4(this, void 0, void 0, function* () {
+        return __awaiter$3(this, void 0, void 0, function* () {
             if (!initialBalance)
                 initialBalance = BigInt(0);
             const signed = yield this.signTransaction({
@@ -92149,7 +92102,7 @@ var lib_esm$i = /*#__PURE__*/Object.freeze({
 const version$n = "web/5.5.0";
 
 "use strict";
-var __awaiter$5 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$4 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -92159,7 +92112,7 @@ var __awaiter$5 = (window && window.__awaiter) || function (thisArg, _arguments,
     });
 };
 function getUrl(href, options) {
-    return __awaiter$5(this, void 0, void 0, function* () {
+    return __awaiter$4(this, void 0, void 0, function* () {
         if (options == null) {
             options = {};
         }
@@ -92199,7 +92152,7 @@ function getUrl(href, options) {
 }
 
 "use strict";
-var __awaiter$6 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$5 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -92329,7 +92282,7 @@ function _fetchData(connection, body, processFunc) {
         return { promise, cancel };
     })();
     const runningFetch = (function () {
-        return __awaiter$6(this, void 0, void 0, function* () {
+        return __awaiter$5(this, void 0, void 0, function* () {
             for (let attempt = 0; attempt < attemptLimit; attempt++) {
                 let response = null;
                 try {
@@ -92755,7 +92708,7 @@ Object.defineProperty(exports, "Utf8ErrorReason", { enumerable: true, get: funct
 var utils$2 = /*@__PURE__*/getDefaultExportFromCjs(utils$1);
 
 "use strict";
-var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$6 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -93137,7 +93090,7 @@ function serializeHederaTransaction(transaction, pubKey) {
 // }
 function parse$2(rawTransaction) {
     var _a;
-    return __awaiter$7(this, void 0, void 0, function* () {
+    return __awaiter$6(this, void 0, void 0, function* () {
         const payload = arrayify(rawTransaction);
         let parsed;
         try {
@@ -93195,7 +93148,7 @@ function parse$2(rawTransaction) {
 const version$o = "contracts/5.5.0";
 
 "use strict";
-var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -93214,58 +93167,8 @@ const allowedTransactionKeys$2 = {
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true, nodeId: true,
 };
-// TODO FIXME
-function resolveName(resolver, nameOrPromise) {
-    return __awaiter$8(this, void 0, void 0, function* () {
-        const name = yield nameOrPromise;
-        if (typeof (name) !== "string") {
-            logger$s.throwArgumentError("invalid address or ENS name", "name", name);
-        }
-        // If it is already an address, just use it (after adding checksum)
-        try {
-            return getAddress(name);
-        }
-        catch (error) { }
-        if (!resolver) {
-            logger$s.throwError("a provider or signer is needed to resolve ENS names", Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: "resolveName"
-            });
-        }
-        const address = ""; //await resolver.resolveName(name);
-        if (address == null) {
-            logger$s.throwArgumentError("resolver or addr is not configured for ENS name", "name", name);
-        }
-        return address;
-    });
-}
-// Recursively replaces ENS names with promises to resolve the name and resolves all properties
-function resolveAddresses(resolver, value, paramType) {
-    return __awaiter$8(this, void 0, void 0, function* () {
-        if (Array.isArray(paramType)) {
-            return yield Promise.all(paramType.map((paramType, index) => {
-                return resolveAddresses(resolver, ((Array.isArray(value)) ? value[index] : value[paramType.name]), paramType);
-            }));
-        }
-        if (paramType.type === "address") {
-            return yield resolveName(resolver, value);
-        }
-        if (paramType.type === "tuple") {
-            return yield resolveAddresses(resolver, value, paramType.components);
-        }
-        if (paramType.baseType === "array") {
-            if (!Array.isArray(value)) {
-                return Promise.reject(logger$s.makeError("invalid value for array", Logger.errors.INVALID_ARGUMENT, {
-                    argument: "value",
-                    value
-                }));
-            }
-            return yield Promise.all(value.map((v) => resolveAddresses(resolver, v, paramType.arrayChildren)));
-        }
-        return value;
-    });
-}
 function populateTransaction(contract, fragment, args) {
-    return __awaiter$8(this, void 0, void 0, function* () {
+    return __awaiter$7(this, void 0, void 0, function* () {
         // If an extra argument is given, it is overrides
         let overrides = {};
         if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
@@ -93279,9 +93182,9 @@ function populateTransaction(contract, fragment, args) {
                 // Contracts with a Signer are from the Signer's frame-of-reference;
                 // but we allow overriding "from" if it matches the signer
                 overrides.from = resolveProperties({
-                    override: resolveName(contract.signer, overrides.from),
+                    override: overrides.from,
                     signer: contract.signer.getAddress()
-                }).then((check) => __awaiter$8(this, void 0, void 0, function* () {
+                }).then((check) => __awaiter$7(this, void 0, void 0, function* () {
                     if (getAddress(check.signer) !== check.override) {
                         logger$s.throwError("Contract with a Signer cannot override from", Logger.errors.UNSUPPORTED_OPERATION, {
                             operation: "overrides.from"
@@ -93294,16 +93197,9 @@ function populateTransaction(contract, fragment, args) {
                 overrides.from = contract.signer.getAddress();
             }
         }
-        else if (overrides.from) {
-            overrides.from = resolveName(contract.provider, overrides.from);
-            //} else {
-            // Contracts without a signer can override "from", and if
-            // unspecified the zero address is used
-            //overrides.from = AddressZero;
-        }
         // Wait for all dependencies to be resolved (prefer the signer over the provider)
         const resolved = yield resolveProperties({
-            args: resolveAddresses(contract.signer || contract.provider, args, fragment.inputs),
+            args: args,
             address: contract.resolvedAddress,
             overrides: (resolveProperties(overrides) || {})
         });
@@ -93399,10 +93295,11 @@ function buildPopulate(contract, fragment) {
         return populateTransaction(contract, fragment, args);
     };
 }
+// @ts-ignore
 function buildEstimate(contract, fragment) {
     const signerOrProvider = (contract.signer || contract.provider);
     return function (...args) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             if (!signerOrProvider) {
                 logger$s.throwError("estimate require a provider or signer", Logger.errors.UNSUPPORTED_OPERATION, {
                     operation: "estimateGas"
@@ -93454,7 +93351,7 @@ function addContractWait(contract, tx) {
 function buildCall(contract, fragment, collapseSimple) {
     const signer = contract.signer;
     return function (...args) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
                 const overrides = shallowCopy(args.pop());
                 args.push(overrides);
@@ -93486,7 +93383,7 @@ function buildCall(contract, fragment, collapseSimple) {
 }
 function buildSend(contract, fragment) {
     return function (...args) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             if (!contract.signer) {
                 logger$s.throwError("sending a transaction requires a signer", Logger.errors.UNSUPPORTED_OPERATION, {
                     operation: "sendTransaction"
@@ -93652,10 +93549,11 @@ class WildcardRunningEvent extends RunningEvent {
     }
 }
 class BaseContract {
-    constructor(addressOrName, contractInterface, signerOrProvider) {
+    constructor(address, contractInterface, signerOrProvider) {
         logger$s.checkNew(new.target, Contract);
-        // @TODO: Maybe still check the addressOrName looks like a valid address or name?
-        //address = getAddress(address);
+        if (address) {
+            this.address = getAddressFromAccount(address);
+        }
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         if (signerOrProvider == null) {
             defineReadOnly(this, "provider", null);
@@ -93673,7 +93571,6 @@ class BaseContract {
             logger$s.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
         }
         defineReadOnly(this, "callStatic", {});
-        defineReadOnly(this, "estimateGas", {});
         defineReadOnly(this, "functions", {});
         defineReadOnly(this, "populateTransaction", {});
         defineReadOnly(this, "filters", {});
@@ -93704,24 +93601,6 @@ class BaseContract {
         }
         defineReadOnly(this, "_runningEvents", {});
         defineReadOnly(this, "_wrappedEmits", {});
-        if (addressOrName == null) {
-            logger$s.throwArgumentError("invalid contract address or ENS name", "addressOrName", addressOrName);
-        }
-        defineReadOnly(this, "address", addressOrName);
-        if (this.provider) {
-            defineReadOnly(this, "resolvedAddress", resolveName(this.provider, addressOrName));
-        }
-        else {
-            try {
-                defineReadOnly(this, "resolvedAddress", Promise.resolve(getAddress(addressOrName)));
-            }
-            catch (error) {
-                // Without a provider, we cannot use ENS names
-                logger$s.throwError("provider is required to use ENS name as contract address", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "new Contract"
-                });
-            }
-        }
         const uniqueNames = {};
         const uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -93757,9 +93636,6 @@ class BaseContract {
             if (this.populateTransaction[signature] == null) {
                 defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
             }
-            if (this.estimateGas[signature] == null) {
-                defineReadOnly(this.estimateGas, signature, buildEstimate(this, fragment));
-            }
         });
         Object.keys(uniqueNames).forEach((name) => {
             // Ambiguous names to not get attached as bare names
@@ -93786,10 +93662,13 @@ class BaseContract {
             if (this.populateTransaction[name] == null) {
                 defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
             }
-            if (this.estimateGas[name] == null) {
-                defineReadOnly(this.estimateGas, name, this.estimateGas[signature]);
-            }
         });
+    }
+    set address(val) {
+        this._address = getAddressFromAccount(val);
+    }
+    get address() {
+        return this._address;
     }
     static getInterface(contractInterface) {
         if (Interface.isInterface(contractInterface)) {
@@ -93816,7 +93695,7 @@ class BaseContract {
                 this._deployedPromise = this.provider.getCode(this.address).then((code) => {
                     if (code === "0x") {
                         logger$s.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
-                            contractAddress: this.address,
+                            contractAddress: this._address,
                             operation: "getDeployed"
                         });
                     }
@@ -93911,6 +93790,11 @@ class BaseContract {
         }
         return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
     }
+    _requireAddressSet() {
+        if (!this.address || this.address == "") {
+            logger$s.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, this.address);
+        }
+    }
     _checkRunningEvents(runningEvent) {
         if (runningEvent.listenerCount() === 0) {
             delete this._runningEvents[runningEvent.tag];
@@ -93981,6 +93865,7 @@ class BaseContract {
         }
     }
     queryFilter(event, fromBlockOrBlockhash, toBlock) {
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
         if (typeof (fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
@@ -93998,10 +93883,12 @@ class BaseContract {
         });
     }
     on(event, listener) {
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }
     once(event, listener) {
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     }
@@ -94009,6 +93896,7 @@ class BaseContract {
         if (!this.provider) {
             return false;
         }
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(eventName);
         const result = (runningEvent.run(args) > 0);
         // May have drained all the "once" events; check for living events
@@ -94019,6 +93907,7 @@ class BaseContract {
         if (!this.provider) {
             return 0;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             return Object.keys(this._runningEvents).reduce((accum, key) => {
                 return accum + this._runningEvents[key].listenerCount();
@@ -94030,6 +93919,7 @@ class BaseContract {
         if (!this.provider) {
             return [];
         }
+        this._requireAddressSet();
         if (eventName == null) {
             const result = [];
             for (let tag in this._runningEvents) {
@@ -94045,6 +93935,7 @@ class BaseContract {
         if (!this.provider) {
             return this;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             for (const tag in this._runningEvents) {
                 const runningEvent = this._runningEvents[tag];
@@ -94063,12 +93954,14 @@ class BaseContract {
         if (!this.provider) {
             return this;
         }
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
         return this;
     }
     removeListener(eventName, listener) {
+        this._requireAddressSet();
         return this.off(eventName, listener);
     }
 }
@@ -94142,7 +94035,7 @@ class ContractFactory {
         return contractCreateTx;
     }
     deploy(...args) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             let overrides = {};
             // If 1 extra parameter was passed in, it contains overrides
             if (args.length === this.interface.deploy.inputs.length + 1) {
@@ -94150,11 +94043,9 @@ class ContractFactory {
             }
             // Make sure the call matches the constructor signature
             logger$s.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-            // Resolve ENS names and promises in the arguments
-            const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
-            params.push(overrides);
+            args.push(overrides);
             // Get the deployment transaction (with optional overrides)
-            const contractCreate = this.getDeployTransaction(...params);
+            const contractCreate = this.getDeployTransaction(...args);
             const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
             const address = contractCreateResponse.customData.contractId;
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
@@ -94165,7 +94056,7 @@ class ContractFactory {
         });
     }
     attach(address) {
-        return (this.constructor).getContract(address, this.interface, this.signer);
+        return new (this.constructor).getContract(address, this.interface, this.signer);
     }
     connect(signer) {
         return new (this.constructor)(this.interface, this.bytecode, signer);
@@ -98580,7 +98471,7 @@ axios_1.default = _default;
 var axios$1 = axios_1;
 
 "use strict";
-var __awaiter$9 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -98710,7 +98601,6 @@ class Event {
         return (this.tag.indexOf(":") >= 0 || PollableEvents.indexOf(this.tag) >= 0);
     }
 }
-;
 // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
 const coinInfos = {
     "0": { symbol: "btc", p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
@@ -98736,7 +98626,7 @@ class Resolver {
         defineReadOnly(this, "_resolvedAddress", resolvedAddress);
     }
     _fetchBytes(selector, parameters) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             // e.g. keccak256("addr(bytes32,uint256)")
             // const tx = {
             //     to: this.address,
@@ -98807,7 +98697,7 @@ class Resolver {
         return null;
     }
     getAddress(coinType) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             if (coinType == null) {
                 coinType = 60;
             }
@@ -98842,7 +98732,7 @@ class Resolver {
         });
     }
     getContentHash() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             // keccak256("contenthash()")
             const hexBytes = yield this._fetchBytes("0xbc1c58d1");
             // No contenthash
@@ -98871,7 +98761,7 @@ class Resolver {
         });
     }
     getText(key) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             // The key encoded as parameter to fetchBytes
             let keyBytes = toUtf8Bytes(key);
             // The nodehash consumes the first slot, so the string pointer targets
@@ -98952,7 +98842,7 @@ class BaseProvider extends Provider {
         this._pollingInterval = 3000;
     }
     _ready() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             if (this._network == null) {
                 let network = null;
                 if (this._networkPromise) {
@@ -99008,13 +98898,13 @@ class BaseProvider extends Provider {
     // With the current hedera implementation, we do not support a changeable networks,
     // thus we do not need to query at this level
     detectNetwork() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             this._networkPromise = Promise.resolve(this._network);
             return this._networkPromise;
         });
     }
     getNetwork() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             const network = yield this._ready();
             // Make sure we are still connected to the same network; this is
             // only an external call for backends which can have the underlying
@@ -99053,14 +98943,14 @@ class BaseProvider extends Provider {
         this._pollingInterval = value;
     }
     waitForTransaction(transactionId, timeout) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             return this._waitForTransaction(transactionId, timeout);
         });
     }
     _waitForTransaction(transactionId, timeout) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             let remainingTimeout = timeout;
-            return new Promise((resolve, reject) => __awaiter$9(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter$8(this, void 0, void 0, function* () {
                 while (remainingTimeout == null || remainingTimeout > 0) {
                     const txResponse = yield this.getTransaction(transactionId);
                     if (txResponse == null) {
@@ -99085,7 +98975,7 @@ class BaseProvider extends Provider {
      * @param accountLike The address to check balance of
      */
     getBalance(accountLike) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             accountLike = yield accountLike;
             const account = asAccountString(accountLike);
             try {
@@ -99111,7 +99001,7 @@ class BaseProvider extends Provider {
      * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
      */
     getCode(accountLike, throwOnNonExisting) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             this._checkMirrorNode();
             accountLike = yield accountLike;
             const account = asAccountString(accountLike);
@@ -99153,7 +99043,7 @@ class BaseProvider extends Provider {
         if (hash != null && tx.hash !== hash) {
             logger$v.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
-        result.wait = (timeout) => __awaiter$9(this, void 0, void 0, function* () {
+        result.wait = (timeout) => __awaiter$8(this, void 0, void 0, function* () {
             const receipt = yield this._waitForTransaction(tx.transactionId, timeout);
             if (receipt.status === 0) {
                 logger$v.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
@@ -99174,7 +99064,7 @@ class BaseProvider extends Provider {
     }
     sendTransaction(signedTransaction) {
         var _a;
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             signedTransaction = yield signedTransaction;
             const txBytes = arrayify(signedTransaction);
             const hederaTx = Transaction.fromBytes(txBytes);
@@ -99196,11 +99086,11 @@ class BaseProvider extends Provider {
         });
     }
     _getFilter(filter) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = filter.address;
+                result.address = filter.address.toString();
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -99217,26 +99107,10 @@ class BaseProvider extends Provider {
         });
     }
     estimateGas(transaction) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             return logger$v.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
                 operation: "estimateGas"
             });
-        });
-    }
-    // TODO FIX ME
-    _getAddress(addressOrName) {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            addressOrName = yield addressOrName;
-            if (typeof (addressOrName) !== "string") {
-                logger$v.throwArgumentError("invalid address or ENS name", "name", addressOrName);
-            }
-            const address = yield this.resolveName(addressOrName);
-            if (address == null) {
-                logger$v.throwError("ENS name not configured", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: `resolveName(${JSON.stringify(addressOrName)})`
-                });
-            }
-            return address;
         });
     }
     /**
@@ -99245,7 +99119,7 @@ class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     getTransaction(transactionId) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             this._checkMirrorNode();
             transactionId = yield transactionId;
             const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
@@ -99296,7 +99170,7 @@ class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     getTransactionReceipt(transactionId) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             return logger$v.throwError("getTransactionReceipt not implemented", Logger.errors.NOT_IMPLEMENTED, {
                 operation: 'getTransactionReceipt'
             });
@@ -99317,7 +99191,7 @@ class BaseProvider extends Provider {
         });
     }
     getLogs(filter) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             yield this.getNetwork();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
             const logs = yield this.perform("getLogs", params);
@@ -99325,13 +99199,13 @@ class BaseProvider extends Provider {
         });
     }
     getHbarPrice() {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             return logger$v.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
     // TODO FIXME
     getResolver(name) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             try {
                 const address = yield this._getResolver(name);
                 if (address == null) {
@@ -99349,7 +99223,7 @@ class BaseProvider extends Provider {
     }
     // TODO FIXME
     _getResolver(name) {
-        return __awaiter$9(this, void 0, void 0, function* () {
+        return __awaiter$8(this, void 0, void 0, function* () {
             // Get the resolver from the blockchain
             const network = yield this.getNetwork();
             // No ENS...
@@ -99371,39 +99245,6 @@ class BaseProvider extends Provider {
                 }
                 throw error;
             }
-        });
-    }
-    // TODO FIXME
-    resolveName(name) {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            name = yield name;
-            // If it is already an address, nothing to resolve
-            try {
-                return Promise.resolve(this.formatter.address(name));
-            }
-            catch (error) {
-                // If is is a hexstring, the address is bad (See #694)
-                if (isHexString(name)) {
-                    throw error;
-                }
-            }
-            if (typeof (name) !== "string") {
-                logger$v.throwArgumentError("invalid ENS name", "name", name);
-            }
-            // Get the addr from the resovler
-            const resolver = yield this.getResolver(name);
-            if (!resolver) {
-                return null;
-            }
-            return yield resolver.getAddress();
-        });
-    }
-    // TODO FIXME
-    lookupAddress(address) {
-        return __awaiter$9(this, void 0, void 0, function* () {
-            address = yield address;
-            address = this.formatter.address(address);
-            return null;
         });
     }
     perform(method, params) {

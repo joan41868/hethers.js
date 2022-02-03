@@ -221,7 +221,6 @@ var Event = /** @class */ (function () {
     return Event;
 }());
 exports.Event = Event;
-;
 // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
 var coinInfos = {
     "0": { symbol: "btc", p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
@@ -835,7 +834,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         filter = _c.sent();
                         result = {};
                         if (filter.address != null) {
-                            result.address = this._getAddress(filter.address.toString());
+                            result.address = filter.address.toString();
                         }
                         ["blockHash", "topics"].forEach(function (key) {
                             if (filter[key] == null) {
@@ -861,31 +860,6 @@ var BaseProvider = /** @class */ (function (_super) {
                 return [2 /*return*/, logger.throwArgumentError("estimateGas not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, {
                         operation: "estimateGas"
                     })];
-            });
-        });
-    };
-    // TODO FIX ME
-    BaseProvider.prototype._getAddress = function (addressOrName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var address;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, addressOrName];
-                    case 1:
-                        addressOrName = _a.sent();
-                        if (typeof (addressOrName) !== "string") {
-                            logger.throwArgumentError("invalid address or ENS name", "name", addressOrName);
-                        }
-                        return [4 /*yield*/, this.resolveName(addressOrName)];
-                    case 2:
-                        address = _a.sent();
-                        if (address == null) {
-                            logger.throwError("ENS name not configured", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                                operation: "resolveName(" + JSON.stringify(addressOrName) + ")"
-                            });
-                        }
-                        return [2 /*return*/, address];
-                }
             });
         });
     };
@@ -1063,54 +1037,6 @@ var BaseProvider = /** @class */ (function (_super) {
                             throw error;
                         }
                         return [2 /*return*/];
-                }
-            });
-        });
-    };
-    // TODO FIXME
-    BaseProvider.prototype.resolveName = function (name) {
-        return __awaiter(this, void 0, void 0, function () {
-            var resolver;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, name];
-                    case 1:
-                        name = _a.sent();
-                        // If it is already an address, nothing to resolve
-                        try {
-                            return [2 /*return*/, Promise.resolve(this.formatter.address(name))];
-                        }
-                        catch (error) {
-                            // If is is a hexstring, the address is bad (See #694)
-                            if ((0, bytes_1.isHexString)(name)) {
-                                throw error;
-                            }
-                        }
-                        if (typeof (name) !== "string") {
-                            logger.throwArgumentError("invalid ENS name", "name", name);
-                        }
-                        return [4 /*yield*/, this.getResolver(name)];
-                    case 2:
-                        resolver = _a.sent();
-                        if (!resolver) {
-                            return [2 /*return*/, null];
-                        }
-                        return [4 /*yield*/, resolver.getAddress()];
-                    case 3: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
-    // TODO FIXME
-    BaseProvider.prototype.lookupAddress = function (address) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, address];
-                    case 1:
-                        address = _a.sent();
-                        address = this.formatter.address(address);
-                        return [2 /*return*/, null];
                 }
             });
         });

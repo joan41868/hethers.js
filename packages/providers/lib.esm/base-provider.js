@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { Provider } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, hexZeroPad } from "@ethersproject/bytes";
 import { getNetwork } from "@ethersproject/networks";
 import { defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
 import { sha256 } from "@ethersproject/sha2";
@@ -145,7 +145,6 @@ export class Event {
         return (this.tag.indexOf(":") >= 0 || PollableEvents.indexOf(this.tag) >= 0);
     }
 }
-;
 // https://github.com/satoshilabs/slips/blob/master/slip-0044.md
 const coinInfos = {
     "0": { symbol: "btc", p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
@@ -635,7 +634,7 @@ export class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = filter.address;
+                result.address = filter.address.toString();
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
@@ -656,22 +655,6 @@ export class BaseProvider extends Provider {
             return logger.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
                 operation: "estimateGas"
             });
-        });
-    }
-    // TODO FIX ME
-    _getAddress(addressOrName) {
-        return __awaiter(this, void 0, void 0, function* () {
-            addressOrName = yield addressOrName;
-            if (typeof (addressOrName) !== "string") {
-                logger.throwArgumentError("invalid address or ENS name", "name", addressOrName);
-            }
-            const address = yield this.resolveName(addressOrName);
-            if (address == null) {
-                logger.throwError("ENS name not configured", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: `resolveName(${JSON.stringify(addressOrName)})`
-                });
-            }
-            return address;
         });
     }
     /**
@@ -806,39 +789,6 @@ export class BaseProvider extends Provider {
                 }
                 throw error;
             }
-        });
-    }
-    // TODO FIXME
-    resolveName(name) {
-        return __awaiter(this, void 0, void 0, function* () {
-            name = yield name;
-            // If it is already an address, nothing to resolve
-            try {
-                return Promise.resolve(this.formatter.address(name));
-            }
-            catch (error) {
-                // If is is a hexstring, the address is bad (See #694)
-                if (isHexString(name)) {
-                    throw error;
-                }
-            }
-            if (typeof (name) !== "string") {
-                logger.throwArgumentError("invalid ENS name", "name", name);
-            }
-            // Get the addr from the resovler
-            const resolver = yield this.getResolver(name);
-            if (!resolver) {
-                return null;
-            }
-            return yield resolver.getAddress();
-        });
-    }
-    // TODO FIXME
-    lookupAddress(address) {
-        return __awaiter(this, void 0, void 0, function* () {
-            address = yield address;
-            address = this.formatter.address(address);
-            return null;
         });
     }
     perform(method, params) {

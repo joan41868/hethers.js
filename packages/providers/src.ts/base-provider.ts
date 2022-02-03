@@ -6,7 +6,7 @@ import {
 } from "@ethersproject/abstract-provider";
 import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, hexZeroPad } from "@ethersproject/bytes";
 import { getNetwork, Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
@@ -161,33 +161,6 @@ export class Event {
     }
 }
 
-export interface EnsResolver {
-
-    // Name this Resolver is associated with
-    readonly name: string;
-
-    // The address of the resolver
-    readonly address: string;
-
-    // Multichain address resolution (also normal address resolution)
-    // See: https://eips.ethereum.org/EIPS/eip-2304
-    getAddress(coinType?: 60): Promise<null | string>
-
-    // Contenthash field
-    // See: https://eips.ethereum.org/EIPS/eip-1577
-    getContentHash(): Promise<null | string>;
-
-    // Storage of text records
-    // See: https://eips.ethereum.org/EIPS/eip-634
-    getText(key: string): Promise<null | string>;
-};
-
-export interface EnsProvider {
-    resolveName(name: string): Promise<null | string>;
-    lookupAddress(address: string): Promise<null | string>;
-    getResolver(name: string): Promise<null | EnsResolver>;
-}
-
 type CoinInfo = {
     symbol: string,
     ilk?: string,     // General family
@@ -220,7 +193,7 @@ export interface Avatar {
     linkage: Array<{ type: string, content: string }>;
 }
 
-export class Resolver implements EnsResolver {
+export class Resolver {
     readonly provider: BaseProvider;
 
     readonly name: string;
@@ -729,7 +702,7 @@ export class BaseProvider extends Provider {
         const result: any = { };
 
         if (filter.address != null) {
-            result.address = this._getAddress(filter.address.toString());
+            result.address = filter.address.toString();
         }
 
         ["blockHash", "topics"].forEach((key) => {
@@ -748,22 +721,6 @@ export class BaseProvider extends Provider {
         return logger.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
             operation: "estimateGas"
         });
-    }
-
-    // TODO FIX ME
-    async _getAddress(addressOrName: string | Promise<string>): Promise<string> {
-        addressOrName = await addressOrName;
-        if (typeof (addressOrName) !== "string") {
-            logger.throwArgumentError("invalid address or ENS name", "name", addressOrName);
-        }
-
-        const address = await this.resolveName(addressOrName);
-        if (address == null) {
-            logger.throwError("ENS name not configured", Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `resolveName(${JSON.stringify(addressOrName)})`
-            });
-        }
-        return address;
     }
 
     /**
@@ -895,37 +852,6 @@ export class BaseProvider extends Provider {
             if (error.code === Logger.errors.CALL_EXCEPTION) { return null; }
             throw error;
         }
-    }
-
-    // TODO FIXME
-    async resolveName(name: string | Promise<string>): Promise<null | string> {
-        name = await name;
-
-        // If it is already an address, nothing to resolve
-        try {
-            return Promise.resolve(this.formatter.address(name));
-        } catch (error) {
-            // If is is a hexstring, the address is bad (See #694)
-            if (isHexString(name)) { throw error; }
-        }
-
-        if (typeof (name) !== "string") {
-            logger.throwArgumentError("invalid ENS name", "name", name);
-        }
-
-        // Get the addr from the resovler
-        const resolver = await this.getResolver(name);
-        if (!resolver) { return null; }
-
-        return await resolver.getAddress();
-    }
-
-    // TODO FIXME
-    async lookupAddress(address: string | Promise<string>): Promise<null | string> {
-        address = await address;
-        address = this.formatter.address(address);
-
-        return null;
     }
 
     perform(method: string, params: any): Promise<any> {

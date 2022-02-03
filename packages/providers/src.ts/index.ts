@@ -17,7 +17,7 @@ import {
 import { getNetwork } from "@ethersproject/networks";
 import { Network, Networkish } from "@ethersproject/networks";
 
-import { BaseProvider, EnsProvider, EnsResolver, Resolver } from "./base-provider";
+import { BaseProvider, Resolver } from "./base-provider";
 
 import { FallbackProviderConfig } from "./fallback-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
@@ -127,8 +127,6 @@ export {
     Network,
     Networkish,
 
-    EnsProvider,
-    EnsResolver,
 
     CommunityResourcable
 };
