@@ -93399,6 +93399,7 @@ function buildPopulate(contract, fragment) {
         return populateTransaction(contract, fragment, args);
     };
 }
+// @ts-ignore
 function buildEstimate(contract, fragment) {
     const signerOrProvider = (contract.signer || contract.provider);
     return function (...args) {
@@ -93415,8 +93416,8 @@ function buildEstimate(contract, fragment) {
 }
 function addContractWait(contract, tx) {
     const wait = tx.wait.bind(tx);
-    tx.wait = (confirmations) => {
-        return wait(confirmations).then((receipt) => {
+    tx.wait = (timeout) => {
+        return wait(timeout).then((receipt) => {
             receipt.events = receipt.logs.map((log) => {
                 let event = deepCopy(log);
                 let parsed = null;
@@ -93435,12 +93436,8 @@ function addContractWait(contract, tx) {
                 }
                 // Useful operations
                 event.removeListener = () => { return contract.provider; };
-                event.getBlock = () => {
-                    // TODO: to be removed
-                    return logger$s.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-                };
                 event.getTransaction = () => {
-                    return contract.provider.getTransaction(receipt.transactionHash);
+                    return contract.provider.getTransaction(receipt.transactionId);
                 };
                 event.getTransactionReceipt = () => {
                     return Promise.resolve(receipt);
@@ -93652,10 +93649,11 @@ class WildcardRunningEvent extends RunningEvent {
     }
 }
 class BaseContract {
-    constructor(addressOrName, contractInterface, signerOrProvider) {
+    constructor(address, contractInterface, signerOrProvider) {
         logger$s.checkNew(new.target, Contract);
-        // @TODO: Maybe still check the addressOrName looks like a valid address or name?
-        //address = getAddress(address);
+        if (address) {
+            this.address = getAddressFromAccount(address);
+        }
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         if (signerOrProvider == null) {
             defineReadOnly(this, "provider", null);
@@ -93673,7 +93671,6 @@ class BaseContract {
             logger$s.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
         }
         defineReadOnly(this, "callStatic", {});
-        defineReadOnly(this, "estimateGas", {});
         defineReadOnly(this, "functions", {});
         defineReadOnly(this, "populateTransaction", {});
         defineReadOnly(this, "filters", {});
@@ -93704,24 +93701,6 @@ class BaseContract {
         }
         defineReadOnly(this, "_runningEvents", {});
         defineReadOnly(this, "_wrappedEmits", {});
-        if (addressOrName == null) {
-            logger$s.throwArgumentError("invalid contract address or ENS name", "addressOrName", addressOrName);
-        }
-        defineReadOnly(this, "address", addressOrName);
-        if (this.provider) {
-            defineReadOnly(this, "resolvedAddress", resolveName(this.provider, addressOrName));
-        }
-        else {
-            try {
-                defineReadOnly(this, "resolvedAddress", Promise.resolve(getAddress(addressOrName)));
-            }
-            catch (error) {
-                // Without a provider, we cannot use ENS names
-                logger$s.throwError("provider is required to use ENS name as contract address", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "new Contract"
-                });
-            }
-        }
         const uniqueNames = {};
         const uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -93757,9 +93736,6 @@ class BaseContract {
             if (this.populateTransaction[signature] == null) {
                 defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
             }
-            if (this.estimateGas[signature] == null) {
-                defineReadOnly(this.estimateGas, signature, buildEstimate(this, fragment));
-            }
         });
         Object.keys(uniqueNames).forEach((name) => {
             // Ambiguous names to not get attached as bare names
@@ -93786,10 +93762,13 @@ class BaseContract {
             if (this.populateTransaction[name] == null) {
                 defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
             }
-            if (this.estimateGas[name] == null) {
-                defineReadOnly(this.estimateGas, name, this.estimateGas[signature]);
-            }
         });
+    }
+    set address(val) {
+        this._address = getAddressFromAccount(val);
+    }
+    get address() {
+        return this._address;
     }
     static getInterface(contractInterface) {
         if (Interface.isInterface(contractInterface)) {
@@ -93816,7 +93795,7 @@ class BaseContract {
                 this._deployedPromise = this.provider.getCode(this.address).then((code) => {
                     if (code === "0x") {
                         logger$s.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
-                            contractAddress: this.address,
+                            contractAddress: this._address,
                             operation: "getDeployed"
                         });
                     }
@@ -93911,6 +93890,11 @@ class BaseContract {
         }
         return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
     }
+    _requireAddressSet() {
+        if (!this.address || this.address == "") {
+            logger$s.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, this.address);
+        }
+    }
     _checkRunningEvents(runningEvent) {
         if (runningEvent.listenerCount() === 0) {
             delete this._runningEvents[runningEvent.tag];
@@ -93932,10 +93916,6 @@ class BaseContract {
             }
             runningEvent.removeListener(listener);
             this._checkRunningEvents(runningEvent);
-        };
-        event.getBlock = () => {
-            // TODO: to be removed
-            return logger$s.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         };
         event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); };
         event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); };
@@ -93981,6 +93961,7 @@ class BaseContract {
         }
     }
     queryFilter(event, fromBlockOrBlockhash, toBlock) {
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
         if (typeof (fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
@@ -93998,10 +93979,12 @@ class BaseContract {
         });
     }
     on(event, listener) {
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }
     once(event, listener) {
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     }
@@ -94009,6 +93992,7 @@ class BaseContract {
         if (!this.provider) {
             return false;
         }
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(eventName);
         const result = (runningEvent.run(args) > 0);
         // May have drained all the "once" events; check for living events
@@ -94019,6 +94003,7 @@ class BaseContract {
         if (!this.provider) {
             return 0;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             return Object.keys(this._runningEvents).reduce((accum, key) => {
                 return accum + this._runningEvents[key].listenerCount();
@@ -94030,6 +94015,7 @@ class BaseContract {
         if (!this.provider) {
             return [];
         }
+        this._requireAddressSet();
         if (eventName == null) {
             const result = [];
             for (let tag in this._runningEvents) {
@@ -94045,6 +94031,7 @@ class BaseContract {
         if (!this.provider) {
             return this;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             for (const tag in this._runningEvents) {
                 const runningEvent = this._runningEvents[tag];
@@ -94063,12 +94050,14 @@ class BaseContract {
         if (!this.provider) {
             return this;
         }
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
         return this;
     }
     removeListener(eventName, listener) {
+        this._requireAddressSet();
         return this.off(eventName, listener);
     }
 }
@@ -94165,7 +94154,7 @@ class ContractFactory {
         });
     }
     attach(address) {
-        return (this.constructor).getContract(address, this.interface, this.signer);
+        return new (this.constructor).getContract(address, this.interface, this.signer);
     }
     connect(signer) {
         return new (this.constructor)(this.interface, this.bytecode, signer);
@@ -99200,7 +99189,7 @@ class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = filter.address;
+                result.address = this._getAddress(filter.address.toString());
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
