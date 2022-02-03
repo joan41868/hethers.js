@@ -825,7 +825,7 @@ export class BaseContract {
     }
 
     _deployed(blockTag?: BlockTag): Promise<Contract> {
-        this.requireAddressSet();
+        this._requireAddressSet();
 
         if (!this._deployedPromise) {
 
@@ -958,7 +958,7 @@ export class BaseContract {
         return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
     }
 
-    requireAddressSet() {
+    _requireAddressSet() {
         if (!this.address || this.address == "") {
             logger.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, this.address);
         }
@@ -1046,7 +1046,7 @@ export class BaseContract {
     }
 
     queryFilter(event: EventFilter, fromBlockOrBlockhash?: BlockTag | string, toBlock?: BlockTag): Promise<Array<Event>> {
-        this.requireAddressSet();
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
 
@@ -1065,14 +1065,14 @@ export class BaseContract {
     }
 
     on(event: EventFilter | string, listener: Listener): this {
-        this.requireAddressSet();
+        this._requireAddressSet();
 
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }
 
     once(event: EventFilter | string, listener: Listener): this {
-        this.requireAddressSet();
+        this._requireAddressSet();
 
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
@@ -1080,7 +1080,7 @@ export class BaseContract {
 
     emit(eventName: EventFilter | string, ...args: Array<any>): boolean {
         if (!this.provider) { return false; }
-        this.requireAddressSet();
+        this._requireAddressSet();
 
         const runningEvent = this._getRunningEvent(eventName);
         const result = (runningEvent.run(args) > 0);
@@ -1093,18 +1093,19 @@ export class BaseContract {
 
     listenerCount(eventName?: EventFilter | string): number {
         if (!this.provider) { return 0; }
+        this._requireAddressSet();
         if (eventName == null) {
             return Object.keys(this._runningEvents).reduce((accum, key) => {
                 return accum + this._runningEvents[key].listenerCount();
             }, 0);
         }
-        this.requireAddressSet();
 
         return this._getRunningEvent(eventName).listenerCount();
     }
 
     listeners(eventName?: EventFilter | string): Array<Listener> {
         if (!this.provider) { return []; }
+        this._requireAddressSet();
 
         if (eventName == null) {
             const result: Array<Listener> = [ ];
@@ -1115,13 +1116,13 @@ export class BaseContract {
             }
             return result;
         }
-        this.requireAddressSet();
 
         return this._getRunningEvent(eventName).listeners();
     }
 
     removeAllListeners(eventName?: EventFilter | string): this {
         if (!this.provider) { return this; }
+        this._requireAddressSet();
 
         if (eventName == null) {
             for (const tag in this._runningEvents) {
@@ -1131,7 +1132,6 @@ export class BaseContract {
             }
             return this;
         }
-        this.requireAddressSet();
 
         // Delete any listeners
         const runningEvent = this._getRunningEvent(eventName);
@@ -1143,7 +1143,7 @@ export class BaseContract {
 
     off(eventName: EventFilter | string, listener: Listener): this {
         if (!this.provider) { return this; }
-        this.requireAddressSet();
+        this._requireAddressSet();
 
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
@@ -1152,7 +1152,7 @@ export class BaseContract {
     }
 
     removeListener(eventName: EventFilter | string, listener: Listener): this {
-        this.requireAddressSet();
+        this._requireAddressSet();
         return this.off(eventName, listener);
     }
 

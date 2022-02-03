@@ -758,7 +758,7 @@ var BaseContract = /** @class */ (function () {
     };
     BaseContract.prototype._deployed = function (blockTag) {
         var _this = this;
-        this.requireAddressSet();
+        this._requireAddressSet();
         if (!this._deployedPromise) {
             // If we were just deployed, we know the transaction we should occur in
             if (this.deployTransaction) {
@@ -869,7 +869,7 @@ var BaseContract = /** @class */ (function () {
         }
         return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
     };
-    BaseContract.prototype.requireAddressSet = function () {
+    BaseContract.prototype._requireAddressSet = function () {
         if (!this.address || this.address == "") {
             logger.throwArgumentError("Missing address", logger_1.Logger.errors.INVALID_ARGUMENT, this.address);
         }
@@ -947,7 +947,7 @@ var BaseContract = /** @class */ (function () {
     };
     BaseContract.prototype.queryFilter = function (event, fromBlockOrBlockhash, toBlock) {
         var _this = this;
-        this.requireAddressSet();
+        this._requireAddressSet();
         var runningEvent = this._getRunningEvent(event);
         var filter = (0, properties_1.shallowCopy)(runningEvent.filter);
         if (typeof (fromBlockOrBlockhash) === "string" && (0, bytes_1.isHexString)(fromBlockOrBlockhash, 32)) {
@@ -965,12 +965,12 @@ var BaseContract = /** @class */ (function () {
         });
     };
     BaseContract.prototype.on = function (event, listener) {
-        this.requireAddressSet();
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     };
     BaseContract.prototype.once = function (event, listener) {
-        this.requireAddressSet();
+        this._requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     };
@@ -982,7 +982,7 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return false;
         }
-        this.requireAddressSet();
+        this._requireAddressSet();
         var runningEvent = this._getRunningEvent(eventName);
         var result = (runningEvent.run(args) > 0);
         // May have drained all the "once" events; check for living events
@@ -994,18 +994,19 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return 0;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             return Object.keys(this._runningEvents).reduce(function (accum, key) {
                 return accum + _this._runningEvents[key].listenerCount();
             }, 0);
         }
-        this.requireAddressSet();
         return this._getRunningEvent(eventName).listenerCount();
     };
     BaseContract.prototype.listeners = function (eventName) {
         if (!this.provider) {
             return [];
         }
+        this._requireAddressSet();
         if (eventName == null) {
             var result_1 = [];
             for (var tag in this._runningEvents) {
@@ -1015,13 +1016,13 @@ var BaseContract = /** @class */ (function () {
             }
             return result_1;
         }
-        this.requireAddressSet();
         return this._getRunningEvent(eventName).listeners();
     };
     BaseContract.prototype.removeAllListeners = function (eventName) {
         if (!this.provider) {
             return this;
         }
+        this._requireAddressSet();
         if (eventName == null) {
             for (var tag in this._runningEvents) {
                 var runningEvent_1 = this._runningEvents[tag];
@@ -1030,7 +1031,6 @@ var BaseContract = /** @class */ (function () {
             }
             return this;
         }
-        this.requireAddressSet();
         // Delete any listeners
         var runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeAllListeners();
@@ -1041,14 +1041,14 @@ var BaseContract = /** @class */ (function () {
         if (!this.provider) {
             return this;
         }
-        this.requireAddressSet();
+        this._requireAddressSet();
         var runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
         return this;
     };
     BaseContract.prototype.removeListener = function (eventName, listener) {
-        this.requireAddressSet();
+        this._requireAddressSet();
         return this.off(eventName, listener);
     };
     return BaseContract;
