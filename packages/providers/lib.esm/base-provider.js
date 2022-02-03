@@ -635,7 +635,7 @@ export class BaseProvider extends Provider {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
-                result.address = filter.address;
+                result.address = this._getAddress(filter.address.toString());
             }
             ["blockHash", "topics"].forEach((key) => {
                 if (filter[key] == null) {
