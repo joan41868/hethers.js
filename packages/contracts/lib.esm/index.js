@@ -11,10 +11,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { checkResultErrors, Indexed, Interface } from "@ethersproject/abi";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
-import { getAddress, getAddressFromAccount } from "@ethersproject/address";
+import { getAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
-import { deepCopy, defineReadOnly, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
+import { defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { accessListify } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -213,7 +213,6 @@ function buildPopulate(contract, fragment) {
         return populateTransaction(contract, fragment, args);
     };
 }
-// @ts-ignore
 function buildEstimate(contract, fragment) {
     const signerOrProvider = (contract.signer || contract.provider);
     return function (...args) {
@@ -270,19 +269,13 @@ function buildCall(contract, fragment, collapseSimple) {
     const signer = contract.signer;
     return function (...args) {
         return __awaiter(this, void 0, void 0, function* () {
-            // Extract the "blockTag" override if present
-            let blockTag = undefined;
             if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
                 const overrides = shallowCopy(args.pop());
-                if (overrides.blockTag != null) {
-                    blockTag = yield overrides.blockTag;
-                }
-                delete overrides.blockTag;
                 args.push(overrides);
             }
             // If the contract was just deployed, wait until it is mined
             if (contract.deployTransaction != null) {
-                yield contract._deployed(blockTag);
+                yield contract._deployed();
             }
             // Call a node and get the result
             const tx = yield populateTransaction(contract, fragment, args);
@@ -473,11 +466,10 @@ class WildcardRunningEvent extends RunningEvent {
     }
 }
 export class BaseContract {
-    constructor(address, contractInterface, signerOrProvider) {
+    constructor(addressOrName, contractInterface, signerOrProvider) {
         logger.checkNew(new.target, Contract);
-        if (address) {
-            this.address = getAddressFromAccount(address);
-        }
+        // @TODO: Maybe still check the addressOrName looks like a valid address or name?
+        //address = getAddress(address);
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
         if (signerOrProvider == null) {
             defineReadOnly(this, "provider", null);
@@ -495,6 +487,7 @@ export class BaseContract {
             logger.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
         }
         defineReadOnly(this, "callStatic", {});
+        defineReadOnly(this, "estimateGas", {});
         defineReadOnly(this, "functions", {});
         defineReadOnly(this, "populateTransaction", {});
         defineReadOnly(this, "filters", {});
@@ -525,6 +518,24 @@ export class BaseContract {
         }
         defineReadOnly(this, "_runningEvents", {});
         defineReadOnly(this, "_wrappedEmits", {});
+        if (addressOrName == null) {
+            logger.throwArgumentError("invalid contract address or ENS name", "addressOrName", addressOrName);
+        }
+        defineReadOnly(this, "address", addressOrName);
+        if (this.provider) {
+            defineReadOnly(this, "resolvedAddress", resolveName(this.provider, addressOrName));
+        }
+        else {
+            try {
+                defineReadOnly(this, "resolvedAddress", Promise.resolve(getAddress(addressOrName)));
+            }
+            catch (error) {
+                // Without a provider, we cannot use ENS names
+                logger.throwError("provider is required to use ENS name as contract address", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "new Contract"
+                });
+            }
+        }
         const uniqueNames = {};
         const uniqueSignatures = {};
         Object.keys(this.interface.functions).forEach((signature) => {
@@ -560,6 +571,9 @@ export class BaseContract {
             if (this.populateTransaction[signature] == null) {
                 defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
             }
+            if (this.estimateGas[signature] == null) {
+                defineReadOnly(this.estimateGas, signature, buildEstimate(this, fragment));
+            }
         });
         Object.keys(uniqueNames).forEach((name) => {
             // Ambiguous names to not get attached as bare names
@@ -586,13 +600,10 @@ export class BaseContract {
             if (this.populateTransaction[name] == null) {
                 defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
             }
+            if (this.estimateGas[name] == null) {
+                defineReadOnly(this.estimateGas, name, this.estimateGas[signature]);
+            }
         });
-    }
-    set address(val) {
-        this._address = getAddressFromAccount(val);
-    }
-    get address() {
-        return this._address;
     }
     static getInterface(contractInterface) {
         if (Interface.isInterface(contractInterface)) {
@@ -604,8 +615,7 @@ export class BaseContract {
     deployed() {
         return this._deployed();
     }
-    _deployed(blockTag) {
-        this.requireAddressSet();
+    _deployed() {
         if (!this._deployedPromise) {
             // If we were just deployed, we know the transaction we should occur in
             if (this.deployTransaction) {
@@ -620,7 +630,7 @@ export class BaseContract {
                 this._deployedPromise = this.provider.getCode(this.address).then((code) => {
                     if (code === "0x") {
                         logger.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
-                            contractAddress: this._address,
+                            contractAddress: this.address,
                             operation: "getDeployed"
                         });
                     }
@@ -715,11 +725,6 @@ export class BaseContract {
         }
         return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
     }
-    requireAddressSet() {
-        if (!this.address || this.address == "") {
-            logger.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, this.address);
-        }
-    }
     _checkRunningEvents(runningEvent) {
         if (runningEvent.listenerCount() === 0) {
             delete this._runningEvents[runningEvent.tag];
@@ -790,7 +795,6 @@ export class BaseContract {
         }
     }
     queryFilter(event, fromBlockOrBlockhash, toBlock) {
-        this.requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
         if (typeof (fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
@@ -808,12 +812,10 @@ export class BaseContract {
         });
     }
     on(event, listener) {
-        this.requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }
     once(event, listener) {
-        this.requireAddressSet();
         this._addEventListener(this._getRunningEvent(event), listener, true);
         return this;
     }
@@ -821,7 +823,6 @@ export class BaseContract {
         if (!this.provider) {
             return false;
         }
-        this.requireAddressSet();
         const runningEvent = this._getRunningEvent(eventName);
         const result = (runningEvent.run(args) > 0);
         // May have drained all the "once" events; check for living events
@@ -837,7 +838,6 @@ export class BaseContract {
                 return accum + this._runningEvents[key].listenerCount();
             }, 0);
         }
-        this.requireAddressSet();
         return this._getRunningEvent(eventName).listenerCount();
     }
     listeners(eventName) {
@@ -853,7 +853,6 @@ export class BaseContract {
             }
             return result;
         }
-        this.requireAddressSet();
         return this._getRunningEvent(eventName).listeners();
     }
     removeAllListeners(eventName) {
@@ -868,7 +867,6 @@ export class BaseContract {
             }
             return this;
         }
-        this.requireAddressSet();
         // Delete any listeners
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeAllListeners();
@@ -879,14 +877,12 @@ export class BaseContract {
         if (!this.provider) {
             return this;
         }
-        this.requireAddressSet();
         const runningEvent = this._getRunningEvent(eventName);
         runningEvent.removeListener(listener);
         this._checkRunningEvents(runningEvent);
         return this;
     }
     removeListener(eventName, listener) {
-        this.requireAddressSet();
         return this.off(eventName, listener);
     }
 }
@@ -983,7 +979,7 @@ export class ContractFactory {
         });
     }
     attach(address) {
-        return new (this.constructor).getContract(address, this.interface, this.signer);
+        return (this.constructor).getContract(address, this.interface, this.signer);
     }
     connect(signer) {
         return new (this.constructor)(this.interface, this.bytecode, signer);
