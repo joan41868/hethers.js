@@ -20,4 +20,8 @@ contract GLDTokenWithConstructorArgs is ERC20 {
     function getInternalCounter() public view returns(uint) {
         return counter;
     }
+
+    fallback() external payable {}
+
+    receive() external payable {}
 }

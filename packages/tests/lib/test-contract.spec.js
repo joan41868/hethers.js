@@ -61,7 +61,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
 var ethers_1 = require("ethers");
 var test_contract_json_1 = __importDefault(require("./test-contract.json"));
-var fs_1 = __importDefault(require("fs"));
+var fs_1 = __importStar(require("fs"));
 // @ts-ignore
 var abi = __importStar(require("../../../examples/assets/abi/GLDToken_abi.json"));
 // @ts-ignore
@@ -71,6 +71,8 @@ abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
 var utils_1 = require("ethers/lib/utils");
+var sdk_1 = require("@hashgraph/sdk");
+var proto_1 = require("@hashgraph/proto");
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
 var provider = ethers_1.ethers.getDefaultProvider("testnet");
 var TIMEOUT_PERIOD = 120000;
@@ -487,5 +489,101 @@ describe("Test Contract Transaction Population", function () {
             });
         });
     }).timeout(60000);
+    it("should be able to call contract methods", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var providerTestnet, contractHederaEoa, clientHederaEoa, contractWallet, abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractFactory, contract, clientWallet, accountCreate, receipt, createdAcc, signedTxSendHbar, txSendHbarDone, _a, _b, viewMethodCall, populatedTx, signedTransaction, tx, _c, _d, transferMethodCall, _e, _f;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
+                    case 0:
+                        providerTestnet = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                        contractHederaEoa = {
+                            "account": '0.0.29562194',
+                            "privateKey": '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+                        };
+                        clientHederaEoa = {
+                            "account": "0.0.28542425",
+                            "privateKey": "302e020100300506032b65700422042077d69b53642df4e59215da8f5f10c97f6a6214b6c8de46940d394da21d30e7cc"
+                        };
+                        contractWallet = new ethers_1.ethers.Wallet(contractHederaEoa, providerTestnet);
+                        abiGLDTokenWithConstructorArgs = JSON.parse((0, fs_1.readFileSync)('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+                        contractByteCodeGLDTokenWithConstructorArgs = (0, fs_1.readFileSync)('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+                        contractFactory = new ethers_1.ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
+                        return [4 /*yield*/, contractFactory.deploy(ethers_1.ethers.BigNumber.from('10000'), { gasLimit: 3000000 })];
+                    case 1:
+                        contract = _g.sent();
+                        clientWallet = ethers_1.ethers.Wallet.createRandom();
+                        return [4 /*yield*/, new sdk_1.AccountCreateTransaction()
+                                .setKey(sdk_1.Key._fromProtobufKey(proto_1.Key.create({
+                                ECDSASecp256k1: (0, utils_1.arrayify)(clientWallet._signingKey().compressedPublicKey)
+                            })))
+                                .setTransactionId(sdk_1.TransactionId.generate(clientHederaEoa.account))
+                                .setInitialBalance(new sdk_1.Hbar(100))
+                                .setNodeAccountIds([providerTestnet.getHederaClient()._network.getNodeAccountIdsForExecute()[0]])
+                                .freeze()
+                                .sign(sdk_1.PrivateKey.fromString(clientHederaEoa.privateKey))];
+                    case 2: return [4 /*yield*/, (_g.sent())
+                            .execute(providerTestnet.getHederaClient())];
+                    case 3:
+                        accountCreate = _g.sent();
+                        return [4 /*yield*/, accountCreate.getReceipt(providerTestnet.getHederaClient())];
+                    case 4:
+                        receipt = _g.sent();
+                        createdAcc = receipt.accountId || "0.0.0";
+                        clientWallet = clientWallet
+                            .connect(ethers_1.ethers.providers.getDefaultProvider('testnet'))
+                            .connectAccount(createdAcc.toString());
+                        return [4 /*yield*/, clientWallet.signTransaction({
+                                to: contract.address,
+                                from: clientWallet.address,
+                                value: 80,
+                                gasLimit: 300000
+                            })];
+                    case 5:
+                        signedTxSendHbar = _g.sent();
+                        return [4 /*yield*/, clientWallet.provider.sendTransaction(signedTxSendHbar)];
+                    case 6:
+                        txSendHbarDone = _g.sent();
+                        return [4 /*yield*/, txSendHbarDone.wait()];
+                    case 7:
+                        _g.sent();
+                        _b = (_a = assert_1.default).strictEqual;
+                        return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
+                    case 8:
+                        _b.apply(_a, [(_g.sent()).toString(), '0']);
+                        return [4 /*yield*/, contract.getInternalCounter({ gasLimit: 300000 })];
+                    case 9:
+                        viewMethodCall = _g.sent();
+                        assert_1.default.strictEqual(viewMethodCall.toString(), '29');
+                        return [4 /*yield*/, contract.populateTransaction.transfer(clientWallet.address, 10, { gasLimit: 300000 })];
+                    case 10:
+                        populatedTx = _g.sent();
+                        return [4 /*yield*/, contractWallet.signTransaction(populatedTx)];
+                    case 11:
+                        signedTransaction = _g.sent();
+                        return [4 /*yield*/, contractWallet.provider.sendTransaction(signedTransaction)];
+                    case 12:
+                        tx = _g.sent();
+                        return [4 /*yield*/, tx.wait()];
+                    case 13:
+                        _g.sent();
+                        _d = (_c = assert_1.default).strictEqual;
+                        return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
+                    case 14:
+                        _d.apply(_c, [(_g.sent()).toString(), '10']);
+                        return [4 /*yield*/, contract.transfer(clientWallet.address, 10, { gasLimit: 300000 })];
+                    case 15:
+                        transferMethodCall = _g.sent();
+                        return [4 /*yield*/, transferMethodCall.wait()];
+                    case 16:
+                        _g.sent();
+                        _f = (_e = assert_1.default).strictEqual;
+                        return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
+                    case 17:
+                        _f.apply(_e, [(_g.sent()).toString(), '20']);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(300000);
 });
 //# sourceMappingURL=test-contract.spec.js.map

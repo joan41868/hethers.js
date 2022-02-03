@@ -5,7 +5,7 @@ import assert from "assert";
 import { BigNumber, ethers } from "ethers";
 
 import contractData from "./test-contract.json";
-import fs from "fs";
+import fs, {readFileSync} from "fs";
 // @ts-ignore
 import * as abi from '../../../examples/assets/abi/GLDToken_abi.json';
 // @ts-ignore
@@ -15,6 +15,8 @@ abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
 import { arrayify } from "ethers/lib/utils";
+import { AccountCreateTransaction, PrivateKey, Hbar, Key as HederaKey, TransactionId } from "@hashgraph/sdk";
+import { Key } from "@hashgraph/proto";
 
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
 const provider = ethers.getDefaultProvider("testnet");
@@ -336,6 +338,72 @@ describe("Test Contract Transaction Population", function() {
         });
         assert.strictEqual(BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
     }).timeout(60000);
+
+    it("should be able to call contract methods", async function () {
+        // configs
+        const providerTestnet = ethers.providers.getDefaultProvider('testnet');
+        const contractHederaEoa = {
+            "account": '0.0.29562194',
+            "privateKey": '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+        };
+        const clientHederaEoa = {
+            "account": "0.0.28542425",
+            "privateKey": "302e020100300506032b65700422042077d69b53642df4e59215da8f5f10c97f6a6214b6c8de46940d394da21d30e7cc"
+        };
+
+        // contract init
+        // @ts-ignore
+        const contractWallet = new ethers.Wallet(contractHederaEoa, providerTestnet);
+        const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+        const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+        const contractFactory = new ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
+        const contract = await contractFactory.deploy(ethers.BigNumber.from('10000'), {gasLimit: 3000000});
+
+        // client wallet init
+        let clientWallet = ethers.Wallet.createRandom();
+        const accountCreate = await (await new AccountCreateTransaction()
+            .setKey(HederaKey._fromProtobufKey(Key.create({
+                ECDSASecp256k1: arrayify(clientWallet._signingKey().compressedPublicKey)
+            })))
+            .setTransactionId(TransactionId.generate(clientHederaEoa.account))
+            .setInitialBalance(new Hbar(100))
+            .setNodeAccountIds([providerTestnet.getHederaClient()._network.getNodeAccountIdsForExecute()[0]])
+            .freeze()
+            .sign(PrivateKey.fromString(clientHederaEoa.privateKey)))
+            .execute(providerTestnet.getHederaClient());
+        const receipt = await accountCreate.getReceipt(providerTestnet.getHederaClient());
+        const createdAcc = receipt.accountId || "0.0.0";
+        clientWallet = clientWallet
+            .connect(ethers.providers.getDefaultProvider('testnet'))
+            .connectAccount(createdAcc.toString());
+
+        // test sending hbars to the contract
+        const signedTxSendHbar = await clientWallet.signTransaction({
+            to: contract.address,
+            from: clientWallet.address,
+            value: 80,
+            gasLimit: 300000
+        });
+        const txSendHbarDone = await clientWallet.provider.sendTransaction(signedTxSendHbar);
+        await txSendHbarDone.wait();
+        assert.strictEqual((await contract.balanceOf(clientWallet.address, {gasLimit: 300000})).toString(), '0');
+
+        // test calling a contract view method
+        const viewMethodCall = await contract.getInternalCounter({gasLimit: 300000});
+        assert.strictEqual(viewMethodCall.toString(), '29');
+
+        // test sending hbars via populateTransaction.transfer
+        const populatedTx = await contract.populateTransaction.transfer(clientWallet.address, 10, {gasLimit: 300000});
+        const signedTransaction = await contractWallet.signTransaction(populatedTx);
+        const tx = await contractWallet.provider.sendTransaction(signedTransaction);
+        await tx.wait();
+        assert.strictEqual((await contract.balanceOf(clientWallet.address, {gasLimit: 300000})).toString(), '10');
+
+        // test sending hbars via contract.transfer
+        const transferMethodCall = await contract.transfer(clientWallet.address, 10, {gasLimit: 300000});
+        await transferMethodCall.wait();
+        assert.strictEqual((await contract.balanceOf(clientWallet.address, {gasLimit: 300000})).toString(), '20');
+    }).timeout(300000);
 });
 
 
