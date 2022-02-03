@@ -961,9 +961,16 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    /**
+     *  Get contract logs implementation, using the REST Api.
+     *  It returns the logs array, or a default value [].
+     *  Throws an exception, when the result size exceeds the given limit.
+     *
+     * @param filter The parameters to filter logs by.
+     */
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, fromTimestampFilter, toTimestampFilter, epContractsLogs, requestUrl, data, mappedLogs, error_6;
+            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLegth, epContractsLogs, requestUrl, data, mappedLogs, error_6, errorParams;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -973,7 +980,9 @@ var BaseProvider = /** @class */ (function (_super) {
                         params = _a.sent();
                         fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
                         toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
-                        epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
+                        limit = 100;
+                        oversizeResponseLegth = limit + 1;
+                        epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
                         requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
                         _a.label = 2;
                     case 2:
@@ -983,19 +992,21 @@ var BaseProvider = /** @class */ (function (_super) {
                         data = (_a.sent()).data;
                         if (data) {
                             mappedLogs = this.formatter.logsMapper(data.logs);
+                            if (mappedLogs.length == oversizeResponseLegth) {
+                                logger.throwError("query returned more than " + limit + " results", logger_1.Logger.errors.CALL_EXCEPTION);
+                            }
                             return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs)];
                         }
                         return [3 /*break*/, 5];
                     case 4:
                         error_6 = _a.sent();
-                        if (error_6 && error_6.response && error_6.response.status != 404) {
-                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                method: "ContractLogsQuery",
-                                error: error_6
-                            });
+                        errorParams = { method: "ContractLogsQuery", error: error_6 };
+                        if (error_6.response && error_6.response.status != 404) {
+                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, errorParams);
                         }
+                        logger.throwError(error_6.message, error_6.code, errorParams);
                         return [3 /*break*/, 5];
-                    case 5: return [2 /*return*/, null];
+                    case 5: return [2 /*return*/, []];
                 }
             });
         });

@@ -113,6 +113,13 @@ export declare class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
+    /**
+     *  Get contract logs implementation, using the REST Api.
+     *  It returns the logs array, or a default value [].
+     *  Throws an exception, when the result size exceeds the given limit.
+     *
+     * @param filter The parameters to filter logs by.
+     */
     getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
     getResolver(name: string): Promise<null | Resolver>;

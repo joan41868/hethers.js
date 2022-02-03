@@ -730,30 +730,41 @@ export class BaseProvider extends Provider {
             // }
         });
     }
+    /**
+     *  Get contract logs implementation, using the REST Api.
+     *  It returns the logs array, or a default value [].
+     *  Throws an exception, when the result size exceeds the given limit.
+     *
+     * @param filter The parameters to filter logs by.
+     */
     getLogs(filter) {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
             const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
             const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
-            const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=100';
+            const limit = 100;
+            const oversizeResponseLegth = limit + 1;
+            const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
             const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
             try {
                 let { data } = yield axios.get(requestUrl);
                 if (data) {
                     const mappedLogs = this.formatter.logsMapper(data.logs);
+                    if (mappedLogs.length == oversizeResponseLegth) {
+                        logger.throwError(`query returned more than ${limit} results`, Logger.errors.CALL_EXCEPTION);
+                    }
                     return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
                 }
             }
             catch (error) {
-                if (error && error.response && error.response.status != 404) {
-                    logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
-                        method: "ContractLogsQuery",
-                        error
-                    });
+                const errorParams = { method: "ContractLogsQuery", error };
+                if (error.response && error.response.status != 404) {
+                    logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, errorParams);
                 }
+                logger.throwError(error.message, error.code, errorParams);
             }
-            return null;
+            return [];
         });
     }
     getHbarPrice() {
