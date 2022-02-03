@@ -352,6 +352,16 @@ describe("Test Contract Transaction Population", function() {
        const bytecode = fs.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
        const contractFactory = new ethers.ContractFactory(abi, bytecode, wallet);
        const contract = await contractFactory.deploy( { gasLimit: 300000 });
+
+       try {
+           await contract.deployTransaction.wait(10);
+           assert.notStrictEqual(true, false, "It should go in the catch block");
+       }
+       catch(err) {
+           assert.notStrictEqual(err, null, "An error is thrown when the specified timeout is exceeded");
+           assert.strictEqual(err.code, 'TIMEOUT');
+       }
+
        const receipt = await contract.deployTransaction.wait();
 
        assert.notStrictEqual(receipt, null, "wait returns a receipt");

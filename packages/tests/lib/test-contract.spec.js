@@ -493,7 +493,7 @@ describe("Test Contract Transaction Population", function () {
     }).timeout(60000);
     it('should have a .wait function', function () {
         return __awaiter(this, void 0, void 0, function () {
-            var hederaEoa, provider, wallet, bytecode, contractFactory, contract, receipt, event, eventTx, eventRc;
+            var hederaEoa, provider, wallet, bytecode, contractFactory, contract, err_1, receipt, event, eventTx, eventRc;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -508,8 +508,21 @@ describe("Test Contract Transaction Population", function () {
                         return [4 /*yield*/, contractFactory.deploy({ gasLimit: 300000 })];
                     case 1:
                         contract = _a.sent();
-                        return [4 /*yield*/, contract.deployTransaction.wait()];
+                        _a.label = 2;
                     case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, contract.deployTransaction.wait(10)];
+                    case 3:
+                        _a.sent();
+                        assert_1.default.notStrictEqual(true, false, "It should go in the catch block");
+                        return [3 /*break*/, 5];
+                    case 4:
+                        err_1 = _a.sent();
+                        assert_1.default.notStrictEqual(err_1, null, "An error is thrown when the specified timeout is exceeded");
+                        assert_1.default.strictEqual(err_1.code, 'TIMEOUT');
+                        return [3 /*break*/, 5];
+                    case 5: return [4 /*yield*/, contract.deployTransaction.wait()];
+                    case 6:
                         receipt = _a.sent();
                         assert_1.default.notStrictEqual(receipt, null, "wait returns a receipt");
                         assert_1.default.notStrictEqual(receipt.transactionId, null, "receipt.transactionId exists");
@@ -524,7 +537,7 @@ describe("Test Contract Transaction Population", function () {
                         assert_1.default.notStrictEqual(event.getTransaction, null, 'events have a method `getTransaction`');
                         assert_1.default.notStrictEqual(event.getTransactionReceipt, null, 'events have a method `getTransactionReceipt`');
                         return [4 /*yield*/, event.getTransaction()];
-                    case 3:
+                    case 7:
                         eventTx = _a.sent();
                         assert_1.default.notStrictEqual(eventTx, null, 'event.getTransaction() returns a result');
                         assert_1.default.notStrictEqual(eventTx.chainId, null);
@@ -536,7 +549,7 @@ describe("Test Contract Transaction Population", function () {
                         assert_1.default.notStrictEqual(eventTx.value, null);
                         assert_1.default.notStrictEqual(eventTx.customData, null);
                         return [4 /*yield*/, event.getTransactionReceipt()];
-                    case 4:
+                    case 8:
                         eventRc = _a.sent();
                         assert_1.default.notStrictEqual(eventRc, null, 'event.getTransactionReceipt() returns a result');
                         assert_1.default.notStrictEqual(eventRc.from, null);
