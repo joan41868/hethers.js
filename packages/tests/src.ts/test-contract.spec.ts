@@ -346,6 +346,7 @@ describe("Test Contract Transaction Population", function() {
         };
 
         // contract init
+        // @ts-ignore
         const contractWallet = new ethers.Wallet(contractHederaEoa, providerTestnet);
         const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
         const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
