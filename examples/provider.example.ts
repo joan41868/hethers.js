@@ -70,21 +70,21 @@ import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-prov
     const contractSolAddr = hethers.utils.getAddressFromAccount(contractAccountConfig);
     console.log(`Get bytecode for contract with num ${contractNum} <->`, contractSolAddr);
     
-    const contractBytecode = await provider.getCode(hethers.utils.getAddressFromAccount(contractAccountConfig));
+    let contractBytecode = await provider.getCode(hethers.utils.getAddressFromAccount(contractAccountConfig));
     console.log(contractBytecode);
 
-    // //not a contract 
-    // contractBytecode = await provider.getCode("0x0000000000000000000000000000000000000000");
-    // console.log(contractBytecode);
-    // contractBytecode = await provider.getCode("0x0000000000000000000000000000000000000000", true);
-    // console.log(contractBytecode);
+    //not a contract 
+    contractBytecode = await provider.getCode("0x0000000000000000000000000000000000000000");
+    console.log(contractBytecode);
+    contractBytecode = await provider.getCode("0x0000000000000000000000000000000000000000", true);
+    console.log(contractBytecode);
 
 
-    // const expiredContractNum = 15067;
-    // const expiredContractAccountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(expiredContractNum) };
-    // const expiredContractSolAddr = getAddressFromAccount(expiredContractAccountConfig);
-    // //contract with an empty bytecode
-    // contractBytecode = await provider.getCode(expiredContractSolAddr);
-    // console.log(contractBytecode);
+    const expiredContractNum = 15067;
+    const expiredContractAccountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(expiredContractNum) };
+    const expiredContractSolAddr = hethers.utils.getAddressFromAccount(expiredContractAccountConfig);
+    //contract with an empty bytecode
+    contractBytecode = await provider.getCode(expiredContractSolAddr);
+    console.log(contractBytecode);
 })();
 

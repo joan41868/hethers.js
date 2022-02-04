@@ -1150,7 +1150,7 @@ describe("Test Hedera Provider", function () {
                                 }); }, function (err) {
                                     assert_1.default.strictEqual(err.name, 'Error');
                                     assert_1.default.strict(err.reason.includes('query returned more than 100 results'));
-                                    assert_1.default.strictEqual(err.code, 'CALL_EXCEPTION');
+                                    assert_1.default.strictEqual(err.code, 'SERVER_ERROR');
                                     return true;
                                 })];
                         case 1:

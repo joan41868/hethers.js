@@ -873,7 +873,7 @@ export class BaseProvider extends Provider {
             if (data) {
                 const mappedLogs = this.formatter.logsMapper(data.logs);
                 if (mappedLogs.length == oversizeResponseLegth) {
-                    logger.throwError(`query returned more than ${limit} results`, Logger.errors.CALL_EXCEPTION);
+                    logger.throwError(`query returned more than ${limit} results`, Logger.errors.SERVER_ERROR);
                 }
                 return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
             }

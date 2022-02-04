@@ -1015,7 +1015,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (data) {
                             mappedLogs = this.formatter.logsMapper(data.logs);
                             if (mappedLogs.length == oversizeResponseLegth) {
-                                logger.throwError("query returned more than " + limit + " results", logger_1.Logger.errors.CALL_EXCEPTION);
+                                logger.throwError("query returned more than " + limit + " results", logger_1.Logger.errors.SERVER_ERROR);
                             }
                             return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs)];
                         }

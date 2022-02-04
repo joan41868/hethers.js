@@ -1163,7 +1163,7 @@ describe("Test Hedera Provider", function () {
                 (err) => {
                     assert.strictEqual(err.name, 'Error');
                     assert.strict(err.reason.includes('query returned more than 100 results'));
-                    assert.strictEqual(err.code, 'CALL_EXCEPTION');
+                    assert.strictEqual(err.code, 'SERVER_ERROR');
                     return true;
                 }
             );
