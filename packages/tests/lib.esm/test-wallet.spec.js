@@ -13,41 +13,8 @@ import { ethers } from "ethers";
 import { loadTests } from "@ethersproject/testcases";
 import * as utils from './utils';
 import { arrayify, getAddressFromAccount, Logger } from "ethers/lib/utils";
-import { AccountCreateTransaction, AccountId, Client, Hbar, PrivateKey, PublicKey, Transaction, TransactionId, Key as HederaKey } from "@hashgraph/sdk";
+import { PublicKey, Transaction, } from "@hashgraph/sdk";
 import { readFileSync } from "fs";
-import { Key } from "@hashgraph/proto";
-/**
- * Helper function that returns a Wallet instance from the provided ED25519 credentials,
- * provided from portal.hedera.com
- * @param account
- * @param provider
- */
-const createWalletFromED25519 = (account, provider) => __awaiter(void 0, void 0, void 0, function* () {
-    const edPrivateKey = PrivateKey.fromString(account.operator.privateKey);
-    const client = Client.forNetwork(account.network);
-    const randomWallet = ethers.Wallet.createRandom();
-    const protoKey = Key.create({
-        ECDSASecp256k1: arrayify(randomWallet._signingKey().compressedPublicKey)
-    });
-    const newAccountKey = HederaKey._fromProtobufKey(protoKey);
-    const accountCreate = yield (yield new AccountCreateTransaction()
-        .setKey(newAccountKey)
-        .setTransactionId(TransactionId.generate(account.operator.accountId))
-        .setInitialBalance(new Hbar(10))
-        .setNodeAccountIds([new AccountId(0, 0, 3)])
-        .freeze()
-        .sign(edPrivateKey))
-        .execute(client);
-    const receipt = yield accountCreate.getReceipt(client);
-    // @ts-ignore
-    const newAccountId = receipt.accountId.toString();
-    const hederaEoa = {
-        account: newAccountId,
-        privateKey: randomWallet.privateKey
-    };
-    // @ts-ignore
-    return new ethers.Wallet(hederaEoa, provider);
-});
 describe('Test JSON Wallets', function () {
     let tests = loadTests('wallets');
     tests.forEach(function (test) {
@@ -548,22 +515,14 @@ describe("Wallet createAccount", function () {
     const timeout = 60000;
     before(function () {
         return __awaiter(this, void 0, void 0, function* () {
-            const account = {
-                "operator": {
-                    "accountId": "0.0.19041642",
-                    "publicKey": "302a300506032b6570032100049d07fb89aa8f5e54eccd7b92846d9839404e8c0af8489a9a511422be958b2f",
-                    "privateKey": "302e020100300506032b6570042204207ef3437273a5146e4e504a6e22c5caedf07cb0821f01bc05d18e8e716f77f66c"
-                },
-                "network": {
-                    "0.testnet.hedera.com:50211": "0.0.3",
-                    "1.testnet.hedera.com:50211": "0.0.4",
-                    "2.testnet.hedera.com:50211": "0.0.5",
-                    "3.testnet.hedera.com:50211": "0.0.6"
-                }
-            };
             this.timeout(timeout);
+            const hederaEoa = {
+                account: '0.0.29562194',
+                privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+            };
             provider = ethers.providers.getDefaultProvider('testnet');
-            wallet = yield createWalletFromED25519(account, provider);
+            // @ts-ignore
+            wallet = new ethers.Wallet(hederaEoa, provider);
         });
     });
     beforeEach(() => __awaiter(this, void 0, void 0, function* () {
@@ -587,6 +546,19 @@ describe("Wallet createAccount", function () {
             const newAccountAddress = getAddressFromAccount(tx.customData.accountId.toString());
             const newAccBalance = yield provider.getBalance(newAccountAddress);
             assert.strictEqual(BigInt(123).toString(), newAccBalance.toString(), 'The initial balance is correct');
+        });
+    }).timeout(timeout);
+    it("Transaction receipt contains the account address", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const tx = yield wallet.createAccount(newAccountPublicKey, BigInt(123));
+            assert.notStrictEqual(tx, null, 'tx exists');
+            assert.notStrictEqual(tx.customData, null, 'tx.customData exists');
+            assert.notStrictEqual(tx.customData.accountId, null, 'accountId exists');
+            assert.strictEqual(tx.value.toString(), BigInt(123).toString(), 'InitialBalance is the same as tx.value');
+            const receipt = yield tx.wait();
+            assert.notStrictEqual(receipt.accountAddress, null, "accountAddress exists");
+            assert.notStrictEqual(receipt.transactionId, null, "transactionId exists");
+            assert.ok(receipt.accountAddress.match(new RegExp(/^0x/)), "accountAddress has the correct format");
         });
     }).timeout(timeout);
 });

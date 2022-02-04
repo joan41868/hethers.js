@@ -1,19 +1,21 @@
 "use strict";
 
 import {
-    EventType, Filter, FilterByBlockHash,
-    Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse
+    EventType,
+    Filter,
+    Listener,
+    Log,
+    Provider,
+    TransactionReceipt,
+    TransactionRequest,
+    TransactionResponse
 } from "@ethersproject/abstract-provider";
-import { Base58 } from "@ethersproject/basex";
 import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import { arrayify, hexDataLength, hexlify } from "@ethersproject/bytes";
 import { getNetwork, Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
-import { sha256 } from "@ethersproject/sha2";
-import { toUtf8Bytes, toUtf8String } from "@ethersproject/strings";
 import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
-import bech32 from "bech32";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -161,242 +163,9 @@ export class Event {
     }
 }
 
-export interface EnsResolver {
-
-    // Name this Resolver is associated with
-    readonly name: string;
-
-    // The address of the resolver
-    readonly address: string;
-
-    // Multichain address resolution (also normal address resolution)
-    // See: https://eips.ethereum.org/EIPS/eip-2304
-    getAddress(coinType?: 60): Promise<null | string>
-
-    // Contenthash field
-    // See: https://eips.ethereum.org/EIPS/eip-1577
-    getContentHash(): Promise<null | string>;
-
-    // Storage of text records
-    // See: https://eips.ethereum.org/EIPS/eip-634
-    getText(key: string): Promise<null | string>;
-};
-
-export interface EnsProvider {
-    resolveName(name: string): Promise<null | string>;
-    lookupAddress(address: string): Promise<null | string>;
-    getResolver(name: string): Promise<null | EnsResolver>;
-}
-
-type CoinInfo = {
-    symbol: string,
-    ilk?: string,     // General family
-    prefix?: string,  // Bech32 prefix
-    p2pkh?: number,   // Pay-to-Public-Key-Hash Version
-    p2sh?: number,    // Pay-to-Script-Hash Version
-};
-
-// https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-const coinInfos: { [ coinType: string ]: CoinInfo } = {
-    "0":   { symbol: "btc",  p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
-    "2":   { symbol: "ltc",  p2pkh: 0x30, p2sh: 0x32, prefix: "ltc" },
-    "3":   { symbol: "doge", p2pkh: 0x1e, p2sh: 0x16 },
-    "60":  { symbol: "eth",  ilk: "eth" },
-    "61":  { symbol: "etc",  ilk: "eth" },
-    "700": { symbol: "xdai", ilk: "eth" },
-};
-
-function bytes32ify(value: number): string {
-    return hexZeroPad(BigNumber.from(value).toHexString(), 32);
-}
-
-// Compute the Base58Check encoded data (checksum is first 4 bytes of sha256d)
-function base58Encode(data: Uint8Array): string {
-    return Base58.encode(concat([ data, hexDataSlice(sha256(sha256(data)), 0, 4) ]));
-}
-
 export interface Avatar {
     url: string;
     linkage: Array<{ type: string, content: string }>;
-}
-
-export class Resolver implements EnsResolver {
-    readonly provider: BaseProvider;
-
-    readonly name: string;
-    readonly address: string;
-
-    readonly _resolvedAddress: null | string;
-
-    // The resolvedAddress is only for creating a ReverseLookup resolver
-    constructor(provider: BaseProvider, address: string, name: string, resolvedAddress?: string) {
-        defineReadOnly(this, "provider", provider);
-        defineReadOnly(this, "name", name);
-        defineReadOnly(this, "address", provider.formatter.address(address));
-        defineReadOnly(this, "_resolvedAddress", resolvedAddress);
-    }
-
-    async _fetchBytes(selector: string, parameters?: string): Promise<null | string> {
-        // e.g. keccak256("addr(bytes32,uint256)")
-        // const tx = {
-        //     to: this.address,
-        //     data: hexConcat([ selector, namehash(this.name), (parameters || "0x") ])
-        // };
-
-        try {
-            // return _parseBytes(await this.provider.call(tx));
-            return null;
-        } catch (error) {
-            if (error.code === Logger.errors.CALL_EXCEPTION) { return null; }
-            return null;
-        }
-    }
-
-    _getAddress(coinType: number, hexBytes: string): string {
-        const coinInfo = coinInfos[String(coinType)];
-
-        if (coinInfo == null) {
-            logger.throwError(`unsupported coin type: ${ coinType }`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `getAddress(${ coinType })`
-            });
-        }
-
-        if (coinInfo.ilk === "eth") {
-            return this.provider.formatter.address(hexBytes);
-        }
-
-        const bytes = arrayify(hexBytes);
-
-        // P2PKH: OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
-        if (coinInfo.p2pkh != null) {
-            const p2pkh = hexBytes.match(/^0x76a9([0-9a-f][0-9a-f])([0-9a-f]*)88ac$/);
-            if (p2pkh) {
-                const length = parseInt(p2pkh[1], 16);
-                if (p2pkh[2].length === length * 2 && length >= 1 && length <= 75) {
-                    return base58Encode(concat([ [ coinInfo.p2pkh ], ("0x" + p2pkh[2]) ]));
-                }
-            }
-        }
-
-        // P2SH: OP_HASH160 <scriptHash> OP_EQUAL
-        if (coinInfo.p2sh != null) {
-            const p2sh = hexBytes.match(/^0xa9([0-9a-f][0-9a-f])([0-9a-f]*)87$/);
-            if (p2sh) {
-                const length = parseInt(p2sh[1], 16);
-                if (p2sh[2].length === length * 2 && length >= 1 && length <= 75) {
-                    return base58Encode(concat([ [ coinInfo.p2sh ], ("0x" + p2sh[2]) ]));
-                }
-            }
-        }
-
-        // Bech32
-        if (coinInfo.prefix != null) {
-            const length = bytes[1];
-
-            // https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program
-            let version = bytes[0];
-            if (version === 0x00) {
-                if (length !== 20 && length !== 32) {
-                    version = -1;
-                }
-            } else {
-                version = -1;
-            }
-
-            if (version >= 0 && bytes.length === 2 + length && length >= 1 && length <= 75) {
-                const words = bech32.toWords(bytes.slice(2));
-                words.unshift(version);
-                return bech32.encode(coinInfo.prefix, words);
-            }
-        }
-
-        return null;
-    }
-
-
-    async getAddress(coinType?: number): Promise<string> {
-        if (coinType == null) { coinType = 60; }
-
-        // If Ethereum, use the standard `addr(bytes32)`
-        if (coinType === 60) {
-            try {
-                return null;
-            } catch (error) {
-                if (error.code === Logger.errors.CALL_EXCEPTION) { return null; }
-                throw error;
-            }
-        }
-
-        // keccak256("addr(bytes32,uint256")
-        const hexBytes = await this._fetchBytes("0xf1cb7e06", bytes32ify(coinType));
-
-        // No address
-        if (hexBytes == null || hexBytes === "0x") { return null; }
-
-        // Compute the address
-        const address = this._getAddress(coinType, hexBytes);
-
-        if (address == null) {
-            logger.throwError(`invalid or unsupported coin data`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `getAddress(${ coinType })`,
-                coinType: coinType,
-                data: hexBytes
-            });
-        }
-
-        return address;
-    }
-
-    async getContentHash(): Promise<string> {
-
-        // keccak256("contenthash()")
-        const hexBytes = await this._fetchBytes("0xbc1c58d1");
-
-        // No contenthash
-        if (hexBytes == null || hexBytes === "0x") { return null; }
-
-        // IPFS (CID: 1, Type: DAG-PB)
-        const ipfs = hexBytes.match(/^0xe3010170(([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f]*))$/);
-        if (ipfs) {
-            const length = parseInt(ipfs[3], 16);
-            if (ipfs[4].length === length * 2) {
-                return "ipfs:/\/" + Base58.encode("0x" + ipfs[1]);
-            }
-        }
-
-        // Swarm (CID: 1, Type: swarm-manifest; hash/length hard-coded to keccak256/32)
-        const swarm = hexBytes.match(/^0xe40101fa011b20([0-9a-f]*)$/)
-        if (swarm) {
-            if (swarm[1].length === (32 * 2)) {
-                return "bzz:/\/" + swarm[1]
-            }
-        }
-
-        return logger.throwError(`invalid or unsupported content hash data`, Logger.errors.UNSUPPORTED_OPERATION, {
-            operation: "getContentHash()",
-            data: hexBytes
-        });
-    }
-
-    async getText(key: string): Promise<string> {
-
-        // The key encoded as parameter to fetchBytes
-        let keyBytes = toUtf8Bytes(key);
-
-        // The nodehash consumes the first slot, so the string pointer targets
-        // offset 64, with the length at offset 64 and data starting at offset 96
-        keyBytes = concat([ bytes32ify(64), bytes32ify(keyBytes.length), keyBytes ]);
-
-        // Pad to word-size (32 bytes)
-        if ((keyBytes.length % 32) !== 0) {
-            keyBytes = concat([ keyBytes, hexZeroPad("0x", 32 - (key.length % 32)) ])
-        }
-
-        const hexBytes = await this._fetchBytes("0x59d1d43c", hexlify(keyBytes));
-        if (hexBytes == null || hexBytes === "0x") { return null; }
-
-        return toUtf8String(hexBytes);
-    }
 }
 
 let defaultFormatter: Formatter = null;
@@ -723,22 +492,23 @@ export class BaseProvider extends Provider {
         }
     }
 
-    async _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash> {
+    async _getFilter(filter: Filter | Promise<Filter>): Promise<Filter> {
         filter = await filter;
 
         const result: any = { };
 
         if (filter.address != null) {
-            result.address = this._getAddress(filter.address.toString());
+            result.address = filter.address.toString();
         }
 
-        ["blockHash", "topics"].forEach((key) => {
+        ["topics"].forEach((key) => {
             if ((<any>filter)[key] == null) { return; }
             result[key] = (<any>filter)[key];
         });
 
-        ["fromBlock", "toBlock"].forEach((key) => {
+        ["fromTimestamp", "toTimestamp"].forEach((key) => {
             if ((<any>filter)[key] == null) { return; }
+            result[key] = (<any>filter)[key];
         });
 
         return this.formatter.filter(await resolveProperties(result));
@@ -748,22 +518,6 @@ export class BaseProvider extends Provider {
         return logger.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
             operation: "estimateGas"
         });
-    }
-
-    // TODO FIX ME
-    async _getAddress(addressOrName: string | Promise<string>): Promise<string> {
-        addressOrName = await addressOrName;
-        if (typeof (addressOrName) !== "string") {
-            logger.throwArgumentError("invalid address or ENS name", "name", addressOrName);
-        }
-
-        const address = await this.resolveName(addressOrName);
-        if (address == null) {
-            logger.throwError("ENS name not configured", Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: `resolveName(${JSON.stringify(addressOrName)})`
-            });
-        }
-        return address;
     }
 
     /**
@@ -845,87 +599,43 @@ export class BaseProvider extends Provider {
         // }
     }
 
-    async getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>> {
-        await this.getNetwork();
+    /**
+     *  Get contract logs implementation, using the REST Api. 
+     *  It returns the logs array, or a default value []. 
+     *  Throws an exception, when the result size exceeds the given limit.
+     *
+     * @param filter The parameters to filter logs by.
+     */
+    async getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>> {
+        this._checkMirrorNode();
         const params = await resolveProperties({ filter: this._getFilter(filter) });
-        const logs: Array<Log> = await this.perform("getLogs", params);
-        return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
+        const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
+        const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
+        const limit = 100;
+        const oversizeResponseLegth = limit + 1;
+        const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+        const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+        try {
+            let { data } = await axios.get(requestUrl);
+            if (data) {
+                const mappedLogs = this.formatter.logsMapper(data.logs);
+                if (mappedLogs.length == oversizeResponseLegth) {
+                    logger.throwError(`query returned more than ${limit} results`, Logger.errors.SERVER_ERROR);
+                }
+                return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
+            }
+        } catch (error) {
+            const errorParams = { method: "ContractLogsQuery", error }
+            if (error.response && error.response.status != 404) {
+                logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, errorParams);
+            }
+            logger.throwError(error.message, error.code, errorParams);
+        }
+        return [];
     }
 
     async getHbarPrice(): Promise<number> {
         return logger.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
-    }
-
-    // TODO FIXME
-    async getResolver(name: string): Promise<null | Resolver> {
-        try {
-            const address = await this._getResolver(name);
-            if (address == null) { return null; }
-            return new Resolver(this, address, name);
-        } catch (error) {
-            if (error.code === Logger.errors.CALL_EXCEPTION) { return null; }
-            return null;
-        }
-    }
-
-    // TODO FIXME
-    async _getResolver(name: string): Promise<string> {
-        // Get the resolver from the blockchain
-        const network = await this.getNetwork();
-
-        // No ENS...
-        if (!network.ensAddress) {
-            logger.throwError(
-                "network does not support ENS",
-                Logger.errors.UNSUPPORTED_OPERATION,
-                { operation: "ENS", network: network.name }
-            );
-        }
-
-        // keccak256("resolver(bytes32)")
-        // const transaction = {
-        //     to: network.ensAddress,
-        //     data: ("0x0178b8bf" + namehash(name).substring(2))
-        // };
-
-        try {
-            return null;
-            // return this.formatter.callAddress(await this.call(transaction));
-        } catch (error) {
-            if (error.code === Logger.errors.CALL_EXCEPTION) { return null; }
-            throw error;
-        }
-    }
-
-    // TODO FIXME
-    async resolveName(name: string | Promise<string>): Promise<null | string> {
-        name = await name;
-
-        // If it is already an address, nothing to resolve
-        try {
-            return Promise.resolve(this.formatter.address(name));
-        } catch (error) {
-            // If is is a hexstring, the address is bad (See #694)
-            if (isHexString(name)) { throw error; }
-        }
-
-        if (typeof (name) !== "string") {
-            logger.throwArgumentError("invalid ENS name", "name", name);
-        }
-
-        // Get the addr from the resovler
-        const resolver = await this.getResolver(name);
-        if (!resolver) { return null; }
-
-        return await resolver.getAddress();
-    }
-
-    // TODO FIXME
-    async lookupAddress(address: string | Promise<string>): Promise<null | string> {
-        address = await address;
-        address = this.formatter.address(address);
-
-        return null;
     }
 
     perform(method: string, params: any): Promise<any> {

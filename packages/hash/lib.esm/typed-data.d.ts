@@ -20,10 +20,6 @@ export declare class TypedDataEncoder {
     static hashDomain(domain: TypedDataDomain): string;
     static encode(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): string;
     static hash(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): string;
-    static resolveNames(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>, resolveName: (name: string) => Promise<string>): Promise<{
-        domain: TypedDataDomain;
-        value: any;
-    }>;
     static getPayload(domain: TypedDataDomain, types: Record<string, Array<TypedDataField>>, value: Record<string, any>): any;
 }
 //# sourceMappingURL=typed-data.d.ts.map

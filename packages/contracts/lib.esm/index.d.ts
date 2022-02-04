@@ -19,7 +19,6 @@ export interface PayableOverrides extends Overrides {
     value?: BigNumberish | Promise<BigNumberish>;
 }
 export interface CallOverrides extends PayableOverrides {
-    blockTag?: BlockTag | Promise<BlockTag>;
     from?: string | Promise<string>;
 }
 export interface PopulatedTransaction {
