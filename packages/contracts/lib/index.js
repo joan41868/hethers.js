@@ -749,7 +749,6 @@ var BaseContract = /** @class */ (function () {
     };
     BaseContract.prototype._deployed = function () {
         var _this = this;
-        this._requireAddressSet();
         if (!this._deployedPromise) {
             // If we were just deployed, we know the transaction we should occur in
             if (this.deployTransaction) {
