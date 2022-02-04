@@ -12,7 +12,6 @@ import {
     Result
 } from "@ethersproject/abi";
 import {
-    Block,
     BlockTag,
     Listener,
     Log,
@@ -42,13 +41,12 @@ const logger = new Logger(version);
 
 export interface Overrides {
     gasLimit?: BigNumberish | Promise<BigNumberish>;
-    gasPrice?: BigNumberish | Promise<BigNumberish>;
     maxFeePerGas?: BigNumberish | Promise<BigNumberish>;
     maxPriorityFeePerGas?: BigNumberish | Promise<BigNumberish>;
-    nonce?: BigNumberish | Promise<BigNumberish>;
     type?: number;
     accessList?: AccessListish;
     customData?: Record<string, any>;
+    nodeId?: AccountLike;
 }
 
 export interface PayableOverrides extends Overrides {
@@ -109,8 +107,7 @@ export interface Event extends Log {
     // A function that will remove the listener responsible for this event (if any)
     removeListener: () => void;
 
-    // Get blockchain details about this event's block and transaction
-    getBlock: () => Promise<Block>;
+    // Get transaction's info
     getTransaction: () => Promise<TransactionResponse>;
     getTransactionReceipt: () => Promise<TransactionReceipt>;
 }
@@ -190,6 +187,7 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
     if (ro.from != null) { tx.from = ro.from; }
     if (ro.type != null) { tx.type = ro.type; }
     if (ro.accessList != null) { tx.accessList = accessListify(ro.accessList); }
+    if (ro.nodeId != null) { tx.nodeId = ro.nodeId; }
 
     // If there was no "gasLimit" override, but the ABI specifies a default, use it
     if (tx.gasLimit == null && fragment.gas != null) {
@@ -229,6 +227,7 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
     delete overrides.maxFeePerGas;
     delete overrides.maxPriorityFeePerGas;
     delete overrides.customData;
+    delete overrides.nodeId;
 
     // Make sure there are no stray overrides, which may indicate a
     // typo or using an unsupported key.
@@ -288,10 +287,6 @@ function addContractWait(contract: Contract, tx: TransactionResponse) {
 
                 // Useful operations
                 event.removeListener = () => { return contract.provider; }
-                event.getBlock = () => {
-                    // TODO: to be removed
-                    return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-                }
                 event.getTransaction = () => {
                     return contract.provider.getTransaction(receipt.transactionHash);
                 }
@@ -891,10 +886,6 @@ export class BaseContract {
             this._checkRunningEvents(runningEvent);
         };
 
-        event.getBlock = () => {
-            // TODO: to be removed
-            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-        }
         event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); }
         event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); }
 

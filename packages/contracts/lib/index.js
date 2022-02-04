@@ -158,6 +158,9 @@ function populateTransaction(contract, fragment, args) {
                     if (ro.accessList != null) {
                         tx.accessList = (0, transactions_1.accessListify)(ro.accessList);
                     }
+                    if (ro.nodeId != null) {
+                        tx.nodeId = ro.nodeId;
+                    }
                     // If there was no "gasLimit" override, but the ABI specifies a default, use it
                     if (tx.gasLimit == null && fragment.gas != null) {
                         intrinsic = 21000;
@@ -195,6 +198,7 @@ function populateTransaction(contract, fragment, args) {
                     delete overrides.maxFeePerGas;
                     delete overrides.maxPriorityFeePerGas;
                     delete overrides.customData;
+                    delete overrides.nodeId;
                     leftovers = Object.keys(overrides).filter(function (key) { return (overrides[key] != null); });
                     if (leftovers.length) {
                         logger.throwError("cannot override " + leftovers.map(function (l) { return JSON.stringify(l); }).join(","), logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
@@ -266,10 +270,6 @@ function addContractWait(contract, tx) {
                 }
                 // Useful operations
                 event.removeListener = function () { return contract.provider; };
-                event.getBlock = function () {
-                    // TODO: to be removed
-                    return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
-                };
                 event.getTransaction = function () {
                     return contract.provider.getTransaction(receipt.transactionHash);
                 };
@@ -806,10 +806,6 @@ var BaseContract = /** @class */ (function () {
             }
             runningEvent.removeListener(listener);
             _this._checkRunningEvents(runningEvent);
-        };
-        event.getBlock = function () {
-            // TODO: to be removed
-            return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
         };
         event.getTransaction = function () { return _this.provider.getTransaction(log.transactionHash); };
         event.getTransactionReceipt = function () { return _this.provider.getTransactionReceipt(log.transactionHash); };
