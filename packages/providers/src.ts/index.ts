@@ -17,7 +17,7 @@ import {
 import { getNetwork } from "@ethersproject/networks";
 import { Network, Networkish } from "@ethersproject/networks";
 
-import { BaseProvider, Resolver } from "./base-provider";
+import { BaseProvider } from "./base-provider";
 
 import { FallbackProviderConfig } from "./fallback-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
@@ -78,9 +78,6 @@ export {
     // Abstract Providers (or Abstract-ish)
     Provider,
     BaseProvider,
-
-    Resolver,
-
 
     ///////////////////////
     // Concrete Providers
