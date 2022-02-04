@@ -25,18 +25,6 @@ export interface Avatar {
         content: string;
     }>;
 }
-export declare class Resolver {
-    readonly provider: BaseProvider;
-    readonly name: string;
-    readonly address: string;
-    readonly _resolvedAddress: null | string;
-    constructor(provider: BaseProvider, address: string, name: string, resolvedAddress?: string);
-    _fetchBytes(selector: string, parameters?: string): Promise<null | string>;
-    _getAddress(coinType: number, hexBytes: string): string;
-    getAddress(coinType?: number): Promise<string>;
-    getContentHash(): Promise<string>;
-    getText(key: string): Promise<string>;
-}
 export declare class BaseProvider extends Provider {
     _networkPromise: Promise<Network>;
     _network: Network;
@@ -102,8 +90,6 @@ export declare class BaseProvider extends Provider {
     getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
     getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
-    getResolver(name: string): Promise<null | Resolver>;
-    _getResolver(name: string): Promise<string>;
     perform(method: string, params: any): Promise<any>;
     _addEventListener(eventName: EventType, listener: Listener, once: boolean): this;
     on(eventName: EventType, listener: Listener): this;

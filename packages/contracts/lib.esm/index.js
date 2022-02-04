@@ -20,7 +20,6 @@ import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 ;
-;
 ///////////////////////////////
 const allowedTransactionKeys = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,

@@ -93159,7 +93159,6 @@ var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments,
 };
 const logger$s = new Logger(version$o);
 ;
-;
 ///////////////////////////////
 const allowedTransactionKeys$2 = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
