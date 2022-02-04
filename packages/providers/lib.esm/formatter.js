@@ -1,5 +1,5 @@
 "use strict";
-import { getAddress, getContractAddress } from "@ethersproject/address";
+import { getAddress, getAddressFromAccount, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
 import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@ethersproject/constants";
@@ -17,37 +17,25 @@ export class Formatter {
         const formats = ({});
         const address = this.address.bind(this);
         const bigNumber = this.bigNumber.bind(this);
-        const blockTag = this.blockTag.bind(this);
         const data = this.data.bind(this);
-        const hash = this.hash.bind(this);
+        const hash48 = this.hash48.bind(this);
+        const hash32 = this.hash32.bind(this);
         const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
+        const timestamp = this.timestamp.bind(this);
         const strictData = (v) => { return this.data(v, true); };
         formats.transaction = {
-            hash: hash,
-            type: type,
+            hash: hash48,
             accessList: Formatter.allowNull(this.accessList.bind(this), null),
-            blockHash: Formatter.allowNull(hash, null),
-            blockNumber: Formatter.allowNull(number, null),
-            transactionIndex: Formatter.allowNull(number, null),
-            confirmations: Formatter.allowNull(number, null),
             from: address,
-            // either (gasPrice) or (maxPriorityFeePerGas + maxFeePerGas)
-            // must be set
-            gasPrice: Formatter.allowNull(bigNumber),
-            maxPriorityFeePerGas: Formatter.allowNull(bigNumber),
-            maxFeePerGas: Formatter.allowNull(bigNumber),
             gasLimit: bigNumber,
             to: Formatter.allowNull(address, null),
             value: bigNumber,
-            nonce: number,
             data: data,
             r: Formatter.allowNull(this.uint256),
             s: Formatter.allowNull(this.uint256),
             v: Formatter.allowNull(number),
-            creates: Formatter.allowNull(address, null),
-            raw: Formatter.allowNull(data),
         };
         formats.transactionRequest = {
             from: Formatter.allowNull(address),
@@ -64,36 +52,28 @@ export class Formatter {
         };
         formats.receiptLog = {
             transactionIndex: number,
-            blockNumber: number,
-            transactionHash: hash,
+            transactionHash: hash48,
             address: address,
-            topics: Formatter.arrayOf(hash),
+            topics: Formatter.arrayOf(hash32),
             data: data,
             logIndex: number,
-            blockHash: hash,
         };
         formats.receipt = {
             to: Formatter.allowNull(this.address, null),
             from: Formatter.allowNull(this.address, null),
             contractAddress: Formatter.allowNull(address, null),
-            transactionIndex: number,
-            // should be allowNull(hash), but broken-EIP-658 support is handled in receipt
-            root: Formatter.allowNull(hex),
+            timestamp: timestamp,
             gasUsed: bigNumber,
             logsBloom: Formatter.allowNull(data),
-            blockHash: hash,
-            transactionHash: hash,
+            transactionHash: hash48,
             logs: Formatter.arrayOf(this.receiptLog.bind(this)),
-            blockNumber: number,
-            confirmations: Formatter.allowNull(number, null),
             cumulativeGasUsed: bigNumber,
-            effectiveGasPrice: Formatter.allowNull(bigNumber),
             status: Formatter.allowNull(number),
             type: type
         };
         formats.block = {
-            hash: hash,
-            parentHash: hash,
+            hash: hash48,
+            parentHash: hash48,
             number: number,
             timestamp: number,
             nonce: Formatter.allowNull(hex),
@@ -102,30 +82,51 @@ export class Formatter {
             gasUsed: bigNumber,
             miner: address,
             extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash)),
+            transactions: Formatter.allowNull(Formatter.arrayOf(hash48)),
             baseFeePerGas: Formatter.allowNull(bigNumber)
         };
         formats.blockWithTransactions = shallowCopy(formats.block);
         formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
         formats.filter = {
-            fromBlock: Formatter.allowNull(blockTag, undefined),
-            toBlock: Formatter.allowNull(blockTag, undefined),
-            blockHash: Formatter.allowNull(hash, undefined),
+            fromTimestamp: Formatter.allowNull(timestamp, undefined),
+            toTimestamp: Formatter.allowNull(timestamp, undefined),
             address: Formatter.allowNull(address, undefined),
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
         formats.filterLog = {
-            blockNumber: Formatter.allowNull(number),
-            blockHash: Formatter.allowNull(hash),
-            transactionIndex: number,
-            removed: Formatter.allowNull(this.boolean.bind(this)),
+            timestamp: timestamp,
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
-            topics: Formatter.arrayOf(hash),
-            transactionHash: hash,
+            topics: Formatter.arrayOf(hash32),
+            transactionHash: Formatter.allowNull(hash48, undefined),
             logIndex: number,
+            transactionIndex: number
         };
         return formats;
+    }
+    logsMapper(values) {
+        let logs = [];
+        values.forEach(function (log) {
+            const mapped = {
+                timestamp: log.timestamp,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                //@ts-ignore
+                transactionHash: null,
+                logIndex: log.index,
+                transactionIndex: log.index,
+            };
+            logs.push(mapped);
+        });
+        return logs;
+    }
+    //TODO propper validation needed?
+    timestamp(value) {
+        if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
+            logger.throwArgumentError("bad timestamp format", "value", value);
+        }
+        return value;
     }
     accessList(accessList) {
         return accessListify(accessList || []);
@@ -185,7 +186,11 @@ export class Formatter {
     // Requires an address
     // Strict! Used on input.
     address(value) {
-        return getAddress(value);
+        let address = value.toString();
+        if (address.indexOf(".") !== -1) {
+            address = getAddressFromAccount(address);
+        }
+        return getAddress(address);
     }
     callAddress(value) {
         if (!isHexString(value, 32)) {
@@ -214,10 +219,18 @@ export class Formatter {
         throw new Error("invalid blockTag");
     }
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
-    hash(value, strict) {
+    hash48(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 48) {
             return logger.throwArgumentError("invalid hash", "value", value);
+        }
+        return result;
+    }
+    //hedera topics hash has length 32
+    hash32(value, strict) {
+        const result = this.hex(value, strict);
+        if (hexDataLength(result) !== 32) {
+            return logger.throwArgumentError("invalid topics hash", "value", value);
         }
         return result;
     }
@@ -357,7 +370,8 @@ export class Formatter {
                 data: log.data,
                 topics: log.topics,
                 transactionHash: response.hash,
-                logIndex: log.index
+                logIndex: log.index,
+                transactionIndex: log.index,
             };
             logs.push(values);
         });
@@ -383,7 +397,7 @@ export class Formatter {
             return value.map((v) => this.topics(v));
         }
         else if (value != null) {
-            return this.hash(value, true);
+            return this.hash32(value, true);
         }
         return null;
     }

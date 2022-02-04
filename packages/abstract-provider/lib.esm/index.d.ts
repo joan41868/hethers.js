@@ -78,6 +78,7 @@ export interface Log {
     topics: Array<string>;
     transactionHash: string;
     logIndex: number;
+    transactionIndex: number;
 }
 export interface TransactionReceipt {
     to: string;
@@ -105,8 +106,8 @@ export interface EventFilter {
     topics?: Array<string | Array<string> | null>;
 }
 export interface Filter extends EventFilter {
-    fromBlock?: BlockTag;
-    toBlock?: BlockTag;
+    fromTimestamp?: string;
+    toTimestamp?: string;
 }
 export interface FilterByBlockHash extends EventFilter {
     blockHash?: string;

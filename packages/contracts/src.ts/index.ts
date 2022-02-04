@@ -14,8 +14,8 @@ import {
 import {
     Block,
     BlockTag,
-    Filter,
-    FilterByBlockHash,
+    // Filter,
+    // FilterByBlockHash,
     Listener,
     Log,
     Provider,
@@ -972,15 +972,15 @@ export class BaseContract {
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
 
-        if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-            if (toBlock != null) {
-                logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-            }
-            (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
-        } else {
-             (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
-             (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
-        }
+        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
+        //     if (toBlock != null) {
+        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
+        //     }
+        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
+        // } else {
+        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
+        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
+        // }
         return this.provider.getLogs(filter).then((logs) => {
             return logs.map((log) => this._wrapEvent(runningEvent, log, null));
         });

@@ -22348,36 +22348,50 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$1 = keccak(256);
 
-var name = "elliptic";
-var version$b = "6.5.4";
-var description = "EC cryptography";
-var main = "lib/elliptic.js";
-var files = [
-	"lib"
-];
-var scripts = {
-	lint: "eslint lib test",
-	"lint:fix": "npm run lint -- --fix",
-	unit: "istanbul test _mocha --reporter=spec test/index.js",
-	test: "npm run lint && npm run unit",
-	version: "grunt dist && git add dist/"
+var _from = "elliptic@6.5.4";
+var _id = "elliptic@6.5.4";
+var _inBundle = false;
+var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
+var _location = "/elliptic";
+var _phantomChildren = {
 };
-var repository = {
-	type: "git",
-	url: "git@github.com:indutny/elliptic"
+var _requested = {
+	type: "version",
+	registry: true,
+	raw: "elliptic@6.5.4",
+	name: "elliptic",
+	escapedName: "elliptic",
+	rawSpec: "6.5.4",
+	saveSpec: null,
+	fetchSpec: "6.5.4"
 };
-var keywords = [
-	"EC",
-	"Elliptic",
-	"curve",
-	"Cryptography"
+var _requiredBy = [
+	"/",
+	"/@hashgraph/cryptography"
 ];
-var author = "Fedor Indutny <fedor@indutny.com>";
-var license = "MIT";
+var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
+var _shasum = "da37cebd31e79a1367e941b592ed1fbebd58abbb";
+var _spec = "elliptic@6.5.4";
+var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
+var author = {
+	name: "Fedor Indutny",
+	email: "fedor@indutny.com"
+};
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
-var homepage = "https://github.com/indutny/elliptic";
+var bundleDependencies = false;
+var dependencies = {
+	"bn.js": "^4.11.9",
+	brorand: "^1.1.0",
+	"hash.js": "^1.0.0",
+	"hmac-drbg": "^1.0.1",
+	inherits: "^2.0.4",
+	"minimalistic-assert": "^1.0.1",
+	"minimalistic-crypto-utils": "^1.0.1"
+};
+var deprecated = false;
+var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
 	coveralls: "^3.1.0",
@@ -22393,30 +22407,60 @@ var devDependencies = {
 	istanbul: "^0.4.5",
 	mocha: "^8.0.1"
 };
-var dependencies = {
-	"bn.js": "^4.11.9",
-	brorand: "^1.1.0",
-	"hash.js": "^1.0.0",
-	"hmac-drbg": "^1.0.1",
-	inherits: "^2.0.4",
-	"minimalistic-assert": "^1.0.1",
-	"minimalistic-crypto-utils": "^1.0.1"
+var files = [
+	"lib"
+];
+var homepage = "https://github.com/indutny/elliptic";
+var keywords = [
+	"EC",
+	"Elliptic",
+	"curve",
+	"Cryptography"
+];
+var license = "MIT";
+var main = "lib/elliptic.js";
+var name = "elliptic";
+var repository = {
+	type: "git",
+	url: "git+ssh://git@github.com/indutny/elliptic.git"
 };
+var scripts = {
+	lint: "eslint lib test",
+	"lint:fix": "npm run lint -- --fix",
+	test: "npm run lint && npm run unit",
+	unit: "istanbul test _mocha --reporter=spec test/index.js",
+	version: "grunt dist && git add dist/"
+};
+var version$b = "6.5.4";
 var require$$0 = {
-	name: name,
-	version: version$b,
-	description: description,
-	main: main,
-	files: files,
-	scripts: scripts,
-	repository: repository,
-	keywords: keywords,
+	_from: _from,
+	_id: _id,
+	_inBundle: _inBundle,
+	_integrity: _integrity,
+	_location: _location,
+	_phantomChildren: _phantomChildren,
+	_requested: _requested,
+	_requiredBy: _requiredBy,
+	_resolved: _resolved,
+	_shasum: _shasum,
+	_spec: _spec,
+	_where: _where,
 	author: author,
-	license: license,
 	bugs: bugs,
-	homepage: homepage,
+	bundleDependencies: bundleDependencies,
+	dependencies: dependencies,
+	deprecated: deprecated,
+	description: description,
 	devDependencies: devDependencies,
-	dependencies: dependencies
+	files: files,
+	homepage: homepage,
+	keywords: keywords,
+	license: license,
+	main: main,
+	name: name,
+	repository: repository,
+	scripts: scripts,
+	version: version$b
 };
 
 var minimalisticAssert = assert;
@@ -80656,22 +80700,46 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var name$1 = "@grpc/grpc-js";
-var version$c = "1.5.1";
-var description$1 = "gRPC Library for Node - pure JS implementation";
-var homepage$1 = "https://grpc.io/";
-var repository$1 = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
-var main$1 = "build/src/index.js";
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var _from$1 = "@grpc/grpc-js@^1.4.4";
+var _id$1 = "@grpc/grpc-js@1.5.1";
+var _inBundle$1 = false;
+var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
+var _location$1 = "/@grpc/grpc-js";
+var _phantomChildren$1 = {
 };
-var keywords$1 = [
+var _requested$1 = {
+	type: "range",
+	registry: true,
+	raw: "@grpc/grpc-js@^1.4.4",
+	name: "@grpc/grpc-js",
+	escapedName: "@grpc%2fgrpc-js",
+	scope: "@grpc",
+	rawSpec: "^1.4.4",
+	saveSpec: null,
+	fetchSpec: "^1.4.4"
+};
+var _requiredBy$1 = [
+	"/@hashgraph/sdk"
 ];
+var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
+var _shasum$1 = "934571ae351e868e61d2bd1d56249b79ce8bd1f5";
+var _spec$1 = "@grpc/grpc-js@^1.4.4";
+var _where$1 = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js\\node_modules\\@hashgraph\\sdk";
 var author$1 = {
 	name: "Google Inc."
 };
-var types = "build/src/index.d.ts";
-var license$1 = "Apache-2.0";
+var bundleDependencies$1 = false;
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var dependencies$1 = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
+};
+var deprecated$1 = false;
+var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -80695,29 +80763,8 @@ var devDependencies$1 = {
 	"ts-node": "^8.3.0",
 	typescript: "^3.7.2"
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var scripts$1 = {
-	build: "npm run compile",
-	clean: "rimraf ./build",
-	compile: "tsc -p .",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	lint: "npm run check",
-	prepare: "npm run generate-types && npm run compile",
-	test: "gulp test",
-	check: "gts check src/**/*.ts",
-	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
-	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
-	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto"
-};
-var dependencies$1 = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
 var files$1 = [
 	"src/**/*.ts",
@@ -80733,23 +80780,64 @@ var files$1 = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
+var homepage$1 = "https://grpc.io/";
+var keywords$1 = [
+];
+var license$1 = "Apache-2.0";
+var main$1 = "build/src/index.js";
+var name$1 = "@grpc/grpc-js";
+var repository$1 = {
+	type: "git",
+	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
+};
+var scripts$1 = {
+	build: "npm run compile",
+	check: "gts check src/**/*.ts",
+	clean: "rimraf ./build",
+	compile: "tsc -p .",
+	fix: "gts fix src/*.ts",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
+	lint: "npm run check",
+	posttest: "npm run check && madge -c ./build/src",
+	prepare: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
+	test: "gulp test"
+};
+var types = "build/src/index.d.ts";
+var version$c = "1.5.1";
 var require$$0$2 = {
-	name: name$1,
-	version: version$c,
-	description: description$1,
-	homepage: homepage$1,
-	repository: repository$1,
-	main: main$1,
-	engines: engines,
-	keywords: keywords$1,
+	_from: _from$1,
+	_id: _id$1,
+	_inBundle: _inBundle$1,
+	_integrity: _integrity$1,
+	_location: _location$1,
+	_phantomChildren: _phantomChildren$1,
+	_requested: _requested$1,
+	_requiredBy: _requiredBy$1,
+	_resolved: _resolved$1,
+	_shasum: _shasum$1,
+	_spec: _spec$1,
+	_where: _where$1,
 	author: author$1,
-	types: types,
-	license: license$1,
-	devDependencies: devDependencies$1,
+	bundleDependencies: bundleDependencies$1,
 	contributors: contributors,
-	scripts: scripts$1,
 	dependencies: dependencies$1,
-	files: files$1
+	deprecated: deprecated$1,
+	description: description$1,
+	devDependencies: devDependencies$1,
+	engines: engines,
+	files: files$1,
+	homepage: homepage$1,
+	keywords: keywords$1,
+	license: license$1,
+	main: main$1,
+	name: name$1,
+	repository: repository$1,
+	scripts: scripts$1,
+	types: types,
+	version: version$c
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -93867,16 +93955,15 @@ class BaseContract {
         this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
-        if (typeof (fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-            if (toBlock != null) {
-                logger$s.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-            }
-            filter.blockHash = fromBlockOrBlockhash;
-        }
-        else {
-            filter.fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash : 0);
-            filter.toBlock = ((toBlock != null) ? toBlock : "latest");
-        }
+        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
+        //     if (toBlock != null) {
+        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
+        //     }
+        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
+        // } else {
+        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
+        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
+        // }
         return this.provider.getLogs(filter).then((logs) => {
             return logs.map((log) => this._wrapEvent(runningEvent, log, null));
         });
@@ -94215,37 +94302,25 @@ class Formatter {
         const formats = ({});
         const address = this.address.bind(this);
         const bigNumber = this.bigNumber.bind(this);
-        const blockTag = this.blockTag.bind(this);
         const data = this.data.bind(this);
-        const hash = this.hash.bind(this);
+        const hash48 = this.hash48.bind(this);
+        const hash32 = this.hash32.bind(this);
         const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
+        const timestamp = this.timestamp.bind(this);
         const strictData = (v) => { return this.data(v, true); };
         formats.transaction = {
-            hash: hash,
-            type: type,
+            hash: hash48,
             accessList: Formatter.allowNull(this.accessList.bind(this), null),
-            blockHash: Formatter.allowNull(hash, null),
-            blockNumber: Formatter.allowNull(number, null),
-            transactionIndex: Formatter.allowNull(number, null),
-            confirmations: Formatter.allowNull(number, null),
             from: address,
-            // either (gasPrice) or (maxPriorityFeePerGas + maxFeePerGas)
-            // must be set
-            gasPrice: Formatter.allowNull(bigNumber),
-            maxPriorityFeePerGas: Formatter.allowNull(bigNumber),
-            maxFeePerGas: Formatter.allowNull(bigNumber),
             gasLimit: bigNumber,
             to: Formatter.allowNull(address, null),
             value: bigNumber,
-            nonce: number,
             data: data,
             r: Formatter.allowNull(this.uint256),
             s: Formatter.allowNull(this.uint256),
             v: Formatter.allowNull(number),
-            creates: Formatter.allowNull(address, null),
-            raw: Formatter.allowNull(data),
         };
         formats.transactionRequest = {
             from: Formatter.allowNull(address),
@@ -94262,36 +94337,28 @@ class Formatter {
         };
         formats.receiptLog = {
             transactionIndex: number,
-            blockNumber: number,
-            transactionHash: hash,
+            transactionHash: hash48,
             address: address,
-            topics: Formatter.arrayOf(hash),
+            topics: Formatter.arrayOf(hash32),
             data: data,
             logIndex: number,
-            blockHash: hash,
         };
         formats.receipt = {
             to: Formatter.allowNull(this.address, null),
             from: Formatter.allowNull(this.address, null),
             contractAddress: Formatter.allowNull(address, null),
-            transactionIndex: number,
-            // should be allowNull(hash), but broken-EIP-658 support is handled in receipt
-            root: Formatter.allowNull(hex),
+            timestamp: timestamp,
             gasUsed: bigNumber,
             logsBloom: Formatter.allowNull(data),
-            blockHash: hash,
-            transactionHash: hash,
+            transactionHash: hash48,
             logs: Formatter.arrayOf(this.receiptLog.bind(this)),
-            blockNumber: number,
-            confirmations: Formatter.allowNull(number, null),
             cumulativeGasUsed: bigNumber,
-            effectiveGasPrice: Formatter.allowNull(bigNumber),
             status: Formatter.allowNull(number),
             type: type
         };
         formats.block = {
-            hash: hash,
-            parentHash: hash,
+            hash: hash48,
+            parentHash: hash48,
             number: number,
             timestamp: number,
             nonce: Formatter.allowNull(hex),
@@ -94300,30 +94367,51 @@ class Formatter {
             gasUsed: bigNumber,
             miner: address,
             extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash)),
+            transactions: Formatter.allowNull(Formatter.arrayOf(hash48)),
             baseFeePerGas: Formatter.allowNull(bigNumber)
         };
         formats.blockWithTransactions = shallowCopy(formats.block);
         formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
         formats.filter = {
-            fromBlock: Formatter.allowNull(blockTag, undefined),
-            toBlock: Formatter.allowNull(blockTag, undefined),
-            blockHash: Formatter.allowNull(hash, undefined),
+            fromTimestamp: Formatter.allowNull(timestamp, undefined),
+            toTimestamp: Formatter.allowNull(timestamp, undefined),
             address: Formatter.allowNull(address, undefined),
             topics: Formatter.allowNull(this.topics.bind(this), undefined),
         };
         formats.filterLog = {
-            blockNumber: Formatter.allowNull(number),
-            blockHash: Formatter.allowNull(hash),
-            transactionIndex: number,
-            removed: Formatter.allowNull(this.boolean.bind(this)),
+            timestamp: timestamp,
             address: address,
             data: Formatter.allowFalsish(data, "0x"),
-            topics: Formatter.arrayOf(hash),
-            transactionHash: hash,
+            topics: Formatter.arrayOf(hash32),
+            transactionHash: Formatter.allowNull(hash48, undefined),
             logIndex: number,
+            transactionIndex: number
         };
         return formats;
+    }
+    logsMapper(values) {
+        let logs = [];
+        values.forEach(function (log) {
+            const mapped = {
+                timestamp: log.timestamp,
+                address: log.address,
+                data: log.data,
+                topics: log.topics,
+                //@ts-ignore
+                transactionHash: null,
+                logIndex: log.index,
+                transactionIndex: log.index,
+            };
+            logs.push(mapped);
+        });
+        return logs;
+    }
+    //TODO propper validation needed?
+    timestamp(value) {
+        if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
+            logger$u.throwArgumentError("bad timestamp format", "value", value);
+        }
+        return value;
     }
     accessList(accessList) {
         return accessListify(accessList || []);
@@ -94383,7 +94471,11 @@ class Formatter {
     // Requires an address
     // Strict! Used on input.
     address(value) {
-        return getAddress(value);
+        let address = value.toString();
+        if (address.indexOf(".") !== -1) {
+            address = getAddressFromAccount(address);
+        }
+        return getAddress(address);
     }
     callAddress(value) {
         if (!isHexString(value, 32)) {
@@ -94412,10 +94504,18 @@ class Formatter {
         throw new Error("invalid blockTag");
     }
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
-    hash(value, strict) {
+    hash48(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 48) {
             return logger$u.throwArgumentError("invalid hash", "value", value);
+        }
+        return result;
+    }
+    //hedera topics hash has length 32
+    hash32(value, strict) {
+        const result = this.hex(value, strict);
+        if (hexDataLength(result) !== 32) {
+            return logger$u.throwArgumentError("invalid topics hash", "value", value);
         }
         return result;
     }
@@ -94555,7 +94655,8 @@ class Formatter {
                 data: log.data,
                 topics: log.topics,
                 transactionHash: response.hash,
-                logIndex: log.index
+                logIndex: log.index,
+                transactionIndex: log.index,
             };
             logs.push(values);
         });
@@ -94581,7 +94682,7 @@ class Formatter {
             return value.map((v) => this.topics(v));
         }
         else if (value != null) {
-            return this.hash(value, true);
+            return this.hash32(value, true);
         }
         return null;
     }
@@ -98730,16 +98831,17 @@ class BaseProvider extends Provider {
             if (filter.address != null) {
                 result.address = filter.address.toString();
             }
-            ["blockHash", "topics"].forEach((key) => {
+            ["topics"].forEach((key) => {
                 if (filter[key] == null) {
                     return;
                 }
                 result[key] = filter[key];
             });
-            ["fromBlock", "toBlock"].forEach((key) => {
+            ["fromTimestamp", "toTimestamp"].forEach((key) => {
                 if (filter[key] == null) {
                     return;
                 }
+                result[key] = filter[key];
             });
             return this.formatter.filter(yield resolveProperties(result));
         });
@@ -98828,12 +98930,41 @@ class BaseProvider extends Provider {
             // }
         });
     }
+    /**
+     *  Get contract logs implementation, using the REST Api.
+     *  It returns the logs array, or a default value [].
+     *  Throws an exception, when the result size exceeds the given limit.
+     *
+     * @param filter The parameters to filter logs by.
+     */
     getLogs(filter) {
         return __awaiter$8(this, void 0, void 0, function* () {
-            yield this.getNetwork();
+            this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
-            const logs = yield this.perform("getLogs", params);
-            return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs);
+            const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
+            const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
+            const limit = 100;
+            const oversizeResponseLegth = limit + 1;
+            const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+            const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+            try {
+                let { data } = yield axios$1.get(requestUrl);
+                if (data) {
+                    const mappedLogs = this.formatter.logsMapper(data.logs);
+                    if (mappedLogs.length == oversizeResponseLegth) {
+                        logger$v.throwError(`query returned more than ${limit} results`, Logger.errors.SERVER_ERROR);
+                    }
+                    return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
+                }
+            }
+            catch (error) {
+                const errorParams = { method: "ContractLogsQuery", error };
+                if (error.response && error.response.status != 404) {
+                    logger$v.throwError("bad result from backend", Logger.errors.SERVER_ERROR, errorParams);
+                }
+                logger$v.throwError(error.message, error.code, errorParams);
+            }
+            return [];
         });
     }
     getHbarPrice() {

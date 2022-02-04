@@ -1,4 +1,4 @@
-import { EventType, Filter, FilterByBlockHash, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { EventType, Filter, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
@@ -74,7 +74,7 @@ export declare class BaseProvider extends Provider {
     getHederaClient(): Client;
     getHederaNetworkConfig(): AccountId[];
     sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
-    _getFilter(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Filter | FilterByBlockHash>;
+    _getFilter(filter: Filter | Promise<Filter>): Promise<Filter>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     /**
      * Transaction record query implementation using the mirror node REST API.
@@ -88,7 +88,14 @@ export declare class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     getTransactionReceipt(transactionId: string | Promise<string>): Promise<TransactionReceipt>;
-    getLogs(filter: Filter | FilterByBlockHash | Promise<Filter | FilterByBlockHash>): Promise<Array<Log>>;
+    /**
+     *  Get contract logs implementation, using the REST Api.
+     *  It returns the logs array, or a default value [].
+     *  Throws an exception, when the result size exceeds the given limit.
+     *
+     * @param filter The parameters to filter logs by.
+     */
+    getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
     perform(method: string, params: any): Promise<any>;
     _addEventListener(eventName: EventType, listener: Listener, once: boolean): this;

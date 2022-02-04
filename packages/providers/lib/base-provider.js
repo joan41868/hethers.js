@@ -632,16 +632,17 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (filter.address != null) {
                             result.address = filter.address.toString();
                         }
-                        ["blockHash", "topics"].forEach(function (key) {
+                        ["topics"].forEach(function (key) {
                             if (filter[key] == null) {
                                 return;
                             }
                             result[key] = filter[key];
                         });
-                        ["fromBlock", "toBlock"].forEach(function (key) {
+                        ["fromTimestamp", "toTimestamp"].forEach(function (key) {
                             if (filter[key] == null) {
                                 return;
                             }
+                            result[key] = filter[key];
                         });
                         _b = (_a = this.formatter).filter;
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(result)];
@@ -752,21 +753,52 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    /**
+     *  Get contract logs implementation, using the REST Api.
+     *  It returns the logs array, or a default value [].
+     *  Throws an exception, when the result size exceeds the given limit.
+     *
+     * @param filter The parameters to filter logs by.
+     */
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, logs;
+            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLegth, epContractsLogs, requestUrl, data, mappedLogs, error_6, errorParams;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
+                    case 0:
+                        this._checkMirrorNode();
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({ filter: this._getFilter(filter) })];
-                    case 2:
+                    case 1:
                         params = _a.sent();
-                        return [4 /*yield*/, this.perform("getLogs", params)];
+                        fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
+                        toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
+                        limit = 100;
+                        oversizeResponseLegth = limit + 1;
+                        epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+                        requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, axios_1.default.get(requestUrl)];
                     case 3:
-                        logs = _a.sent();
-                        return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs)];
+                        data = (_a.sent()).data;
+                        if (data) {
+                            mappedLogs = this.formatter.logsMapper(data.logs);
+                            if (mappedLogs.length == oversizeResponseLegth) {
+                                logger.throwError("query returned more than " + limit + " results", logger_1.Logger.errors.SERVER_ERROR);
+                            }
+                            return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs)];
+                        }
+                        return [3 /*break*/, 5];
+                    case 4:
+                        error_6 = _a.sent();
+                        errorParams = { method: "ContractLogsQuery", error: error_6 };
+                        if (error_6.response && error_6.response.status != 404) {
+                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, errorParams);
+                        }
+                        logger.throwError(error_6.message, error_6.code, errorParams);
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/, []];
                 }
             });
         });
