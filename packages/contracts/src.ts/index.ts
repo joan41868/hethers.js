@@ -14,8 +14,6 @@ import {
 import {
     Block,
     BlockTag,
-    // Filter,
-    // FilterByBlockHash,
     Listener,
     Log,
     Provider,
@@ -171,7 +169,7 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
     // Wait for all dependencies to be resolved (prefer the signer over the provider)
     const resolved = await resolveProperties({
         args: args,
-        address: contract.resolvedAddress,
+        address: contract.address,
         overrides: (resolveProperties(overrides) || { })
     });
 

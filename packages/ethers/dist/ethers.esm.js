@@ -22348,6 +22348,12 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$1 = keccak(256);
 
+var _args = [
+	[
+		"elliptic@6.5.4",
+		"/home/nikolay/Desktop/hethers.js"
+	]
+];
 var _from = "elliptic@6.5.4";
 var _id = "elliptic@6.5.4";
 var _inBundle = false;
@@ -22370,9 +22376,8 @@ var _requiredBy = [
 	"/@hashgraph/cryptography"
 ];
 var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
-var _shasum = "da37cebd31e79a1367e941b592ed1fbebd58abbb";
-var _spec = "elliptic@6.5.4";
-var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
+var _spec = "6.5.4";
+var _where = "/home/nikolay/Desktop/hethers.js";
 var author = {
 	name: "Fedor Indutny",
 	email: "fedor@indutny.com"
@@ -22380,7 +22385,6 @@ var author = {
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
-var bundleDependencies = false;
 var dependencies = {
 	"bn.js": "^4.11.9",
 	brorand: "^1.1.0",
@@ -22390,7 +22394,6 @@ var dependencies = {
 	"minimalistic-assert": "^1.0.1",
 	"minimalistic-crypto-utils": "^1.0.1"
 };
-var deprecated = false;
 var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
@@ -22433,6 +22436,7 @@ var scripts = {
 };
 var version$b = "6.5.4";
 var require$$0 = {
+	_args: _args,
 	_from: _from,
 	_id: _id,
 	_inBundle: _inBundle,
@@ -22442,14 +22446,11 @@ var require$$0 = {
 	_requested: _requested,
 	_requiredBy: _requiredBy,
 	_resolved: _resolved,
-	_shasum: _shasum,
 	_spec: _spec,
 	_where: _where,
 	author: author,
 	bugs: bugs,
-	bundleDependencies: bundleDependencies,
 	dependencies: dependencies,
-	deprecated: deprecated,
 	description: description,
 	devDependencies: devDependencies,
 	files: files,
@@ -80700,7 +80701,13 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var _from$1 = "@grpc/grpc-js@^1.4.4";
+var _args$1 = [
+	[
+		"@grpc/grpc-js@1.5.1",
+		"/home/nikolay/Desktop/hethers.js"
+	]
+];
+var _from$1 = "@grpc/grpc-js@1.5.1";
 var _id$1 = "@grpc/grpc-js@1.5.1";
 var _inBundle$1 = false;
 var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
@@ -80708,27 +80715,25 @@ var _location$1 = "/@grpc/grpc-js";
 var _phantomChildren$1 = {
 };
 var _requested$1 = {
-	type: "range",
+	type: "version",
 	registry: true,
-	raw: "@grpc/grpc-js@^1.4.4",
+	raw: "@grpc/grpc-js@1.5.1",
 	name: "@grpc/grpc-js",
 	escapedName: "@grpc%2fgrpc-js",
 	scope: "@grpc",
-	rawSpec: "^1.4.4",
+	rawSpec: "1.5.1",
 	saveSpec: null,
-	fetchSpec: "^1.4.4"
+	fetchSpec: "1.5.1"
 };
 var _requiredBy$1 = [
 	"/@hashgraph/sdk"
 ];
 var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
-var _shasum$1 = "934571ae351e868e61d2bd1d56249b79ce8bd1f5";
-var _spec$1 = "@grpc/grpc-js@^1.4.4";
-var _where$1 = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js\\node_modules\\@hashgraph\\sdk";
+var _spec$1 = "1.5.1";
+var _where$1 = "/home/nikolay/Desktop/hethers.js";
 var author$1 = {
 	name: "Google Inc."
 };
-var bundleDependencies$1 = false;
 var contributors = [
 	{
 		name: "Google Inc."
@@ -80738,7 +80743,6 @@ var dependencies$1 = {
 	"@grpc/proto-loader": "^0.6.4",
 	"@types/node": ">=12.12.47"
 };
-var deprecated$1 = false;
 var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
@@ -80808,6 +80812,7 @@ var scripts$1 = {
 var types = "build/src/index.d.ts";
 var version$c = "1.5.1";
 var require$$0$2 = {
+	_args: _args$1,
 	_from: _from$1,
 	_id: _id$1,
 	_inBundle: _inBundle$1,
@@ -80817,14 +80822,11 @@ var require$$0$2 = {
 	_requested: _requested$1,
 	_requiredBy: _requiredBy$1,
 	_resolved: _resolved$1,
-	_shasum: _shasum$1,
 	_spec: _spec$1,
 	_where: _where$1,
 	author: author$1,
-	bundleDependencies: bundleDependencies$1,
 	contributors: contributors,
 	dependencies: dependencies$1,
-	deprecated: deprecated$1,
 	description: description$1,
 	devDependencies: devDependencies$1,
 	engines: engines,
@@ -86560,7 +86562,7 @@ class Signer {
             });
             try {
                 const response = yield hederaTx.execute(this.provider.getHederaClient());
-                return hexStripZeros(response.bytes);
+                return hexlify(response.bytes);
             }
             catch (error) {
                 return checkError('call', error, txRequest);
@@ -93246,7 +93248,6 @@ var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments,
     });
 };
 const logger$s = new Logger(version$o);
-;
 ///////////////////////////////
 const allowedTransactionKeys$2 = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
@@ -93287,7 +93288,7 @@ function populateTransaction(contract, fragment, args) {
         // Wait for all dependencies to be resolved (prefer the signer over the provider)
         const resolved = yield resolveProperties({
             args: args,
-            address: contract.resolvedAddress,
+            address: contract.address,
             overrides: (resolveProperties(overrides) || {})
         });
         // The ABI coded transaction
@@ -93299,14 +93300,8 @@ function populateTransaction(contract, fragment, args) {
         // Resolved Overrides
         const ro = resolved.overrides;
         // Populate simple overrides
-        if (ro.nonce != null) {
-            tx.nonce = BigNumber.from(ro.nonce).toNumber();
-        }
         if (ro.gasLimit != null) {
             tx.gasLimit = BigNumber.from(ro.gasLimit);
-        }
-        if (ro.gasPrice != null) {
-            tx.gasPrice = BigNumber.from(ro.gasPrice);
         }
         if (ro.maxFeePerGas != null) {
             tx.maxFeePerGas = BigNumber.from(ro.maxFeePerGas);
@@ -93325,20 +93320,17 @@ function populateTransaction(contract, fragment, args) {
         }
         // If there was no "gasLimit" override, but the ABI specifies a default, use it
         if (tx.gasLimit == null && fragment.gas != null) {
-            // Compute the intrinsic gas cost for this transaction
-            // @TODO: This is based on the yellow paper as of Petersburg; this is something
-            // we may wish to parameterize in v6 as part of the Network object. Since this
-            // is always a non-nil to address, we can ignore G_create, but may wish to add
-            // similar logic to the ContractFactory.
             let intrinsic = 21000;
+            let contractCreationExtraGasCost = 11000;
             const bytes = arrayify(data);
             for (let i = 0; i < bytes.length; i++) {
                 intrinsic += 4;
                 if (bytes[i]) {
-                    intrinsic += 64;
+                    intrinsic += 16;
                 }
             }
-            tx.gasLimit = BigNumber.from(fragment.gas).add(intrinsic);
+            const txGas = tx.to != null ? intrinsic : intrinsic + contractCreationExtraGasCost;
+            tx.gasLimit = BigNumber.from(fragment.gas).add(txGas);
         }
         // Populate "value" override
         if (ro.value) {
@@ -93355,9 +93347,7 @@ function populateTransaction(contract, fragment, args) {
             tx.customData = shallowCopy(ro.customData);
         }
         // Remove the overrides
-        delete overrides.nonce;
         delete overrides.gasLimit;
-        delete overrides.gasPrice;
         delete overrides.from;
         delete overrides.value;
         delete overrides.type;
