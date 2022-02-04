@@ -27,56 +27,6 @@ const allowedTransactionKeys = {
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true, nodeId: true,
 };
-// TODO FIXME
-function resolveName(resolver, nameOrPromise) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const name = yield nameOrPromise;
-        if (typeof (name) !== "string") {
-            logger.throwArgumentError("invalid address or ENS name", "name", name);
-        }
-        // If it is already an address, just use it (after adding checksum)
-        try {
-            return getAddress(name);
-        }
-        catch (error) { }
-        if (!resolver) {
-            logger.throwError("a provider or signer is needed to resolve ENS names", Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: "resolveName"
-            });
-        }
-        const address = ""; //await resolver.resolveName(name);
-        if (address == null) {
-            logger.throwArgumentError("resolver or addr is not configured for ENS name", "name", name);
-        }
-        return address;
-    });
-}
-// Recursively replaces ENS names with promises to resolve the name and resolves all properties
-function resolveAddresses(resolver, value, paramType) {
-    return __awaiter(this, void 0, void 0, function* () {
-        if (Array.isArray(paramType)) {
-            return yield Promise.all(paramType.map((paramType, index) => {
-                return resolveAddresses(resolver, ((Array.isArray(value)) ? value[index] : value[paramType.name]), paramType);
-            }));
-        }
-        if (paramType.type === "address") {
-            return yield resolveName(resolver, value);
-        }
-        if (paramType.type === "tuple") {
-            return yield resolveAddresses(resolver, value, paramType.components);
-        }
-        if (paramType.baseType === "array") {
-            if (!Array.isArray(value)) {
-                return Promise.reject(logger.makeError("invalid value for array", Logger.errors.INVALID_ARGUMENT, {
-                    argument: "value",
-                    value
-                }));
-            }
-            return yield Promise.all(value.map((v) => resolveAddresses(resolver, v, paramType.arrayChildren)));
-        }
-        return value;
-    });
-}
 function populateTransaction(contract, fragment, args) {
     return __awaiter(this, void 0, void 0, function* () {
         // If an extra argument is given, it is overrides
@@ -92,7 +42,7 @@ function populateTransaction(contract, fragment, args) {
                 // Contracts with a Signer are from the Signer's frame-of-reference;
                 // but we allow overriding "from" if it matches the signer
                 overrides.from = resolveProperties({
-                    override: resolveName(contract.signer, overrides.from),
+                    override: overrides.from,
                     signer: contract.signer.getAddress()
                 }).then((check) => __awaiter(this, void 0, void 0, function* () {
                     if (getAddress(check.signer) !== check.override) {
@@ -107,16 +57,9 @@ function populateTransaction(contract, fragment, args) {
                 overrides.from = contract.signer.getAddress();
             }
         }
-        else if (overrides.from) {
-            overrides.from = resolveName(contract.provider, overrides.from);
-            //} else {
-            // Contracts without a signer can override "from", and if
-            // unspecified the zero address is used
-            //overrides.from = AddressZero;
-        }
         // Wait for all dependencies to be resolved (prefer the signer over the provider)
         const resolved = yield resolveProperties({
-            args: resolveAddresses(contract.signer || contract.provider, args, fragment.inputs),
+            args: args,
             address: contract.resolvedAddress,
             overrides: (resolveProperties(overrides) || {})
         });
@@ -960,11 +903,9 @@ export class ContractFactory {
             }
             // Make sure the call matches the constructor signature
             logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-            // Resolve ENS names and promises in the arguments
-            const params = yield resolveAddresses(this.signer, args, this.interface.deploy.inputs);
-            params.push(overrides);
+            args.push(overrides);
             // Get the deployment transaction (with optional overrides)
-            const contractCreate = this.getDeployTransaction(...params);
+            const contractCreate = this.getDeployTransaction(...args);
             const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
             const address = contractCreateResponse.customData.contractId;
             const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
