@@ -1,9 +1,10 @@
 const hethers = require("ethers");
+import { HederaNetworks } from "@ethersproject/providers/lib/default-hedera-provider";
 
 (async () => {
     const accountNum = 98;
 
-    const provider = hethers.providers.getDefaultProvider("testnet");
+    const provider = hethers.providers.getDefaultProvider(HederaNetworks.TESTNET);
     const accountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(accountNum) };
     const solAddr = hethers.utils.getAddressFromAccount(accountConfig);
 
@@ -46,5 +47,44 @@ const hethers = require("ethers");
     console.log(record2);
 
 
+    /**
+     * Example 5: Filtering contract logs
+     */
+    const filterParams = {
+        // address: "0.0.25623322",
+        address: "0x000000000000000000000000000000000186fb1A",
+        fromTimestamp: "1642065156.264170833",
+        toTimestamp: "1642080642.176149864"
+    }
+
+    const logs = await provider.getLogs(filterParams);
+    console.log(`Contract ${filterParams.address} logs:`);
+    console.dir(logs, {depth: null});
+
+
+    /**
+     * Example 6: Getting contract bytecode
+     */
+    const contractNum = 16645669;
+    const contractAccountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(contractNum) };
+    const contractSolAddr = hethers.utils.getAddressFromAccount(contractAccountConfig);
+    console.log(`Get bytecode for contract with num ${contractNum} <->`, contractSolAddr);
+    
+    let contractBytecode = await provider.getCode(hethers.utils.getAddressFromAccount(contractAccountConfig));
+    console.log(contractBytecode);
+
+    //not a contract 
+    contractBytecode = await provider.getCode("0x0000000000000000000000000000000000000000");
+    console.log(contractBytecode);
+    contractBytecode = await provider.getCode("0x0000000000000000000000000000000000000000", true);
+    console.log(contractBytecode);
+
+
+    const expiredContractNum = 15067;
+    const expiredContractAccountConfig = { shard: BigInt(0), realm: BigInt(0), num: BigInt(expiredContractNum) };
+    const expiredContractSolAddr = hethers.utils.getAddressFromAccount(expiredContractAccountConfig);
+    //contract with an empty bytecode
+    contractBytecode = await provider.getCode(expiredContractSolAddr);
+    console.log(contractBytecode);
 })();
 

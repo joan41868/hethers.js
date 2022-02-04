@@ -65,16 +65,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.BaseProvider = exports.Resolver = exports.Event = void 0;
+exports.BaseProvider = exports.Event = void 0;
 var abstract_provider_1 = require("@ethersproject/abstract-provider");
-var basex_1 = require("@ethersproject/basex");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var networks_1 = require("@ethersproject/networks");
 var properties_1 = require("@ethersproject/properties");
-var sha2_1 = require("@ethersproject/sha2");
-var strings_1 = require("@ethersproject/strings");
-var bech32_1 = __importDefault(require("bech32"));
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
@@ -82,6 +78,7 @@ var formatter_1 = require("./formatter");
 var address_1 = require("@ethersproject/address");
 var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
+var utils_1 = require("ethers/lib/utils");
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -138,6 +135,9 @@ function stall(duration) {
     return new Promise(function (resolve) {
         setTimeout(resolve, duration);
     });
+}
+function base64ToHex(hash) {
+    return (0, bytes_1.hexlify)(utils_1.base64.decode(hash));
 }
 //////////////////////////////
 // Provider Object
@@ -217,210 +217,10 @@ var Event = /** @class */ (function () {
     return Event;
 }());
 exports.Event = Event;
-;
-// https://github.com/satoshilabs/slips/blob/master/slip-0044.md
-var coinInfos = {
-    "0": { symbol: "btc", p2pkh: 0x00, p2sh: 0x05, prefix: "bc" },
-    "2": { symbol: "ltc", p2pkh: 0x30, p2sh: 0x32, prefix: "ltc" },
-    "3": { symbol: "doge", p2pkh: 0x1e, p2sh: 0x16 },
-    "60": { symbol: "eth", ilk: "eth" },
-    "61": { symbol: "etc", ilk: "eth" },
-    "700": { symbol: "xdai", ilk: "eth" },
-};
-function bytes32ify(value) {
-    return (0, bytes_1.hexZeroPad)(bignumber_1.BigNumber.from(value).toHexString(), 32);
-}
-// Compute the Base58Check encoded data (checksum is first 4 bytes of sha256d)
-function base58Encode(data) {
-    return basex_1.Base58.encode((0, bytes_1.concat)([data, (0, bytes_1.hexDataSlice)((0, sha2_1.sha256)((0, sha2_1.sha256)(data)), 0, 4)]));
-}
-var Resolver = /** @class */ (function () {
-    // The resolvedAddress is only for creating a ReverseLookup resolver
-    function Resolver(provider, address, name, resolvedAddress) {
-        (0, properties_1.defineReadOnly)(this, "provider", provider);
-        (0, properties_1.defineReadOnly)(this, "name", name);
-        (0, properties_1.defineReadOnly)(this, "address", provider.formatter.address(address));
-        (0, properties_1.defineReadOnly)(this, "_resolvedAddress", resolvedAddress);
-    }
-    Resolver.prototype._fetchBytes = function (selector, parameters) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                // e.g. keccak256("addr(bytes32,uint256)")
-                // const tx = {
-                //     to: this.address,
-                //     data: hexConcat([ selector, namehash(this.name), (parameters || "0x") ])
-                // };
-                try {
-                    // return _parseBytes(await this.provider.call(tx));
-                    return [2 /*return*/, null];
-                }
-                catch (error) {
-                    if (error.code === logger_1.Logger.errors.CALL_EXCEPTION) {
-                        return [2 /*return*/, null];
-                    }
-                    return [2 /*return*/, null];
-                }
-                return [2 /*return*/];
-            });
-        });
-    };
-    Resolver.prototype._getAddress = function (coinType, hexBytes) {
-        var coinInfo = coinInfos[String(coinType)];
-        if (coinInfo == null) {
-            logger.throwError("unsupported coin type: " + coinType, logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: "getAddress(" + coinType + ")"
-            });
-        }
-        if (coinInfo.ilk === "eth") {
-            return this.provider.formatter.address(hexBytes);
-        }
-        var bytes = (0, bytes_1.arrayify)(hexBytes);
-        // P2PKH: OP_DUP OP_HASH160 <pubKeyHash> OP_EQUALVERIFY OP_CHECKSIG
-        if (coinInfo.p2pkh != null) {
-            var p2pkh = hexBytes.match(/^0x76a9([0-9a-f][0-9a-f])([0-9a-f]*)88ac$/);
-            if (p2pkh) {
-                var length_1 = parseInt(p2pkh[1], 16);
-                if (p2pkh[2].length === length_1 * 2 && length_1 >= 1 && length_1 <= 75) {
-                    return base58Encode((0, bytes_1.concat)([[coinInfo.p2pkh], ("0x" + p2pkh[2])]));
-                }
-            }
-        }
-        // P2SH: OP_HASH160 <scriptHash> OP_EQUAL
-        if (coinInfo.p2sh != null) {
-            var p2sh = hexBytes.match(/^0xa9([0-9a-f][0-9a-f])([0-9a-f]*)87$/);
-            if (p2sh) {
-                var length_2 = parseInt(p2sh[1], 16);
-                if (p2sh[2].length === length_2 * 2 && length_2 >= 1 && length_2 <= 75) {
-                    return base58Encode((0, bytes_1.concat)([[coinInfo.p2sh], ("0x" + p2sh[2])]));
-                }
-            }
-        }
-        // Bech32
-        if (coinInfo.prefix != null) {
-            var length_3 = bytes[1];
-            // https://github.com/bitcoin/bips/blob/master/bip-0141.mediawiki#witness-program
-            var version_1 = bytes[0];
-            if (version_1 === 0x00) {
-                if (length_3 !== 20 && length_3 !== 32) {
-                    version_1 = -1;
-                }
-            }
-            else {
-                version_1 = -1;
-            }
-            if (version_1 >= 0 && bytes.length === 2 + length_3 && length_3 >= 1 && length_3 <= 75) {
-                var words = bech32_1.default.toWords(bytes.slice(2));
-                words.unshift(version_1);
-                return bech32_1.default.encode(coinInfo.prefix, words);
-            }
-        }
-        return null;
-    };
-    Resolver.prototype.getAddress = function (coinType) {
-        return __awaiter(this, void 0, void 0, function () {
-            var hexBytes, address;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (coinType == null) {
-                            coinType = 60;
-                        }
-                        // If Ethereum, use the standard `addr(bytes32)`
-                        if (coinType === 60) {
-                            try {
-                                return [2 /*return*/, null];
-                            }
-                            catch (error) {
-                                if (error.code === logger_1.Logger.errors.CALL_EXCEPTION) {
-                                    return [2 /*return*/, null];
-                                }
-                                throw error;
-                            }
-                        }
-                        return [4 /*yield*/, this._fetchBytes("0xf1cb7e06", bytes32ify(coinType))];
-                    case 1:
-                        hexBytes = _a.sent();
-                        // No address
-                        if (hexBytes == null || hexBytes === "0x") {
-                            return [2 /*return*/, null];
-                        }
-                        address = this._getAddress(coinType, hexBytes);
-                        if (address == null) {
-                            logger.throwError("invalid or unsupported coin data", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                                operation: "getAddress(" + coinType + ")",
-                                coinType: coinType,
-                                data: hexBytes
-                            });
-                        }
-                        return [2 /*return*/, address];
-                }
-            });
-        });
-    };
-    Resolver.prototype.getContentHash = function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var hexBytes, ipfs, length_4, swarm;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this._fetchBytes("0xbc1c58d1")];
-                    case 1:
-                        hexBytes = _a.sent();
-                        // No contenthash
-                        if (hexBytes == null || hexBytes === "0x") {
-                            return [2 /*return*/, null];
-                        }
-                        ipfs = hexBytes.match(/^0xe3010170(([0-9a-f][0-9a-f])([0-9a-f][0-9a-f])([0-9a-f]*))$/);
-                        if (ipfs) {
-                            length_4 = parseInt(ipfs[3], 16);
-                            if (ipfs[4].length === length_4 * 2) {
-                                return [2 /*return*/, "ipfs:/\/" + basex_1.Base58.encode("0x" + ipfs[1])];
-                            }
-                        }
-                        swarm = hexBytes.match(/^0xe40101fa011b20([0-9a-f]*)$/);
-                        if (swarm) {
-                            if (swarm[1].length === (32 * 2)) {
-                                return [2 /*return*/, "bzz:/\/" + swarm[1]];
-                            }
-                        }
-                        return [2 /*return*/, logger.throwError("invalid or unsupported content hash data", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                                operation: "getContentHash()",
-                                data: hexBytes
-                            })];
-                }
-            });
-        });
-    };
-    Resolver.prototype.getText = function (key) {
-        return __awaiter(this, void 0, void 0, function () {
-            var keyBytes, hexBytes;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        keyBytes = (0, strings_1.toUtf8Bytes)(key);
-                        // The nodehash consumes the first slot, so the string pointer targets
-                        // offset 64, with the length at offset 64 and data starting at offset 96
-                        keyBytes = (0, bytes_1.concat)([bytes32ify(64), bytes32ify(keyBytes.length), keyBytes]);
-                        // Pad to word-size (32 bytes)
-                        if ((keyBytes.length % 32) !== 0) {
-                            keyBytes = (0, bytes_1.concat)([keyBytes, (0, bytes_1.hexZeroPad)("0x", 32 - (key.length % 32))]);
-                        }
-                        return [4 /*yield*/, this._fetchBytes("0x59d1d43c", (0, bytes_1.hexlify)(keyBytes))];
-                    case 1:
-                        hexBytes = _a.sent();
-                        if (hexBytes == null || hexBytes === "0x") {
-                            return [2 /*return*/, null];
-                        }
-                        return [2 /*return*/, (0, strings_1.toUtf8String)(hexBytes)];
-                }
-            });
-        });
-    };
-    return Resolver;
-}());
-exports.Resolver = Resolver;
 var defaultFormatter = null;
 var MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
-var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/results/';
+var MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
+var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 var BaseProvider = /** @class */ (function (_super) {
     __extends(BaseProvider, _super);
     /**
@@ -549,6 +349,10 @@ var BaseProvider = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
+    BaseProvider.prototype._checkMirrorNode = function () {
+        if (!this._mirrorNodeUrl)
+            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+    };
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
     // With the current hedera implementation, we do not support a changeable networks,
@@ -688,34 +492,43 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    BaseProvider.prototype.getCode = function (addressOrName, blockTag) {
+    /**
+     *  Get contract bytecode implementation, using the REST Api.
+     *  It returns the bytecode, or a default value as string.
+     *
+     * @param accountLike The address to get code for
+     * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
+     */
+    BaseProvider.prototype.getCode = function (accountLike, throwOnNonExisting) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, result;
+            var account, data, error_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
+                    case 0:
+                        this._checkMirrorNode();
+                        return [4 /*yield*/, accountLike];
                     case 1:
-                        _a.sent();
-                        return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                                address: this._getAddress(addressOrName),
-                            })];
+                        accountLike = _a.sent();
+                        account = (0, address_1.asAccountString)(accountLike);
+                        _a.label = 2;
                     case 2:
-                        params = _a.sent();
-                        return [4 /*yield*/, this.perform("getCode", params)];
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account)];
                     case 3:
-                        result = _a.sent();
-                        try {
-                            return [2 /*return*/, (0, bytes_1.hexlify)(result)];
+                        data = (_a.sent()).data;
+                        return [2 /*return*/, data.bytecode ? (0, bytes_1.hexlify)(data.bytecode) : "0x"];
+                    case 4:
+                        error_3 = _a.sent();
+                        if (error_3.response && error_3.response.status &&
+                            (error_3.response.status != 404 || (error_3.response.status == 404 && throwOnNonExisting))) {
+                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
+                                method: "ContractByteCodeQuery",
+                                params: { address: accountLike },
+                                error: error_3
+                            });
                         }
-                        catch (error) {
-                            return [2 /*return*/, logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
-                                    method: "getCode",
-                                    params: params,
-                                    result: result,
-                                    error: error
-                                })];
-                        }
-                        return [2 /*return*/];
+                        return [2 /*return*/, "0x"];
+                    case 5: return [2 /*return*/];
                 }
             });
         });
@@ -771,7 +584,7 @@ var BaseProvider = /** @class */ (function (_super) {
     BaseProvider.prototype.sendTransaction = function (signedTransaction) {
         var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var txBytes, hederaTx, ethersTx, txHash, _b, resp, receipt, error_3, err;
+            var txBytes, hederaTx, ethersTx, txHash, _b, resp, receipt, error_4, err;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, signedTransaction];
@@ -797,8 +610,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         receipt = _c.sent();
                         return [2 /*return*/, this._wrapTransaction(ethersTx, txHash, receipt)];
                     case 7:
-                        error_3 = _c.sent();
-                        err = logger.makeError(error_3.message, (_a = error_3.status) === null || _a === void 0 ? void 0 : _a.toString());
+                        error_4 = _c.sent();
+                        err = logger.makeError(error_4.message, (_a = error_4.status) === null || _a === void 0 ? void 0 : _a.toString());
                         err.transaction = ethersTx;
                         err.transactionHash = txHash;
                         throw err;
@@ -817,18 +630,19 @@ var BaseProvider = /** @class */ (function (_super) {
                         filter = _c.sent();
                         result = {};
                         if (filter.address != null) {
-                            result.address = this._getAddress(filter.address);
+                            result.address = filter.address.toString();
                         }
-                        ["blockHash", "topics"].forEach(function (key) {
+                        ["topics"].forEach(function (key) {
                             if (filter[key] == null) {
                                 return;
                             }
                             result[key] = filter[key];
                         });
-                        ["fromBlock", "toBlock"].forEach(function (key) {
+                        ["fromTimestamp", "toTimestamp"].forEach(function (key) {
                             if (filter[key] == null) {
                                 return;
                             }
+                            result[key] = filter[key];
                         });
                         _b = (_a = this.formatter).filter;
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(result)];
@@ -846,31 +660,6 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
-    // TODO FIX ME
-    BaseProvider.prototype._getAddress = function (addressOrName) {
-        return __awaiter(this, void 0, void 0, function () {
-            var address;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, addressOrName];
-                    case 1:
-                        addressOrName = _a.sent();
-                        if (typeof (addressOrName) !== "string") {
-                            logger.throwArgumentError("invalid address or ENS name", "name", addressOrName);
-                        }
-                        return [4 /*yield*/, this.resolveName(addressOrName)];
-                    case 2:
-                        address = _a.sent();
-                        if (address == null) {
-                            logger.throwError("ENS name not configured", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                                operation: "resolveName(" + JSON.stringify(addressOrName) + ")"
-                            });
-                        }
-                        return [2 /*return*/, address];
-                }
-            });
-        });
-    };
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
@@ -878,42 +667,59 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionId) {
         return __awaiter(this, void 0, void 0, function () {
-            var transactionsEndpoint, data, filtered, contractsEndpoint, dataWithLogs, record, error_4;
+            var transactionsEndpoint, data, filtered, record, transactionName, contractsEndpoint, dataWithLogs, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this._mirrorNodeUrl)
-                            logger.throwError("missing provider", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+                        this._checkMirrorNode();
                         return [4 /*yield*/, transactionId];
                     case 1:
                         transactionId = _a.sent();
                         transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
                         _a.label = 2;
                     case 2:
-                        _a.trys.push([2, 6, , 7]);
+                        _a.trys.push([2, 8, , 9]);
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + transactionsEndpoint)];
                     case 3:
                         data = (_a.sent()).data;
-                        if (!data) return [3 /*break*/, 5];
+                        if (!data) return [3 /*break*/, 7];
                         filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
-                        if (!(filtered.length > 0)) return [3 /*break*/, 5];
-                        contractsEndpoint = MIRROR_NODE_CONTRACTS_ENDPOINT + transactionId;
-                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
+                        if (!(filtered.length > 0)) return [3 /*break*/, 7];
+                        record = void 0;
+                        record = {
+                            chainId: this._network.chainId,
+                            transactionId: transactionId,
+                            result: filtered[0].result,
+                        };
+                        transactionName = filtered[0].name;
+                        if (!(transactionName === 'CRYPTOCREATEACCOUNT')) return [3 /*break*/, 4];
+                        record.from = (0, address_1.getAccountFromTransactionId)(transactionId);
+                        record.timestamp = filtered[0].consensus_timestamp;
+                        // Different endpoints of the mirror node API returns hashes in different formats.
+                        // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
+                        // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
+                        record.hash = base64ToHex(filtered[0].transaction_hash);
+                        record.accountAddress = (0, address_1.getAddressFromAccount)(filtered[0].entity_id);
+                        return [3 /*break*/, 6];
                     case 4:
+                        contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
+                    case 5:
                         dataWithLogs = _a.sent();
-                        record = __assign({ chainId: this._network.chainId, transactionId: transactionId, result: filtered[0].result }, dataWithLogs.data);
-                        return [2 /*return*/, this.formatter.responseFromRecord(record)];
-                    case 5: return [3 /*break*/, 7];
-                    case 6:
-                        error_4 = _a.sent();
-                        if (error_4 && error_4.response && error_4.response.status != 404) {
+                        record = Object.assign({}, record, __assign({}, dataWithLogs.data));
+                        _a.label = 6;
+                    case 6: return [2 /*return*/, this.formatter.responseFromRecord(record)];
+                    case 7: return [3 /*break*/, 9];
+                    case 8:
+                        error_5 = _a.sent();
+                        if (error_5 && error_5.response && error_5.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
                                 method: "TransactionResponseQuery",
-                                error: error_4
+                                error: error_5
                             });
                         }
-                        return [3 /*break*/, 7];
-                    case 7: return [2 /*return*/, null];
+                        return [3 /*break*/, 9];
+                    case 9: return [2 /*return*/, null];
                 }
             });
         });
@@ -947,21 +753,52 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    /**
+     *  Get contract logs implementation, using the REST Api.
+     *  It returns the logs array, or a default value [].
+     *  Throws an exception, when the result size exceeds the given limit.
+     *
+     * @param filter The parameters to filter logs by.
+     */
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, logs;
+            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLegth, epContractsLogs, requestUrl, data, mappedLogs, error_6, errorParams;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        _a.sent();
+                    case 0:
+                        this._checkMirrorNode();
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({ filter: this._getFilter(filter) })];
-                    case 2:
+                    case 1:
                         params = _a.sent();
-                        return [4 /*yield*/, this.perform("getLogs", params)];
+                        fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
+                        toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
+                        limit = 100;
+                        oversizeResponseLegth = limit + 1;
+                        epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+                        requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, axios_1.default.get(requestUrl)];
                     case 3:
-                        logs = _a.sent();
-                        return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(logs)];
+                        data = (_a.sent()).data;
+                        if (data) {
+                            mappedLogs = this.formatter.logsMapper(data.logs);
+                            if (mappedLogs.length == oversizeResponseLegth) {
+                                logger.throwError("query returned more than " + limit + " results", logger_1.Logger.errors.SERVER_ERROR);
+                            }
+                            return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs)];
+                        }
+                        return [3 /*break*/, 5];
+                    case 4:
+                        error_6 = _a.sent();
+                        errorParams = { method: "ContractLogsQuery", error: error_6 };
+                        if (error_6.response && error_6.response.status != 404) {
+                            logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, errorParams);
+                        }
+                        logger.throwError(error_6.message, error_6.code, errorParams);
+                        return [3 /*break*/, 5];
+                    case 5: return [2 /*return*/, []];
                 }
             });
         });
@@ -970,113 +807,6 @@ var BaseProvider = /** @class */ (function (_super) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, logger.throwError("NOT_IMPLEMENTED", logger_1.Logger.errors.NOT_IMPLEMENTED)];
-            });
-        });
-    };
-    // TODO FIXME
-    BaseProvider.prototype.getResolver = function (name) {
-        return __awaiter(this, void 0, void 0, function () {
-            var address, error_5;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        _a.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, this._getResolver(name)];
-                    case 1:
-                        address = _a.sent();
-                        if (address == null) {
-                            return [2 /*return*/, null];
-                        }
-                        return [2 /*return*/, new Resolver(this, address, name)];
-                    case 2:
-                        error_5 = _a.sent();
-                        if (error_5.code === logger_1.Logger.errors.CALL_EXCEPTION) {
-                            return [2 /*return*/, null];
-                        }
-                        return [2 /*return*/, null];
-                    case 3: return [2 /*return*/];
-                }
-            });
-        });
-    };
-    // TODO FIXME
-    BaseProvider.prototype._getResolver = function (name) {
-        return __awaiter(this, void 0, void 0, function () {
-            var network;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, this.getNetwork()];
-                    case 1:
-                        network = _a.sent();
-                        // No ENS...
-                        if (!network.ensAddress) {
-                            logger.throwError("network does not support ENS", logger_1.Logger.errors.UNSUPPORTED_OPERATION, { operation: "ENS", network: network.name });
-                        }
-                        // keccak256("resolver(bytes32)")
-                        // const transaction = {
-                        //     to: network.ensAddress,
-                        //     data: ("0x0178b8bf" + namehash(name).substring(2))
-                        // };
-                        try {
-                            return [2 /*return*/, null];
-                            // return this.formatter.callAddress(await this.call(transaction));
-                        }
-                        catch (error) {
-                            if (error.code === logger_1.Logger.errors.CALL_EXCEPTION) {
-                                return [2 /*return*/, null];
-                            }
-                            throw error;
-                        }
-                        return [2 /*return*/];
-                }
-            });
-        });
-    };
-    // TODO FIXME
-    BaseProvider.prototype.resolveName = function (name) {
-        return __awaiter(this, void 0, void 0, function () {
-            var resolver;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, name];
-                    case 1:
-                        name = _a.sent();
-                        // If it is already an address, nothing to resolve
-                        try {
-                            return [2 /*return*/, Promise.resolve(this.formatter.address(name))];
-                        }
-                        catch (error) {
-                            // If is is a hexstring, the address is bad (See #694)
-                            if ((0, bytes_1.isHexString)(name)) {
-                                throw error;
-                            }
-                        }
-                        if (typeof (name) !== "string") {
-                            logger.throwArgumentError("invalid ENS name", "name", name);
-                        }
-                        return [4 /*yield*/, this.getResolver(name)];
-                    case 2:
-                        resolver = _a.sent();
-                        if (!resolver) {
-                            return [2 /*return*/, null];
-                        }
-                        return [4 /*yield*/, resolver.getAddress()];
-                    case 3: return [2 /*return*/, _a.sent()];
-                }
-            });
-        });
-    };
-    // TODO FIXME
-    BaseProvider.prototype.lookupAddress = function (address) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, address];
-                    case 1:
-                        address = _a.sent();
-                        address = this.formatter.address(address);
-                        return [2 /*return*/, null];
-                }
             });
         });
     };

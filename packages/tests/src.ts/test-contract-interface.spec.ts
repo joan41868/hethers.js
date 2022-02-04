@@ -625,7 +625,7 @@ describe('Test EIP-838 Error Codes', function() {
             "function testError2(bool pass, bytes data) pure returns (bool)",
             "error TestError1(address addr, uint256 value)",
             "error TestError2(bytes data)",
-        ], provider);
+        ],provider);
 
         try {
             const result = await contract.testError1(false, addr, 42);

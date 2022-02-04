@@ -25,7 +25,7 @@ import { arrayify } from "ethers/lib/utils";
 const provider = ethers.getDefaultProvider("testnet");
 const TIMEOUT_PERIOD = 120000;
 const contract = (function () {
-    return new ethers.Contract(contractData.contractAddress, contractData.interface, provider);
+    return new ethers.Contract('', contractData.interface, provider);
 })();
 function equals(name, actual, expected) {
     if (Array.isArray(expected)) {
@@ -165,7 +165,7 @@ describe("Test Contract Transaction Population", function () {
     const testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03";
     const testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     const fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
-    const contract = new ethers.Contract(testAddress, abi);
+    const contract = new ethers.Contract(null, abi);
     const contractConnected = contract.connect(ethers.getDefaultProvider("testnet"));
     xit("standard population", function () {
         return __awaiter(this, void 0, void 0, function* () {
@@ -338,6 +338,36 @@ describe("Test Contract Transaction Population", function () {
                 gasLimit: 300000
             });
             assert.strictEqual(BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
+        });
+    }).timeout(60000);
+});
+describe("contract.deployed", function () {
+    const hederaEoa = {
+        account: '0.0.29562194',
+        privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+    };
+    const provider = ethers.providers.getDefaultProvider('testnet');
+    // @ts-ignore
+    const wallet = new ethers.Wallet(hederaEoa, provider);
+    const bytecode = fs.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+    it("should work for already deployed contracts", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const contract = ethers.ContractFactory.getContract('0000000000000000000000000000000001c3903b', abi, wallet);
+            const contractDeployed = yield contract.deployed();
+            assert.notStrictEqual(contractDeployed, null, "deployed returns the contract");
+            assert.strictEqual(contractDeployed.address, contract.address, "deployed returns the same contract instance");
+        });
+    });
+    it("should work if contract is just now deployed", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const contractFactory = new ethers.ContractFactory(abi, bytecode, wallet);
+            const contract = yield contractFactory.deploy({ gasLimit: 300000 });
+            assert.notStrictEqual(contract, null, "nullified contract");
+            assert.notStrictEqual(contract.deployTransaction, "missing deploy transaction");
+            assert.notStrictEqual(contract.address, null, 'missing address');
+            const contractDeployed = yield contract.deployed();
+            assert.notStrictEqual(contractDeployed, null, "deployed returns the contract");
+            assert.strictEqual(contractDeployed.address, contract.address, "deployed returns the same contract instance");
         });
     }).timeout(60000);
 });

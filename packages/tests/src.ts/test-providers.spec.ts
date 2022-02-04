@@ -1054,6 +1054,7 @@ describe("Test Hedera Provider", function () {
     const provider = new DefaultHederaProvider(HederaNetworks.TESTNET);
     const accountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(98)};
     const solAddr = getAddressFromAccount(accountConfig);
+    const nonExistingAddress = "0x0000000000000000000000000000000000000000";
     const timeout = 15000;
 
     it('Gets the balance', async function () {
@@ -1062,7 +1063,126 @@ describe("Test Hedera Provider", function () {
         assert.strictEqual(true, balance.gte(0));
     }).timeout(timeout);
 
-    describe("Sign & Send Transaction, Wait for receipt", function () {
+    describe("Filter Contract Logs", function () {
+
+        it('Should filter logs by timestamp and address', async function () {
+            const fromTimestamp = "1642065156.264170833";
+            const toTimestamp = "1642080642.176149864";
+            const address = "0x000000000000000000000000000000000186fb1A";
+            const account = "0.0.25623322";
+            const filterParams = {
+                address: address,
+                fromTimestamp: fromTimestamp,
+                toTimestamp: toTimestamp
+            }
+    
+            const logsResponse = [
+                {
+                    "address": "0x000000000000000000000000000000000186fb1a",
+                    "contract_id": "0.0.25623322",
+                    "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+                    "index": 0,
+                    "topics": [
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                        "0x0000000000000000000000000000000000000000000000000000000000000000",
+                        "0x0000000000000000000000000000000000000000000000000000000000179977"
+                    ],
+                    "root_contract_id": "0.0.25623322",
+                    "timestamp": "1642080642.176149864"
+                },
+                {
+                    "address": "0x000000000000000000000000000000000186fb1a",
+                    "contract_id": "0.0.25623322",
+                    "data": "0x00000000000000000000000000000000000000000000003635c9adc5dea00000",
+                    "index": 0,
+                    "topics": [
+                        "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef",
+                        "0x0000000000000000000000000000000000000000000000000000000000000000",
+                        "0x0000000000000000000000000000000000000000000000000000000000179977"
+                    ],
+                    "root_contract_id": "0.0.25623322",
+                    "timestamp": "1642065156.264170833"
+                }
+            ]
+    
+            const logs = await provider.getLogs(filterParams);
+            assert.strictEqual(logs.length, 2);
+    
+            assert.strictEqual(logs[0].timestamp, logsResponse[0].timestamp);
+            assert.strictEqual(logs[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
+            assert.strictEqual(logs[0].data, logsResponse[0].data);
+            assert.deepStrictEqual(logs[0].topics, logsResponse[0].topics);
+            assert.strictEqual(logs[0].transactionHash, undefined);
+            assert.strictEqual(logs[0].logIndex, logsResponse[0].index);
+            assert.strictEqual(logs[0].transactionIndex, logsResponse[0].index);
+    
+            assert.strictEqual(logs[1].timestamp, logsResponse[1].timestamp);
+            assert.strictEqual(logs[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
+            assert.strictEqual(logs[1].data, logsResponse[1].data);
+            assert.deepStrictEqual(logs[1].topics, logsResponse[1].topics);
+            assert.strictEqual(logs[1].transactionHash, undefined);
+            assert.strictEqual(logs[1].logIndex, logsResponse[1].index);
+            assert.strictEqual(logs[1].transactionIndex, logsResponse[1].index);
+    
+            const filterParamsAccount = {
+                address: account,
+                fromTimestamp: fromTimestamp,
+                toTimestamp: toTimestamp
+            }
+    
+            const logs2 = await provider.getLogs(filterParamsAccount);
+            assert.strictEqual(logs2.length, 2);
+    
+            assert.strictEqual(logs2[0].timestamp, logsResponse[0].timestamp);
+            assert.strictEqual(logs2[0].address.toLowerCase(), logsResponse[0].address.toLowerCase());
+            assert.strictEqual(logs2[0].data, logsResponse[0].data);
+            assert.deepStrictEqual(logs2[0].topics, logsResponse[0].topics);
+            assert.strictEqual(logs2[0].transactionHash, undefined);
+            assert.strictEqual(logs2[0].logIndex, logsResponse[0].index);
+            assert.strictEqual(logs2[0].transactionIndex, logsResponse[0].index);
+    
+            assert.strictEqual(logs2[1].timestamp, logsResponse[1].timestamp);
+            assert.strictEqual(logs2[1].address.toLowerCase(), logsResponse[1].address.toLowerCase());
+            assert.strictEqual(logs2[1].data, logsResponse[1].data);
+            assert.deepStrictEqual(logs2[1].topics, logsResponse[1].topics);
+            assert.strictEqual(logs2[1].transactionHash, undefined);
+            assert.strictEqual(logs2[1].logIndex, logsResponse[1].index);
+            assert.strictEqual(logs2[1].transactionIndex, logsResponse[1].index);
+        }).timeout(timeout * 4);
+    
+        it('Should throw query result size limit exceeded', async function () {
+            const address = "0x000000000000000000000000000000000186fb1a";
+            const filterParams = {
+                address: address,
+            }
+    
+            await assert.rejects(
+                async () => {
+                    await provider.getLogs(filterParams);
+                },
+                (err) => {
+                    assert.strictEqual(err.name, 'Error');
+                    assert.strict(err.reason.includes('query returned more than 100 results'));
+                    assert.strictEqual(err.code, 'SERVER_ERROR');
+                    return true;
+                }
+            );
+        }).timeout(timeout * 4);
+    
+        it('Should return default value', async function () {
+            const address = "0x000000000000000000000000000000000186fb1b";
+            const filterParams = {
+                address: address,
+            }
+            
+            const logs = await provider.getLogs(filterParams);
+    
+            assert.notStrictEqual(logs, null);
+            assert.strictEqual(logs.length, 0);
+        }).timeout(timeout * 4);
+    });
+
+    describe("Sign & Send Transacton, Wait for receipt", function () {
         let signedTx: string | Promise<string>;
         beforeEach(async () => {
             const privateKey = PrivateKey.fromString(hederaTestnetOperableAccount.operator.privateKey);
@@ -1231,6 +1351,36 @@ describe("Test Hedera Provider", function () {
         const record2 = await provider2.getTransaction(txId);
         assert.notStrictEqual(record2, null, "Record is null")
     }).timeout(timeout*4);
+
+    it("Should get bytecode of contract", async function() {
+        const contractAccountConfig = { shard : BigInt(0), realm: BigInt(0), num: BigInt(16645669)};
+        const contractAddress = getAddressFromAccount(contractAccountConfig);
+        let result = await provider.getCode(contractAddress);
+        assert.strict((typeof result === "string" && result != "0x"),  `returns bytecode of contract - ` + contractAddress);
+    }).timeout(timeout * 4);
+
+    it("Should return 0x of non-existing contract", async function() {
+        let result = await provider.getCode(solAddr);
+        assert.strictEqual(result, "0x", `returns 0x of account - ` + solAddr);
+        result = await provider.getCode(nonExistingAddress);
+        assert.strictEqual(result, "0x", `returns 0x of non-existing account/contract - ` + nonExistingAddress);
+    }).timeout(timeout * 4);
+
+    it("Should throw with optional parameter", async function() {
+        await assert.rejects(
+            async () => {
+                await provider.getCode(nonExistingAddress, true);
+            },
+            (err) => {
+              assert.strictEqual(err.name, 'Error');
+              assert.strictEqual(err.reason, 'bad result from backend');
+              assert.strictEqual(err.method, 'ContractByteCodeQuery');
+              assert.strictEqual(err.error.response.status, 404);
+              assert.strictEqual(err.error.response.statusText, 'Not Found');
+              return true;
+            }
+        );
+    }).timeout(timeout * 4);
 });
 
 describe("Test Hedera Provider Formatters", function () {
@@ -1288,6 +1438,7 @@ describe("Test Hedera Provider Formatters", function () {
             gasLimit: null,
             hash: null,
             transactionId: null,
+            timestamp: null,
             to: null,
             value: null,
             customData: {
@@ -1371,7 +1522,8 @@ describe("Test Hedera Provider Formatters", function () {
                     data: null,
                     topics: [],
                     transactionHash: null,
-                    logIndex: 0
+                    logIndex: 0,
+                    transactionIndex: 0
                 }
             ],
             cumulativeGasUsed: null,
@@ -1384,7 +1536,7 @@ describe("Test Hedera Provider Formatters", function () {
 
         assert.strictEqual(receipt.to, transactionResponse.to);
         assert.strictEqual(receipt.from, transactionResponse.from);
-        assert.strictEqual(receipt.timestamp, transactionResponse.timestamp),
+        assert.strictEqual(receipt.timestamp, transactionResponse.timestamp);
         assert.strictEqual(receipt.contractAddress, null);
         assert.strictEqual(receipt.transactionId, transactionResponse.transactionId);
         assert.strictEqual(receipt.transactionHash, transactionResponse.hash);
@@ -1399,6 +1551,7 @@ describe("Test Hedera Provider Formatters", function () {
         assert.deepStrictEqual(receipt.logs[0].topics, transactionResponse.customData.logs[0].topics);
         assert.strictEqual(receipt.logs[0].transactionHash, transactionResponse.hash);
         assert.strictEqual(receipt.logs[0].logIndex, transactionResponse.customData.logs[0].index);
+        assert.strictEqual(receipt.logs[0].transactionIndex, transactionResponse.customData.logs[0].index);
 
         assert.strictEqual(receipt.logs[1].timestamp, transactionResponse.timestamp);
         assert.strictEqual(receipt.logs[1].address, transactionResponse.customData.logs[1].address);
@@ -1406,5 +1559,6 @@ describe("Test Hedera Provider Formatters", function () {
         assert.deepStrictEqual(receipt.logs[1].topics, transactionResponse.customData.logs[1].topics);
         assert.strictEqual(receipt.logs[1].transactionHash, transactionResponse.hash);
         assert.strictEqual(receipt.logs[1].logIndex, transactionResponse.customData.logs[1].index);
+        assert.strictEqual(receipt.logs[1].transactionIndex, transactionResponse.customData.logs[1].index);
     }).timeout(timeout * 4);
 });
