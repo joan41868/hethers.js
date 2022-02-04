@@ -7,7 +7,7 @@ import { AccountLike, getAddress } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, deepCopy, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
-import { accessListify, AccessListish } from "@ethersproject/transactions";
+import { accessListify, AccessListish} from "@ethersproject/transactions";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -39,8 +39,8 @@ export interface PopulatedTransaction {
 
     gasLimit?: BigNumber;
 
-    data?: BytesLike;
-    value?: BigNumberish;
+    data?: string;
+    value?: BigNumber;
     chainId?: number;
 
     type?: number;

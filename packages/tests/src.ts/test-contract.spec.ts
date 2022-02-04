@@ -15,8 +15,6 @@ abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
 import { arrayify } from "ethers/lib/utils";
-import { AccountCreateTransaction, PrivateKey, Hbar, Key as HederaKey, TransactionId } from "@hashgraph/sdk";
-import { Key } from "@hashgraph/proto";
 
 // const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
 const provider = ethers.getDefaultProvider("testnet");
@@ -346,13 +344,8 @@ describe("Test Contract Transaction Population", function() {
             "account": '0.0.29562194',
             "privateKey": '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
         };
-        const clientHederaEoa = {
-            "account": "0.0.28542425",
-            "privateKey": "302e020100300506032b65700422042077d69b53642df4e59215da8f5f10c97f6a6214b6c8de46940d394da21d30e7cc"
-        };
 
         // contract init
-        // @ts-ignore
         const contractWallet = new ethers.Wallet(contractHederaEoa, providerTestnet);
         const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
         const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
@@ -361,31 +354,18 @@ describe("Test Contract Transaction Population", function() {
 
         // client wallet init
         let clientWallet = ethers.Wallet.createRandom();
-        const accountCreate = await (await new AccountCreateTransaction()
-            .setKey(HederaKey._fromProtobufKey(Key.create({
-                ECDSASecp256k1: arrayify(clientWallet._signingKey().compressedPublicKey)
-            })))
-            .setTransactionId(TransactionId.generate(clientHederaEoa.account))
-            .setInitialBalance(new Hbar(100))
-            .setNodeAccountIds([providerTestnet.getHederaClient()._network.getNodeAccountIdsForExecute()[0]])
-            .freeze()
-            .sign(PrivateKey.fromString(clientHederaEoa.privateKey)))
-            .execute(providerTestnet.getHederaClient());
-        const receipt = await accountCreate.getReceipt(providerTestnet.getHederaClient());
-        const createdAcc = receipt.accountId || "0.0.0";
-        clientWallet = clientWallet
-            .connect(ethers.providers.getDefaultProvider('testnet'))
-            .connectAccount(createdAcc.toString());
+        const clientAccountId = (await contractWallet.createAccount(clientWallet._signingKey().compressedPublicKey)).customData.accountId;
+        clientWallet = clientWallet.connect(providerTestnet).connectAccount(clientAccountId.toString());
 
         // test sending hbars to the contract
-        const signedTxSendHbar = await clientWallet.signTransaction({
+        await contractWallet.sendTransaction({
             to: contract.address,
-            from: clientWallet.address,
-            value: 80,
+            from: contractWallet.address,
+            value: 30,
             gasLimit: 300000
         });
-        const txSendHbarDone = await clientWallet.provider.sendTransaction(signedTxSendHbar);
-        await txSendHbarDone.wait();
+
+        // test if initial balance of the client is zero
         assert.strictEqual((await contract.balanceOf(clientWallet.address, {gasLimit: 300000})).toString(), '0');
 
         // test calling a contract view method

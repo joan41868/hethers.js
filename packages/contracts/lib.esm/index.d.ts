@@ -25,8 +25,8 @@ export interface PopulatedTransaction {
     to?: AccountLike;
     from?: AccountLike;
     gasLimit?: BigNumber;
-    data?: BytesLike;
-    value?: BigNumberish;
+    data?: string;
+    value?: BigNumber;
     chainId?: number;
     type?: number;
     accessList?: AccessListish;

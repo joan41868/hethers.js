@@ -48,6 +48,7 @@ import {
     Overrides,
     PayableOverrides,
     CallOverrides,
+    PopulatedTransaction,
 
     ContractInterface
 } from "@ethersproject/contracts";
@@ -100,6 +101,7 @@ export {
     Overrides,
     PayableOverrides,
     CallOverrides,
+    PopulatedTransaction,
 
     ContractInterface,
 
