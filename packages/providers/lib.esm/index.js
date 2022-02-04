@@ -1,7 +1,7 @@
 "use strict";
 import { Provider } from "@ethersproject/abstract-provider";
 import { getNetwork } from "@ethersproject/networks";
-import { BaseProvider, Resolver } from "./base-provider";
+import { BaseProvider } from "./base-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
 import { Formatter, isCommunityResourcable, isCommunityResource, showThrottleMessage } from "./formatter";
 import { Logger } from "@ethersproject/logger";
@@ -43,7 +43,7 @@ function getDefaultProvider(network, options) {
 // Exports
 export { 
 // Abstract Providers (or Abstract-ish)
-Provider, BaseProvider, Resolver, 
+Provider, BaseProvider, 
 ///////////////////////
 // Concrete Providers
 DefaultHederaProvider, HederaProvider, 

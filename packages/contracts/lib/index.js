@@ -84,7 +84,6 @@ var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 ;
-;
 ///////////////////////////////
 var allowedTransactionKeys = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
@@ -92,71 +91,6 @@ var allowedTransactionKeys = {
     maxFeePerGas: true, maxPriorityFeePerGas: true,
     customData: true, nodeId: true,
 };
-// TODO FIXME
-function resolveName(resolver, nameOrPromise) {
-    return __awaiter(this, void 0, void 0, function () {
-        var name, address;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, nameOrPromise];
-                case 1:
-                    name = _a.sent();
-                    if (typeof (name) !== "string") {
-                        logger.throwArgumentError("invalid address or ENS name", "name", name);
-                    }
-                    // If it is already an address, just use it (after adding checksum)
-                    try {
-                        return [2 /*return*/, (0, address_1.getAddress)(name)];
-                    }
-                    catch (error) { }
-                    if (!resolver) {
-                        logger.throwError("a provider or signer is needed to resolve ENS names", logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-                            operation: "resolveName"
-                        });
-                    }
-                    address = "";
-                    if (address == null) {
-                        logger.throwArgumentError("resolver or addr is not configured for ENS name", "name", name);
-                    }
-                    return [2 /*return*/, address];
-            }
-        });
-    });
-}
-// Recursively replaces ENS names with promises to resolve the name and resolves all properties
-function resolveAddresses(resolver, value, paramType) {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (!Array.isArray(paramType)) return [3 /*break*/, 2];
-                    return [4 /*yield*/, Promise.all(paramType.map(function (paramType, index) {
-                            return resolveAddresses(resolver, ((Array.isArray(value)) ? value[index] : value[paramType.name]), paramType);
-                        }))];
-                case 1: return [2 /*return*/, _a.sent()];
-                case 2:
-                    if (!(paramType.type === "address")) return [3 /*break*/, 4];
-                    return [4 /*yield*/, resolveName(resolver, value)];
-                case 3: return [2 /*return*/, _a.sent()];
-                case 4:
-                    if (!(paramType.type === "tuple")) return [3 /*break*/, 6];
-                    return [4 /*yield*/, resolveAddresses(resolver, value, paramType.components)];
-                case 5: return [2 /*return*/, _a.sent()];
-                case 6:
-                    if (!(paramType.baseType === "array")) return [3 /*break*/, 8];
-                    if (!Array.isArray(value)) {
-                        return [2 /*return*/, Promise.reject(logger.makeError("invalid value for array", logger_1.Logger.errors.INVALID_ARGUMENT, {
-                                argument: "value",
-                                value: value
-                            }))];
-                    }
-                    return [4 /*yield*/, Promise.all(value.map(function (v) { return resolveAddresses(resolver, v, paramType.arrayChildren); }))];
-                case 7: return [2 /*return*/, _a.sent()];
-                case 8: return [2 /*return*/, value];
-            }
-        });
-    });
-}
 function populateTransaction(contract, fragment, args) {
     return __awaiter(this, void 0, void 0, function () {
         var overrides, resolved, data, tx, ro, intrinsic, bytes, i, roValue, leftovers;
@@ -176,7 +110,7 @@ function populateTransaction(contract, fragment, args) {
                             // Contracts with a Signer are from the Signer's frame-of-reference;
                             // but we allow overriding "from" if it matches the signer
                             overrides.from = (0, properties_1.resolveProperties)({
-                                override: resolveName(contract.signer, overrides.from),
+                                override: overrides.from,
                                 signer: contract.signer.getAddress()
                             }).then(function (check) { return __awaiter(_this, void 0, void 0, function () {
                                 return __generator(this, function (_a) {
@@ -193,15 +127,8 @@ function populateTransaction(contract, fragment, args) {
                             overrides.from = contract.signer.getAddress();
                         }
                     }
-                    else if (overrides.from) {
-                        overrides.from = resolveName(contract.provider, overrides.from);
-                        //} else {
-                        // Contracts without a signer can override "from", and if
-                        // unspecified the zero address is used
-                        //overrides.from = AddressZero;
-                    }
                     return [4 /*yield*/, (0, properties_1.resolveProperties)({
-                            args: resolveAddresses(contract.signer || contract.provider, args, fragment.inputs),
+                            args: args,
                             address: contract.resolvedAddress,
                             overrides: ((0, properties_1.resolveProperties)(overrides) || {})
                         })];
@@ -1129,7 +1056,7 @@ var ContractFactory = /** @class */ (function () {
             args[_i] = arguments[_i];
         }
         return __awaiter(this, void 0, void 0, function () {
-            var overrides, params, contractCreate, contractCreateResponse, address, contract;
+            var overrides, contractCreate, contractCreateResponse, address, contract;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -1140,13 +1067,10 @@ var ContractFactory = /** @class */ (function () {
                         }
                         // Make sure the call matches the constructor signature
                         logger.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-                        return [4 /*yield*/, resolveAddresses(this.signer, args, this.interface.deploy.inputs)];
-                    case 1:
-                        params = _a.sent();
-                        params.push(overrides);
-                        contractCreate = this.getDeployTransaction.apply(this, params);
+                        args.push(overrides);
+                        contractCreate = this.getDeployTransaction.apply(this, args);
                         return [4 /*yield*/, this.signer.sendTransaction(contractCreate)];
-                    case 2:
+                    case 1:
                         contractCreateResponse = _a.sent();
                         address = contractCreateResponse.customData.contractId;
                         contract = (0, properties_1.getStatic)(this.constructor, "getContract")(address, this.interface, this.signer);
