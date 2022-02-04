@@ -352,7 +352,7 @@ function buildEstimate(contract: Contract, fragment: FunctionFragment): Contract
     };
 }
 
-function addContractWait(contract: Contract, tx: ContractTransaction) {
+function addContractWait(contract: Contract, tx: TransactionResponse) {
     const wait = tx.wait.bind(tx);
     tx.wait = (timeout?: number) => {
         return wait(timeout).then((receipt: ContractReceipt) => {
