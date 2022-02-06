@@ -1,3 +1,4 @@
+/// <reference types="node" />
 import { EventType, Filter, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
@@ -30,10 +31,16 @@ export declare class BaseProvider extends Provider {
     _network: Network;
     _events: Array<Event>;
     _pollingInterval: number;
+    _emitted: {
+        [eventName: string]: number | "pending";
+    };
+    _poller: NodeJS.Timer;
+    _bootstrapPoll: NodeJS.Timer;
     formatter: Formatter;
     readonly anyNetwork: boolean;
     private readonly hederaClient;
     private readonly _mirrorNodeUrl;
+    constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike);
     /**
      *  ready
      *
@@ -42,8 +49,8 @@ export declare class BaseProvider extends Provider {
      *  Sub-classes that call the super with a network without a chainId
      *  MUST set this. Standard named networks have a known chainId.
      *
+     *
      */
-    constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike);
     _ready(): Promise<Network>;
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;
@@ -97,6 +104,8 @@ export declare class BaseProvider extends Provider {
      */
     getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
+    _startEvent(event: Event): void;
+    _stopEvent(event: Event): void;
     perform(method: string, params: any): Promise<any>;
     _addEventListener(eventName: EventType, listener: Listener, once: boolean): this;
     on(eventName: EventType, listener: Listener): this;
@@ -106,5 +115,12 @@ export declare class BaseProvider extends Provider {
     listeners(eventName?: EventType): Array<Listener>;
     off(eventName: EventType, listener?: Listener): this;
     removeAllListeners(eventName?: EventType): this;
+    get polling(): boolean;
+    set polling(value: boolean);
+    /**
+     * TODO: Poll the mirror node for logs.
+     * TODO: Gather events matching the filters
+     */
+    poll(): Promise<void>;
 }
 //# sourceMappingURL=base-provider.d.ts.map

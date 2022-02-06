@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { Provider } from "@ethersproject/abstract-provider";
+import { ForkEvent, Provider } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexDataLength, hexlify } from "@ethersproject/bytes";
 import { getNetwork } from "@ethersproject/networks";
@@ -145,16 +145,8 @@ let defaultFormatter = null;
 const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
 const MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
 const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
+let nextPollId = 1;
 export class BaseProvider extends Provider {
-    /**
-     *  ready
-     *
-     *  A Promise<Network> that resolves only once the provider is ready.
-     *
-     *  Sub-classes that call the super with a network without a chainId
-     *  MUST set this. Standard named networks have a known chainId.
-     *
-     */
     constructor(network) {
         logger.checkNew(new.target, Provider);
         super();
@@ -203,6 +195,16 @@ export class BaseProvider extends Provider {
         }
         this._pollingInterval = 3000;
     }
+    /**
+     *  ready
+     *
+     *  A Promise<Network> that resolves only once the provider is ready.
+     *
+     *  Sub-classes that call the super with a network without a chainId
+     *  MUST set this. Standard named networks have a known chainId.
+     *
+     *
+     */
     _ready() {
         return __awaiter(this, void 0, void 0, function* () {
             if (this._network == null) {
@@ -219,9 +221,9 @@ export class BaseProvider extends Provider {
                 }
                 // This should never happen; every Provider sub-class should have
                 // suggested a network by here (or have thrown).
-                // if (!network) {
-                //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
-                // }
+                if (!network) {
+                    logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, {});
+                }
                 // Possible this call stacked so do not call defineReadOnly again
                 if (this._network == null) {
                     if (this.anyNetwork) {
@@ -595,10 +597,20 @@ export class BaseProvider extends Provider {
             return logger.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
+    /* Events, Event Listeners & Polling */
+    _startEvent(event) {
+        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
+    }
+    _stopEvent(event) {
+        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
+    }
     perform(method, params) {
         return logger.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
     }
     _addEventListener(eventName, listener, once) {
+        const event = new Event(getEventTag(eventName), listener, once);
+        this._events.push(event);
+        this._startEvent(event);
         return this;
     }
     on(eventName, listener) {
@@ -608,19 +620,167 @@ export class BaseProvider extends Provider {
         return this._addEventListener(eventName, listener, true);
     }
     emit(eventName, ...args) {
-        return false;
+        let result = false;
+        let stopped = [];
+        let eventTag = getEventTag(eventName);
+        this._events = this._events.filter((event) => {
+            if (event.tag !== eventTag) {
+                return true;
+            }
+            setTimeout(() => {
+                event.listener.apply(this, args);
+            }, 0);
+            result = true;
+            if (event.once) {
+                stopped.push(event);
+                return false;
+            }
+            return true;
+        });
+        stopped.forEach((event) => { this._stopEvent(event); });
+        return result;
     }
     listenerCount(eventName) {
-        return 0;
+        if (!eventName) {
+            return this._events.length;
+        }
+        let eventTag = getEventTag(eventName);
+        return this._events.filter((event) => {
+            return (event.tag === eventTag);
+        }).length;
     }
     listeners(eventName) {
-        return null;
+        if (eventName == null) {
+            return this._events.map((event) => event.listener);
+        }
+        let eventTag = getEventTag(eventName);
+        return this._events
+            .filter((event) => (event.tag === eventTag))
+            .map((event) => event.listener);
     }
     off(eventName, listener) {
+        if (listener == null) {
+            return this.removeAllListeners(eventName);
+        }
+        const stopped = [];
+        let found = false;
+        let eventTag = getEventTag(eventName);
+        this._events = this._events.filter((event) => {
+            if (event.tag !== eventTag || event.listener != listener) {
+                return true;
+            }
+            if (found) {
+                return true;
+            }
+            found = true;
+            stopped.push(event);
+            return false;
+        });
+        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
     }
     removeAllListeners(eventName) {
+        let stopped = [];
+        if (eventName == null) {
+            stopped = this._events;
+            this._events = [];
+        }
+        else {
+            const eventTag = getEventTag(eventName);
+            this._events = this._events.filter((event) => {
+                if (event.tag !== eventTag) {
+                    return true;
+                }
+                stopped.push(event);
+                return false;
+            });
+        }
+        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
+    }
+    get polling() {
+        return (this._poller != null);
+    }
+    set polling(value) {
+        if (value && !this._poller) {
+            this._poller = setInterval(() => { this.poll(); }, this.pollingInterval);
+            if (!this._bootstrapPoll) {
+                this._bootstrapPoll = setTimeout(() => {
+                    this.poll();
+                    // We block additional polls until the polling interval
+                    // is done, to prevent overwhelming the poll function
+                    this._bootstrapPoll = setTimeout(() => {
+                        // If polling was disabled, something may require a poke
+                        // since starting the bootstrap poll and it was disabled
+                        if (!this._poller) {
+                            this.poll();
+                        }
+                        // Clear out the bootstrap so we can do another
+                        this._bootstrapPoll = null;
+                    }, this.pollingInterval);
+                }, 0);
+            }
+        }
+        else if (!value && this._poller) {
+            clearInterval(this._poller);
+            this._poller = null;
+        }
+    }
+    /**
+     * TODO: Poll the mirror node for logs.
+     * TODO: Gather events matching the filters
+     */
+    poll() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const pollId = nextPollId++;
+            // Track all running promises, so we can trigger a post-poll once they are complete
+            const runners = [];
+            const now = new Date().getTime();
+            const previousPollTimestamp = now - this.pollingInterval;
+            // Emit a poll event after we have the previous polling timestamp
+            this.emit("poll", pollId, previousPollTimestamp);
+            // Find all transaction hashes we are waiting on
+            this._events.forEach((event) => {
+                switch (event.type) {
+                    case "tx": {
+                        const hash = event.hash;
+                        let runner = this.getTransactionReceipt(hash).then((receipt) => {
+                            if (!receipt) {
+                                return null;
+                            }
+                            // this._emitted["t:" + hash] = receipt.blockNumber;
+                            this.emit(hash, receipt);
+                            return null;
+                        }).catch((error) => { this.emit("error", error); });
+                        runners.push(runner);
+                        break;
+                    }
+                    case "filter": {
+                        const filter = event.filter;
+                        // Todo: from/to timestamp?
+                        filter.fromTimestamp = previousPollTimestamp.toString();
+                        filter.toTimestamp = now.toString();
+                        const runner = this.getLogs(filter).then((logs) => {
+                            if (logs.length === 0) {
+                                return;
+                            }
+                            logs.forEach((log) => {
+                                // todo: check if ok - txIndex replaces blockNumber
+                                this._emitted["t:" + log.transactionHash] = log.transactionIndex;
+                                this.emit(filter, log);
+                            });
+                        }).catch((error) => { this.emit("error", error); });
+                        runners.push(runner);
+                        break;
+                    }
+                }
+            });
+            // Once all events for this loop have been processed, emit "didPoll"
+            Promise.all(runners).then(() => {
+                this.emit("didPoll", pollId);
+            }).catch((error) => { this.emit("error", error); });
+            return;
+        });
     }
 }
 // resolves network string to a hedera network name
@@ -653,5 +813,27 @@ function resolveMirrorNetworkUrl(net) {
 }
 function isHederaNetworkConfigLike(cfg) {
     return cfg.network !== undefined;
+}
+function getEventTag(eventName) {
+    if (typeof (eventName) === "string") {
+        eventName = eventName.toLowerCase();
+        if (hexDataLength(eventName) === 32) {
+            return "tx:" + eventName;
+        }
+        if (eventName.indexOf(":") === -1) {
+            return eventName;
+        }
+    }
+    else if (Array.isArray(eventName)) {
+        return "filter:*:" + serializeTopics(eventName);
+    }
+    else if (ForkEvent.isForkEvent(eventName)) {
+        logger.warn("not implemented");
+        throw new Error("not implemented");
+    }
+    else if (eventName && typeof (eventName) === "object") {
+        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
+    }
+    throw new Error("invalid event - " + eventName);
 }
 //# sourceMappingURL=base-provider.js.map
