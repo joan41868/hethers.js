@@ -807,6 +807,7 @@ var BaseContract = /** @class */ (function () {
             runningEvent.removeListener(listener);
             _this._checkRunningEvents(runningEvent);
         };
+        // TODO: those won't work with txHash. Refactor it to use hedera txId
         event.getTransaction = function () { return _this.provider.getTransaction(log.transactionHash); };
         event.getTransactionReceipt = function () { return _this.provider.getTransactionReceipt(log.transactionHash); };
         // This may throw if the topics and data mismatch the signature

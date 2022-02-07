@@ -32,7 +32,7 @@ import {
     resolveProperties,
     shallowCopy
 } from "@ethersproject/properties";
-import { AccessList, accessListify, AccessListish} from "@ethersproject/transactions";
+import { accessListify, AccessListish} from "@ethersproject/transactions";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -68,10 +68,10 @@ export interface PopulatedTransaction {
     chainId?: number;
 
     type?: number;
-    accessList?: AccessList;
+    accessList?: AccessListish;
 
-    maxFeePerGas?: BigNumber;
-    maxPriorityFeePerGas?: BigNumber;
+    maxFeePerGas?: BigNumberish;
+    maxPriorityFeePerGas?: BigNumberish;
 
     customData?: Record<string, any>;
     nodeId?: AccountLike;
@@ -80,6 +80,8 @@ export interface PopulatedTransaction {
 export type EventFilter = {
     address?: AccountLike;
     topics?: Array<string|Array<string>>;
+    fromTimestamp?: string;
+    toTimestamp?: string;
 };
 
 
@@ -886,6 +888,7 @@ export class BaseContract {
             this._checkRunningEvents(runningEvent);
         };
 
+        // TODO: those won't work with txHash. Refactor it to use hedera txId
         event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); }
         event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); }
 
@@ -899,7 +902,6 @@ export class BaseContract {
         if (!this.provider) {
             logger.throwError("events require a provider or a signer with a provider", Logger.errors.UNSUPPORTED_OPERATION, { operation: "once" })
         }
-
         runningEvent.addListener(listener, once);
 
         // Track this running event and its listeners (may already be there; but no hard in updating)
@@ -960,7 +962,6 @@ export class BaseContract {
 
     on(event: EventFilter | string, listener: Listener): this {
         this._requireAddressSet();
-
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }

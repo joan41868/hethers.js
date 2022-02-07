@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import assert from "assert";
 import { BigNumber, ethers } from "ethers";
 import contractData from "./test-contract.json";
-import fs from "fs";
+import fs, { readFileSync } from "fs";
 // @ts-ignore
 import * as abi from '../../../examples/assets/abi/GLDToken_abi.json';
 // @ts-ignore
@@ -205,8 +205,6 @@ describe("Test Contract Transaction Population", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const tx = yield contract.populateTransaction.mint({
                 gasLimit: 150000,
-                gasPrice: 1900000000,
-                nonce: 5,
                 value: 1234,
                 from: testAddress
             });
@@ -214,10 +212,8 @@ describe("Test Contract Transaction Population", function () {
             assert.equal(Object.keys(tx).length, 7, "correct number of keys");
             assert.equal(tx.data, "0x1249c58b", "data matches");
             assert.equal(tx.to, testAddressCheck, "to address matches");
-            assert.equal(tx.nonce, 5, "nonce address matches");
-            assert.ok(tx.gasLimit.eq(150000), "gasLimit matches");
-            assert.ok(tx.gasPrice.eq(1900000000), "gasPrice matches");
-            assert.ok(tx.value.eq(1234), "value matches");
+            assert.equal(tx.gasLimit.toString(), "150000", "gasLimit matches");
+            assert.equal(tx.value.toString(), "1234", "value matches");
             assert.equal(tx.from, testAddressCheck, "from address matches");
         });
     });
@@ -338,6 +334,113 @@ describe("Test Contract Transaction Population", function () {
                 gasLimit: 300000
             });
             assert.strictEqual(BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
+        });
+    }).timeout(60000);
+    it("should be able to call contract methods", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            // configs
+            const providerTestnet = ethers.providers.getDefaultProvider('testnet');
+            const contractHederaEoa = {
+                "account": '0.0.29562194',
+                "privateKey": '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+            };
+            // contract init
+            // @ts-ignore
+            const contractWallet = new ethers.Wallet(contractHederaEoa, providerTestnet);
+            const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+            const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+            const contractFactory = new ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
+            const contract = yield contractFactory.deploy(ethers.BigNumber.from('10000'), { gasLimit: 3000000 });
+            // client wallet init
+            let clientWallet = ethers.Wallet.createRandom();
+            const clientAccountId = (yield contractWallet.createAccount(clientWallet._signingKey().compressedPublicKey)).customData.accountId;
+            clientWallet = clientWallet.connect(providerTestnet).connectAccount(clientAccountId.toString());
+            // test sending hbars to the contract
+            yield contractWallet.sendTransaction({
+                to: contract.address,
+                from: contractWallet.address,
+                value: 30,
+                gasLimit: 300000
+            });
+            // test if initial balance of the client is zero
+            assert.strictEqual((yield contract.balanceOf(clientWallet.address, { gasLimit: 300000 })).toString(), '0');
+            // test calling a contract view method
+            const viewMethodCall = yield contract.getInternalCounter({ gasLimit: 300000 });
+            assert.strictEqual(viewMethodCall.toString(), '29');
+            // test sending hbars via populateTransaction.transfer
+            const populatedTx = yield contract.populateTransaction.transfer(clientWallet.address, 10, { gasLimit: 300000 });
+            const signedTransaction = yield contractWallet.signTransaction(populatedTx);
+            const tx = yield contractWallet.provider.sendTransaction(signedTransaction);
+            yield tx.wait();
+            assert.strictEqual((yield contract.balanceOf(clientWallet.address, { gasLimit: 300000 })).toString(), '10');
+            // test sending hbars via contract.transfer
+            const transferMethodCall = yield contract.transfer(clientWallet.address, 10, { gasLimit: 300000 });
+            yield transferMethodCall.wait();
+            assert.strictEqual((yield contract.balanceOf(clientWallet.address, { gasLimit: 300000 })).toString(), '20');
+        });
+    }).timeout(300000);
+    it('should have a .wait function', function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const hederaEoa = {
+                account: '0.0.29562194',
+                privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+            };
+            const provider = ethers.providers.getDefaultProvider('testnet');
+            // @ts-ignore
+            const wallet = new ethers.Wallet(hederaEoa, provider);
+            const bytecode = fs.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+            const contractFactory = new ethers.ContractFactory(abi, bytecode, wallet);
+            const contract = yield contractFactory.deploy({ gasLimit: 300000 });
+            try {
+                yield contract.deployTransaction.wait(10);
+                assert.notStrictEqual(true, false, "It should go in the catch block");
+            }
+            catch (err) {
+                assert.notStrictEqual(err, null, "An error is thrown when the specified timeout is exceeded");
+                assert.strictEqual(err.code, 'TIMEOUT');
+            }
+            const deployTx = contract.deployTransaction;
+            const receipt = yield deployTx.wait();
+            assert.notStrictEqual(receipt, null, "wait returns a receipt");
+            assert.strictEqual(receipt.transactionId, deployTx.transactionId, "receipt.transactionId is correct");
+            assert.strictEqual(receipt.transactionHash, deployTx.hash, "receipt.transactionHash is correct");
+            assert.notStrictEqual(receipt.logs, null, "receipt.logs exists");
+            assert.strictEqual(receipt.logs.length, 2);
+            // @ts-ignore
+            const events = receipt.events;
+            assert.notStrictEqual(events, null, "receipt.events exists");
+            assert.strictEqual(events.length, 2);
+            assert.strictEqual(events[0].event, 'Mint');
+            assert.strictEqual(events[0].eventSignature, 'Mint(address,uint256)');
+            assert.strictEqual(events[1].event, 'Transfer');
+            assert.strictEqual(events[1].eventSignature, 'Transfer(address,address,uint256)');
+            for (let i = 0; i < events.length; i++) {
+                const log = receipt.logs[i];
+                const event = events[i];
+                assert.strictEqual(log.timestamp, receipt.timestamp, 'timestamp is correct');
+                assert.strictEqual(log.address, receipt.contractAddress, 'address is correct');
+                assert.notStrictEqual(log.data, null, 'data exists');
+                assert.strictEqual(log.logIndex, i, 'logIndex is correct');
+                assert.strictEqual(log.transactionHash, receipt.transactionHash, 'transactionHash is correct');
+                assert.strictEqual(event.timestamp, receipt.timestamp, 'event.timestamp is correct');
+                assert.strictEqual(event.address, receipt.contractAddress, 'event.address is correct');
+                assert.notStrictEqual(event.data, 'event.data exists');
+                assert.strictEqual(event.logIndex, i, 'event.logIndex is correct');
+                assert.strictEqual(event.transactionHash, receipt.transactionHash, 'event.transactionHash is correct');
+                assert.notStrictEqual(event.getTransaction, null, 'events have a method `getTransaction`');
+                assert.notStrictEqual(event.getTransactionReceipt, null, 'events have a method `getTransactionReceipt`');
+                const eventTx = yield event.getTransaction();
+                assert.notStrictEqual(eventTx, null, 'event.getTransaction() returns a result');
+                assert.notStrictEqual(eventTx.chainId, null, 'eventTx.chainId is correct');
+                assert.strictEqual(eventTx.hash, receipt.transactionHash, 'eventTx.hash is correct');
+                assert.strictEqual(eventTx.timestamp, receipt.timestamp, 'eventTx.timestamp is correct');
+                assert.strictEqual(eventTx.transactionId, receipt.transactionId, 'eventTx.transactionId is correct');
+                assert.strictEqual(eventTx.from, receipt.from, 'eventTx.from is correct');
+                assert.strictEqual(eventTx.to, receipt.contractAddress, 'eventTx.contractAddress is correct');
+                assert.strictEqual(eventTx.value.toString(), BigNumber.from(0).toString(), 'eventTx.value is correct');
+                const eventRc = yield event.getTransactionReceipt();
+                assert.strictEqual(eventRc, receipt, "getTransactionReceipt returns the same receipt");
+            }
         });
     }).timeout(60000);
 });
