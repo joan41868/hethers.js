@@ -22348,50 +22348,36 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$1 = keccak(256);
 
-var _from = "elliptic@6.5.4";
-var _id = "elliptic@6.5.4";
-var _inBundle = false;
-var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
-var _location = "/elliptic";
-var _phantomChildren = {
-};
-var _requested = {
-	type: "version",
-	registry: true,
-	raw: "elliptic@6.5.4",
-	name: "elliptic",
-	escapedName: "elliptic",
-	rawSpec: "6.5.4",
-	saveSpec: null,
-	fetchSpec: "6.5.4"
-};
-var _requiredBy = [
-	"/",
-	"/@hashgraph/cryptography"
+var name = "elliptic";
+var version$b = "6.5.4";
+var description = "EC cryptography";
+var main = "lib/elliptic.js";
+var files = [
+	"lib"
 ];
-var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
-var _shasum = "da37cebd31e79a1367e941b592ed1fbebd58abbb";
-var _spec = "elliptic@6.5.4";
-var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
-var author = {
-	name: "Fedor Indutny",
-	email: "fedor@indutny.com"
+var scripts = {
+	lint: "eslint lib test",
+	"lint:fix": "npm run lint -- --fix",
+	unit: "istanbul test _mocha --reporter=spec test/index.js",
+	test: "npm run lint && npm run unit",
+	version: "grunt dist && git add dist/"
 };
+var repository = {
+	type: "git",
+	url: "git@github.com:indutny/elliptic"
+};
+var keywords = [
+	"EC",
+	"Elliptic",
+	"curve",
+	"Cryptography"
+];
+var author = "Fedor Indutny <fedor@indutny.com>";
+var license = "MIT";
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
-var bundleDependencies = false;
-var dependencies = {
-	"bn.js": "^4.11.9",
-	brorand: "^1.1.0",
-	"hash.js": "^1.0.0",
-	"hmac-drbg": "^1.0.1",
-	inherits: "^2.0.4",
-	"minimalistic-assert": "^1.0.1",
-	"minimalistic-crypto-utils": "^1.0.1"
-};
-var deprecated = false;
-var description = "EC cryptography";
+var homepage = "https://github.com/indutny/elliptic";
 var devDependencies = {
 	brfs: "^2.0.2",
 	coveralls: "^3.1.0",
@@ -22407,60 +22393,30 @@ var devDependencies = {
 	istanbul: "^0.4.5",
 	mocha: "^8.0.1"
 };
-var files = [
-	"lib"
-];
-var homepage = "https://github.com/indutny/elliptic";
-var keywords = [
-	"EC",
-	"Elliptic",
-	"curve",
-	"Cryptography"
-];
-var license = "MIT";
-var main = "lib/elliptic.js";
-var name = "elliptic";
-var repository = {
-	type: "git",
-	url: "git+ssh://git@github.com/indutny/elliptic.git"
+var dependencies = {
+	"bn.js": "^4.11.9",
+	brorand: "^1.1.0",
+	"hash.js": "^1.0.0",
+	"hmac-drbg": "^1.0.1",
+	inherits: "^2.0.4",
+	"minimalistic-assert": "^1.0.1",
+	"minimalistic-crypto-utils": "^1.0.1"
 };
-var scripts = {
-	lint: "eslint lib test",
-	"lint:fix": "npm run lint -- --fix",
-	test: "npm run lint && npm run unit",
-	unit: "istanbul test _mocha --reporter=spec test/index.js",
-	version: "grunt dist && git add dist/"
-};
-var version$b = "6.5.4";
 var require$$0 = {
-	_from: _from,
-	_id: _id,
-	_inBundle: _inBundle,
-	_integrity: _integrity,
-	_location: _location,
-	_phantomChildren: _phantomChildren,
-	_requested: _requested,
-	_requiredBy: _requiredBy,
-	_resolved: _resolved,
-	_shasum: _shasum,
-	_spec: _spec,
-	_where: _where,
-	author: author,
-	bugs: bugs,
-	bundleDependencies: bundleDependencies,
-	dependencies: dependencies,
-	deprecated: deprecated,
-	description: description,
-	devDependencies: devDependencies,
-	files: files,
-	homepage: homepage,
-	keywords: keywords,
-	license: license,
-	main: main,
 	name: name,
-	repository: repository,
+	version: version$b,
+	description: description,
+	main: main,
+	files: files,
 	scripts: scripts,
-	version: version$b
+	repository: repository,
+	keywords: keywords,
+	author: author,
+	license: license,
+	bugs: bugs,
+	homepage: homepage,
+	devDependencies: devDependencies,
+	dependencies: dependencies
 };
 
 var minimalisticAssert = assert;
@@ -80700,46 +80656,22 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var _from$1 = "@grpc/grpc-js@^1.4.4";
-var _id$1 = "@grpc/grpc-js@1.5.1";
-var _inBundle$1 = false;
-var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
-var _location$1 = "/@grpc/grpc-js";
-var _phantomChildren$1 = {
+var name$1 = "@grpc/grpc-js";
+var version$c = "1.5.1";
+var description$1 = "gRPC Library for Node - pure JS implementation";
+var homepage$1 = "https://grpc.io/";
+var repository$1 = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
+var main$1 = "build/src/index.js";
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
-var _requested$1 = {
-	type: "range",
-	registry: true,
-	raw: "@grpc/grpc-js@^1.4.4",
-	name: "@grpc/grpc-js",
-	escapedName: "@grpc%2fgrpc-js",
-	scope: "@grpc",
-	rawSpec: "^1.4.4",
-	saveSpec: null,
-	fetchSpec: "^1.4.4"
-};
-var _requiredBy$1 = [
-	"/@hashgraph/sdk"
+var keywords$1 = [
 ];
-var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
-var _shasum$1 = "934571ae351e868e61d2bd1d56249b79ce8bd1f5";
-var _spec$1 = "@grpc/grpc-js@^1.4.4";
-var _where$1 = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js\\node_modules\\@hashgraph\\sdk";
 var author$1 = {
 	name: "Google Inc."
 };
-var bundleDependencies$1 = false;
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var dependencies$1 = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
-};
-var deprecated$1 = false;
-var description$1 = "gRPC Library for Node - pure JS implementation";
+var types = "build/src/index.d.ts";
+var license$1 = "Apache-2.0";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -80763,8 +80695,29 @@ var devDependencies$1 = {
 	"ts-node": "^8.3.0",
 	typescript: "^3.7.2"
 };
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var scripts$1 = {
+	build: "npm run compile",
+	clean: "rimraf ./build",
+	compile: "tsc -p .",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	lint: "npm run check",
+	prepare: "npm run generate-types && npm run compile",
+	test: "gulp test",
+	check: "gts check src/**/*.ts",
+	fix: "gts fix src/*.ts",
+	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
+	posttest: "npm run check && madge -c ./build/src",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
+	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto"
+};
+var dependencies$1 = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
 };
 var files$1 = [
 	"src/**/*.ts",
@@ -80780,64 +80733,23 @@ var files$1 = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var homepage$1 = "https://grpc.io/";
-var keywords$1 = [
-];
-var license$1 = "Apache-2.0";
-var main$1 = "build/src/index.js";
-var name$1 = "@grpc/grpc-js";
-var repository$1 = {
-	type: "git",
-	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
-};
-var scripts$1 = {
-	build: "npm run compile",
-	check: "gts check src/**/*.ts",
-	clean: "rimraf ./build",
-	compile: "tsc -p .",
-	fix: "gts fix src/*.ts",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
-	lint: "npm run check",
-	posttest: "npm run check && madge -c ./build/src",
-	prepare: "npm run generate-types && npm run compile",
-	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
-	test: "gulp test"
-};
-var types = "build/src/index.d.ts";
-var version$c = "1.5.1";
 var require$$0$2 = {
-	_from: _from$1,
-	_id: _id$1,
-	_inBundle: _inBundle$1,
-	_integrity: _integrity$1,
-	_location: _location$1,
-	_phantomChildren: _phantomChildren$1,
-	_requested: _requested$1,
-	_requiredBy: _requiredBy$1,
-	_resolved: _resolved$1,
-	_shasum: _shasum$1,
-	_spec: _spec$1,
-	_where: _where$1,
-	author: author$1,
-	bundleDependencies: bundleDependencies$1,
-	contributors: contributors,
-	dependencies: dependencies$1,
-	deprecated: deprecated$1,
-	description: description$1,
-	devDependencies: devDependencies$1,
-	engines: engines,
-	files: files$1,
-	homepage: homepage$1,
-	keywords: keywords$1,
-	license: license$1,
-	main: main$1,
 	name: name$1,
+	version: version$c,
+	description: description$1,
+	homepage: homepage$1,
 	repository: repository$1,
-	scripts: scripts$1,
+	main: main$1,
+	engines: engines,
+	keywords: keywords$1,
+	author: author$1,
 	types: types,
-	version: version$c
+	license: license$1,
+	devDependencies: devDependencies$1,
+	contributors: contributors,
+	scripts: scripts$1,
+	dependencies: dependencies$1,
+	files: files$1
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -92820,16 +92732,16 @@ function handleNumber(value) {
     return BigNumber.from(value);
 }
 // Legacy Transaction Fields
+// @ts-ignore
 const transactionFields = [
-    { name: "nonce", maxLength: 32, numeric: true },
-    { name: "gasPrice", maxLength: 32, numeric: true },
     { name: "gasLimit", maxLength: 32, numeric: true },
     { name: "to", length: 20 },
     { name: "value", maxLength: 32, numeric: true },
     { name: "data" },
 ];
+// @ts-ignore
 const allowedTransactionKeys$1 = {
-    chainId: true, data: true, gasLimit: true, gasPrice: true, nonce: true, to: true, type: true, value: true
+    chainId: true, data: true, gasLimit: true, to: true, type: true, value: true
 };
 function computeAddress(key) {
     const publicKey = computePublicKey(key);
@@ -92844,13 +92756,6 @@ function computeAliasFromPubKey(pubKey) {
 }
 function recoverAddress(digest, signature) {
     return computeAddress(recoverPublicKey(arrayify(digest), signature));
-}
-function formatNumber(value, name) {
-    const result = stripZeros(BigNumber.from(value).toHexString());
-    if (result.length > 32) {
-        logger$r.throwArgumentError("invalid length for " + name, ("transaction:" + name), value);
-    }
-    return result;
 }
 function accessSetify(addr, storageKeys) {
     return {
@@ -92885,146 +92790,8 @@ function accessListify(value) {
     result.sort((a, b) => (a.address.localeCompare(b.address)));
     return result;
 }
-function formatAccessList(value) {
-    return accessListify(value).map((set) => [set.address, set.storageKeys]);
-}
-function _serializeEip1559(transaction, signature) {
-    // If there is an explicit gasPrice, make sure it matches the
-    // EIP-1559 fees; otherwise they may not understand what they
-    // think they are setting in terms of fee.
-    if (transaction.gasPrice != null) {
-        const gasPrice = BigNumber.from(transaction.gasPrice);
-        const maxFeePerGas = BigNumber.from(transaction.maxFeePerGas || 0);
-        if (!gasPrice.eq(maxFeePerGas)) {
-            logger$r.throwArgumentError("mismatch EIP-1559 gasPrice != maxFeePerGas", "tx", {
-                gasPrice, maxFeePerGas
-            });
-        }
-    }
-    const fields = [
-        formatNumber(transaction.chainId || 0, "chainId"),
-        formatNumber(transaction.nonce || 0, "nonce"),
-        formatNumber(transaction.maxPriorityFeePerGas || 0, "maxPriorityFeePerGas"),
-        formatNumber(transaction.maxFeePerGas || 0, "maxFeePerGas"),
-        formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
-        formatNumber(transaction.value || 0, "value"),
-        (transaction.data || "0x"),
-        (formatAccessList(transaction.accessList || []))
-    ];
-    if (signature) {
-        const sig = splitSignature(signature);
-        fields.push(formatNumber(sig.recoveryParam, "recoveryParam"));
-        fields.push(stripZeros(sig.r));
-        fields.push(stripZeros(sig.s));
-    }
-    return hexConcat(["0x02", encode(fields)]);
-}
-function _serializeEip2930(transaction, signature) {
-    const fields = [
-        formatNumber(transaction.chainId || 0, "chainId"),
-        formatNumber(transaction.nonce || 0, "nonce"),
-        formatNumber(transaction.gasPrice || 0, "gasPrice"),
-        formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
-        formatNumber(transaction.value || 0, "value"),
-        (transaction.data || "0x"),
-        (formatAccessList(transaction.accessList || []))
-    ];
-    if (signature) {
-        const sig = splitSignature(signature);
-        fields.push(formatNumber(sig.recoveryParam, "recoveryParam"));
-        fields.push(stripZeros(sig.r));
-        fields.push(stripZeros(sig.s));
-    }
-    return hexConcat(["0x01", encode(fields)]);
-}
-// Legacy Transactions and EIP-155
-function _serialize(transaction, signature) {
-    checkProperties(transaction, allowedTransactionKeys$1);
-    const raw = [];
-    transactionFields.forEach(function (fieldInfo) {
-        let value = transaction[fieldInfo.name] || ([]);
-        const options = {};
-        if (fieldInfo.numeric) {
-            options.hexPad = "left";
-        }
-        value = arrayify(hexlify(value, options));
-        // Fixed-width field
-        if (fieldInfo.length && value.length !== fieldInfo.length && value.length > 0) {
-            logger$r.throwArgumentError("invalid length for " + fieldInfo.name, ("transaction:" + fieldInfo.name), value);
-        }
-        // Variable-width (with a maximum)
-        if (fieldInfo.maxLength) {
-            value = stripZeros(value);
-            if (value.length > fieldInfo.maxLength) {
-                logger$r.throwArgumentError("invalid length for " + fieldInfo.name, ("transaction:" + fieldInfo.name), value);
-            }
-        }
-        raw.push(hexlify(value));
-    });
-    let chainId = 0;
-    if (transaction.chainId != null) {
-        // A chainId was provided; if non-zero we'll use EIP-155
-        chainId = transaction.chainId;
-        if (typeof (chainId) !== "number") {
-            logger$r.throwArgumentError("invalid transaction.chainId", "transaction", transaction);
-        }
-    }
-    else if (signature && !isBytesLike(signature) && signature.v > 28) {
-        // No chainId provided, but the signature is signing with EIP-155; derive chainId
-        chainId = Math.floor((signature.v - 35) / 2);
-    }
-    // We have an EIP-155 transaction (chainId was specified and non-zero)
-    if (chainId !== 0) {
-        raw.push(hexlify(chainId)); // @TODO: hexValue?
-        raw.push("0x");
-        raw.push("0x");
-    }
-    // Requesting an unsigned transaction
-    if (!signature) {
-        return encode(raw);
-    }
-    // The splitSignature will ensure the transaction has a recoveryParam in the
-    // case that the signTransaction function only adds a v.
-    const sig = splitSignature(signature);
-    // We pushed a chainId and null r, s on for hashing only; remove those
-    let v = 27 + sig.recoveryParam;
-    if (chainId !== 0) {
-        raw.pop();
-        raw.pop();
-        raw.pop();
-        v += chainId * 2 + 8;
-        // If an EIP-155 v (directly or indirectly; maybe _vs) was provided, check it!
-        if (sig.v > 28 && sig.v !== v) {
-            logger$r.throwArgumentError("transaction.chainId/signature.v mismatch", "signature", signature);
-        }
-    }
-    else if (sig.v !== v) {
-        logger$r.throwArgumentError("transaction.chainId/signature.v mismatch", "signature", signature);
-    }
-    raw.push(hexlify(v));
-    raw.push(stripZeros(arrayify(sig.r)));
-    raw.push(stripZeros(arrayify(sig.s)));
-    return encode(raw);
-}
+// TODO resolve build problems when this is deleted
 function serialize(transaction, signature) {
-    // Legacy and EIP-155 Transactions
-    if (transaction.type == null || transaction.type === 0) {
-        if (transaction.accessList != null) {
-            logger$r.throwArgumentError("untyped transactions do not support accessList; include type: 1", "transaction", transaction);
-        }
-        return _serialize(transaction, signature);
-    }
-    // Typed Transactions (EIP-2718)
-    switch (transaction.type) {
-        case 1:
-            return _serializeEip2930(transaction, signature);
-        case 2:
-            return _serializeEip1559(transaction, signature);
-        default:
-            break;
-    }
     return logger$r.throwError(`unsupported transaction type: ${transaction.type}`, Logger.errors.UNSUPPORTED_OPERATION, {
         operation: "serializeTransaction",
         transactionType: transaction.type
