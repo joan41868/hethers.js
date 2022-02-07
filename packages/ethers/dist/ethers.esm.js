@@ -9105,57 +9105,6 @@ const version$9 = "abstract-provider/5.5.1";
 
 "use strict";
 const logger$d = new Logger(version$9);
-//export type CallTransactionable = {
-//    call(transaction: TransactionRequest): Promise<TransactionResponse>;
-//};
-class ForkEvent extends Description {
-    static isForkEvent(value) {
-        return !!(value && value._isForkEvent);
-    }
-}
-class BlockForkEvent extends ForkEvent {
-    constructor(blockHash, expiry) {
-        if (!isHexString(blockHash, 32)) {
-            logger$d.throwArgumentError("invalid blockHash", "blockHash", blockHash);
-        }
-        super({
-            _isForkEvent: true,
-            _isBlockForkEvent: true,
-            expiry: (expiry || 0),
-            blockHash: blockHash
-        });
-    }
-}
-class TransactionForkEvent extends ForkEvent {
-    constructor(hash, expiry) {
-        if (!isHexString(hash, 32)) {
-            logger$d.throwArgumentError("invalid transaction hash", "hash", hash);
-        }
-        super({
-            _isForkEvent: true,
-            _isTransactionForkEvent: true,
-            expiry: (expiry || 0),
-            hash: hash
-        });
-    }
-}
-class TransactionOrderForkEvent extends ForkEvent {
-    constructor(beforeHash, afterHash, expiry) {
-        if (!isHexString(beforeHash, 32)) {
-            logger$d.throwArgumentError("invalid transaction hash", "beforeHash", beforeHash);
-        }
-        if (!isHexString(afterHash, 32)) {
-            logger$d.throwArgumentError("invalid transaction hash", "afterHash", afterHash);
-        }
-        super({
-            _isForkEvent: true,
-            _isTransactionOrderForkEvent: true,
-            expiry: (expiry || 0),
-            beforeHash: beforeHash,
-            afterHash: afterHash
-        });
-    }
-}
 ///////////////////////////////
 // Exported Abstracts
 class Provider {

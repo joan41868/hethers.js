@@ -13,7 +13,6 @@ import {
 } from "@ethersproject/abi";
 import {
     // Filter,
-    // FilterByBlockHash,
     Listener,
     Log,
     Provider,

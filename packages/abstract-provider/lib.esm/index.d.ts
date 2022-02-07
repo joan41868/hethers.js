@@ -1,7 +1,7 @@
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike } from "@ethersproject/bytes";
 import { Network } from "@ethersproject/networks";
-import { Deferrable, Description } from "@ethersproject/properties";
+import { Deferrable } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@ethersproject/transactions";
 import { AccountLike } from "@ethersproject/address";
 import { AccountId, Client } from '@hashgraph/sdk';
@@ -88,30 +88,7 @@ export interface Filter extends EventFilter {
     fromTimestamp?: string;
     toTimestamp?: string;
 }
-export interface FilterByBlockHash extends EventFilter {
-    blockHash?: string;
-}
-export declare abstract class ForkEvent extends Description {
-    readonly expiry: number;
-    readonly _isForkEvent?: boolean;
-    static isForkEvent(value: any): value is ForkEvent;
-}
-export declare class BlockForkEvent extends ForkEvent {
-    readonly blockHash: string;
-    readonly _isBlockForkEvent?: boolean;
-    constructor(blockHash: string, expiry?: number);
-}
-export declare class TransactionForkEvent extends ForkEvent {
-    readonly hash: string;
-    readonly _isTransactionOrderForkEvent?: boolean;
-    constructor(hash: string, expiry?: number);
-}
-export declare class TransactionOrderForkEvent extends ForkEvent {
-    readonly beforeHash: string;
-    readonly afterHash: string;
-    constructor(beforeHash: string, afterHash: string, expiry?: number);
-}
-export declare type EventType = string | Array<string | Array<string>> | EventFilter | ForkEvent;
+export declare type EventType = string | Array<string | Array<string>> | EventFilter;
 export declare type Listener = (...args: Array<any>) => void;
 export declare abstract class Provider {
     abstract getNetwork(): Promise<Network>;
