@@ -1,3 +1,5 @@
+###**Warning! The `Experimental Playground` package is excluded from the build process. It is not supported in hethers.js**
+
 Experimental Playground
 =======================
 

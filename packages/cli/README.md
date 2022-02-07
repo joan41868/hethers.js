@@ -1,3 +1,5 @@
+###**Warning! The `CLI` package is excluded from the build process. It is not supported in hethers.js**
+
 Command-Line Interface (CLI)
 ============================
 

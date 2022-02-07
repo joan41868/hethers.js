@@ -1,3 +1,5 @@
+###**Warning! The `Hardware Wallets` package is excluded from the build process. It is not supported in hethers.js**
+
 Hardware Wallets
 ================
 
