@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { numberify } from "@ethersproject/bignumber";
-import { arrayify, hexStripZeros } from "@ethersproject/bytes";
+import { arrayify, hexlify } from "@ethersproject/bytes";
 import { defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -133,7 +133,7 @@ export class Signer {
             });
             try {
                 const response = yield hederaTx.execute(this.provider.getHederaClient());
-                return hexStripZeros(response.bytes);
+                return hexlify(response.bytes);
             }
             catch (error) {
                 return checkError('call', error, txRequest);

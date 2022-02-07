@@ -12,7 +12,6 @@ import {
     Result
 } from "@ethersproject/abi";
 import {
-    // Filter,
     Listener,
     Log,
     Provider,
@@ -32,7 +31,7 @@ import {
     resolveProperties,
     shallowCopy
 } from "@ethersproject/properties";
-import { AccessList, accessListify, AccessListish } from "@ethersproject/transactions";
+import { AccessList, accessListify, AccessListish} from "@ethersproject/transactions";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -41,13 +40,12 @@ const logger = new Logger(version);
 
 export interface Overrides {
     gasLimit?: BigNumberish | Promise<BigNumberish>;
-    gasPrice?: BigNumberish | Promise<BigNumberish>;
     maxFeePerGas?: BigNumberish | Promise<BigNumberish>;
     maxPriorityFeePerGas?: BigNumberish | Promise<BigNumberish>;
-    nonce?: BigNumberish | Promise<BigNumberish>;
     type?: number;
     accessList?: AccessListish;
     customData?: Record<string, any>;
+    nodeId?: AccountLike;
 }
 
 export interface PayableOverrides extends Overrides {
@@ -58,18 +56,11 @@ export interface CallOverrides extends PayableOverrides {
     from?: string | Promise<string>;
 }
 
-// @TODO: Better hierarchy with: (in v6)
-//  - abstract-provider:TransactionRequest
-//  - transactions:Transaction
-//  - transaction:UnsignedTransaction
-
 export interface PopulatedTransaction {
-    to?: string;
-    from?: string;
-    nonce?: number;
+    to?: AccountLike;
+    from?: AccountLike;
 
     gasLimit?: BigNumber;
-    gasPrice?: BigNumber;
 
     data?: string;
     value?: BigNumber;
@@ -82,7 +73,8 @@ export interface PopulatedTransaction {
     maxPriorityFeePerGas?: BigNumber;
 
     customData?: Record<string, any>;
-};
+    nodeId?: AccountLike;
+}
 
 export type EventFilter = {
     address?: AccountLike;
@@ -114,7 +106,7 @@ export interface Event extends Log {
     // A function that will remove the listener responsible for this event (if any)
     removeListener: () => void;
 
-    // Get blockchain details about this event's transaction
+    // Get transaction's info
     getTransaction: () => Promise<TransactionResponse>;
     getTransactionReceipt: () => Promise<TransactionReceipt>;
 }
@@ -173,45 +165,40 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
     // Wait for all dependencies to be resolved (prefer the signer over the provider)
     const resolved = await resolveProperties({
         args: args,
-        address: contract.resolvedAddress,
+        address: contract.address,
         overrides: (resolveProperties(overrides) || { })
     });
 
     // The ABI coded transaction
     const data = contract.interface.encodeFunctionData(fragment, resolved.args);
     const tx: PopulatedTransaction = {
-      data: data,
-      to: resolved.address
+        data: data,
+        to: resolved.address
     };
 
     // Resolved Overrides
     const ro = resolved.overrides;
 
     // Populate simple overrides
-    if (ro.nonce != null) { tx.nonce = BigNumber.from(ro.nonce).toNumber(); }
     if (ro.gasLimit != null) { tx.gasLimit = BigNumber.from(ro.gasLimit); }
-    if (ro.gasPrice != null) { tx.gasPrice = BigNumber.from(ro.gasPrice); }
     if (ro.maxFeePerGas != null) { tx.maxFeePerGas = BigNumber.from(ro.maxFeePerGas); }
     if (ro.maxPriorityFeePerGas != null) { tx.maxPriorityFeePerGas = BigNumber.from(ro.maxPriorityFeePerGas); }
     if (ro.from != null) { tx.from = ro.from; }
-
     if (ro.type != null) { tx.type = ro.type; }
     if (ro.accessList != null) { tx.accessList = accessListify(ro.accessList); }
+    if (ro.nodeId != null) { tx.nodeId = ro.nodeId; }
 
     // If there was no "gasLimit" override, but the ABI specifies a default, use it
     if (tx.gasLimit == null && fragment.gas != null) {
-        // Compute the intrinsic gas cost for this transaction
-        // @TODO: This is based on the yellow paper as of Petersburg; this is something
-        // we may wish to parameterize in v6 as part of the Network object. Since this
-        // is always a non-nil to address, we can ignore G_create, but may wish to add
-        // similar logic to the ContractFactory.
         let intrinsic = 21000;
+        let contractCreationExtraGasCost = 11000;
         const bytes = arrayify(data);
         for (let i = 0; i < bytes.length; i++) {
             intrinsic += 4;
-            if (bytes[i]) { intrinsic += 64; }
+            if (bytes[i]) { intrinsic += 16; }
         }
-        tx.gasLimit = BigNumber.from(fragment.gas).add(intrinsic);
+        const txGas = tx.to != null ? intrinsic : intrinsic + contractCreationExtraGasCost;
+        tx.gasLimit = BigNumber.from(fragment.gas).add(txGas);
     }
 
     // Populate "value" override
@@ -231,19 +218,15 @@ async function populateTransaction(contract: Contract, fragment: FunctionFragmen
     }
 
     // Remove the overrides
-    delete overrides.nonce;
     delete overrides.gasLimit;
-    delete overrides.gasPrice;
     delete overrides.from;
     delete overrides.value;
-
     delete overrides.type;
     delete overrides.accessList;
-
     delete overrides.maxFeePerGas;
     delete overrides.maxPriorityFeePerGas;
-
     delete overrides.customData;
+    delete overrides.nodeId;
 
     // Make sure there are no stray overrides, which may indicate a
     // typo or using an unsupported key.

@@ -83,7 +83,6 @@ var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
-;
 ///////////////////////////////
 var allowedTransactionKeys = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
@@ -93,7 +92,7 @@ var allowedTransactionKeys = {
 };
 function populateTransaction(contract, fragment, args) {
     return __awaiter(this, void 0, void 0, function () {
-        var overrides, resolved, data, tx, ro, intrinsic, bytes, i, roValue, leftovers;
+        var overrides, resolved, data, tx, ro, intrinsic, contractCreationExtraGasCost, bytes, i, txGas, roValue, leftovers;
         var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -129,7 +128,7 @@ function populateTransaction(contract, fragment, args) {
                     }
                     return [4 /*yield*/, (0, properties_1.resolveProperties)({
                             args: args,
-                            address: contract.resolvedAddress,
+                            address: contract.address,
                             overrides: ((0, properties_1.resolveProperties)(overrides) || {})
                         })];
                 case 1:
@@ -141,14 +140,8 @@ function populateTransaction(contract, fragment, args) {
                     };
                     ro = resolved.overrides;
                     // Populate simple overrides
-                    if (ro.nonce != null) {
-                        tx.nonce = bignumber_1.BigNumber.from(ro.nonce).toNumber();
-                    }
                     if (ro.gasLimit != null) {
                         tx.gasLimit = bignumber_1.BigNumber.from(ro.gasLimit);
-                    }
-                    if (ro.gasPrice != null) {
-                        tx.gasPrice = bignumber_1.BigNumber.from(ro.gasPrice);
                     }
                     if (ro.maxFeePerGas != null) {
                         tx.maxFeePerGas = bignumber_1.BigNumber.from(ro.maxFeePerGas);
@@ -165,17 +158,22 @@ function populateTransaction(contract, fragment, args) {
                     if (ro.accessList != null) {
                         tx.accessList = (0, transactions_1.accessListify)(ro.accessList);
                     }
+                    if (ro.nodeId != null) {
+                        tx.nodeId = ro.nodeId;
+                    }
                     // If there was no "gasLimit" override, but the ABI specifies a default, use it
                     if (tx.gasLimit == null && fragment.gas != null) {
                         intrinsic = 21000;
+                        contractCreationExtraGasCost = 11000;
                         bytes = (0, bytes_1.arrayify)(data);
                         for (i = 0; i < bytes.length; i++) {
                             intrinsic += 4;
                             if (bytes[i]) {
-                                intrinsic += 64;
+                                intrinsic += 16;
                             }
                         }
-                        tx.gasLimit = bignumber_1.BigNumber.from(fragment.gas).add(intrinsic);
+                        txGas = tx.to != null ? intrinsic : intrinsic + contractCreationExtraGasCost;
+                        tx.gasLimit = bignumber_1.BigNumber.from(fragment.gas).add(txGas);
                     }
                     // Populate "value" override
                     if (ro.value) {
@@ -192,9 +190,7 @@ function populateTransaction(contract, fragment, args) {
                         tx.customData = (0, properties_1.shallowCopy)(ro.customData);
                     }
                     // Remove the overrides
-                    delete overrides.nonce;
                     delete overrides.gasLimit;
-                    delete overrides.gasPrice;
                     delete overrides.from;
                     delete overrides.value;
                     delete overrides.type;
@@ -202,6 +198,7 @@ function populateTransaction(contract, fragment, args) {
                     delete overrides.maxFeePerGas;
                     delete overrides.maxPriorityFeePerGas;
                     delete overrides.customData;
+                    delete overrides.nodeId;
                     leftovers = Object.keys(overrides).filter(function (key) { return (overrides[key] != null); });
                     if (leftovers.length) {
                         logger.throwError("cannot override " + leftovers.map(function (l) { return JSON.stringify(l); }).join(","), logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
