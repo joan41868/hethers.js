@@ -12,7 +12,6 @@ import {
     Result
 } from "@ethersproject/abi";
 import {
-    Block,
     BlockTag,
     // Filter,
     // FilterByBlockHash,
@@ -117,8 +116,7 @@ export interface Event extends Log {
     // A function that will remove the listener responsible for this event (if any)
     removeListener: () => void;
 
-    // Get blockchain details about this event's block and transaction
-    getBlock: () => Promise<Block>;
+    // Get blockchain details about this event's transaction
     getTransaction: () => Promise<TransactionResponse>;
     getTransactionReceipt: () => Promise<TransactionReceipt>;
 }
@@ -286,8 +284,8 @@ function buildEstimate(contract: Contract, fragment: FunctionFragment): Contract
 
 function addContractWait(contract: Contract, tx: TransactionResponse) {
     const wait = tx.wait.bind(tx);
-    tx.wait = (confirmations?: number) => {
-        return wait(confirmations).then((receipt: ContractReceipt) => {
+    tx.wait = (timeout?: number) => {
+        return wait(timeout).then((receipt: ContractReceipt) => {
             receipt.events = receipt.logs.map((log) => {
                 let event: Event = (<Event>deepCopy(log));
                 let parsed: LogDescription = null;
@@ -307,12 +305,8 @@ function addContractWait(contract: Contract, tx: TransactionResponse) {
 
                 // Useful operations
                 event.removeListener = () => { return contract.provider; }
-                event.getBlock = () => {
-                    // TODO: to be removed
-                    return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-                }
                 event.getTransaction = () => {
-                    return contract.provider.getTransaction(receipt.transactionHash);
+                    return contract.provider.getTransaction(receipt.transactionId);
                 }
                 event.getTransactionReceipt = () => {
                     return Promise.resolve(receipt);
@@ -910,10 +904,6 @@ export class BaseContract {
             this._checkRunningEvents(runningEvent);
         };
 
-        event.getBlock = () => {
-            // TODO: to be removed
-            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-        }
         event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); }
         event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); }
 
