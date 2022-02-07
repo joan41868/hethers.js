@@ -159,12 +159,12 @@ export function accessListify(value: AccessListish): AccessList {
 }
 
 // TODO resolve build problems when this is deleted
-export function serialize(transaction: UnsignedTransaction, signature?: SignatureLike): string {
-    return logger.throwError(`unsupported transaction type: ${ transaction.type }`, Logger.errors.UNSUPPORTED_OPERATION, {
-        operation: "serializeTransaction",
-        transactionType: transaction.type
-    });
-}
+// export function serialize(transaction: UnsignedTransaction, signature?: SignatureLike): string {
+//     return logger.throwError(`unsupported transaction type: ${ transaction.type }`, Logger.errors.UNSUPPORTED_OPERATION, {
+//         operation: "serializeTransaction",
+//         transactionType: transaction.type
+//     });
+// }
 
 export function serializeHederaTransaction(transaction: TransactionRequest, pubKey?: HederaPubKey) : HederaTransaction {
     let tx: HederaTransaction;
