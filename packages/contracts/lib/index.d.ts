@@ -1,5 +1,5 @@
 import { Fragment, Indexed, Interface, JsonFragment, Result } from "@ethersproject/abi";
-import { Block, BlockTag, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { BlockTag, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { Signer } from "@ethersproject/abstract-signer";
 import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
@@ -48,7 +48,6 @@ export interface Event extends Log {
     decodeError?: Error;
     decode?: (data: string, topics?: Array<string>) => any;
     removeListener: () => void;
-    getBlock: () => Promise<Block>;
     getTransaction: () => Promise<TransactionResponse>;
     getTransactionReceipt: () => Promise<TransactionReceipt>;
 }

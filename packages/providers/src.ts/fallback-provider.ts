@@ -1,6 +1,6 @@
 "use strict";
 
-import { Block, BlockWithTransactions, Provider } from "@ethersproject/abstract-provider";
+import { Provider } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { isHexString } from "@ethersproject/bytes";
 import { Network } from "@ethersproject/networks";
@@ -283,28 +283,6 @@ function getProcessFunc(provider: FallbackProvider, method: string, params: { [ 
                 tx = shallowCopy(tx);
                 tx.confirmations = -1;
                 return serialize(tx);
-            }
-            break;
-
-        // We drop the confirmations from transactions as it is approximate
-        case "getBlock":
-            // We drop the confirmations from transactions as it is approximate
-            if (params.includeTransactions) {
-                normalize = function(block: BlockWithTransactions): string {
-                    if (block == null) { return null; }
-
-                    block = shallowCopy(block);
-                    block.transactions = block.transactions.map((tx) => {
-                        tx = shallowCopy(tx);
-                        return tx;
-                    });
-                    return serialize(block);
-                };
-            } else {
-                normalize = function(block: Block): string {
-                    if (block == null) { return null; }
-                    return serialize(block);
-                }
             }
             break;
 

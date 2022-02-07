@@ -340,6 +340,82 @@ describe("Test Contract Transaction Population", function() {
         });
         assert.strictEqual(BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
     }).timeout(60000);
+
+   it('should have a .wait function', async function() {
+       const hederaEoa = {
+           account: '0.0.29562194',
+           privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+       };
+       const provider = ethers.providers.getDefaultProvider('testnet');
+       // @ts-ignore
+       const wallet = new ethers.Wallet(hederaEoa, provider);
+       const bytecode = fs.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+       const contractFactory = new ethers.ContractFactory(abi, bytecode, wallet);
+       const contract = await contractFactory.deploy( { gasLimit: 300000 });
+
+       try {
+           await contract.deployTransaction.wait(10);
+           assert.notStrictEqual(true, false, "It should go in the catch block");
+       }
+       catch(err) {
+           assert.notStrictEqual(err, null, "An error is thrown when the specified timeout is exceeded");
+           assert.strictEqual(err.code, 'TIMEOUT');
+       }
+
+       const deployTx = contract.deployTransaction;
+       const receipt = await deployTx.wait();
+
+       assert.notStrictEqual(receipt, null, "wait returns a receipt");
+       assert.strictEqual(receipt.transactionId, deployTx.transactionId, "receipt.transactionId is correct");
+       assert.strictEqual(receipt.transactionHash, deployTx.hash, "receipt.transactionHash is correct");
+       assert.notStrictEqual(receipt.logs, null, "receipt.logs exists");
+       assert.strictEqual(receipt.logs.length, 2);
+
+       // @ts-ignore
+       const events = receipt.events;
+
+       assert.notStrictEqual(events, null, "receipt.events exists");
+       assert.strictEqual(events.length, 2);
+
+       assert.strictEqual(events[0].event, 'Mint');
+       assert.strictEqual(events[0].eventSignature, 'Mint(address,uint256)');
+       assert.strictEqual(events[1].event, 'Transfer');
+       assert.strictEqual(events[1].eventSignature, 'Transfer(address,address,uint256)');
+
+       for (let i = 0; i < events.length; i++) {
+           const log = receipt.logs[i];
+           const event = events[i];
+
+           assert.strictEqual(log.timestamp, receipt.timestamp, 'timestamp is correct');
+           assert.strictEqual(log.address, receipt.contractAddress, 'address is correct');
+           assert.notStrictEqual(log.data, null, 'data exists');
+           assert.strictEqual(log.logIndex, i, 'logIndex is correct');
+           assert.strictEqual(log.transactionHash, receipt.transactionHash, 'transactionHash is correct');
+
+           assert.strictEqual(event.timestamp, receipt.timestamp, 'event.timestamp is correct');
+           assert.strictEqual(event.address, receipt.contractAddress, 'event.address is correct');
+           assert.notStrictEqual(event.data, 'event.data exists');
+           assert.strictEqual(event.logIndex, i, 'event.logIndex is correct');
+           assert.strictEqual(event.transactionHash, receipt.transactionHash, 'event.transactionHash is correct');
+
+           assert.notStrictEqual(event.getTransaction, null, 'events have a method `getTransaction`');
+           assert.notStrictEqual(event.getTransactionReceipt, null, 'events have a method `getTransactionReceipt`');
+
+           const eventTx = await event.getTransaction();
+           assert.notStrictEqual(eventTx, null, 'event.getTransaction() returns a result');
+           assert.notStrictEqual(eventTx.chainId, null, 'eventTx.chainId is correct');
+           assert.strictEqual(eventTx.hash, receipt.transactionHash, 'eventTx.hash is correct');
+           assert.strictEqual(eventTx.timestamp, receipt.timestamp, 'eventTx.timestamp is correct');
+           assert.strictEqual(eventTx.transactionId, receipt.transactionId, 'eventTx.transactionId is correct');
+           assert.strictEqual(eventTx.from, receipt.from, 'eventTx.from is correct');
+           assert.strictEqual(eventTx.to, receipt.contractAddress,'eventTx.contractAddress is correct');
+           assert.strictEqual(eventTx.value.toString(), BigNumber.from(0).toString(), 'eventTx.value is correct');
+
+           const eventRc = await event.getTransactionReceipt();
+           assert.strictEqual(eventRc, receipt, "getTransactionReceipt returns the same receipt");
+
+       }
+   }).timeout(60000);
 });
 
 describe("contract.deployed", function() {

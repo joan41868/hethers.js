@@ -172,8 +172,8 @@ function buildEstimate(contract, fragment) {
 }
 function addContractWait(contract, tx) {
     const wait = tx.wait.bind(tx);
-    tx.wait = (confirmations) => {
-        return wait(confirmations).then((receipt) => {
+    tx.wait = (timeout) => {
+        return wait(timeout).then((receipt) => {
             receipt.events = receipt.logs.map((log) => {
                 let event = deepCopy(log);
                 let parsed = null;
@@ -192,12 +192,8 @@ function addContractWait(contract, tx) {
                 }
                 // Useful operations
                 event.removeListener = () => { return contract.provider; };
-                event.getBlock = () => {
-                    // TODO: to be removed
-                    return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-                };
                 event.getTransaction = () => {
-                    return contract.provider.getTransaction(receipt.transactionHash);
+                    return contract.provider.getTransaction(receipt.transactionId);
                 };
                 event.getTransactionReceipt = () => {
                     return Promise.resolve(receipt);
@@ -676,10 +672,6 @@ export class BaseContract {
             }
             runningEvent.removeListener(listener);
             this._checkRunningEvents(runningEvent);
-        };
-        event.getBlock = () => {
-            // TODO: to be removed
-            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         };
         event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); };
         event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); };

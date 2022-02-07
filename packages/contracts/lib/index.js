@@ -253,8 +253,8 @@ function buildEstimate(contract, fragment) {
 }
 function addContractWait(contract, tx) {
     var wait = tx.wait.bind(tx);
-    tx.wait = function (confirmations) {
-        return wait(confirmations).then(function (receipt) {
+    tx.wait = function (timeout) {
+        return wait(timeout).then(function (receipt) {
             receipt.events = receipt.logs.map(function (log) {
                 var event = (0, properties_1.deepCopy)(log);
                 var parsed = null;
@@ -273,12 +273,8 @@ function addContractWait(contract, tx) {
                 }
                 // Useful operations
                 event.removeListener = function () { return contract.provider; };
-                event.getBlock = function () {
-                    // TODO: to be removed
-                    return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
-                };
                 event.getTransaction = function () {
-                    return contract.provider.getTransaction(receipt.transactionHash);
+                    return contract.provider.getTransaction(receipt.transactionId);
                 };
                 event.getTransactionReceipt = function () {
                     return Promise.resolve(receipt);
@@ -813,10 +809,6 @@ var BaseContract = /** @class */ (function () {
             }
             runningEvent.removeListener(listener);
             _this._checkRunningEvents(runningEvent);
-        };
-        event.getBlock = function () {
-            // TODO: to be removed
-            return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
         };
         event.getTransaction = function () { return _this.provider.getTransaction(log.transactionHash); };
         event.getTransactionReceipt = function () { return _this.provider.getTransactionReceipt(log.transactionHash); };
