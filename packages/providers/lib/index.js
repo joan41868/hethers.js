@@ -30,12 +30,7 @@ function getDefaultProvider(network, options) {
         // Handle http and ws (and their secure variants)
         var match = network.match(/^(ws|http)s?:/i);
         if (match) {
-            switch (match[1]) {
-                // case "http":
-                //     return new JsonRpcProvider(network);
-                default:
-                    logger.throwArgumentError("unsupported URL scheme", "network", network);
-            }
+            logger.throwArgumentError("unsupported URL scheme", "network", network);
         }
     }
     var n = (0, networks_1.getNetwork)(network);
