@@ -34,8 +34,6 @@ const allowedTransactionKeys: Array<string> = [
 
 // const forwardErrors = [
 //     Logger.errors.INSUFFICIENT_FUNDS,
-//     Logger.errors.NONCE_EXPIRED,
-//     Logger.errors.REPLACEMENT_UNDERPRICED,
 // ];
 
 // EIP-712 Typed Data
