@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract GLDTokenWithConstructorArgs is ERC20 {
     event Mint(address addr, uint256 amount);
-    uint internal counter = 1;
+    uint internal counter = 29;
 
     constructor(uint256 _amt) ERC20("Gold", "GLD") {
         emit Mint(msg.sender, _amt);
@@ -20,4 +20,8 @@ contract GLDTokenWithConstructorArgs is ERC20 {
     function getInternalCounter() public view returns(uint) {
         return counter;
     }
+
+    fallback() external payable {}
+
+    receive() external payable {}
 }

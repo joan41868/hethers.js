@@ -4,7 +4,7 @@ import { Signer } from "@ethersproject/abstract-signer";
 import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike } from "@ethersproject/bytes";
-import { AccessList, AccessListish } from "@ethersproject/transactions";
+import { AccessListish } from "@ethersproject/transactions";
 export interface Overrides {
     gasLimit?: BigNumberish | Promise<BigNumberish>;
     gasPrice?: BigNumberish | Promise<BigNumberish>;
@@ -22,19 +22,18 @@ export interface CallOverrides extends PayableOverrides {
     from?: string | Promise<string>;
 }
 export interface PopulatedTransaction {
-    to?: string;
-    from?: string;
-    nonce?: number;
+    to?: AccountLike;
+    from?: AccountLike;
     gasLimit?: BigNumber;
-    gasPrice?: BigNumber;
     data?: string;
     value?: BigNumber;
     chainId?: number;
     type?: number;
-    accessList?: AccessList;
-    maxFeePerGas?: BigNumber;
-    maxPriorityFeePerGas?: BigNumber;
+    accessList?: AccessListish;
+    maxFeePerGas?: BigNumberish;
+    maxPriorityFeePerGas?: BigNumberish;
     customData?: Record<string, any>;
+    nodeId?: AccountLike;
 }
 export declare type EventFilter = {
     address?: AccountLike;
