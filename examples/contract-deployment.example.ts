@@ -6,7 +6,6 @@ import {BigNumber} from "@ethersproject/bignumber";
 (async () => {
     const provider = hethers.providers.getDefaultProvider('testnet');
 
-    // This account has around 1.7k HBars.
     const hederaEoa = {
         account: '0.0.29562194',
         privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
@@ -27,4 +26,14 @@ import {BigNumber} from "@ethersproject/bignumber";
      */
     const contract = await contractFactory.deploy(BigNumber.from("10000"), {gasLimit: 3000000});
     console.log(contract.address);
+
+    // Won't work as this branch is not based on buildCall/buildSend branch
+
+    const mintCall = await contract.mint(BigNumber.from("10000"), {gasLimit: 3000000});
+    console.log('mintCallResponse', mintCall);
+
+    contract.on('Mint', (data) => {
+        console.log('mintEvent', data);
+    });
+
 })();

@@ -198,6 +198,7 @@ export class BaseProvider extends Provider {
         logger.checkNew(new.target, Provider);
         super();
 
+        this._events = [];
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -221,7 +222,7 @@ export class BaseProvider extends Provider {
                 const knownNetwork = getStatic<(network: Networkish) => Network>(new.target, "getNetwork")(asDefaultNetwork);
                 if (knownNetwork) {
                     defineReadOnly(this, "_network", knownNetwork);
-                    this.emit("network", knownNetwork, null);
+                    this.emit("network", knownNetwork);
                 } else {
                     logger.throwArgumentError("invalid network", "network", network);
                 }

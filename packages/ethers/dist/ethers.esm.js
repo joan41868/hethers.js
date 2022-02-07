@@ -98460,6 +98460,7 @@ class BaseProvider extends Provider {
     constructor(network) {
         logger$v.checkNew(new.target, Provider);
         super();
+        this._events = [];
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -98484,7 +98485,7 @@ class BaseProvider extends Provider {
                 const knownNetwork = getStatic(new.target, "getNetwork")(asDefaultNetwork);
                 if (knownNetwork) {
                     defineReadOnly(this, "_network", knownNetwork);
-                    this.emit("network", knownNetwork, null);
+                    this.emit("network", knownNetwork);
                 }
                 else {
                     logger$v.throwArgumentError("invalid network", "network", network);
@@ -99037,6 +99038,8 @@ class BaseProvider extends Provider {
         }
     }
     /**
+     * Should poll for events.
+     *
      * TODO: Poll the mirror node for logs.
      * TODO: Gather events matching the filters
      */

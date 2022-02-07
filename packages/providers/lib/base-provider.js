@@ -229,6 +229,7 @@ var BaseProvider = /** @class */ (function (_super) {
         var _this = this;
         logger.checkNew(_newTarget, abstract_provider_1.Provider);
         _this = _super.call(this) || this;
+        _this._events = [];
         _this.formatter = _newTarget.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -253,7 +254,7 @@ var BaseProvider = /** @class */ (function (_super) {
                 var knownNetwork = (0, properties_1.getStatic)(_newTarget, "getNetwork")(asDefaultNetwork);
                 if (knownNetwork) {
                     (0, properties_1.defineReadOnly)(_this, "_network", knownNetwork);
-                    _this.emit("network", knownNetwork, null);
+                    _this.emit("network", knownNetwork);
                 }
                 else {
                     logger.throwArgumentError("invalid network", "network", network);
@@ -954,6 +955,8 @@ var BaseProvider = /** @class */ (function (_super) {
         configurable: true
     });
     /**
+     * Should poll for events.
+     *
      * TODO: Poll the mirror node for logs.
      * TODO: Gather events matching the filters
      */
