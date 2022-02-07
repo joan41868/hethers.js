@@ -161,8 +161,6 @@ function stall(duration) {
 var ForwardErrors = [
     logger_1.Logger.errors.CALL_EXCEPTION,
     logger_1.Logger.errors.INSUFFICIENT_FUNDS,
-    logger_1.Logger.errors.NONCE_EXPIRED,
-    logger_1.Logger.errors.REPLACEMENT_UNDERPRICED,
     logger_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT
 ];
 var ForwardProperties = [
