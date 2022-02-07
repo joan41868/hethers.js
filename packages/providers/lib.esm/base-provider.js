@@ -85,7 +85,6 @@ function base64ToHex(hash) {
 // Provider Object
 /**
  *  EventType
- *   - "block"
  *   - "poll"
  *   - "didPoll"
  *   - "pending"
@@ -95,7 +94,7 @@ function base64ToHex(hash) {
  *   - topics array
  *   - transaction hash
  */
-const PollableEvents = ["block", "network", "pending", "poll"];
+const PollableEvents = ["network", "pending", "poll"];
 export class Event {
     constructor(tag, listener, once) {
         defineReadOnly(this, "tag", tag);
@@ -729,6 +728,7 @@ export class BaseProvider extends Provider {
     }
     /**
      * Should poll for events.
+     * More events - more polling TODO
      *
      * TODO: Poll the mirror node for logs.
      * TODO: Gather events matching the filters

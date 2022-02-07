@@ -119,6 +119,7 @@ export declare class BaseProvider extends Provider {
     set polling(value: boolean);
     /**
      * Should poll for events.
+     * More events - more polling TODO
      *
      * TODO: Poll the mirror node for logs.
      * TODO: Gather events matching the filters

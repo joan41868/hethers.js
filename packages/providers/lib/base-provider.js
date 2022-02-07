@@ -143,7 +143,6 @@ function base64ToHex(hash) {
 // Provider Object
 /**
  *  EventType
- *   - "block"
  *   - "poll"
  *   - "didPoll"
  *   - "pending"
@@ -153,7 +152,7 @@ function base64ToHex(hash) {
  *   - topics array
  *   - transaction hash
  */
-var PollableEvents = ["block", "network", "pending", "poll"];
+var PollableEvents = ["network", "pending", "poll"];
 var Event = /** @class */ (function () {
     function Event(tag, listener, once) {
         (0, properties_1.defineReadOnly)(this, "tag", tag);
@@ -956,6 +955,7 @@ var BaseProvider = /** @class */ (function (_super) {
     });
     /**
      * Should poll for events.
+     * More events - more polling TODO
      *
      * TODO: Poll the mirror node for logs.
      * TODO: Gather events matching the filters

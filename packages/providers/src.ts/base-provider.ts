@@ -100,7 +100,6 @@ function base64ToHex(hash: string): string {
 
 /**
  *  EventType
- *   - "block"
  *   - "poll"
  *   - "didPoll"
  *   - "pending"
@@ -111,7 +110,7 @@ function base64ToHex(hash: string): string {
  *   - transaction hash
  */
 
-const PollableEvents = [ "block", "network", "pending", "poll" ];
+const PollableEvents = [ "network", "pending", "poll" ];
 
 export class Event {
     readonly listener: Listener;
@@ -311,7 +310,7 @@ export class BaseProvider extends Provider {
 
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
-    // With the current hedera implementation, we do not support a changeable networks,
+    // With the current hedera implementation, we do not support changeable networks,
     // thus we do not need to query at this level
     async detectNetwork(): Promise<Network> {
         this._networkPromise = Promise.resolve(this._network);
@@ -796,6 +795,7 @@ export class BaseProvider extends Provider {
 
     /**
      * Should poll for events.
+     * More events - more polling TODO
      *
      * TODO: Poll the mirror node for logs.
      * TODO: Gather events matching the filters
