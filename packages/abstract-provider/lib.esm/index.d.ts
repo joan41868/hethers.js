@@ -50,27 +50,6 @@ export interface TransactionResponse extends Transaction {
         [key: string]: any;
     };
 }
-export declare type BlockTag = string | number;
-export interface _Block {
-    hash: string;
-    parentHash: string;
-    number: number;
-    timestamp: number;
-    nonce: string;
-    difficulty: number;
-    _difficulty: BigNumber;
-    gasLimit: BigNumber;
-    gasUsed: BigNumber;
-    miner: string;
-    extraData: string;
-    baseFeePerGas?: null | BigNumber;
-}
-export interface Block extends _Block {
-    transactions: Array<string>;
-}
-export interface BlockWithTransactions extends _Block {
-    transactions: Array<TransactionResponse>;
-}
 export interface Log {
     timestamp: string;
     address: string;
@@ -139,7 +118,7 @@ export declare abstract class Provider {
     getHederaClient(): Client;
     getHederaNetworkConfig(): AccountId[];
     getGasPrice(): Promise<BigNumber>;
-    abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
+    abstract getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
     abstract getCode(accountLike: AccountLike | Promise<AccountLike>, throwOnNonExisting?: boolean): Promise<string>;
     abstract sendTransaction(signedTransaction: string | Promise<string>): Promise<TransactionResponse>;
     abstract estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;

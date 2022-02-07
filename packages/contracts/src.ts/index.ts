@@ -12,7 +12,6 @@ import {
     Result
 } from "@ethersproject/abi";
 import {
-    BlockTag,
     // Filter,
     // FilterByBlockHash,
     Listener,
@@ -957,7 +956,7 @@ export class BaseContract {
         }
     }
 
-    queryFilter(event: EventFilter, fromBlockOrBlockhash?: BlockTag | string, toBlock?: BlockTag): Promise<Array<Event>> {
+    queryFilter(event: EventFilter): Promise<Array<Event>> {
         this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);

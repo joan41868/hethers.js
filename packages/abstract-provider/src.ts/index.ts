@@ -63,36 +63,6 @@ export interface TransactionResponse extends Transaction {
     }
 }
 
-export type BlockTag = string | number;
-
-export interface _Block {
-    hash: string;
-    parentHash: string;
-    number: number;
-
-    timestamp: number;
-    nonce: string;
-    difficulty: number;
-    _difficulty: BigNumber;
-
-    gasLimit: BigNumber;
-    gasUsed: BigNumber;
-
-    miner: string;
-    extraData: string;
-
-    baseFeePerGas?: null | BigNumber;
-}
-
-export interface Block extends _Block {
-    transactions: Array<string>;
-}
-
-export interface BlockWithTransactions extends _Block {
-    transactions: Array<TransactionResponse>;
-}
-
-
 export interface Log {
     timestamp: string;
     address: string;
@@ -243,7 +213,7 @@ export abstract class Provider {
     }
 
     // Account
-    abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
+    abstract getBalance(addressOrName: string | Promise<string>): Promise<BigNumber>;
     abstract getCode(accountLike: AccountLike | Promise<AccountLike>, throwOnNonExisting?: boolean): Promise<string>;
 
     // Execution

@@ -1,6 +1,6 @@
 "use strict";
 
-import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber, BigNumberish, numberify } from "@ethersproject/bignumber";
 import { arrayify, Bytes, BytesLike, hexStripZeros } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
@@ -154,9 +154,9 @@ export abstract class Signer {
     ///////////////////
     // Sub-classes MAY override these
 
-    async getBalance(blockTag?: BlockTag): Promise<BigNumber> {
+    async getBalance(): Promise<BigNumber> {
         this._checkProvider("getBalance");
-        return await this.provider.getBalance(this.getAddress(), blockTag);
+        return await this.provider.getBalance(this.getAddress());
     }
 
     // Populates "from" if unspecified, and estimates the gas for the transaction

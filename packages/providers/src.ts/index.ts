@@ -1,8 +1,6 @@
 "use strict";
 
 import {
-    Block,
-    BlockTag,
     EventType,
     FeeData,
     Filter,
@@ -19,15 +17,8 @@ import { Network, Networkish } from "@ethersproject/networks";
 
 import { BaseProvider } from "./base-provider";
 
-import { FallbackProviderConfig } from "./fallback-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
-import {
-    CommunityResourcable,
-    Formatter,
-    isCommunityResourcable,
-    isCommunityResource,
-    showThrottleMessage
-} from "./formatter";
+import { Formatter } from "./formatter";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -94,10 +85,6 @@ export {
 
     getDefaultProvider,
     getNetwork,
-    isCommunityResource,
-    isCommunityResourcable,
-    showThrottleMessage,
-
 
     ///////////////////////
     // Objects
@@ -108,8 +95,6 @@ export {
     ///////////////////////
     // Types
 
-    Block,
-    BlockTag,
     EventType,
     FeeData,
     Filter,
@@ -119,12 +104,7 @@ export {
     TransactionRequest,
     TransactionResponse,
 
-    FallbackProviderConfig,
-
     Network,
-    Networkish,
-
-
-    CommunityResourcable
+    Networkish
 };
 

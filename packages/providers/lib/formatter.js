@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.showThrottleMessage = exports.isCommunityResource = exports.isCommunityResourcable = exports.Formatter = void 0;
+exports.Formatter = void 0;
 var address_1 = require("@ethersproject/address");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
@@ -413,33 +413,4 @@ var Formatter = /** @class */ (function () {
     return Formatter;
 }());
 exports.Formatter = Formatter;
-function isCommunityResourcable(value) {
-    return (value && typeof (value.isCommunityResource) === "function");
-}
-exports.isCommunityResourcable = isCommunityResourcable;
-function isCommunityResource(value) {
-    return (isCommunityResourcable(value) && value.isCommunityResource());
-}
-exports.isCommunityResource = isCommunityResource;
-// Show the throttle message only once
-var throttleMessage = false;
-function showThrottleMessage() {
-    if (throttleMessage) {
-        return;
-    }
-    throttleMessage = true;
-    console.log("========= NOTICE =========");
-    console.log("Request-Rate Exceeded  (this message will not be repeated)");
-    console.log("");
-    console.log("The default API keys for each service are provided as a highly-throttled,");
-    console.log("community resource for low-traffic projects and early prototyping.");
-    console.log("");
-    console.log("While your application will continue to function, we highly recommended");
-    console.log("signing up for your own API keys to improve performance, increase your");
-    console.log("request rate/limit and enable other perks, such as metrics and advanced APIs.");
-    console.log("");
-    console.log("For more details: https:/\/docs.ethers.io/api-keys/");
-    console.log("==========================");
-}
-exports.showThrottleMessage = showThrottleMessage;
 //# sourceMappingURL=formatter.js.map
