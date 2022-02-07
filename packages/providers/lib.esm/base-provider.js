@@ -772,7 +772,6 @@ export class BaseProvider extends Provider {
                         filter.fromTimestamp = composeHederaTimestamp(previousPollTimestamp);
                         // }
                         filter.toTimestamp = composeHederaTimestamp(now);
-                        // TODO: topics are probably wrong - this is why we don't receive any event on the given topic
                         const runner = this.getLogs(filter).then((logs) => {
                             if (logs.length === 0) {
                                 return;

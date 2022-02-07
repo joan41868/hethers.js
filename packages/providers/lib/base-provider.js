@@ -1001,7 +1001,6 @@ var BaseProvider = /** @class */ (function (_super) {
                             filter_1.fromTimestamp = composeHederaTimestamp(previousPollTimestamp);
                             // }
                             filter_1.toTimestamp = composeHederaTimestamp(now);
-                            // TODO: topics are probably wrong - this is why we don't receive any event on the given topic
                             var runner = _this.getLogs(filter_1).then(function (logs) {
                                 if (logs.length === 0) {
                                     return;

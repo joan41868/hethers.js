@@ -147,12 +147,12 @@ const account = {
 	// 		fromTimestamp: initialTimestamp,
 	// 		toTimestamp: composeHederaTimestamp(new Date().getTime())
 	// };
-	// contract.on('Mint', (data) => {
-	// 		console.log('Mint event', data);
-	// });
-	// contract.on('error', (err) => {
-	// 	console.log("error", err);
-	// });
+	contract.on('Mint', (data) => {
+			console.log('Mint event', data);
+	});
+	contract.on('error', (err) => {
+		console.log("error", err);
+	});
 	/**
 	 * Calling a contract method
 	 */

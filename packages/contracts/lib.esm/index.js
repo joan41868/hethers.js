@@ -665,6 +665,7 @@ export class BaseContract {
             runningEvent.removeListener(listener);
             this._checkRunningEvents(runningEvent);
         };
+        // TODO: those won't work with txHash. Refactor it to use hedera txId
         event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); };
         event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); };
         // This may throw if the topics and data mismatch the signature
