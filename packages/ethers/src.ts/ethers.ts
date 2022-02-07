@@ -48,7 +48,6 @@ import {
     Overrides,
     PayableOverrides,
     CallOverrides,
-
     PopulatedTransaction,
 
     ContractInterface
@@ -102,7 +101,6 @@ export {
     Overrides,
     PayableOverrides,
     CallOverrides,
-
     PopulatedTransaction,
 
     ContractInterface,
