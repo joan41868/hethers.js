@@ -32,18 +32,6 @@ function handleNumber(value) {
     }
     return BigNumber.from(value);
 }
-// Legacy Transaction Fields
-// @ts-ignore
-const transactionFields = [
-    { name: "gasLimit", maxLength: 32, numeric: true },
-    { name: "to", length: 20 },
-    { name: "value", maxLength: 32, numeric: true },
-    { name: "data" },
-];
-// @ts-ignore
-const allowedTransactionKeys = {
-    chainId: true, data: true, gasLimit: true, to: true, type: true, value: true
-};
 export function computeAddress(key) {
     const publicKey = computePublicKey(key);
     return getAddress(hexDataSlice(keccak256(hexDataSlice(publicKey, 1)), 12));

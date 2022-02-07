@@ -1,9 +1,8 @@
 "use strict";
 import { getAddress, getAddressFromAccount, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
-import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import { hexDataLength, hexDataSlice, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@ethersproject/constants";
-import { shallowCopy } from "@ethersproject/properties";
 import { accessListify, parse as parseTransaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -20,7 +19,6 @@ export class Formatter {
         const data = this.data.bind(this);
         const hash48 = this.hash48.bind(this);
         const hash32 = this.hash32.bind(this);
-        const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
         const timestamp = this.timestamp.bind(this);
@@ -71,22 +69,6 @@ export class Formatter {
             status: Formatter.allowNull(number),
             type: type
         };
-        formats.block = {
-            hash: hash48,
-            parentHash: hash48,
-            number: number,
-            timestamp: number,
-            nonce: Formatter.allowNull(hex),
-            difficulty: this.difficulty.bind(this),
-            gasLimit: bigNumber,
-            gasUsed: bigNumber,
-            miner: address,
-            extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash48)),
-            baseFeePerGas: Formatter.allowNull(bigNumber)
-        };
-        formats.blockWithTransactions = shallowCopy(formats.block);
-        formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
         formats.filter = {
             fromTimestamp: Formatter.allowNull(timestamp, undefined),
             toTimestamp: Formatter.allowNull(timestamp, undefined),
@@ -202,22 +184,6 @@ export class Formatter {
     contractAddress(value) {
         return getContractAddress(value);
     }
-    // Strict! Used on input.
-    blockTag(blockTag) {
-        if (blockTag == null) {
-            return "latest";
-        }
-        if (blockTag === "earliest") {
-            return "0x0";
-        }
-        if (blockTag === "latest" || blockTag === "pending") {
-            return blockTag;
-        }
-        if (typeof (blockTag) === "number" || isHexString(blockTag)) {
-            return hexValue(blockTag);
-        }
-        throw new Error("invalid blockTag");
-    }
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash48(value, strict) {
         const result = this.hex(value, strict);
@@ -251,22 +217,6 @@ export class Formatter {
             throw new Error("invalid uint256");
         }
         return hexZeroPad(value, 32);
-    }
-    _block(value, format) {
-        if (value.author != null && value.miner == null) {
-            value.miner = value.author;
-        }
-        // The difficulty may need to come from _difficulty in recursed blocks
-        const difficulty = (value._difficulty != null) ? value._difficulty : value.difficulty;
-        const result = Formatter.check(format, value);
-        result._difficulty = ((difficulty == null) ? null : BigNumber.from(difficulty));
-        return result;
-    }
-    block(value) {
-        return this._block(value, this.formats.block);
-    }
-    blockWithTransactions(value) {
-        return this._block(value, this.formats.blockWithTransactions);
     }
     // Strict! Used on input.
     transactionRequest(value) {

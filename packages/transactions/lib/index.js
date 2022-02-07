@@ -72,18 +72,6 @@ function handleNumber(value) {
     }
     return bignumber_1.BigNumber.from(value);
 }
-// Legacy Transaction Fields
-// @ts-ignore
-var transactionFields = [
-    { name: "gasLimit", maxLength: 32, numeric: true },
-    { name: "to", length: 20 },
-    { name: "value", maxLength: 32, numeric: true },
-    { name: "data" },
-];
-// @ts-ignore
-var allowedTransactionKeys = {
-    chainId: true, data: true, gasLimit: true, to: true, type: true, value: true
-};
 function computeAddress(key) {
     var publicKey = (0, signing_key_1.computePublicKey)(key);
     return (0, address_1.getAddress)((0, bytes_1.hexDataSlice)((0, keccak256_1.keccak256)((0, bytes_1.hexDataSlice)(publicKey, 1)), 12));

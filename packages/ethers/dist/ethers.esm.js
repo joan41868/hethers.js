@@ -92731,18 +92731,6 @@ function handleNumber(value) {
     }
     return BigNumber.from(value);
 }
-// Legacy Transaction Fields
-// @ts-ignore
-const transactionFields = [
-    { name: "gasLimit", maxLength: 32, numeric: true },
-    { name: "to", length: 20 },
-    { name: "value", maxLength: 32, numeric: true },
-    { name: "data" },
-];
-// @ts-ignore
-const allowedTransactionKeys$1 = {
-    chainId: true, data: true, gasLimit: true, to: true, type: true, value: true
-};
 function computeAddress(key) {
     const publicKey = computePublicKey(key);
     return getAddress(hexDataSlice(keccak256(hexDataSlice(publicKey, 1)), 12));
@@ -93015,7 +93003,7 @@ var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments,
 const logger$s = new Logger(version$o);
 ;
 ///////////////////////////////
-const allowedTransactionKeys$2 = {
+const allowedTransactionKeys$1 = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
     type: true,
     maxFeePerGas: true, maxPriorityFeePerGas: true,
@@ -93858,7 +93846,7 @@ class ContractFactory {
         if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
             contractCreateTx = shallowCopy(args.pop());
             for (const key in contractCreateTx) {
-                if (!allowedTransactionKeys$2[key]) {
+                if (!allowedTransactionKeys$1[key]) {
                     throw new Error("unknown transaction override " + key);
                 }
             }
@@ -94072,7 +94060,6 @@ class Formatter {
         const data = this.data.bind(this);
         const hash48 = this.hash48.bind(this);
         const hash32 = this.hash32.bind(this);
-        const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
         const timestamp = this.timestamp.bind(this);
@@ -94123,22 +94110,6 @@ class Formatter {
             status: Formatter.allowNull(number),
             type: type
         };
-        formats.block = {
-            hash: hash48,
-            parentHash: hash48,
-            number: number,
-            timestamp: number,
-            nonce: Formatter.allowNull(hex),
-            difficulty: this.difficulty.bind(this),
-            gasLimit: bigNumber,
-            gasUsed: bigNumber,
-            miner: address,
-            extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash48)),
-            baseFeePerGas: Formatter.allowNull(bigNumber)
-        };
-        formats.blockWithTransactions = shallowCopy(formats.block);
-        formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
         formats.filter = {
             fromTimestamp: Formatter.allowNull(timestamp, undefined),
             toTimestamp: Formatter.allowNull(timestamp, undefined),
@@ -94254,22 +94225,6 @@ class Formatter {
     contractAddress(value) {
         return getContractAddress(value);
     }
-    // Strict! Used on input.
-    blockTag(blockTag) {
-        if (blockTag == null) {
-            return "latest";
-        }
-        if (blockTag === "earliest") {
-            return "0x0";
-        }
-        if (blockTag === "latest" || blockTag === "pending") {
-            return blockTag;
-        }
-        if (typeof (blockTag) === "number" || isHexString(blockTag)) {
-            return hexValue(blockTag);
-        }
-        throw new Error("invalid blockTag");
-    }
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash48(value, strict) {
         const result = this.hex(value, strict);
@@ -94303,22 +94258,6 @@ class Formatter {
             throw new Error("invalid uint256");
         }
         return hexZeroPad(value, 32);
-    }
-    _block(value, format) {
-        if (value.author != null && value.miner == null) {
-            value.miner = value.author;
-        }
-        // The difficulty may need to come from _difficulty in recursed blocks
-        const difficulty = (value._difficulty != null) ? value._difficulty : value.difficulty;
-        const result = Formatter.check(format, value);
-        result._difficulty = ((difficulty == null) ? null : BigNumber.from(difficulty));
-        return result;
-    }
-    block(value) {
-        return this._block(value, this.formats.block);
-    }
-    blockWithTransactions(value) {
-        return this._block(value, this.formats.blockWithTransactions);
     }
     // Strict! Used on input.
     transactionRequest(value) {
