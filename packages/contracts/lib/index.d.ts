@@ -38,6 +38,8 @@ export interface PopulatedTransaction {
 export declare type EventFilter = {
     address?: AccountLike;
     topics?: Array<string | Array<string>>;
+    fromTimestamp?: string;
+    toTimestamp?: string;
 };
 export declare type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
 export interface Event extends Log {

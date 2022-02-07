@@ -82,6 +82,8 @@ export interface PopulatedTransaction {
 export type EventFilter = {
     address?: AccountLike;
     topics?: Array<string|Array<string>>;
+    fromTimestamp?: string;
+    toTimestamp?: string;
 };
 
 
@@ -895,6 +897,7 @@ export class BaseContract {
             // TODO: to be removed
             return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         }
+        // TODO: those won't work with txHash. Refactor it to use hedera txId
         event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); }
         event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); }
 
@@ -908,7 +911,6 @@ export class BaseContract {
         if (!this.provider) {
             logger.throwError("events require a provider or a signer with a provider", Logger.errors.UNSUPPORTED_OPERATION, { operation: "once" })
         }
-
         runningEvent.addListener(listener, once);
 
         // Track this running event and its listeners (may already be there; but no hard in updating)
@@ -969,7 +971,6 @@ export class BaseContract {
 
     on(event: EventFilter | string, listener: Listener): this {
         this._requireAddressSet();
-
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }

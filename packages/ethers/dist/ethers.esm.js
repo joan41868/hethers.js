@@ -22348,53 +22348,36 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$1 = keccak(256);
 
-var _args = [
-	[
-		"elliptic@6.5.4",
-		"/home/nikolay/Desktop/hethers.js"
-	]
+var name = "elliptic";
+var version$b = "6.5.4";
+var description = "EC cryptography";
+var main = "lib/elliptic.js";
+var files = [
+	"lib"
 ];
-var _from = "elliptic@6.5.4";
-var _id = "elliptic@6.5.4";
-var _inBundle = false;
-var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
-var _location = "/elliptic";
-var _phantomChildren = {
+var scripts = {
+	lint: "eslint lib test",
+	"lint:fix": "npm run lint -- --fix",
+	unit: "istanbul test _mocha --reporter=spec test/index.js",
+	test: "npm run lint && npm run unit",
+	version: "grunt dist && git add dist/"
 };
-var _requested = {
-	type: "version",
-	registry: true,
-	raw: "elliptic@6.5.4",
-	name: "elliptic",
-	escapedName: "elliptic",
-	rawSpec: "6.5.4",
-	saveSpec: null,
-	fetchSpec: "6.5.4"
+var repository = {
+	type: "git",
+	url: "git@github.com:indutny/elliptic"
 };
-var _requiredBy = [
-	"/",
-	"/@hashgraph/cryptography"
+var keywords = [
+	"EC",
+	"Elliptic",
+	"curve",
+	"Cryptography"
 ];
-var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
-var _spec = "6.5.4";
-var _where = "/home/nikolay/Desktop/hethers.js";
-var author = {
-	name: "Fedor Indutny",
-	email: "fedor@indutny.com"
-};
+var author = "Fedor Indutny <fedor@indutny.com>";
+var license = "MIT";
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
-var dependencies = {
-	"bn.js": "^4.11.9",
-	brorand: "^1.1.0",
-	"hash.js": "^1.0.0",
-	"hmac-drbg": "^1.0.1",
-	inherits: "^2.0.4",
-	"minimalistic-assert": "^1.0.1",
-	"minimalistic-crypto-utils": "^1.0.1"
-};
-var description = "EC cryptography";
+var homepage = "https://github.com/indutny/elliptic";
 var devDependencies = {
 	brfs: "^2.0.2",
 	coveralls: "^3.1.0",
@@ -22410,58 +22393,36 @@ var devDependencies = {
 	istanbul: "^0.4.5",
 	mocha: "^8.0.1"
 };
-var files = [
-	"lib"
-];
-var homepage = "https://github.com/indutny/elliptic";
-var keywords = [
-	"EC",
-	"Elliptic",
-	"curve",
-	"Cryptography"
-];
-var license = "MIT";
-var main = "lib/elliptic.js";
-var name = "elliptic";
-var repository = {
-	type: "git",
-	url: "git+ssh://git@github.com/indutny/elliptic.git"
+var dependencies = {
+	"bn.js": "^4.11.9",
+	brorand: "^1.1.0",
+	"hash.js": "^1.0.0",
+	"hmac-drbg": "^1.0.1",
+	inherits: "^2.0.4",
+	"minimalistic-assert": "^1.0.1",
+	"minimalistic-crypto-utils": "^1.0.1"
 };
-var scripts = {
-	lint: "eslint lib test",
-	"lint:fix": "npm run lint -- --fix",
-	test: "npm run lint && npm run unit",
-	unit: "istanbul test _mocha --reporter=spec test/index.js",
-	version: "grunt dist && git add dist/"
-};
-var version$b = "6.5.4";
+var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
+var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
+var _from = "elliptic@6.5.4";
 var require$$0 = {
-	_args: _args,
-	_from: _from,
-	_id: _id,
-	_inBundle: _inBundle,
-	_integrity: _integrity,
-	_location: _location,
-	_phantomChildren: _phantomChildren,
-	_requested: _requested,
-	_requiredBy: _requiredBy,
-	_resolved: _resolved,
-	_spec: _spec,
-	_where: _where,
-	author: author,
-	bugs: bugs,
-	dependencies: dependencies,
-	description: description,
-	devDependencies: devDependencies,
-	files: files,
-	homepage: homepage,
-	keywords: keywords,
-	license: license,
-	main: main,
 	name: name,
-	repository: repository,
+	version: version$b,
+	description: description,
+	main: main,
+	files: files,
 	scripts: scripts,
-	version: version$b
+	repository: repository,
+	keywords: keywords,
+	author: author,
+	license: license,
+	bugs: bugs,
+	homepage: homepage,
+	devDependencies: devDependencies,
+	dependencies: dependencies,
+	_resolved: _resolved,
+	_integrity: _integrity,
+	_from: _from
 };
 
 var minimalisticAssert = assert;
@@ -39698,7 +39659,7 @@ const COST_QUERY = [];
 /**
  * The ID for a crypto-currency contract on Hedera.
  */
-class ContractId extends Key$1 {
+class ContractId extends Key {
     /**
      * @param {number | Long | import("../EntityIdHelper").IEntityId} props
      * @param {(number | Long)=} realm
@@ -40174,6 +40135,10 @@ class TokenDecimalMap extends ObjectMap {
  * @typedef {object} AccountBalanceJson
  * @property {string} hbars
  * @property {TokenBalanceJson[]} tokens
+ */
+
+/**
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  */
 
 class AccountBalance {
@@ -43466,7 +43431,7 @@ class TransactionHashMap extends ObjectMap {
  */
 class NodeAccountIdSignatureMap extends ObjectMap {
     constructor() {
-        super((s) => PublicKey$1.fromString(s));
+        super((s) => PublicKey.fromString(s));
     }
 
     /**
@@ -43479,18 +43444,11 @@ class NodeAccountIdSignatureMap extends ObjectMap {
         const sigPairs = sigMap.sigPair != null ? sigMap.sigPair : [];
 
         for (const sigPair of sigPairs) {
-            if (sigPair.pubKeyPrefix != null) {
-                if (sigPair.ed25519 != null) {
-                    signatures._set(
-                        PublicKey$1.fromBytesED25519(sigPair.pubKeyPrefix),
-                        sigPair.ed25519
-                    );
-                } else if (sigPair.ECDSASecp256k1 != null) {
-                    signatures._set(
-                        PublicKey$1.fromBytesECDSA(sigPair.pubKeyPrefix),
-                        sigPair.ECDSASecp256k1
-                    );
-                }
+            if (sigPair.pubKeyPrefix != null && sigPair.ed25519 != null) {
+                signatures._set(
+                    PublicKey.fromBytes(sigPair.pubKeyPrefix),
+                    sigPair.ed25519
+                );
             }
         }
 
@@ -44308,11 +44266,7 @@ class Transaction extends Executable {
             this._nextTransactionIndex * this._nodeIds.length +
             this._nextNodeIndex;
 
-        if (this._signOnDemand) {
-            await this._buildTransactionAsync(index);
-        } else {
-            this._buildTransaction(index);
-        }
+        await this._buildTransactionAsync(index);
 
         return /** @type {proto.ITransaction} */ (this._transactions[index]);
     }
@@ -44396,8 +44350,6 @@ class Transaction extends Executable {
                 this._transactions.push(null);
             }
         }
-
-        // console.log(JSON.stringify(this._signedTransactions[index]));
 
         this._transactions[index] = {
             signedTransactionBytes: lib.SignedTransaction.encode(
@@ -46979,13 +46931,14 @@ QUERY_REGISTRY.set("contractGetBytecode", ContractByteCodeQuery._fromProtobuf);
 // https://github.com/MaiaVictor/eth-lib/blob/da0971f5b09964d9c8449975fa87933f0c9fef35/src/hash.js
 //  - added type declarations
 //  - switched to es6 module syntax
-//
-// Disable linting for entire file because it's nearly all pure JS
-// eslint-disable
 
-const HEX_CHARS$1 = "0123456789abcdef".split("");
+/** @type {number[]} */
 const KECCAK_PADDING$1 = [1, 256, 65536, 16777216];
+
+/** @type {number[]} */
 const SHIFT$1 = [0, 8, 16, 24];
+
+/** @type {number[]} */
 const RC$1 = [
     1, 0, 32898, 0, 32906, 2147483648, 2147516416, 2147483648, 32907, 0,
     2147483649, 0, 2147516545, 2147483648, 32777, 2147483648, 138, 0, 136, 0,
@@ -46996,7 +46949,7 @@ const RC$1 = [
 ];
 
 /**
- * @typedef {object} KeccakT
+ * @typedef {object} Keccak
  * @property {number[]} blocks
  * @property {number} blockCount
  * @property {number} outputBlocks
@@ -47004,23 +46957,45 @@ const RC$1 = [
  * @property {number} start
  * @property {number} block
  * @property {boolean} reset
- * @property {number=} lastByteIndex
+ * @property {?number} lastByteIndex
  */
 
-/** @type {(bits: number) => KeccakT} */
-const Keccak$1 = (bits) => ({
-    blocks: [],
-    reset: true,
-    block: 0,
-    start: 0,
-    blockCount: (1600 - (bits << 1)) >> 5,
-    outputBlocks: bits >> 5,
-    // @ts-ignore
-    s: ((s) => [].concat(s, s, s, s, s))([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
-});
+/**
+ * @param {number} bits
+ * @returns {Keccak}
+ */
+function createKeccakState(bits) {
+    return {
+        blocks: [],
+        reset: true,
+        block: 0,
+        start: 0,
+        lastByteIndex: null,
+        blockCount: (1600 - (bits << 1)) >> 5,
+        outputBlocks: bits >> 5,
+        s: zeroFill(50),
+    };
+}
 
-/** @type {(state: KeccakT, message: string | number[]) => string} */
-const update$1 = (state, /** @type {string | number[]} */ message) => {
+/**
+ * @param {number} n
+ * @returns {number[]}
+ */
+function zeroFill(n) {
+    /** @type {number[]} */
+    let arr = Array(n);
+
+    for (let i = 0; i < n; ++i) arr[i] = 0;
+
+    return arr;
+}
+
+/**
+ * @param {Keccak} state
+ * @param {string | Uint8Array} message
+ * @returns {Uint8Array}
+ */
+function update$1(state, message) {
     var length = message.length,
         blocks = state.blocks,
         byteCount = state.blockCount << 2,
@@ -47028,7 +47003,7 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
         outputBlocks = state.outputBlocks,
         s = state.s,
         index = 0,
-        i,
+        i = 0,
         code;
 
     // update
@@ -47040,35 +47015,35 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
                 blocks[i] = 0;
             }
         }
-        if (typeof message !== "string") {
-            for (i = state.start; index < length && i < byteCount; ++index) {
-                blocks[i >> 2] |= message[index] << SHIFT$1[i++ & 3];
-            }
-        } else {
-            for (i = state.start; index < length && i < byteCount; ++index) {
-                code = message.charCodeAt(index);
-                if (code < 0x80) {
-                    blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
-                } else if (code < 0x800) {
-                    blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-                } else if (code < 0xd800 || code >= 0xe000) {
-                    blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |=
-                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-                } else {
-                    code =
-                        0x10000 +
-                        (((code & 0x3ff) << 10) |
-                            (message.charCodeAt(++index) & 0x3ff));
-                    blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |=
-                        (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |=
-                        (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
-                    blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
-                }
+        for (i = state.start; index < length && i < byteCount; ++index) {
+            code =
+                typeof message === "string"
+                    ? message.charCodeAt(index)
+                    : message[index];
+            if (code < 0x80) {
+                blocks[i >> 2] |= code << SHIFT$1[i++ & 3];
+            } else if (code < 0x800) {
+                blocks[i >> 2] |= (0xc0 | (code >> 6)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+            } else if (code < 0xd800 || code >= 0xe000) {
+                blocks[i >> 2] |= (0xe0 | (code >> 12)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |=
+                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
+            } else {
+                code =
+                    0x10000 +
+                    (((code & 0x3ff) << 10) |
+                        ((typeof message === "string"
+                            ? message.charCodeAt(++index)
+                            : message[++index]) &
+                            0x3ff));
+                blocks[i >> 2] |= (0xf0 | (code >> 18)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |=
+                    (0x80 | ((code >> 12) & 0x3f)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |=
+                    (0x80 | ((code >> 6) & 0x3f)) << SHIFT$1[i++ & 3];
+                blocks[i >> 2] |= (0x80 | (code & 0x3f)) << SHIFT$1[i++ & 3];
             }
         }
         state.lastByteIndex = i;
@@ -47086,9 +47061,9 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
     }
 
     // finalize
-    i = state.lastByteIndex;
-    // @ts-ignore
+    i = /** @type {number} */ (state.lastByteIndex);
     blocks[i >> 2] |= KECCAK_PADDING$1[i & 3];
+
     if (state.lastByteIndex === byteCount) {
         blocks[0] = blocks[blockCount];
         for (i = 1; i < blockCount + 1; ++i) {
@@ -47099,37 +47074,33 @@ const update$1 = (state, /** @type {string | number[]} */ message) => {
     for (i = 0; i < blockCount; ++i) {
         s[i] ^= blocks[i];
     }
+
     f$2(s);
 
-    // toString
-    var hex = "";
-    var block;
-    var j = 0;
+    const buffer = new ArrayBuffer(outputBlocks * 4);
+    const view = new DataView(buffer);
+
     i = 0;
+    var j = 0;
+
     while (j < outputBlocks) {
         for (i = 0; i < blockCount && j < outputBlocks; ++i, ++j) {
-            block = s[i];
-            hex +=
-                HEX_CHARS$1[(block >> 4) & 0x0f] +
-                HEX_CHARS$1[block & 0x0f] +
-                HEX_CHARS$1[(block >> 12) & 0x0f] +
-                HEX_CHARS$1[(block >> 8) & 0x0f] +
-                HEX_CHARS$1[(block >> 20) & 0x0f] +
-                HEX_CHARS$1[(block >> 16) & 0x0f] +
-                HEX_CHARS$1[(block >> 28) & 0x0f] +
-                HEX_CHARS$1[(block >> 24) & 0x0f];
+            view.setInt32(i * 4, s[i], true);
         }
+
         if (j % blockCount === 0) {
             f$2(s);
             i = 0;
         }
     }
-    // @ts-ignore
-    return "0x" + hex;
-};
 
-/** @type {(s: number[]) => void} */
-const f$2 = (s) => {
+    return new Uint8Array(buffer);
+}
+
+/**
+ * @param {number[]} s
+ */
+function f$2(s) {
     var h,
         l,
         n,
@@ -47372,25 +47343,19 @@ const f$2 = (s) => {
         s[0] ^= RC$1[n];
         s[1] ^= RC$1[n + 1];
     }
-};
-
-const keccak$1 = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
-    var msg;
-    if (str.slice(0, 2) === "0x") {
-        msg = [];
-        for (var i = 2, l = str.length; i < l; i += 2)
-            msg.push(parseInt(str.slice(i, i + 2), 16));
-    } else {
-        msg = str;
-    }
-    // @ts-ignore
-    return update$1(Keccak$1(bits, bits), msg);
-};
+}
 
 /**
- * @type {(message: string) => string}
+ * @param {number} bits
+ * @returns {(message: string | Uint8Array) => Uint8Array}
  */
-const keccak256$2 = keccak$1(256);
+function createKeccak(bits) {
+    return function (message) {
+        return update$1(createKeccakState(bits), message);
+    };
+}
+
+const keccak256$2 = createKeccak(256);
 
 /**
  * @enum {number}
@@ -47659,8 +47624,7 @@ class ContractFunctionSelector {
             throw new Error("`name` required for ContractFunctionSelector");
         }
 
-        const func = encode$4(encode$5(this.toString()));
-        return decode$5(keccak256$2(`0x${func}`)).slice(0, 4);
+        return new Uint8Array(keccak256$2(this.toString()).slice(0, 4));
     }
 
     /**
@@ -49316,6 +49280,7 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../account/AccountId.js").default} AccountId
@@ -52728,6 +52693,7 @@ TRANSACTION_REGISTRY.set(
  */
 
 /**
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../client/Client.js").default<*, *>} Client
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
@@ -57196,6 +57162,7 @@ TRANSACTION_REGISTRY.set(
 
 /**
  * @typedef {import("bignumber.js").default} BigNumber
+ * @typedef {import("@hashgraph/cryptography").Key} Key
  * @typedef {import("../channel/Channel.js").default} Channel
  * @typedef {import("../transaction/TransactionId.js").default} TransactionId
  * @typedef {import("./CustomFee.js").default} CustomFee
@@ -58694,6 +58661,9 @@ TRANSACTION_REGISTRY.set(
  * @typedef {import("@hashgraph/proto").IDuration} proto.IDuration
  */
 
+/**
+ * @typedef {import("@hashgraph/cryptography").Key} Key
+ */
 class TokenNftInfo {
     /**
      * @private
@@ -80701,49 +80671,22 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var _args$1 = [
-	[
-		"@grpc/grpc-js@1.5.1",
-		"/home/nikolay/Desktop/hethers.js"
-	]
-];
-var _from$1 = "@grpc/grpc-js@1.5.1";
-var _id$1 = "@grpc/grpc-js@1.5.1";
-var _inBundle$1 = false;
-var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
-var _location$1 = "/@grpc/grpc-js";
-var _phantomChildren$1 = {
+var name$1 = "@grpc/grpc-js";
+var version$c = "1.5.1";
+var description$1 = "gRPC Library for Node - pure JS implementation";
+var homepage$1 = "https://grpc.io/";
+var repository$1 = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
+var main$1 = "build/src/index.js";
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
-var _requested$1 = {
-	type: "version",
-	registry: true,
-	raw: "@grpc/grpc-js@1.5.1",
-	name: "@grpc/grpc-js",
-	escapedName: "@grpc%2fgrpc-js",
-	scope: "@grpc",
-	rawSpec: "1.5.1",
-	saveSpec: null,
-	fetchSpec: "1.5.1"
-};
-var _requiredBy$1 = [
-	"/@hashgraph/sdk"
+var keywords$1 = [
 ];
-var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
-var _spec$1 = "1.5.1";
-var _where$1 = "/home/nikolay/Desktop/hethers.js";
 var author$1 = {
 	name: "Google Inc."
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var dependencies$1 = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
-};
-var description$1 = "gRPC Library for Node - pure JS implementation";
+var types = "build/src/index.d.ts";
+var license$1 = "Apache-2.0";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -80767,8 +80710,29 @@ var devDependencies$1 = {
 	"ts-node": "^8.3.0",
 	typescript: "^3.7.2"
 };
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var scripts$1 = {
+	build: "npm run compile",
+	clean: "rimraf ./build",
+	compile: "tsc -p .",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	lint: "npm run check",
+	prepare: "npm run generate-types && npm run compile",
+	test: "gulp test",
+	check: "gts check src/**/*.ts",
+	fix: "gts fix src/*.ts",
+	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
+	posttest: "npm run check && madge -c ./build/src",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
+	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto"
+};
+var dependencies$1 = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
 };
 var files$1 = [
 	"src/**/*.ts",
@@ -80784,62 +80748,29 @@ var files$1 = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
-var homepage$1 = "https://grpc.io/";
-var keywords$1 = [
-];
-var license$1 = "Apache-2.0";
-var main$1 = "build/src/index.js";
-var name$1 = "@grpc/grpc-js";
-var repository$1 = {
-	type: "git",
-	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
-};
-var scripts$1 = {
-	build: "npm run compile",
-	check: "gts check src/**/*.ts",
-	clean: "rimraf ./build",
-	compile: "tsc -p .",
-	fix: "gts fix src/*.ts",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
-	lint: "npm run check",
-	posttest: "npm run check && madge -c ./build/src",
-	prepare: "npm run generate-types && npm run compile",
-	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
-	test: "gulp test"
-};
-var types = "build/src/index.d.ts";
-var version$c = "1.5.1";
+var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
+var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
+var _from$1 = "@grpc/grpc-js@1.5.1";
 var require$$0$2 = {
-	_args: _args$1,
-	_from: _from$1,
-	_id: _id$1,
-	_inBundle: _inBundle$1,
-	_integrity: _integrity$1,
-	_location: _location$1,
-	_phantomChildren: _phantomChildren$1,
-	_requested: _requested$1,
-	_requiredBy: _requiredBy$1,
-	_resolved: _resolved$1,
-	_spec: _spec$1,
-	_where: _where$1,
-	author: author$1,
-	contributors: contributors,
-	dependencies: dependencies$1,
-	description: description$1,
-	devDependencies: devDependencies$1,
-	engines: engines,
-	files: files$1,
-	homepage: homepage$1,
-	keywords: keywords$1,
-	license: license$1,
-	main: main$1,
 	name: name$1,
+	version: version$c,
+	description: description$1,
+	homepage: homepage$1,
 	repository: repository$1,
-	scripts: scripts$1,
+	main: main$1,
+	engines: engines,
+	keywords: keywords$1,
+	author: author$1,
 	types: types,
-	version: version$c
+	license: license$1,
+	devDependencies: devDependencies$1,
+	contributors: contributors,
+	scripts: scripts$1,
+	dependencies: dependencies$1,
+	files: files$1,
+	_resolved: _resolved$1,
+	_integrity: _integrity$1,
+	_from: _from$1
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -94398,9 +94329,9 @@ class Formatter {
     }
     //TODO propper validation needed?
     timestamp(value) {
-        if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
-            logger$u.throwArgumentError("bad timestamp format", "value", value);
-        }
+        // if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
+        //     logger.throwArgumentError("bad timestamp format", "value", value);
+        // }
         return value;
     }
     accessList(accessList) {
@@ -98452,7 +98383,6 @@ function base64ToHex(hash) {
 // Provider Object
 /**
  *  EventType
- *   - "block"
  *   - "poll"
  *   - "didPoll"
  *   - "pending"
@@ -98462,7 +98392,7 @@ function base64ToHex(hash) {
  *   - topics array
  *   - transaction hash
  */
-const PollableEvents = ["block", "network", "pending", "poll"];
+const PollableEvents = ["network", "pending", "poll"];
 class Event {
     constructor(tag, listener, once) {
         defineReadOnly(this, "tag", tag);
@@ -98512,19 +98442,13 @@ let defaultFormatter = null;
 const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
 const MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
 const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
+let nextPollId = 1;
 class BaseProvider extends Provider {
-    /**
-     *  ready
-     *
-     *  A Promise<Network> that resolves only once the provider is ready.
-     *
-     *  Sub-classes that call the super with a network without a chainId
-     *  MUST set this. Standard named networks have a known chainId.
-     *
-     */
     constructor(network) {
         logger$v.checkNew(new.target, Provider);
         super();
+        this._events = [];
+        this._emitted = {};
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -98549,7 +98473,7 @@ class BaseProvider extends Provider {
                 const knownNetwork = getStatic(new.target, "getNetwork")(asDefaultNetwork);
                 if (knownNetwork) {
                     defineReadOnly(this, "_network", knownNetwork);
-                    this.emit("network", knownNetwork, null);
+                    this.emit("network", knownNetwork);
                 }
                 else {
                     logger$v.throwArgumentError("invalid network", "network", network);
@@ -98570,6 +98494,16 @@ class BaseProvider extends Provider {
         }
         this._pollingInterval = 3000;
     }
+    /**
+     *  ready
+     *
+     *  A Promise<Network> that resolves only once the provider is ready.
+     *
+     *  Sub-classes that call the super with a network without a chainId
+     *  MUST set this. Standard named networks have a known chainId.
+     *
+     *
+     */
     _ready() {
         return __awaiter$8(this, void 0, void 0, function* () {
             if (this._network == null) {
@@ -98586,9 +98520,9 @@ class BaseProvider extends Provider {
                 }
                 // This should never happen; every Provider sub-class should have
                 // suggested a network by here (or have thrown).
-                // if (!network) {
-                //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
-                // }
+                if (!network) {
+                    logger$v.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, {});
+                }
                 // Possible this call stacked so do not call defineReadOnly again
                 if (this._network == null) {
                     if (this.anyNetwork) {
@@ -98624,7 +98558,7 @@ class BaseProvider extends Provider {
     }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
-    // With the current hedera implementation, we do not support a changeable networks,
+    // With the current hedera implementation, we do not support changeable networks,
     // thus we do not need to query at this level
     detectNetwork() {
         return __awaiter$8(this, void 0, void 0, function* () {
@@ -98931,6 +98865,12 @@ class BaseProvider extends Provider {
         return __awaiter$8(this, void 0, void 0, function* () {
             this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
+            if (params.filter.toTimestamp.split(".").length < 2) {
+                params.filter.toTimestamp += ".00000000";
+            }
+            if (params.filter.fromTimestamp.split(".").length < 2) {
+                params.filter.fromTimestamp += ".00000000";
+            }
             const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
             const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
             const limit = 100;
@@ -98962,10 +98902,20 @@ class BaseProvider extends Provider {
             return logger$v.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
+    /* Events, Event Listeners & Polling */
+    _startEvent(event) {
+        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
+    }
+    _stopEvent(event) {
+        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
+    }
     perform(method, params) {
         return logger$v.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
     }
     _addEventListener(eventName, listener, once) {
+        const event = new Event(getEventTag$1(eventName), listener, once);
+        this._events.push(event);
+        this._startEvent(event);
         return this;
     }
     on(eventName, listener) {
@@ -98975,19 +98925,173 @@ class BaseProvider extends Provider {
         return this._addEventListener(eventName, listener, true);
     }
     emit(eventName, ...args) {
-        return false;
+        let result = false;
+        let stopped = [];
+        let eventTag = getEventTag$1(eventName);
+        this._events = this._events.filter((event) => {
+            if (event.tag !== eventTag) {
+                return true;
+            }
+            setTimeout(() => {
+                event.listener.apply(this, args);
+            }, 0);
+            result = true;
+            if (event.once) {
+                stopped.push(event);
+                return false;
+            }
+            return true;
+        });
+        stopped.forEach((event) => { this._stopEvent(event); });
+        return result;
     }
     listenerCount(eventName) {
-        return 0;
+        if (!eventName) {
+            return this._events.length;
+        }
+        let eventTag = getEventTag$1(eventName);
+        return this._events.filter((event) => {
+            return (event.tag === eventTag);
+        }).length;
     }
     listeners(eventName) {
-        return null;
+        if (eventName == null) {
+            return this._events.map((event) => event.listener);
+        }
+        let eventTag = getEventTag$1(eventName);
+        return this._events
+            .filter((event) => (event.tag === eventTag))
+            .map((event) => event.listener);
     }
     off(eventName, listener) {
+        if (listener == null) {
+            return this.removeAllListeners(eventName);
+        }
+        const stopped = [];
+        let found = false;
+        let eventTag = getEventTag$1(eventName);
+        this._events = this._events.filter((event) => {
+            if (event.tag !== eventTag || event.listener != listener) {
+                return true;
+            }
+            if (found) {
+                return true;
+            }
+            found = true;
+            stopped.push(event);
+            return false;
+        });
+        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
     }
     removeAllListeners(eventName) {
+        let stopped = [];
+        if (eventName == null) {
+            stopped = this._events;
+            this._events = [];
+        }
+        else {
+            const eventTag = getEventTag$1(eventName);
+            this._events = this._events.filter((event) => {
+                if (event.tag !== eventTag) {
+                    return true;
+                }
+                stopped.push(event);
+                return false;
+            });
+        }
+        stopped.forEach((event) => { this._stopEvent(event); });
         return this;
+    }
+    get polling() {
+        return (this._poller != null);
+    }
+    set polling(value) {
+        if (value && !this._poller) {
+            this._poller = setInterval(() => { this.poll(); }, this.pollingInterval);
+            if (!this._bootstrapPoll) {
+                this._bootstrapPoll = setTimeout(() => {
+                    this.poll();
+                    // We block additional polls until the polling interval
+                    // is done, to prevent overwhelming the poll function
+                    this._bootstrapPoll = setTimeout(() => {
+                        // If polling was disabled, something may require a poke
+                        // since starting the bootstrap poll and it was disabled
+                        if (!this._poller) {
+                            this.poll();
+                        }
+                        // Clear out the bootstrap so we can do another
+                        this._bootstrapPoll = null;
+                    }, this.pollingInterval);
+                }, 0);
+            }
+        }
+        else if (!value && this._poller) {
+            clearInterval(this._poller);
+            this._poller = null;
+        }
+    }
+    /**
+     * Should poll for events.
+     * More events - more polling TODO
+     *
+     * TODO: Poll the mirror node for logs.
+     * TODO: Gather events matching the filters
+     */
+    poll() {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            const pollId = nextPollId++;
+            // Track all running promises, so we can trigger a post-poll once they are complete
+            const runners = [];
+            const now = new Date().getTime();
+            const previousPollTimestamp = now - this.pollingInterval;
+            // Emit a poll event after we have the previous polling timestamp
+            this.emit("poll", pollId, previousPollTimestamp);
+            // Find all transaction hashes we are waiting on
+            this._events.forEach((event) => {
+                switch (event.type) {
+                    case "tx": {
+                        const hash = event.hash;
+                        let runner = this.getTransactionReceipt(hash).then((receipt) => {
+                            if (!receipt) {
+                                return null;
+                            }
+                            // this._emitted["t:" + hash] = receipt.blockNumber;
+                            this.emit(hash, receipt);
+                            return null;
+                        }).catch((error) => { this.emit("error", error); });
+                        runners.push(runner);
+                        break;
+                    }
+                    case "filter": {
+                        const filter = event.filter;
+                        // Todo: from/to timestamp?
+                        // if (!filter.fromTimestamp) {
+                        filter.fromTimestamp = composeHederaTimestamp(previousPollTimestamp);
+                        // }
+                        filter.toTimestamp = composeHederaTimestamp(now);
+                        // TODO: topics are probably wrong - this is why we don't receive any event on the given topic
+                        const runner = this.getLogs(filter).then((logs) => {
+                            if (logs.length === 0) {
+                                return;
+                            }
+                            logs.forEach((log) => {
+                                // todo: check if ok - txIndex replaces blockNumber
+                                this._emitted["t:" + log.timestamp] = log.transactionIndex;
+                                this.emit(filter, log);
+                            });
+                        }).catch((error) => { this.emit("error", error); });
+                        runners.push(runner);
+                        break;
+                    }
+                }
+            });
+            // Once all events for this loop have been processed, emit "didPoll"
+            Promise.all(runners).then(() => {
+                this.emit("didPoll", pollId);
+            }).catch((error) => { this.emit("error", error); });
+            return;
+        });
     }
 }
 // resolves network string to a hedera network name
@@ -99020,6 +99124,39 @@ function resolveMirrorNetworkUrl(net) {
 }
 function isHederaNetworkConfigLike(cfg) {
     return cfg.network !== undefined;
+}
+function getEventTag$1(eventName) {
+    if (typeof (eventName) === "string") {
+        eventName = eventName.toLowerCase();
+        if (hexDataLength(eventName) === 32) {
+            return "tx:" + eventName;
+        }
+        if (eventName.indexOf(":") === -1) {
+            return eventName;
+        }
+    }
+    else if (Array.isArray(eventName)) {
+        return "filter:*:" + serializeTopics(eventName);
+    }
+    else if (ForkEvent.isForkEvent(eventName)) {
+        logger$v.warn("not implemented");
+        throw new Error("not implemented");
+    }
+    else if (eventName && typeof (eventName) === "object") {
+        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
+    }
+    throw new Error("invalid event - " + eventName);
+}
+function composeHederaTimestamp(timestamp) {
+    const tsCopy = timestamp.toString();
+    const seconds = tsCopy.slice(0, tsCopy.length - 3);
+    let nanosTemp = tsCopy.slice(seconds.length);
+    if (nanosTemp.length < 9) {
+        for (let i = nanosTemp.length; i < 9; i++) {
+            nanosTemp += "0";
+        }
+    }
+    return `${seconds}.${nanosTemp}`;
 }
 
 // contains predefined, sdk acceptable hedera network strings

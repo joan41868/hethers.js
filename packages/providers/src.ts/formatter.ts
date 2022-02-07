@@ -164,9 +164,9 @@ export class Formatter {
 
     //TODO propper validation needed?
     timestamp(value: any): string {
-        if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
-            logger.throwArgumentError("bad timestamp format", "value", value);
-        }
+        // if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
+        //     logger.throwArgumentError("bad timestamp format", "value", value);
+        // }
         return value;
     }
 

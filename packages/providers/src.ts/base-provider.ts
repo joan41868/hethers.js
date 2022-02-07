@@ -198,6 +198,7 @@ export class BaseProvider extends Provider {
         super();
 
         this._events = [];
+        this._emitted = {};
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -615,6 +616,12 @@ export class BaseProvider extends Provider {
     async getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>> {
         this._checkMirrorNode();
         const params = await resolveProperties({ filter: this._getFilter(filter) });
+        if (params.filter.toTimestamp.split(".").length < 2) {
+            params.filter.toTimestamp += ".00000000";
+        }
+        if (params.filter.fromTimestamp.split(".").length < 2) {
+            params.filter.fromTimestamp += ".00000000";
+        }
         const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
         const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
         const limit = 100;
@@ -832,14 +839,16 @@ export class BaseProvider extends Provider {
                 case "filter": {
                     const filter = event.filter;
                     // Todo: from/to timestamp?
-                    filter.fromTimestamp = previousPollTimestamp.toString();
-                    filter.toTimestamp = now.toString();
+                    // if (!filter.fromTimestamp) {
+                        filter.fromTimestamp = composeHederaTimestamp(previousPollTimestamp)
+                    // }
+                    filter.toTimestamp = composeHederaTimestamp(now);
 
                     const runner = this.getLogs(filter).then((logs) => {
                         if (logs.length === 0) { return; }
                         logs.forEach((log: Log) => {
                             // todo: check if ok - txIndex replaces blockNumber
-                            this._emitted["t:" + log.transactionHash] = log.transactionIndex;
+                            this._emitted["t:" + log.timestamp] = log.transactionIndex;
                             this.emit(filter, log);
                         });
                     }).catch((error: Error) => { this.emit("error", error); });
@@ -920,3 +929,15 @@ function getEventTag(eventName: EventType): string {
     throw new Error("invalid event - " + eventName);
 }
 
+
+function composeHederaTimestamp(timestamp: number): string {
+    const tsCopy = timestamp.toString();
+    const seconds = tsCopy.slice(0, tsCopy.length - 3);
+    let nanosTemp = tsCopy.slice(seconds.length);
+    if (nanosTemp.length < 9) {
+        for(let i = nanosTemp.length; i < 9; i ++) {
+            nanosTemp += "0";
+        }
+    }
+    return `${seconds}.${nanosTemp}`;
+}

@@ -229,6 +229,7 @@ var BaseProvider = /** @class */ (function (_super) {
         logger.checkNew(_newTarget, abstract_provider_1.Provider);
         _this = _super.call(this) || this;
         _this._events = [];
+        _this._emitted = {};
         _this.formatter = _newTarget.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -357,7 +358,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
-    // With the current hedera implementation, we do not support a changeable networks,
+    // With the current hedera implementation, we do not support changeable networks,
     // thus we do not need to query at this level
     BaseProvider.prototype.detectNetwork = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -772,6 +773,12 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({ filter: this._getFilter(filter) })];
                     case 1:
                         params = _a.sent();
+                        if (params.filter.toTimestamp.split(".").length < 2) {
+                            params.filter.toTimestamp += ".00000000";
+                        }
+                        if (params.filter.fromTimestamp.split(".").length < 2) {
+                            params.filter.fromTimestamp += ".00000000";
+                        }
                         fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
                         toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
                         limit = 100;
@@ -990,15 +997,18 @@ var BaseProvider = /** @class */ (function (_super) {
                         case "filter": {
                             var filter_1 = event.filter;
                             // Todo: from/to timestamp?
-                            filter_1.fromTimestamp = previousPollTimestamp.toString();
-                            filter_1.toTimestamp = now.toString();
+                            // if (!filter.fromTimestamp) {
+                            filter_1.fromTimestamp = composeHederaTimestamp(previousPollTimestamp);
+                            // }
+                            filter_1.toTimestamp = composeHederaTimestamp(now);
+                            // TODO: topics are probably wrong - this is why we don't receive any event on the given topic
                             var runner = _this.getLogs(filter_1).then(function (logs) {
                                 if (logs.length === 0) {
                                     return;
                                 }
                                 logs.forEach(function (log) {
                                     // todo: check if ok - txIndex replaces blockNumber
-                                    _this._emitted["t:" + log.transactionHash] = log.transactionIndex;
+                                    _this._emitted["t:" + log.timestamp] = log.transactionIndex;
                                     _this.emit(filter_1, log);
                                 });
                             }).catch(function (error) { _this.emit("error", error); });
@@ -1070,5 +1080,16 @@ function getEventTag(eventName) {
         return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
     }
     throw new Error("invalid event - " + eventName);
+}
+function composeHederaTimestamp(timestamp) {
+    var tsCopy = timestamp.toString();
+    var seconds = tsCopy.slice(0, tsCopy.length - 3);
+    var nanosTemp = tsCopy.slice(seconds.length);
+    if (nanosTemp.length < 9) {
+        for (var i = nanosTemp.length; i < 9; i++) {
+            nanosTemp += "0";
+        }
+    }
+    return seconds + "." + nanosTemp;
 }
 //# sourceMappingURL=base-provider.js.map
