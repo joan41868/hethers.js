@@ -32,7 +32,7 @@ import {
     resolveProperties,
     shallowCopy
 } from "@ethersproject/properties";
-import { accessListify, AccessListish } from "@ethersproject/transactions";
+import { AccessList, accessListify, AccessListish} from "@ethersproject/transactions";
 
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -68,10 +68,10 @@ export interface PopulatedTransaction {
     chainId?: number;
 
     type?: number;
-    accessList?: AccessListish;
+    accessList?: AccessList;
 
-    maxFeePerGas?: BigNumberish;
-    maxPriorityFeePerGas?: BigNumberish;
+    maxFeePerGas?: BigNumber;
+    maxPriorityFeePerGas?: BigNumber;
 
     customData?: Record<string, any>;
     nodeId?: AccountLike;
