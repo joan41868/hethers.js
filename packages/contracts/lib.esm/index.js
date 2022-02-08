@@ -352,6 +352,7 @@ class FragmentRunningEvent extends RunningEvent {
             return this.interface.decodeEventLog(this.fragment, data, topics);
         };
         try {
+            // Topic mismatch is here
             event.args = this.interface.decodeEventLog(this.fragment, event.data, event.topics);
         }
         catch (error) {

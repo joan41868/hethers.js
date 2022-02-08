@@ -765,7 +765,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLegth, epContractsLogs, requestUrl, data, mappedLogs, error_6, errorParams;
+            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLegth, epContractsLogs, i, topic, requestUrl, data, mappedLogs, error_6, errorParams;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -773,17 +773,20 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({ filter: this._getFilter(filter) })];
                     case 1:
                         params = _a.sent();
-                        if (params.filter.toTimestamp.split(".").length < 2) {
-                            params.filter.toTimestamp += ".00000000";
-                        }
-                        if (params.filter.fromTimestamp.split(".").length < 2) {
-                            params.filter.fromTimestamp += ".00000000";
-                        }
                         fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
                         toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
                         limit = 100;
                         oversizeResponseLegth = limit + 1;
                         epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+                        if (params.filter.topics && params.filter.topics.length > 0) {
+                            for (i = 0; i < params.filter.topics.length; i++) {
+                                topic = params.filter.topics[i];
+                                // TODO: [][]string are not yet handled
+                                if (typeof topic === "string") {
+                                    epContractsLogs += "&topic" + i + "=" + topic;
+                                }
+                            }
+                        }
                         requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
                         _a.label = 2;
                     case 2:
@@ -974,7 +977,7 @@ var BaseProvider = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 pollId = nextPollId++;
                 runners = [];
-                now = new Date().getTime();
+                now = new Date().getTime() - this.pollingInterval;
                 previousPollTimestamp = now - this.pollingInterval;
                 // Emit a poll event after we have the previous polling timestamp
                 this.emit("poll", pollId, previousPollTimestamp);
@@ -996,10 +999,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         case "filter": {
                             var filter_1 = event.filter;
-                            // Todo: from/to timestamp?
-                            // if (!filter.fromTimestamp) {
                             filter_1.fromTimestamp = composeHederaTimestamp(previousPollTimestamp);
-                            // }
                             filter_1.toTimestamp = composeHederaTimestamp(now);
                             var runner = _this.getLogs(filter_1).then(function (logs) {
                                 if (logs.length === 0) {

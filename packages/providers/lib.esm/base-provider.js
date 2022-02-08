@@ -567,17 +567,20 @@ export class BaseProvider extends Provider {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
-            if (params.filter.toTimestamp.split(".").length < 2) {
-                params.filter.toTimestamp += ".00000000";
-            }
-            if (params.filter.fromTimestamp.split(".").length < 2) {
-                params.filter.fromTimestamp += ".00000000";
-            }
             const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
             const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
             const limit = 100;
             const oversizeResponseLegth = limit + 1;
-            const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+            let epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+            if (params.filter.topics && params.filter.topics.length > 0) {
+                for (let i = 0; i < params.filter.topics.length; i++) {
+                    const topic = params.filter.topics[i];
+                    // TODO: [][]string are not yet handled
+                    if (typeof topic === "string") {
+                        epContractsLogs += `&topic${i}=${topic}`;
+                    }
+                }
+            }
             const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
             try {
                 let { data } = yield axios.get(requestUrl);
@@ -745,7 +748,7 @@ export class BaseProvider extends Provider {
             const pollId = nextPollId++;
             // Track all running promises, so we can trigger a post-poll once they are complete
             const runners = [];
-            const now = new Date().getTime();
+            const now = new Date().getTime() - this.pollingInterval;
             const previousPollTimestamp = now - this.pollingInterval;
             // Emit a poll event after we have the previous polling timestamp
             this.emit("poll", pollId, previousPollTimestamp);
@@ -767,10 +770,7 @@ export class BaseProvider extends Provider {
                     }
                     case "filter": {
                         const filter = event.filter;
-                        // Todo: from/to timestamp?
-                        // if (!filter.fromTimestamp) {
                         filter.fromTimestamp = composeHederaTimestamp(previousPollTimestamp);
-                        // }
                         filter.toTimestamp = composeHederaTimestamp(now);
                         const runner = this.getLogs(filter).then((logs) => {
                             if (logs.length === 0) {

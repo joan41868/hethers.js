@@ -524,6 +524,7 @@ var Interface = /** @class */ (function () {
                 dynamic.push(false);
             }
         });
+        // decoder throws here, probably because it catches events which are not mint
         var resultIndexed = (topics != null) ? this._abiCoder.decode(indexed, (0, bytes_1.concat)(topics)) : null;
         var resultNonIndexed = this._abiCoder.decode(nonIndexed, data, true);
         var result = [];

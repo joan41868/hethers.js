@@ -117,12 +117,13 @@ const account = {
 	/**
 	 * Creating a contract from ABI and bytecode
 	 */
-	// const contractFactory = new hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
+	const contractFactory = new hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
 
 	/**
 	 * Using contractFactory.deploy()
 	 */
-	const contract = hethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, contractWallet);//await contractFactory.deploy(hethers.BigNumber.from("10000"), { gasLimit: 3000000 });
+	const contract = await contractFactory.deploy(hethers.BigNumber.from("10000"), {gasLimit: 3000000});
+	// const contract = hethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, contractWallet);//await contractFactory.deploy(hethers.BigNumber.from("10000"), { gasLimit: 3000000 });
 	console.log(contract.address);
 
 	/**
@@ -139,36 +140,32 @@ const account = {
 	const tx = await contractWallet.provider.sendTransaction(signedTransaction);
 	console.log(tx.transactionId);
 
-	const mintCall1 = await contract.mint(BigNumber.from("1"), { gasLimit: 300000 });
-	console.log('MintCall', mintCall1);
-	// const initialTimestamp = composeHederaTimestamp(new Date().getTime());
-	// const filter = {
-	// 		address: contract.address,
-	// 		fromTimestamp: initialTimestamp,
-	// 		toTimestamp: composeHederaTimestamp(new Date().getTime())
-	// };
-	contract.on('Mint', (data) => {
-			console.log('Mint event', data);
-	});
-	contract.on('error', (err) => {
-		console.log("error", err);
-	});
+
 	/**
 	 * Calling a contract method
 	 */
-	const mintCall2 = await contract.mint(BigNumber.from("1"), { gasLimit: 300000 });
-	console.log('MintCall', mintCall2);
-})();
+	const transferMethodCall = await contract.transfer(contract.address, 1, {gasLimit: 300000});
+	console.log(transferMethodCall.transactionId);
 
+	/**
+	 * Start listening for events.
+	 */
+	contract.on('Mint', (...args) => {
+			console.log('Mint event data:', args);
+	});
+	contract.on('Transfer', (...args) => {
+		console.log('Transfer event data:', args);
+	});
 
-function composeHederaTimestamp(timestamp: number): string {
-	const tsCopy = timestamp.toString();
-	const seconds = tsCopy.slice(0, tsCopy.length - 3);
-	let nanosTemp = tsCopy.slice(seconds.length);
-	if (nanosTemp.length < 9) {
-		for (let i = nanosTemp.length; i < 9; i++) {
-			nanosTemp += "0";
-		}
+	/**
+	 * Calling a contract method which emits event - Mint(address, uint256), Transfer(address, address, uint256)
+	 */
+	for (let i = 0; i <=10; i++){
+		const mint = await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
+		console.log(`Mint ${i+1}:`, mint.transactionId);
+		const transfer = await contract.transfer(contract.address, i+1, {gasLimit: 300000});
+		console.log(`Transfer ${i+1}:`,transfer.transactionId);
 	}
-	return `${seconds}.${nanosTemp}`;
-}
+	contract.removeAllListeners();
+	// TODO: attempt listening with object event filter from the provider { topics :[ '0x...' ], address: '0x...', ... }
+})();

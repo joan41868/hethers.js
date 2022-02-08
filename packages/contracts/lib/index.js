@@ -476,6 +476,7 @@ var FragmentRunningEvent = /** @class */ (function (_super) {
             return _this.interface.decodeEventLog(_this.fragment, data, topics);
         };
         try {
+            // Topic mismatch is here
             event.args = this.interface.decodeEventLog(this.fragment, event.data, event.topics);
         }
         catch (error) {
