@@ -61,7 +61,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
 var ethers_1 = require("ethers");
 var test_contract_json_1 = __importDefault(require("./test-contract.json"));
-var fs_1 = __importDefault(require("fs"));
+var fs_1 = __importStar(require("fs"));
 // @ts-ignore
 var abi = __importStar(require("../../../examples/assets/abi/GLDToken_abi.json"));
 // @ts-ignore
@@ -290,8 +290,6 @@ describe("Test Contract Transaction Population", function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, contract.populateTransaction.mint({
                             gasLimit: 150000,
-                            gasPrice: 1900000000,
-                            nonce: 5,
                             value: 1234,
                             from: testAddress
                         })];
@@ -301,10 +299,8 @@ describe("Test Contract Transaction Population", function () {
                         assert_1.default.equal(Object.keys(tx).length, 7, "correct number of keys");
                         assert_1.default.equal(tx.data, "0x1249c58b", "data matches");
                         assert_1.default.equal(tx.to, testAddressCheck, "to address matches");
-                        assert_1.default.equal(tx.nonce, 5, "nonce address matches");
-                        assert_1.default.ok(tx.gasLimit.eq(150000), "gasLimit matches");
-                        assert_1.default.ok(tx.gasPrice.eq(1900000000), "gasPrice matches");
-                        assert_1.default.ok(tx.value.eq(1234), "value matches");
+                        assert_1.default.equal(tx.gasLimit.toString(), "150000", "gasLimit matches");
+                        assert_1.default.equal(tx.value.toString(), "1234", "value matches");
                         assert_1.default.equal(tx.from, testAddressCheck, "from address matches");
                         return [2 /*return*/];
                 }
@@ -487,6 +483,169 @@ describe("Test Contract Transaction Population", function () {
                         balance = _a.sent();
                         assert_1.default.strictEqual(ethers_1.BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
                         return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(60000);
+    it("should be able to call contract methods", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var providerTestnet, contractHederaEoa, contractWallet, abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractFactory, contract, clientWallet, clientAccountId, _a, _b, viewMethodCall, populatedTx, signedTransaction, tx, _c, _d, transferMethodCall, _e, _f;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
+                    case 0:
+                        providerTestnet = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                        contractHederaEoa = {
+                            "account": '0.0.29562194',
+                            "privateKey": '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+                        };
+                        contractWallet = new ethers_1.ethers.Wallet(contractHederaEoa, providerTestnet);
+                        abiGLDTokenWithConstructorArgs = JSON.parse((0, fs_1.readFileSync)('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+                        contractByteCodeGLDTokenWithConstructorArgs = (0, fs_1.readFileSync)('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+                        contractFactory = new ethers_1.ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
+                        return [4 /*yield*/, contractFactory.deploy(ethers_1.ethers.BigNumber.from('10000'), { gasLimit: 3000000 })];
+                    case 1:
+                        contract = _g.sent();
+                        clientWallet = ethers_1.ethers.Wallet.createRandom();
+                        return [4 /*yield*/, contractWallet.createAccount(clientWallet._signingKey().compressedPublicKey)];
+                    case 2:
+                        clientAccountId = (_g.sent()).customData.accountId;
+                        clientWallet = clientWallet.connect(providerTestnet).connectAccount(clientAccountId.toString());
+                        // test sending hbars to the contract
+                        return [4 /*yield*/, contractWallet.sendTransaction({
+                                to: contract.address,
+                                from: contractWallet.address,
+                                value: 30,
+                                gasLimit: 300000
+                            })];
+                    case 3:
+                        // test sending hbars to the contract
+                        _g.sent();
+                        // test if initial balance of the client is zero
+                        _b = (_a = assert_1.default).strictEqual;
+                        return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
+                    case 4:
+                        // test if initial balance of the client is zero
+                        _b.apply(_a, [(_g.sent()).toString(), '0']);
+                        return [4 /*yield*/, contract.getInternalCounter({ gasLimit: 300000 })];
+                    case 5:
+                        viewMethodCall = _g.sent();
+                        assert_1.default.strictEqual(viewMethodCall.toString(), '29');
+                        return [4 /*yield*/, contract.populateTransaction.transfer(clientWallet.address, 10, { gasLimit: 300000 })];
+                    case 6:
+                        populatedTx = _g.sent();
+                        return [4 /*yield*/, contractWallet.signTransaction(populatedTx)];
+                    case 7:
+                        signedTransaction = _g.sent();
+                        return [4 /*yield*/, contractWallet.provider.sendTransaction(signedTransaction)];
+                    case 8:
+                        tx = _g.sent();
+                        return [4 /*yield*/, tx.wait()];
+                    case 9:
+                        _g.sent();
+                        _d = (_c = assert_1.default).strictEqual;
+                        return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
+                    case 10:
+                        _d.apply(_c, [(_g.sent()).toString(), '10']);
+                        return [4 /*yield*/, contract.transfer(clientWallet.address, 10, { gasLimit: 300000 })];
+                    case 11:
+                        transferMethodCall = _g.sent();
+                        return [4 /*yield*/, transferMethodCall.wait()];
+                    case 12:
+                        _g.sent();
+                        _f = (_e = assert_1.default).strictEqual;
+                        return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
+                    case 13:
+                        _f.apply(_e, [(_g.sent()).toString(), '20']);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(300000);
+    it('should have a .wait function', function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var hederaEoa, provider, wallet, bytecode, contractFactory, contract, err_1, deployTx, receipt, events, i, log, event_1, eventTx, eventRc;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        hederaEoa = {
+                            account: '0.0.29562194',
+                            privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+                        };
+                        provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                        wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
+                        bytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+                        contractFactory = new ethers_1.ethers.ContractFactory(abi, bytecode, wallet);
+                        return [4 /*yield*/, contractFactory.deploy({ gasLimit: 300000 })];
+                    case 1:
+                        contract = _a.sent();
+                        _a.label = 2;
+                    case 2:
+                        _a.trys.push([2, 4, , 5]);
+                        return [4 /*yield*/, contract.deployTransaction.wait(10)];
+                    case 3:
+                        _a.sent();
+                        assert_1.default.notStrictEqual(true, false, "It should go in the catch block");
+                        return [3 /*break*/, 5];
+                    case 4:
+                        err_1 = _a.sent();
+                        assert_1.default.notStrictEqual(err_1, null, "An error is thrown when the specified timeout is exceeded");
+                        assert_1.default.strictEqual(err_1.code, 'TIMEOUT');
+                        return [3 /*break*/, 5];
+                    case 5:
+                        deployTx = contract.deployTransaction;
+                        return [4 /*yield*/, deployTx.wait()];
+                    case 6:
+                        receipt = _a.sent();
+                        assert_1.default.notStrictEqual(receipt, null, "wait returns a receipt");
+                        assert_1.default.strictEqual(receipt.transactionId, deployTx.transactionId, "receipt.transactionId is correct");
+                        assert_1.default.strictEqual(receipt.transactionHash, deployTx.hash, "receipt.transactionHash is correct");
+                        assert_1.default.notStrictEqual(receipt.logs, null, "receipt.logs exists");
+                        assert_1.default.strictEqual(receipt.logs.length, 2);
+                        events = receipt.events;
+                        assert_1.default.notStrictEqual(events, null, "receipt.events exists");
+                        assert_1.default.strictEqual(events.length, 2);
+                        assert_1.default.strictEqual(events[0].event, 'Mint');
+                        assert_1.default.strictEqual(events[0].eventSignature, 'Mint(address,uint256)');
+                        assert_1.default.strictEqual(events[1].event, 'Transfer');
+                        assert_1.default.strictEqual(events[1].eventSignature, 'Transfer(address,address,uint256)');
+                        i = 0;
+                        _a.label = 7;
+                    case 7:
+                        if (!(i < events.length)) return [3 /*break*/, 11];
+                        log = receipt.logs[i];
+                        event_1 = events[i];
+                        assert_1.default.strictEqual(log.timestamp, receipt.timestamp, 'timestamp is correct');
+                        assert_1.default.strictEqual(log.address, receipt.contractAddress, 'address is correct');
+                        assert_1.default.notStrictEqual(log.data, null, 'data exists');
+                        assert_1.default.strictEqual(log.logIndex, i, 'logIndex is correct');
+                        assert_1.default.strictEqual(log.transactionHash, receipt.transactionHash, 'transactionHash is correct');
+                        assert_1.default.strictEqual(event_1.timestamp, receipt.timestamp, 'event.timestamp is correct');
+                        assert_1.default.strictEqual(event_1.address, receipt.contractAddress, 'event.address is correct');
+                        assert_1.default.notStrictEqual(event_1.data, 'event.data exists');
+                        assert_1.default.strictEqual(event_1.logIndex, i, 'event.logIndex is correct');
+                        assert_1.default.strictEqual(event_1.transactionHash, receipt.transactionHash, 'event.transactionHash is correct');
+                        assert_1.default.notStrictEqual(event_1.getTransaction, null, 'events have a method `getTransaction`');
+                        assert_1.default.notStrictEqual(event_1.getTransactionReceipt, null, 'events have a method `getTransactionReceipt`');
+                        return [4 /*yield*/, event_1.getTransaction()];
+                    case 8:
+                        eventTx = _a.sent();
+                        assert_1.default.notStrictEqual(eventTx, null, 'event.getTransaction() returns a result');
+                        assert_1.default.notStrictEqual(eventTx.chainId, null, 'eventTx.chainId is correct');
+                        assert_1.default.strictEqual(eventTx.hash, receipt.transactionHash, 'eventTx.hash is correct');
+                        assert_1.default.strictEqual(eventTx.timestamp, receipt.timestamp, 'eventTx.timestamp is correct');
+                        assert_1.default.strictEqual(eventTx.transactionId, receipt.transactionId, 'eventTx.transactionId is correct');
+                        assert_1.default.strictEqual(eventTx.from, receipt.from, 'eventTx.from is correct');
+                        assert_1.default.strictEqual(eventTx.to, receipt.contractAddress, 'eventTx.contractAddress is correct');
+                        assert_1.default.strictEqual(eventTx.value.toString(), ethers_1.BigNumber.from(0).toString(), 'eventTx.value is correct');
+                        return [4 /*yield*/, event_1.getTransactionReceipt()];
+                    case 9:
+                        eventRc = _a.sent();
+                        assert_1.default.strictEqual(eventRc, receipt, "getTransactionReceipt returns the same receipt");
+                        _a.label = 10;
+                    case 10:
+                        i++;
+                        return [3 /*break*/, 7];
+                    case 11: return [2 /*return*/];
                 }
             });
         });

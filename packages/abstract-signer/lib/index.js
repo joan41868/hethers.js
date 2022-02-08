@@ -231,7 +231,7 @@ var Signer = /** @class */ (function () {
                         return [4 /*yield*/, hederaTx.execute(this.provider.getHederaClient())];
                     case 4:
                         response = _b.sent();
-                        return [2 /*return*/, (0, bytes_1.hexStripZeros)(response.bytes)];
+                        return [2 /*return*/, (0, bytes_1.hexlify)(response.bytes)];
                     case 5:
                         error_1 = _b.sent();
                         return [2 /*return*/, checkError('call', error_1, txRequest)];

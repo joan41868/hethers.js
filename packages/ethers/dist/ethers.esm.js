@@ -7383,6 +7383,7 @@ const One = ( /*#__PURE__*/BigNumber.from(1));
 const Two = ( /*#__PURE__*/BigNumber.from(2));
 const WeiPerEther = ( /*#__PURE__*/BigNumber.from("1000000000000000000"));
 const MaxUint256 = ( /*#__PURE__*/BigNumber.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+const TinybarPerHbar = ( /*#__PURE__*/BigNumber.from("100000000"));
 const MinInt256 = ( /*#__PURE__*/BigNumber.from("-0x8000000000000000000000000000000000000000000000000000000000000000"));
 const MaxInt256 = ( /*#__PURE__*/BigNumber.from("0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
 
@@ -7390,6 +7391,7 @@ const HashZero = "0x000000000000000000000000000000000000000000000000000000000000
 
 // NFKC (composed)             // (decomposed)
 const EtherSymbol = "\u039e"; // "\uD835\uDF63";
+const HBarSymbol = "\u210F"; // none
 
 "use strict";
 
@@ -7404,8 +7406,10 @@ var index = /*#__PURE__*/Object.freeze({
 	MaxUint256: MaxUint256,
 	MinInt256: MinInt256,
 	MaxInt256: MaxInt256,
+	TinybarPerHbar: TinybarPerHbar,
 	HashZero: HashZero,
-	EtherSymbol: EtherSymbol
+	EtherSymbol: EtherSymbol,
+	HBarSymbol: HBarSymbol
 });
 
 "use strict";
@@ -86560,7 +86564,7 @@ class Signer {
             });
             try {
                 const response = yield hederaTx.execute(this.provider.getHederaClient());
-                return hexStripZeros(response.bytes);
+                return hexlify(response.bytes);
             }
             catch (error) {
                 return checkError('call', error, txRequest);
@@ -93246,7 +93250,6 @@ var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments,
     });
 };
 const logger$s = new Logger(version$o);
-;
 ///////////////////////////////
 const allowedTransactionKeys$2 = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
@@ -93287,7 +93290,7 @@ function populateTransaction(contract, fragment, args) {
         // Wait for all dependencies to be resolved (prefer the signer over the provider)
         const resolved = yield resolveProperties({
             args: args,
-            address: contract.resolvedAddress,
+            address: contract.address,
             overrides: (resolveProperties(overrides) || {})
         });
         // The ABI coded transaction
@@ -93299,14 +93302,8 @@ function populateTransaction(contract, fragment, args) {
         // Resolved Overrides
         const ro = resolved.overrides;
         // Populate simple overrides
-        if (ro.nonce != null) {
-            tx.nonce = BigNumber.from(ro.nonce).toNumber();
-        }
         if (ro.gasLimit != null) {
             tx.gasLimit = BigNumber.from(ro.gasLimit);
-        }
-        if (ro.gasPrice != null) {
-            tx.gasPrice = BigNumber.from(ro.gasPrice);
         }
         if (ro.maxFeePerGas != null) {
             tx.maxFeePerGas = BigNumber.from(ro.maxFeePerGas);
@@ -93323,22 +93320,22 @@ function populateTransaction(contract, fragment, args) {
         if (ro.accessList != null) {
             tx.accessList = accessListify(ro.accessList);
         }
+        if (ro.nodeId != null) {
+            tx.nodeId = ro.nodeId;
+        }
         // If there was no "gasLimit" override, but the ABI specifies a default, use it
         if (tx.gasLimit == null && fragment.gas != null) {
-            // Compute the intrinsic gas cost for this transaction
-            // @TODO: This is based on the yellow paper as of Petersburg; this is something
-            // we may wish to parameterize in v6 as part of the Network object. Since this
-            // is always a non-nil to address, we can ignore G_create, but may wish to add
-            // similar logic to the ContractFactory.
             let intrinsic = 21000;
+            let contractCreationExtraGasCost = 11000;
             const bytes = arrayify(data);
             for (let i = 0; i < bytes.length; i++) {
                 intrinsic += 4;
                 if (bytes[i]) {
-                    intrinsic += 64;
+                    intrinsic += 16;
                 }
             }
-            tx.gasLimit = BigNumber.from(fragment.gas).add(intrinsic);
+            const txGas = tx.to != null ? intrinsic : intrinsic + contractCreationExtraGasCost;
+            tx.gasLimit = BigNumber.from(fragment.gas).add(txGas);
         }
         // Populate "value" override
         if (ro.value) {
@@ -93355,9 +93352,7 @@ function populateTransaction(contract, fragment, args) {
             tx.customData = shallowCopy(ro.customData);
         }
         // Remove the overrides
-        delete overrides.nonce;
         delete overrides.gasLimit;
-        delete overrides.gasPrice;
         delete overrides.from;
         delete overrides.value;
         delete overrides.type;
@@ -93365,6 +93360,7 @@ function populateTransaction(contract, fragment, args) {
         delete overrides.maxFeePerGas;
         delete overrides.maxPriorityFeePerGas;
         delete overrides.customData;
+        delete overrides.nodeId;
         // Make sure there are no stray overrides, which may indicate a
         // typo or using an unsupported key.
         const leftovers = Object.keys(overrides).filter((key) => (overrides[key] != null));
@@ -93399,8 +93395,8 @@ function buildEstimate(contract, fragment) {
 }
 function addContractWait(contract, tx) {
     const wait = tx.wait.bind(tx);
-    tx.wait = (confirmations) => {
-        return wait(confirmations).then((receipt) => {
+    tx.wait = (timeout) => {
+        return wait(timeout).then((receipt) => {
             receipt.events = receipt.logs.map((log) => {
                 let event = deepCopy(log);
                 let parsed = null;
@@ -93419,12 +93415,8 @@ function addContractWait(contract, tx) {
                 }
                 // Useful operations
                 event.removeListener = () => { return contract.provider; };
-                event.getBlock = () => {
-                    // TODO: to be removed
-                    return logger$s.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-                };
                 event.getTransaction = () => {
-                    return contract.provider.getTransaction(receipt.transactionHash);
+                    return contract.provider.getTransaction(receipt.transactionId);
                 };
                 event.getTransactionReceipt = () => {
                     return Promise.resolve(receipt);
@@ -93903,10 +93895,6 @@ class BaseContract {
             }
             runningEvent.removeListener(listener);
             this._checkRunningEvents(runningEvent);
-        };
-        event.getBlock = () => {
-            // TODO: to be removed
-            return logger$s.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         };
         event.getTransaction = () => {
             // TODO: blocked by missing data from mirrornode

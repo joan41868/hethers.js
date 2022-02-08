@@ -1,5 +1,5 @@
 import { Fragment, Indexed, Interface, JsonFragment, Result } from "@ethersproject/abi";
-import { Block, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { Signer } from "@ethersproject/abstract-signer";
 import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
@@ -7,13 +7,12 @@ import { BytesLike } from "@ethersproject/bytes";
 import { AccessList, AccessListish } from "@ethersproject/transactions";
 export interface Overrides {
     gasLimit?: BigNumberish | Promise<BigNumberish>;
-    gasPrice?: BigNumberish | Promise<BigNumberish>;
     maxFeePerGas?: BigNumberish | Promise<BigNumberish>;
     maxPriorityFeePerGas?: BigNumberish | Promise<BigNumberish>;
-    nonce?: BigNumberish | Promise<BigNumberish>;
     type?: number;
     accessList?: AccessListish;
     customData?: Record<string, any>;
+    nodeId?: AccountLike;
 }
 export interface PayableOverrides extends Overrides {
     value?: BigNumberish | Promise<BigNumberish>;
@@ -22,11 +21,9 @@ export interface CallOverrides extends PayableOverrides {
     from?: string | Promise<string>;
 }
 export interface PopulatedTransaction {
-    to?: string;
-    from?: string;
-    nonce?: number;
+    to?: AccountLike;
+    from?: AccountLike;
     gasLimit?: BigNumber;
-    gasPrice?: BigNumber;
     data?: string;
     value?: BigNumber;
     chainId?: number;
@@ -35,6 +32,7 @@ export interface PopulatedTransaction {
     maxFeePerGas?: BigNumber;
     maxPriorityFeePerGas?: BigNumber;
     customData?: Record<string, any>;
+    nodeId?: AccountLike;
 }
 export declare type EventFilter = {
     address?: AccountLike;
@@ -48,7 +46,6 @@ export interface Event extends Log {
     decodeError?: Error;
     decode?: (data: string, topics?: Array<string>) => any;
     removeListener: () => void;
-    getBlock: () => Promise<Block>;
     getTransaction: () => Promise<TransactionResponse>;
     getTransactionReceipt: () => Promise<TransactionReceipt>;
 }
