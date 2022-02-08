@@ -1,4 +1,5 @@
 {
+  "_ethers_nobuild": true,
   "author": "Richard Moore <me@ricmoo.com>",
   "dependencies": {
     "@ethersproject/web": "^5.5.0",

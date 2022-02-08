@@ -3,7 +3,7 @@ import { Provider } from "@ethersproject/abstract-provider";
 import { getNetwork } from "@ethersproject/networks";
 import { BaseProvider } from "./base-provider";
 import { DefaultHederaProvider } from "./default-hedera-provider";
-import { Formatter, isCommunityResourcable, isCommunityResource, showThrottleMessage } from "./formatter";
+import { Formatter } from "./formatter";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import HederaProvider from "./hedera-provider";
@@ -19,12 +19,7 @@ function getDefaultProvider(network, options) {
         // Handle http and ws (and their secure variants)
         const match = network.match(/^(ws|http)s?:/i);
         if (match) {
-            switch (match[1]) {
-                // case "http":
-                //     return new JsonRpcProvider(network);
-                default:
-                    logger.throwArgumentError("unsupported URL scheme", "network", network);
-            }
+            logger.throwArgumentError("unsupported URL scheme", "network", network);
         }
     }
     const n = getNetwork(network);
@@ -51,7 +46,7 @@ DefaultHederaProvider, HederaProvider,
 // Signer
 ///////////////////////
 // Functions
-getDefaultProvider, getNetwork, isCommunityResource, isCommunityResourcable, showThrottleMessage, 
+getDefaultProvider, getNetwork, 
 ///////////////////////
 // Objects
 Formatter };
