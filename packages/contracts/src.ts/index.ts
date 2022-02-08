@@ -13,9 +13,7 @@ import {
 } from "@ethersproject/abi";
 import {
     Block,
-    BlockTag,
-    // Filter,
-    // FilterByBlockHash,
+    Filter,
     Listener,
     Log,
     Provider,
@@ -914,8 +912,13 @@ export class BaseContract {
             // TODO: to be removed
             return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         }
-        event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); }
-        event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); }
+        event.getTransaction = () => { 
+            // TODO: blocked by missing data from mirrornode
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+        }
+        event.getTransactionReceipt = () => { 
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+        }
 
         // This may throw if the topics and data mismatch the signature
         runningEvent.prepareEvent(event);
@@ -967,23 +970,16 @@ export class BaseContract {
         }
     }
 
-    queryFilter(event: EventFilter, fromBlockOrBlockhash?: BlockTag | string, toBlock?: BlockTag): Promise<Array<Event>> {
+    async queryFilter(event: EventFilter, fromTimestamp?: string, toTimestamp?: string): Promise<Array<Event>> {
         this._requireAddressSet();
+        
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
+        (<Filter>filter).fromTimestamp = fromTimestamp;
+        (<Filter>filter).toTimestamp = toTimestamp;
 
-        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-        //     if (toBlock != null) {
-        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-        //     }
-        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
-        // } else {
-        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
-        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
-        // }
-        return this.provider.getLogs(filter).then((logs) => {
-            return logs.map((log) => this._wrapEvent(runningEvent, log, null));
-        });
+        const logs = await this.provider.getLogs(filter);
+        return logs.map((log) => this._wrapEvent(runningEvent, log, null));
     }
 
     on(event: EventFilter | string, listener: Listener): this {

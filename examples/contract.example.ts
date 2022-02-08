@@ -112,6 +112,14 @@ const account = {
 	const balanceOfResponse = await wallet.call(balanceOfTx);
 	console.log('balanceOf response: ', balanceOfResponse);
 	console.log(hethers.BigNumber.from(balanceOfResponse).toNumber());
+
+	const filter = {
+		address: contract.address
+	};
+	const fromTimestamp = "1000000000.000000000";
+	const toTimestamp = "1999999999.9999999999";
+	const events = await contract.queryFilter(filter, fromTimestamp, toTimestamp);
+	console.log('events:', events);
 })();
 
 // testnet

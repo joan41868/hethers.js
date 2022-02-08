@@ -542,4 +542,35 @@ describe("contract.deployed", function () {
         });
     }).timeout(60000);
 });
+describe("Test Contract Query Filter", function () {
+    var hederaEoa = {
+        account: '0.0.29562194',
+        privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+    };
+    var provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+    // @ts-ignore
+    var wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
+    it("should filter contract events by timestamp", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var contractAddress, fromTimestamp, toTimestamp, contract, filter, events;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        contractAddress = '0x000000000000000000000000000000000186fb1a';
+                        fromTimestamp = '1642065156.264170833';
+                        toTimestamp = '1642080642.176149864';
+                        contract = ethers_1.ethers.ContractFactory.getContract(contractAddress, abi, wallet);
+                        filter = {
+                            address: contractAddress,
+                        };
+                        return [4 /*yield*/, contract.queryFilter(filter, fromTimestamp, toTimestamp)];
+                    case 1:
+                        events = _a.sent();
+                        assert_1.default.strictEqual(events.length, 2, "queryFilter returns the contract events");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(60000);
+});
 //# sourceMappingURL=test-contract.spec.js.map

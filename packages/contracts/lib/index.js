@@ -818,8 +818,13 @@ var BaseContract = /** @class */ (function () {
             // TODO: to be removed
             return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
         };
-        event.getTransaction = function () { return _this.provider.getTransaction(log.transactionHash); };
-        event.getTransactionReceipt = function () { return _this.provider.getTransactionReceipt(log.transactionHash); };
+        event.getTransaction = function () {
+            // TODO: blocked by missing data from mirrornode
+            return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+        };
+        event.getTransactionReceipt = function () {
+            return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+        };
         // This may throw if the topics and data mismatch the signature
         runningEvent.prepareEvent(event);
         return event;
@@ -862,22 +867,24 @@ var BaseContract = /** @class */ (function () {
             }
         }
     };
-    BaseContract.prototype.queryFilter = function (event, fromBlockOrBlockhash, toBlock) {
-        var _this = this;
-        this._requireAddressSet();
-        var runningEvent = this._getRunningEvent(event);
-        var filter = (0, properties_1.shallowCopy)(runningEvent.filter);
-        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-        //     if (toBlock != null) {
-        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-        //     }
-        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
-        // } else {
-        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
-        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
-        // }
-        return this.provider.getLogs(filter).then(function (logs) {
-            return logs.map(function (log) { return _this._wrapEvent(runningEvent, log, null); });
+    BaseContract.prototype.queryFilter = function (event, fromTimestamp, toTimestamp) {
+        return __awaiter(this, void 0, void 0, function () {
+            var runningEvent, filter, logs;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this._requireAddressSet();
+                        runningEvent = this._getRunningEvent(event);
+                        filter = (0, properties_1.shallowCopy)(runningEvent.filter);
+                        filter.fromTimestamp = fromTimestamp;
+                        filter.toTimestamp = toTimestamp;
+                        return [4 /*yield*/, this.provider.getLogs(filter)];
+                    case 1:
+                        logs = _a.sent();
+                        return [2 /*return*/, logs.map(function (log) { return _this._wrapEvent(runningEvent, log, null); })];
+                }
+            });
         });
     };
     BaseContract.prototype.on = function (event, listener) {
