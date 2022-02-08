@@ -41,16 +41,6 @@ export declare class BaseProvider extends Provider {
     private readonly hederaClient;
     private readonly _mirrorNodeUrl;
     constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike);
-    /**
-     *  ready
-     *
-     *  A Promise<Network> that resolves only once the provider is ready.
-     *
-     *  Sub-classes that call the super with a network without a chainId
-     *  MUST set this. Standard named networks have a known chainId.
-     *
-     *
-     */
     _ready(): Promise<Network>;
     static getFormatter(): Formatter;
     static getNetwork(network: Networkish): Network;

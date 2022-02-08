@@ -123,7 +123,6 @@ const account = {
 	 * Using contractFactory.deploy()
 	 */
 	const contract = await contractFactory.deploy(hethers.BigNumber.from("10000"), {gasLimit: 3000000});
-	// const contract = hethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, contractWallet);//await contractFactory.deploy(hethers.BigNumber.from("10000"), { gasLimit: 3000000 });
 	console.log(contract.address);
 
 	/**
@@ -158,7 +157,7 @@ const account = {
 	});
 
 	/**
-	 * Calling a contract method which emits event - Mint(address, uint256), Transfer(address, address, uint256)
+	 * Calling a contract method which emits events - Mint(address, uint256), Transfer(address, address, uint256)
 	 */
 	for (let i = 0; i <=10; i++){
 		const mint = await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
@@ -167,5 +166,5 @@ const account = {
 		console.log(`Transfer ${i+1}:`,transfer.transactionId);
 	}
 	contract.removeAllListeners();
-	// TODO: attempt listening with object event filter from the provider { topics :[ '0x...' ], address: '0x...', ... }
+
 })();

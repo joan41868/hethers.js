@@ -10,7 +10,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import assert from "assert";
 import { BigNumber, ethers } from "ethers";
-import contractData from "./test-contract.json";
 import fs, { readFileSync } from "fs";
 // @ts-ignore
 import * as abi from '../../../examples/assets/abi/GLDToken_abi.json';
@@ -21,152 +20,16 @@ abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
 import { arrayify } from "ethers/lib/utils";
-// const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
-const provider = ethers.getDefaultProvider("testnet");
 const TIMEOUT_PERIOD = 120000;
-const contract = (function () {
-    return new ethers.Contract('', contractData.interface, provider);
-})();
-function equals(name, actual, expected) {
-    if (Array.isArray(expected)) {
-        assert.equal(actual.length, expected.length, 'array length mismatch - ' + name);
-        expected.forEach(function (expected, index) {
-            equals(name + ':' + index, actual[index], expected);
-        });
-        return;
-    }
-    if (typeof (actual) === 'object') {
-        if (expected.indexed) {
-            assert.ok(ethers.Contract.isIndexed(actual), 'index property has index - ' + name);
-            if (expected.hash) {
-                assert.equal(actual.hash, expected.hash, 'index property with known hash matches - ' + name);
-            }
-            return;
-        }
-        if (actual.eq) {
-            assert.ok(actual.eq(expected), 'numeric value matches - ' + name);
-        }
-    }
-    assert.equal(actual, expected, 'value matches - ' + name);
-}
-// @ts-ignore
-function TestContractEvents() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const data = yield ethers.utils.fetchJson('https://api.ethers.io/api/v1/?action=triggerTest&address=' + contract.address);
-        console.log('*** Triggered Transaction Hash: ' + data.hash);
-        contract.on("error", (error) => {
-            console.log(error);
-            assert(false);
-            contract.removeAllListeners();
-        });
-        function waitForEvent(eventName, expected) {
-            return new Promise(function (resolve, reject) {
-                let done = false;
-                contract.on(eventName, function () {
-                    if (done) {
-                        return;
-                    }
-                    done = true;
-                    let args = Array.prototype.slice.call(arguments);
-                    let event = args[args.length - 1];
-                    event.removeListener();
-                    equals(event.event, args.slice(0, args.length - 1), expected);
-                    resolve();
-                });
-                const timer = setTimeout(() => {
-                    if (done) {
-                        return;
-                    }
-                    done = true;
-                    contract.removeAllListeners();
-                    reject(new Error("timeout"));
-                }, TIMEOUT_PERIOD);
-                if (timer.unref) {
-                    timer.unref();
-                }
-            });
-        }
-        return new Promise(function (resolve, reject) {
-            let p0 = '0x06B5955A67D827CDF91823E3bB8F069e6c89c1D6';
-            let p0_1 = '0x06b5955A67d827CdF91823e3Bb8F069e6C89C1d7';
-            let p1 = 0x42;
-            let p1_1 = 0x43;
-            return Promise.all([
-                waitForEvent('Test', [p0, p1]),
-                waitForEvent('TestP0', [p0, p1]),
-                waitForEvent('TestP0P1', [p0, p1]),
-                waitForEvent('TestIndexedString', [{ indexed: true, hash: '0x7c5ea36004851c764c44143b1dcb59679b11c9a68e5f41497f6cf3d480715331' }, p1]),
-                waitForEvent('TestV2', [{ indexed: true }, [p0, p1]]),
-                waitForEvent('TestV2Nested', [{ indexed: true }, [p0_1, p1_1, [p0, p1]]]),
-            ]).then(function (result) {
-                resolve(result);
-            });
-        });
-    });
-}
-// describe('Test Contract Objects', function() {
-//
-//     it('parses events', function() {
-//         this.timeout(TIMEOUT_PERIOD);
-//         return TestContractEvents();
-//     });
-//
-//     it('ABIv2 parameters and return types work', function() {
-//         this.timeout(TIMEOUT_PERIOD);
-//         let p0 = '0x06B5955A67D827CDF91823E3bB8F069e6c89c1D6';
-//         let p0_0f = '0x06B5955a67d827cDF91823e3bB8F069E6c89c1e5';
-//         let p0_f0 = '0x06b5955a67D827CDF91823e3Bb8F069E6C89c2C6';
-//         let p1 = 0x42;
-//         let p1_0f = 0x42 + 0x0f;
-//         let p1_f0 = 0x42 + 0xf0;
-//
-//         let expectedPosStruct: any = [ p0_f0, p1_f0, [ p0_0f, p1_0f ] ];
-//
-//         let seq = Promise.resolve();
-//         [
-//             [ p0, p1, [ p0, p1 ] ],
-//             { p0: p0, p1: p1, child: [ p0, p1 ] },
-//             [ p0, p1, { p0: p0, p1: p1 } ],
-//             { p0: p0, p1: p1, child: { p0: p0, p1: p1 } }
-//         ].forEach(function(struct) {
-//             seq = seq.then(function() {
-//                 return contract.testV2(struct).then((result: any) => {
-//                     equals('position input', result, expectedPosStruct);
-//                     equals('keyword input p0', result.p0, expectedPosStruct[0]);
-//                     equals('keyword input p1', result.p1, expectedPosStruct[1]);
-//                     equals('keyword input child.p0', result.child.p0, expectedPosStruct[2][0]);
-//                     equals('keyword input child.p1', result.child.p1, expectedPosStruct[2][1]);
-//                 });
-//             });
-//         });
-//
-//         return seq;
-//     });
-//
-//     it('collapses single argument solidity methods', function() {
-//         this.timeout(TIMEOUT_PERIOD);
-//         return contract.testSingleResult(4).then((result: any) => {
-//             assert.equal(result, 5, 'single value returned');
-//         });
-//     });
-//
-//     it('does not collapses multi argument solidity methods', function() {
-//         this.timeout(TIMEOUT_PERIOD);
-//         return contract.testMultiResult(6).then((result: any) => {
-//             assert.equal(result[0], 7, 'multi value [0] returned');
-//             assert.equal(result[1], 8, 'multi value [1] returned');
-//             assert.equal(result.r0, 7, 'multi value [r0] returned');
-//             assert.equal(result.r1, 8, 'multi value [r1] returned');
-//         });
-//     });
-// });
-// @TODO: Exapnd this
+const hederaEoa = {
+    account: '0.0.29562194',
+    privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+};
 describe("Test Contract Transaction Population", function () {
     const testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03";
     const testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     const fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
     const contract = new ethers.Contract(null, abi);
-    const contractConnected = contract.connect(ethers.getDefaultProvider("testnet"));
     xit("standard population", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const tx = yield contract.populateTransaction.balanceOf(testAddress);
@@ -186,19 +49,6 @@ describe("Test Contract Transaction Population", function () {
             assert.equal(tx.data, "0x70a08231000000000000000000000000deadbeef00deadbeef01deadbeef02deadbeef03", "data matches");
             assert.equal(tx.to, testAddressCheck, "to address matches");
             assert.equal(tx.from, testAddressCheck, "from address matches");
-        });
-    });
-    xit("allows ENS 'from' overrides", function () {
-        return __awaiter(this, void 0, void 0, function* () {
-            this.timeout(20000);
-            const tx = yield contractConnected.populateTransaction.balanceOf(testAddress, {
-                from: "ricmoo.firefly.eth"
-            });
-            //console.log(tx);
-            assert.equal(Object.keys(tx).length, 3, "correct number of keys");
-            assert.equal(tx.data, "0x70a08231000000000000000000000000deadbeef00deadbeef01deadbeef02deadbeef03", "data matches");
-            assert.equal(tx.to, testAddressCheck, "to address matches");
-            assert.equal(tx.from, fireflyAddress, "from address matches");
         });
     });
     xit("allows send overrides", function () {
@@ -291,10 +141,6 @@ describe("Test Contract Transaction Population", function () {
     });
     it("should return an array of transactions on getDeployTransaction call", function () {
         return __awaiter(this, void 0, void 0, function* () {
-            const hederaEoa = {
-                account: '0.0.29562194',
-                privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
-            };
             const provider = ethers.providers.getDefaultProvider('testnet');
             // @ts-ignore
             const wallet = new ethers.Wallet(hederaEoa, provider);
@@ -311,10 +157,6 @@ describe("Test Contract Transaction Population", function () {
     });
     it("should be able to deploy a contract", function () {
         return __awaiter(this, void 0, void 0, function* () {
-            const hederaEoa = {
-                account: '0.0.29562194',
-                privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
-            };
             const provider = ethers.providers.getDefaultProvider('testnet');
             // @ts-ignore
             const wallet = new ethers.Wallet(hederaEoa, provider);
@@ -340,13 +182,9 @@ describe("Test Contract Transaction Population", function () {
         return __awaiter(this, void 0, void 0, function* () {
             // configs
             const providerTestnet = ethers.providers.getDefaultProvider('testnet');
-            const contractHederaEoa = {
-                "account": '0.0.29562194',
-                "privateKey": '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
-            };
             // contract init
             // @ts-ignore
-            const contractWallet = new ethers.Wallet(contractHederaEoa, providerTestnet);
+            const contractWallet = new ethers.Wallet(hederaEoa, providerTestnet);
             const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
             const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
             const contractFactory = new ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
@@ -381,10 +219,6 @@ describe("Test Contract Transaction Population", function () {
     }).timeout(300000);
     it('should have a .wait function', function () {
         return __awaiter(this, void 0, void 0, function* () {
-            const hederaEoa = {
-                account: '0.0.29562194',
-                privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
-            };
             const provider = ethers.providers.getDefaultProvider('testnet');
             // @ts-ignore
             const wallet = new ethers.Wallet(hederaEoa, provider);
@@ -444,11 +278,35 @@ describe("Test Contract Transaction Population", function () {
         });
     }).timeout(60000);
 });
+describe('Contract Events', function () {
+    const provider = ethers.providers.getDefaultProvider('testnet');
+    // @ts-ignore
+    const wallet = new ethers.Wallet(hederaEoa, provider);
+    it("should be able to capture events", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const capturedMints = [];
+            const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+            const contract = ethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, wallet);
+            contract.on('Mint', (...args) => {
+                assert.strictEqual(args.length, 3, "expected 3 arguments - [address, unit256, log].");
+                capturedMints.push([...args]);
+            });
+            for (let i = 0; i <= 20; i++) {
+                yield contract.mint(BigNumber.from(`${i + 1}`), { gasLimit: 300000 });
+            }
+            yield new Promise(resolve => {
+                console.log('Waiting 20 secs before removing contract listeners.');
+                setTimeout(resolve, 20000);
+            });
+            contract.removeAllListeners();
+            assert.strictEqual(capturedMints.length > 0, 1 === 1, "expected at least 1 captured event (Mint).");
+            for (let mint of capturedMints) {
+                assert.strictEqual(mint[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
+            }
+        });
+    }).timeout(TIMEOUT_PERIOD);
+});
 describe("contract.deployed", function () {
-    const hederaEoa = {
-        account: '0.0.29562194',
-        privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
-    };
     const provider = ethers.providers.getDefaultProvider('testnet');
     // @ts-ignore
     const wallet = new ethers.Wallet(hederaEoa, provider);

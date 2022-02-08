@@ -9011,7 +9011,6 @@ class Interface {
                 dynamic.push(false);
             }
         });
-        // decoder throws here, probably because it catches events which are not mint
         let resultIndexed = (topics != null) ? this._abiCoder.decode(indexed, concat(topics)) : null;
         let resultNonIndexed = this._abiCoder.decode(nonIndexed, data, true);
         let result = [];
@@ -93517,7 +93516,6 @@ class FragmentRunningEvent extends RunningEvent {
             return this.interface.decodeEventLog(this.fragment, data, topics);
         };
         try {
-            // Topic mismatch is here
             event.args = this.interface.decodeEventLog(this.fragment, event.data, event.topics);
         }
         catch (error) {
@@ -98497,16 +98495,6 @@ class BaseProvider extends Provider {
         }
         this._pollingInterval = 3000;
     }
-    /**
-     *  ready
-     *
-     *  A Promise<Network> that resolves only once the provider is ready.
-     *
-     *  Sub-classes that call the super with a network without a chainId
-     *  MUST set this. Standard named networks have a known chainId.
-     *
-     *
-     */
     _ready() {
         return __awaiter$8(this, void 0, void 0, function* () {
             if (this._network == null) {
@@ -98523,9 +98511,9 @@ class BaseProvider extends Provider {
                 }
                 // This should never happen; every Provider sub-class should have
                 // suggested a network by here (or have thrown).
-                if (!network) {
-                    logger$v.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, {});
-                }
+                // if (!network) {
+                //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
+                // }
                 // Possible this call stacked so do not call defineReadOnly again
                 if (this._network == null) {
                     if (this.anyNetwork) {
@@ -98871,8 +98859,8 @@ class BaseProvider extends Provider {
             const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
             const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
             const limit = 100;
-            const oversizeResponseLegth = limit + 1;
-            let epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+            const oversizeResponseLength = limit + 1;
+            let epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
             if (params.filter.topics && params.filter.topics.length > 0) {
                 for (let i = 0; i < params.filter.topics.length; i++) {
                     const topic = params.filter.topics[i];
@@ -98887,7 +98875,7 @@ class BaseProvider extends Provider {
                 let { data } = yield axios$1.get(requestUrl);
                 if (data) {
                     const mappedLogs = this.formatter.logsMapper(data.logs);
-                    if (mappedLogs.length == oversizeResponseLegth) {
+                    if (mappedLogs.length == oversizeResponseLength) {
                         logger$v.throwError(`query returned more than ${limit} results`, Logger.errors.SERVER_ERROR);
                     }
                     return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
@@ -99049,7 +99037,7 @@ class BaseProvider extends Provider {
             const pollId = nextPollId++;
             // Track all running promises, so we can trigger a post-poll once they are complete
             const runners = [];
-            const now = new Date().getTime() - this.pollingInterval;
+            const now = new Date().getTime();
             const previousPollTimestamp = now - this.pollingInterval;
             // Emit a poll event after we have the previous polling timestamp
             this.emit("poll", pollId, previousPollTimestamp);
@@ -99078,7 +99066,7 @@ class BaseProvider extends Provider {
                                 return;
                             }
                             logs.forEach((log) => {
-                                // todo: check if ok - txIndex replaces blockNumber
+                                // TODO: check if ok - txIndex replaces blockNumber
                                 this._emitted["t:" + log.timestamp] = log.transactionIndex;
                                 this.emit(filter, log);
                             });

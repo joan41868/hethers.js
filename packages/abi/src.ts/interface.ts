@@ -571,7 +571,6 @@ export class Interface {
             }
         });
 
-        // decoder throws here, probably because it catches events which are not mint
         let resultIndexed = (topics != null) ? this._abiCoder.decode(indexed, concat(topics)): null;
         let resultNonIndexed = this._abiCoder.decode(nonIndexed, data, true);
 

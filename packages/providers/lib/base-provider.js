@@ -276,16 +276,6 @@ var BaseProvider = /** @class */ (function (_super) {
         _this._pollingInterval = 3000;
         return _this;
     }
-    /**
-     *  ready
-     *
-     *  A Promise<Network> that resolves only once the provider is ready.
-     *
-     *  Sub-classes that call the super with a network without a chainId
-     *  MUST set this. Standard named networks have a known chainId.
-     *
-     *
-     */
     BaseProvider.prototype._ready = function () {
         return __awaiter(this, void 0, void 0, function () {
             var network, error_1;
@@ -314,9 +304,9 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 6:
                         // This should never happen; every Provider sub-class should have
                         // suggested a network by here (or have thrown).
-                        if (!network) {
-                            logger.throwError("no network detected", logger_1.Logger.errors.UNKNOWN_ERROR, {});
-                        }
+                        // if (!network) {
+                        //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
+                        // }
                         // Possible this call stacked so do not call defineReadOnly again
                         if (this._network == null) {
                             if (this.anyNetwork) {
@@ -765,7 +755,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLegth, epContractsLogs, i, topic, requestUrl, data, mappedLogs, error_6, errorParams;
+            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLength, epContractsLogs, i, topic, requestUrl, data, mappedLogs, error_6, errorParams;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -776,8 +766,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
                         toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
                         limit = 100;
-                        oversizeResponseLegth = limit + 1;
-                        epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+                        oversizeResponseLength = limit + 1;
+                        epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
                         if (params.filter.topics && params.filter.topics.length > 0) {
                             for (i = 0; i < params.filter.topics.length; i++) {
                                 topic = params.filter.topics[i];
@@ -796,7 +786,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         data = (_a.sent()).data;
                         if (data) {
                             mappedLogs = this.formatter.logsMapper(data.logs);
-                            if (mappedLogs.length == oversizeResponseLegth) {
+                            if (mappedLogs.length == oversizeResponseLength) {
                                 logger.throwError("query returned more than " + limit + " results", logger_1.Logger.errors.SERVER_ERROR);
                             }
                             return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs)];
@@ -977,7 +967,7 @@ var BaseProvider = /** @class */ (function (_super) {
             return __generator(this, function (_a) {
                 pollId = nextPollId++;
                 runners = [];
-                now = new Date().getTime() - this.pollingInterval;
+                now = new Date().getTime();
                 previousPollTimestamp = now - this.pollingInterval;
                 // Emit a poll event after we have the previous polling timestamp
                 this.emit("poll", pollId, previousPollTimestamp);
@@ -1006,7 +996,7 @@ var BaseProvider = /** @class */ (function (_super) {
                                     return;
                                 }
                                 logs.forEach(function (log) {
-                                    // todo: check if ok - txIndex replaces blockNumber
+                                    // TODO: check if ok - txIndex replaces blockNumber
                                     _this._emitted["t:" + log.timestamp] = log.transactionIndex;
                                     _this.emit(filter_1, log);
                                 });
