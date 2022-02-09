@@ -98,8 +98,7 @@ export class Signer {
             const paymentBody = {
                 transactionID: paymentTxId._toProtobuf(),
                 nodeAccountID: nodeID._toProtobuf(),
-                // TODO: check if 1 Hbar is optimal for tx fee
-                transactionFee: new Hbar(1).toTinybars(),
+                transactionFee: new Hbar(0.005).toTinybars(),
                 transactionValidDuration: {
                     seconds: Long.fromInt(120),
                 },

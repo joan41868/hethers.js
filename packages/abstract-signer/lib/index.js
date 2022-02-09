@@ -192,8 +192,7 @@ var Signer = /** @class */ (function () {
                         paymentBody = {
                             transactionID: paymentTxId._toProtobuf(),
                             nodeAccountID: nodeID._toProtobuf(),
-                            // TODO: check if 1 Hbar is optimal for tx fee
-                            transactionFee: new sdk_1.Hbar(1).toTinybars(),
+                            transactionFee: new sdk_1.Hbar(0.005).toTinybars(),
                             transactionValidDuration: {
                                 seconds: Long.fromInt(120),
                             },
