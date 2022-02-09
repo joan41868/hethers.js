@@ -757,5 +757,43 @@ describe("Wallet createAccount", function () {
             });
         });
     }).timeout(timeout);
+    it("Should transfer funds between accounts", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var acc1Eoa, acc2Eoa, providerTestnet, acc1Wallet, acc2Wallet, acc1BalanceBefore, acc2BalanceBefore, acc1BalanceAfter, acc2BalanceAfter;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        acc1Eoa = { "account": "0.0.29631749", "privateKey": "0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b" };
+                        acc2Eoa = { "account": "0.0.29631750", "privateKey": "0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee" };
+                        providerTestnet = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                        acc1Wallet = new ethers_1.ethers.Wallet(acc1Eoa, providerTestnet);
+                        acc2Wallet = new ethers_1.ethers.Wallet(acc2Eoa, providerTestnet);
+                        return [4 /*yield*/, acc1Wallet.getBalance()];
+                    case 1:
+                        acc1BalanceBefore = (_a.sent()).toNumber();
+                        return [4 /*yield*/, acc2Wallet.getBalance()];
+                    case 2:
+                        acc2BalanceBefore = (_a.sent()).toNumber();
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                to: acc2Wallet.account,
+                                value: 1,
+                                gasLimit: 300000
+                            })];
+                    case 3:
+                        _a.sent();
+                        return [4 /*yield*/, acc1Wallet.getBalance()];
+                    case 4:
+                        acc1BalanceAfter = (_a.sent()).toNumber();
+                        return [4 /*yield*/, acc2Wallet.getBalance()];
+                    case 5:
+                        acc2BalanceAfter = (_a.sent()).toNumber();
+                        assert_1.default.strictEqual(acc1BalanceBefore > acc1BalanceAfter, true);
+                        assert_1.default.strictEqual(acc2BalanceBefore < acc2BalanceAfter, true);
+                        assert_1.default.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 100000000);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
 });
 //# sourceMappingURL=test-wallet.spec.js.map

@@ -21,7 +21,7 @@ import { splitInChunks } from "@ethersproject/strings";
 const logger = new Logger(version);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
-    "nodeId"
+    "nodeId", "isSimpleTransfer"
 ];
 ;
 ;
@@ -211,6 +211,11 @@ export class Signer {
             else {
                 logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
+        }
+        if (!tx.isSimpleTransfer) {
+            tx.isSimpleTransfer = tx.to && this.provider ? Promise.resolve(this.provider.getCode(tx.to)).then((res) => {
+                return res === '0x';
+            }) : false;
         }
         if (tx.from == null) {
             tx.from = this.getAddress();

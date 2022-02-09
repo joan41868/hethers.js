@@ -86351,7 +86351,7 @@ var __awaiter$1 = (window && window.__awaiter) || function (thisArg, _arguments,
 const logger$e = new Logger(version$a);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
-    "nodeId"
+    "nodeId", "isSimpleTransfer"
 ];
 ;
 ;
@@ -86541,6 +86541,11 @@ class Signer {
             else {
                 logger$e.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
+        }
+        if (!tx.isSimpleTransfer) {
+            tx.isSimpleTransfer = tx.to && this.provider ? Promise.resolve(this.provider.getCode(tx.to)).then((res) => {
+                return res === '0x';
+            }) : false;
         }
         if (tx.from == null) {
             tx.from = this.getAddress();
@@ -92770,12 +92775,19 @@ function serializeHederaTransaction(transaction, pubKey) {
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
     if (transaction.to) {
-        tx = new ContractExecuteTransaction()
-            .setContractId(ContractId.fromSolidityAddress(utils$1.getAddressFromAccount(transaction.to)))
-            .setFunctionParameters(arrayifiedData)
-            .setGas(gas);
-        if (transaction.value) {
-            tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
+        if (transaction.isSimpleTransfer && transaction.value) {
+            tx = new TransferTransaction()
+                .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString()).negated())
+                .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString()));
+        }
+        else {
+            tx = new ContractExecuteTransaction()
+                .setContractId(ContractId.fromSolidityAddress(utils$1.getAddressFromAccount(transaction.to)))
+                .setFunctionParameters(arrayifiedData)
+                .setGas(gas);
+            if (transaction.value) {
+                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
+            }
         }
     }
     else {

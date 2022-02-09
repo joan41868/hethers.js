@@ -98,4 +98,24 @@ const hethers = require("ethers");
 	};
 	const signed = await wallet.signTransaction(tx);
 	console.log(signed);
+
+	/**
+	 * Example 12: Send hbars between wallets
+	 */
+	const acc1Eoa = {"account":"0.0.29631749","privateKey":"0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b"};
+	const acc2Eoa = {"account":"0.0.29631750","privateKey":"0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee"};
+	const providerTestnet = hethers.providers.getDefaultProvider('testnet');
+	// @ts-ignore
+	const acc1Wallet = new hethers.Wallet(acc1Eoa, providerTestnet);
+	// @ts-ignore
+	const acc2Wallet = new hethers.Wallet(acc2Eoa, providerTestnet);
+	console.log(`Acc1 balance: ${(await acc1Wallet.getBalance()).toString()}`);
+	console.log(`Acc1 balance: ${(await acc2Wallet.getBalance()).toString()}\n\n`);
+	await acc1Wallet.sendTransaction({
+		to: acc2Wallet.account,
+		value: 1,
+		gasLimit: 300000
+	});
+	console.log(`Acc1 balance: ${(await acc1Wallet.getBalance()).toString()}`);
+	console.log(`Acc1 balance: ${(await acc2Wallet.getBalance()).toString()}\n\n`);
 })()

@@ -84,7 +84,7 @@ var strings_1 = require("@ethersproject/strings");
 var logger = new logger_1.Logger(_version_1.version);
 var allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
-    "nodeId"
+    "nodeId", "isSimpleTransfer"
 ];
 ;
 ;
@@ -346,6 +346,11 @@ var Signer = /** @class */ (function () {
             else {
                 logger.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
+        }
+        if (!tx.isSimpleTransfer) {
+            tx.isSimpleTransfer = tx.to && this.provider ? Promise.resolve(this.provider.getCode(tx.to)).then(function (res) {
+                return res === '0x';
+            }) : false;
         }
         if (tx.from == null) {
             tx.from = this.getAddress();

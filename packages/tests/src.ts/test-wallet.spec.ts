@@ -581,4 +581,28 @@ describe("Wallet createAccount", function () {
         assert.notStrictEqual(receipt.transactionId, null,"transactionId exists");
         assert.ok(receipt.accountAddress.match(new RegExp(/^0x/)), "accountAddress has the correct format");
     }).timeout(timeout);
+
+    it("Should transfer funds between accounts", async function() {
+        const acc1Eoa = {"account":"0.0.29631749","privateKey":"0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b"};
+        const acc2Eoa = {"account":"0.0.29631750","privateKey":"0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee"};
+        const providerTestnet = ethers.providers.getDefaultProvider('testnet');
+        // @ts-ignore
+        const acc1Wallet = new ethers.Wallet(acc1Eoa, providerTestnet);
+        // @ts-ignore
+        const acc2Wallet = new ethers.Wallet(acc2Eoa, providerTestnet);
+
+        const acc1BalanceBefore = (await acc1Wallet.getBalance()).toNumber();
+        const acc2BalanceBefore = (await acc2Wallet.getBalance()).toNumber();
+        await acc1Wallet.sendTransaction({
+            to: acc2Wallet.account,
+            value: 1,
+            gasLimit: 300000
+        });
+        const acc1BalanceAfter = (await acc1Wallet.getBalance()).toNumber();
+        const acc2BalanceAfter = (await acc2Wallet.getBalance()).toNumber();
+
+        assert.strictEqual(acc1BalanceBefore > acc1BalanceAfter, true);
+        assert.strictEqual(acc2BalanceBefore < acc2BalanceAfter, true);
+        assert.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 100000000);
+    }).timeout(timeout);
 });
