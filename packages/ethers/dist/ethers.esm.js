@@ -99025,13 +99025,6 @@ class BaseProvider extends Provider {
             this._poller = null;
         }
     }
-    /**
-     * Should poll for events.
-     * More events - more polling TODO
-     *
-     * TODO: Poll the mirror node for logs.
-     * TODO: Gather events matching the filters
-     */
     poll() {
         return __awaiter$8(this, void 0, void 0, function* () {
             const pollId = nextPollId++;

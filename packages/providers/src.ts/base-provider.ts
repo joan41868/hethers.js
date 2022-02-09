@@ -793,13 +793,6 @@ export class BaseProvider extends Provider {
         }
     }
 
-    /**
-     * Should poll for events.
-     * More events - more polling TODO
-     *
-     * TODO: Poll the mirror node for logs.
-     * TODO: Gather events matching the filters
-     */
     async poll(): Promise<void> {
         const pollId = nextPollId++;
 

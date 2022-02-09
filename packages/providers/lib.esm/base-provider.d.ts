@@ -107,13 +107,6 @@ export declare class BaseProvider extends Provider {
     removeAllListeners(eventName?: EventType): this;
     get polling(): boolean;
     set polling(value: boolean);
-    /**
-     * Should poll for events.
-     * More events - more polling TODO
-     *
-     * TODO: Poll the mirror node for logs.
-     * TODO: Gather events matching the filters
-     */
     poll(): Promise<void>;
 }
 //# sourceMappingURL=base-provider.d.ts.map

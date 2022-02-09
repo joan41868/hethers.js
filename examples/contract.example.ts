@@ -21,89 +21,89 @@ const account = {
 	/**
 	 * Get client and wallet
 	 */
-	// const client = Client.forName("testnet");
-	// let clientWallet = hethers.Wallet.createRandom();
-	//
-	// /**
-	//  * Create the new account with the ECDSA key
-	//  */
-	// const accountCreate = await (await new AccountCreateTransaction()
-	// 	.setKey(HederaKey._fromProtobufKey(Key.create({
-	// 		ECDSASecp256k1: arrayify(clientWallet._signingKey().compressedPublicKey)
-	// 	})))
-	// 	.setTransactionId(TransactionId.generate(account.operator_ED25519.account))
-	// 	.setInitialBalance(new Hbar(100))
-	// 	.setNodeAccountIds([ client._network.getNodeAccountIdsForExecute()[0] ])
-	// 	.freeze()
-	// 	.sign(PrivateKey.fromString(account.operator_ED25519.privateKey)))
-	// 	.execute(client);
-	// const receipt = await accountCreate.getReceipt(client);
-	// const createdAcc = receipt.accountId || "0.0.0";
-	//
-	// /**
-	//  * Connect account
-	//  */
-	// clientWallet = clientWallet
-	// 	.connect(hethers.providers.getDefaultProvider('testnet'))
-	// 	.connectAccount(createdAcc.toString());
-	//
-	// /**
-	//  * Deploy a contract - OZ ERC20
-	//  */
-	// const contractByteCodeGLDToken = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
-	// const deployTx = await clientWallet.sendTransaction({
-	// 	data: contractByteCodeGLDToken,
-	// 	gasLimit: 300000
-	// });
-	// const deploy = await deployTx.wait();
-	// console.log('contractCreate response:', deploy);
-	//
-	// /**
-	//  * Instantiate the contract locally in order to interact with it
-	//  */
-	// const abiGLDToken = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
-	// const contractGLDToken = hethers.ContractFactory.getContract(deploy.contractAddress, abiGLDToken, clientWallet);
-	//
-	// /**
-	//  * The following lines call:
-	//  * - approve function for 1000 tokens
-	//  * - mint function for 1000 tokens
-	//  * - balanceOf function for the wallet's address
-	//  */
-	// const approveParams = contractGLDToken.interface.encodeFunctionData('approve', [
-	// 	getAddressFromAccount(account.operator_ED25519.account),
-	// 	1000
-	// ]);
-	// const approveTx = await clientWallet.sendTransaction({
-	// 	to: contractGLDToken.address,
-	// 	data: approveParams,
-	// 	gasLimit: 100000
-	// });
-	// const approve = await approveTx.wait();
-	// console.log('approve: ', approve);
-	//
-	// const mintParams = contractGLDToken.interface.encodeFunctionData('mint', [
-	// 	1000
-	// ]);
-	// const mintTx = await clientWallet.sendTransaction({
-	// 	to: contractGLDToken.address,
-	// 	data: mintParams,
-	// 	gasLimit: 100000
-	// });
-	// const mint = await mintTx.wait();
-	// console.log('mint:', mint);
-	//
-	// const balanceOfParams = contractGLDToken.interface.encodeFunctionData('balanceOf', [
-	// 	await clientWallet.getAddress()
-	// ]);
-	// const balanceOfTx = {
-	// 	to: contractGLDToken.address,
-	// 	gasLimit: 30000,
-	// 	data: arrayify(balanceOfParams)
-	// };
-	// const balanceOfResponse = await clientWallet.call(balanceOfTx);
-	// console.log('balanceOf response: ', balanceOfResponse);
-	// console.log(hethers.BigNumber.from(balanceOfResponse).toNumber());
+	const client = Client.forName("testnet");
+	let clientWallet = hethers.Wallet.createRandom();
+
+	/**
+	 * Create the new account with the ECDSA key
+	 */
+	const accountCreate = await (await new AccountCreateTransaction()
+		.setKey(HederaKey._fromProtobufKey(Key.create({
+			ECDSASecp256k1: arrayify(clientWallet._signingKey().compressedPublicKey)
+		})))
+		.setTransactionId(TransactionId.generate(account.operator_ED25519.account))
+		.setInitialBalance(new Hbar(100))
+		.setNodeAccountIds([ client._network.getNodeAccountIdsForExecute()[0] ])
+		.freeze()
+		.sign(PrivateKey.fromString(account.operator_ED25519.privateKey)))
+		.execute(client);
+	const receipt = await accountCreate.getReceipt(client);
+	const createdAcc = receipt.accountId || "0.0.0";
+
+	/**
+	 * Connect account
+	 */
+	clientWallet = clientWallet
+		.connect(hethers.providers.getDefaultProvider('testnet'))
+		.connectAccount(createdAcc.toString());
+
+	/**
+	 * Deploy a contract - OZ ERC20
+	 */
+	const contractByteCodeGLDToken = readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
+	const deployTx = await clientWallet.sendTransaction({
+		data: contractByteCodeGLDToken,
+		gasLimit: 300000
+	});
+	const deploy = await deployTx.wait();
+	console.log('contractCreate response:', deploy);
+
+	/**
+	 * Instantiate the contract locally in order to interact with it
+	 */
+	const abiGLDToken = JSON.parse(readFileSync('examples/assets/abi/GLDToken_abi.json').toString());
+	const contractGLDToken = hethers.ContractFactory.getContract(deploy.contractAddress, abiGLDToken, clientWallet);
+
+	/**
+	 * The following lines call:
+	 * - approve function for 1000 tokens
+	 * - mint function for 1000 tokens
+	 * - balanceOf function for the wallet's address
+	 */
+	const approveParams = contractGLDToken.interface.encodeFunctionData('approve', [
+		getAddressFromAccount(account.operator_ED25519.account),
+		1000
+	]);
+	const approveTx = await clientWallet.sendTransaction({
+		to: contractGLDToken.address,
+		data: approveParams,
+		gasLimit: 100000
+	});
+	const approve = await approveTx.wait();
+	console.log('approve: ', approve);
+
+	const mintParams = contractGLDToken.interface.encodeFunctionData('mint', [
+		1000
+	]);
+	const mintTx = await clientWallet.sendTransaction({
+		to: contractGLDToken.address,
+		data: mintParams,
+		gasLimit: 100000
+	});
+	const mint = await mintTx.wait();
+	console.log('mint:', mint);
+
+	const balanceOfParams = contractGLDToken.interface.encodeFunctionData('balanceOf', [
+		await clientWallet.getAddress()
+	]);
+	const balanceOfTx = {
+		to: contractGLDToken.address,
+		gasLimit: 30000,
+		data: arrayify(balanceOfParams)
+	};
+	const balanceOfResponse = await clientWallet.call(balanceOfTx);
+	console.log('balanceOf response: ', balanceOfResponse);
+	console.log(hethers.BigNumber.from(balanceOfResponse).toNumber());
 
 	/**
 	 * Contract deployment
@@ -141,7 +141,7 @@ const account = {
 
 
 	/**
-	 * Calling a contract method
+	 * Calling another contract method
 	 */
 	const transferMethodCall = await contract.transfer(contract.address, 1, {gasLimit: 300000});
 	console.log(transferMethodCall.transactionId);
@@ -157,7 +157,9 @@ const account = {
 	});
 
 	/**
-	 * Calling a contract method which emits events - Mint(address, uint256), Transfer(address, address, uint256)
+	 * Calling a contract method which emits events:
+	 *  - Mint(address, uint256)
+	 *  - Transfer(address, address, uint256)
 	 */
 	for (let i = 0; i <=10; i++){
 		const mint = await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });

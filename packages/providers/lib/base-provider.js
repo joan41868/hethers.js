@@ -953,13 +953,6 @@ var BaseProvider = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
-    /**
-     * Should poll for events.
-     * More events - more polling TODO
-     *
-     * TODO: Poll the mirror node for logs.
-     * TODO: Gather events matching the filters
-     */
     BaseProvider.prototype.poll = function () {
         return __awaiter(this, void 0, void 0, function () {
             var pollId, runners, now, previousPollTimestamp;
