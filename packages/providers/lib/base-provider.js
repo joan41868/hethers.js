@@ -973,7 +973,6 @@ var BaseProvider = /** @class */ (function (_super) {
                                 if (!receipt) {
                                     return null;
                                 }
-                                // this._emitted["t:" + hash] = receipt.blockNumber;
                                 _this.emit(hash_1, receipt);
                                 return null;
                             }).catch(function (error) { _this.emit("error", error); });

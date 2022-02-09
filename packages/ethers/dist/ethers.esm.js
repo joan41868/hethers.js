@@ -98636,7 +98636,6 @@ class BaseProvider extends Provider {
                             if (!receipt) {
                                 return null;
                             }
-                            // this._emitted["t:" + hash] = receipt.blockNumber;
                             this.emit(hash, receipt);
                             return null;
                         }).catch((error) => { this.emit("error", error); });

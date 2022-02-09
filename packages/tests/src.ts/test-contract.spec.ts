@@ -213,7 +213,7 @@ describe("Test Contract Transaction Population", function() {
         assert.strictEqual((await contract.balanceOf(clientWallet.address, {gasLimit: 300000})).toString(), '20');
     }).timeout(300000);
 
-   it('should have a .wait function', async function() {
+    it('should have a .wait function', async function() {
        const provider = ethers.providers.getDefaultProvider('testnet');
        // @ts-ignore
        const wallet = new ethers.Wallet(hederaEoa, provider);

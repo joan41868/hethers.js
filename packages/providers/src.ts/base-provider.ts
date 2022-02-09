@@ -812,7 +812,6 @@ export class BaseProvider extends Provider {
                     const hash = event.hash;
                     let runner = this.getTransactionReceipt(hash).then((receipt) => {
                         if (!receipt) { return null; }
-                        // this._emitted["t:" + hash] = receipt.blockNumber;
                         this.emit(hash, receipt);
                         return null;
                     }).catch((error: Error) => { this.emit("error", error); });

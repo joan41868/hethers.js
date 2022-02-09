@@ -4,7 +4,7 @@ import { Signer } from "@ethersproject/abstract-signer";
 import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike } from "@ethersproject/bytes";
-import { AccessListish } from "@ethersproject/transactions";
+import { AccessList, AccessListish } from "@ethersproject/transactions";
 export interface Overrides {
     gasLimit?: BigNumberish | Promise<BigNumberish>;
     maxFeePerGas?: BigNumberish | Promise<BigNumberish>;
@@ -28,17 +28,15 @@ export interface PopulatedTransaction {
     value?: BigNumber;
     chainId?: number;
     type?: number;
-    accessList?: AccessListish;
-    maxFeePerGas?: BigNumberish;
-    maxPriorityFeePerGas?: BigNumberish;
+    accessList?: AccessList;
+    maxFeePerGas?: BigNumber;
+    maxPriorityFeePerGas?: BigNumber;
     customData?: Record<string, any>;
     nodeId?: AccountLike;
 }
 export declare type EventFilter = {
     address?: AccountLike;
     topics?: Array<string | Array<string>>;
-    fromTimestamp?: string;
-    toTimestamp?: string;
 };
 export declare type ContractFunction<T = any> = (...args: Array<any>) => Promise<T>;
 export interface Event extends Log {
