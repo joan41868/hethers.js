@@ -133,13 +133,13 @@ var Signer = /** @class */ (function () {
     };
     ///////////////////
     // Sub-classes MAY override these
-    Signer.prototype.getBalance = function (blockTag) {
+    Signer.prototype.getBalance = function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         this._checkProvider("getBalance");
-                        return [4 /*yield*/, this.provider.getBalance(this.getAddress(), blockTag)];
+                        return [4 /*yield*/, this.provider.getBalance(this.getAddress())];
                     case 1: return [2 /*return*/, _a.sent()];
                 }
             });

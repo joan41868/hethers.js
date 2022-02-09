@@ -114,7 +114,6 @@ var Script = /** @class */ (function () {
             },
             id: ethers_1.ethers.utils.id,
             keccak256: ethers_1.ethers.utils.keccak256,
-            namehash: ethers_1.ethers.utils.namehash,
             sha256: ethers_1.ethers.utils.sha256,
             parseEther: ethers_1.ethers.utils.parseEther,
             formatEther: ethers_1.ethers.utils.formatEther,

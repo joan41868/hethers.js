@@ -63,10 +63,10 @@ export class Signer {
     }
     ///////////////////
     // Sub-classes MAY override these
-    getBalance(blockTag) {
+    getBalance() {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkProvider("getBalance");
-            return yield this.provider.getBalance(this.getAddress(), blockTag);
+            return yield this.provider.getBalance(this.getAddress());
         });
     }
     // Populates "from" if unspecified, and estimates the gas for the transaction

@@ -709,7 +709,7 @@ export class BaseContract {
             }
         }
     }
-    queryFilter(event, fromBlockOrBlockhash, toBlock) {
+    queryFilter(event) {
         this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);

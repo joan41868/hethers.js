@@ -122,7 +122,6 @@ describe("Test Contract Transaction Population", function() {
     xit("allows overriding with invalid, but nullish values", async function() {
         const contractSigner = contract.connect(testAddress);
         const tx = await contractSigner.populateTransaction.unstake({
-            blockTag: null,
             from: null
         });
         //console.log("Tx", tx);

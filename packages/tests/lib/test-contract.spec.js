@@ -255,7 +255,6 @@ describe("Test Contract Transaction Population", function () {
                     case 0:
                         contractSigner = contract.connect(testAddress);
                         return [4 /*yield*/, contractSigner.populateTransaction.unstake({
-                                blockTag: null,
                                 from: null
                             })];
                     case 1:

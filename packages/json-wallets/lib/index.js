@@ -1,11 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.decryptJsonWalletSync = exports.decryptJsonWallet = exports.getJsonWalletAddress = exports.isKeystoreWallet = exports.isCrowdsaleWallet = exports.encryptKeystore = exports.decryptKeystoreSync = exports.decryptKeystore = exports.decryptCrowdsale = void 0;
-var crowdsale_1 = require("./crowdsale");
-Object.defineProperty(exports, "decryptCrowdsale", { enumerable: true, get: function () { return crowdsale_1.decrypt; } });
+exports.decryptJsonWalletSync = exports.decryptJsonWallet = exports.getJsonWalletAddress = exports.isKeystoreWallet = exports.encryptKeystore = exports.decryptKeystoreSync = exports.decryptKeystore = void 0;
 var inspect_1 = require("./inspect");
 Object.defineProperty(exports, "getJsonWalletAddress", { enumerable: true, get: function () { return inspect_1.getJsonWalletAddress; } });
-Object.defineProperty(exports, "isCrowdsaleWallet", { enumerable: true, get: function () { return inspect_1.isCrowdsaleWallet; } });
 Object.defineProperty(exports, "isKeystoreWallet", { enumerable: true, get: function () { return inspect_1.isKeystoreWallet; } });
 var keystore_1 = require("./keystore");
 Object.defineProperty(exports, "decryptKeystore", { enumerable: true, get: function () { return keystore_1.decrypt; } });
