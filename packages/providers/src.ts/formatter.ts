@@ -1,11 +1,10 @@
 "use strict";
 
-import { Block, Log, TransactionReceipt, TransactionResponse, HederaTransactionRecord } from "@ethersproject/abstract-provider";
+import { Log, TransactionReceipt, TransactionResponse, HederaTransactionRecord } from "@ethersproject/abstract-provider";
 import { getAddress, getAddressFromAccount, getContractAddress } from "@ethersproject/address";
 import { BigNumber } from "@ethersproject/bignumber";
-import { hexDataLength, hexDataSlice, hexValue, hexZeroPad, isHexString } from "@ethersproject/bytes";
+import { hexDataLength, hexDataSlice, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@ethersproject/constants";
-import { shallowCopy } from "@ethersproject/properties";
 import { AccessList, accessListify, parse as parseTransaction } from "@ethersproject/transactions";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
@@ -20,8 +19,6 @@ export type Formats = {
     transactionRequest: FormatFuncs,
     receipt: FormatFuncs,
     receiptLog: FormatFuncs,
-    block: FormatFuncs,
-    blockWithTransactions: FormatFuncs,
     filter: FormatFuncs,
     filterLog: FormatFuncs,
 };
@@ -42,7 +39,6 @@ export class Formatter {
         const data = this.data.bind(this);
         const hash48 = this.hash48.bind(this);
         const hash32 = this.hash32.bind(this);
-        const hex = this.hex.bind(this);
         const number = this.number.bind(this);
         const type = this.type.bind(this);
 
@@ -100,29 +96,6 @@ export class Formatter {
             status: Formatter.allowNull(number),
             type: type
         };
-
-        formats.block = {
-            hash: hash48,
-            parentHash: hash48,
-            number: number,
-
-            timestamp: number,
-            nonce: Formatter.allowNull(hex),
-            difficulty: this.difficulty.bind(this),
-
-            gasLimit: bigNumber,
-            gasUsed: bigNumber,
-
-            miner: address,
-            extraData: data,
-
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash48)),
-
-            baseFeePerGas: Formatter.allowNull(bigNumber)
-        };
-
-        formats.blockWithTransactions = shallowCopy(formats.block);
-        formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
 
         formats.filter = {
             fromTimestamp: Formatter.allowNull(timestamp, undefined),
@@ -240,23 +213,6 @@ export class Formatter {
         return getContractAddress(value);
     }
 
-    // Strict! Used on input.
-    blockTag(blockTag: any): string {
-        if (blockTag == null) { return "latest"; }
-
-        if (blockTag === "earliest") { return "0x0"; }
-
-        if (blockTag === "latest" || blockTag === "pending") {
-            return blockTag;
-        }
-
-        if (typeof(blockTag) === "number" || isHexString(blockTag)) {
-            return hexValue(<number | string>blockTag);
-        }
-
-        throw new Error("invalid blockTag");
-    }
-
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     hash48(value: any, strict?: boolean): string {
         const result = this.hex(value, strict);
@@ -293,25 +249,6 @@ export class Formatter {
             throw new Error("invalid uint256");
         }
         return hexZeroPad(value, 32);
-    }
-
-    _block(value: any, format: any): Block {
-        if (value.author != null && value.miner == null) {
-            value.miner = value.author;
-        }
-        // The difficulty may need to come from _difficulty in recursed blocks
-        const difficulty = (value._difficulty != null) ? value._difficulty: value.difficulty;
-        const result = Formatter.check(format, value);
-        result._difficulty = ((difficulty == null) ? null: BigNumber.from(difficulty));
-        return result;
-    }
-
-    block(value: any): Block {
-        return this._block(value, this.formats.block);
-    }
-
-    blockWithTransactions(value: any): Block {
-        return this._block(value, this.formats.blockWithTransactions);
     }
 
     // Strict! Used on input.
@@ -521,36 +458,3 @@ export class Formatter {
         });
     }
 }
-
-export interface CommunityResourcable {
-    isCommunityResource(): boolean;
-}
-
-export function isCommunityResourcable(value: any): value is CommunityResourcable {
-    return (value && typeof(value.isCommunityResource) === "function");
-}
-
-export function isCommunityResource(value: any): boolean {
-    return (isCommunityResourcable(value) && value.isCommunityResource());
-}
-
-// Show the throttle message only once
-let throttleMessage = false;
-export function showThrottleMessage() {
-    if (throttleMessage) { return; }
-    throttleMessage = true;
-
-    console.log("========= NOTICE =========")
-    console.log("Request-Rate Exceeded  (this message will not be repeated)");
-    console.log("");
-    console.log("The default API keys for each service are provided as a highly-throttled,");
-    console.log("community resource for low-traffic projects and early prototyping.");
-    console.log("");
-    console.log("While your application will continue to function, we highly recommended");
-    console.log("signing up for your own API keys to improve performance, increase your");
-    console.log("request rate/limit and enable other perks, such as metrics and advanced APIs.");
-    console.log("");
-    console.log("For more details: https:/\/docs.ethers.io/api-keys/");
-    console.log("==========================");
-}
-

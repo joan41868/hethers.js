@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.showThrottleMessage = exports.isCommunityResource = exports.isCommunityResourcable = exports.Formatter = void 0;
+exports.Formatter = void 0;
 var address_1 = require("@ethersproject/address");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var constants_1 = require("@ethersproject/constants");
-var properties_1 = require("@ethersproject/properties");
 var transactions_1 = require("@ethersproject/transactions");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
@@ -24,7 +23,6 @@ var Formatter = /** @class */ (function () {
         var data = this.data.bind(this);
         var hash48 = this.hash48.bind(this);
         var hash32 = this.hash32.bind(this);
-        var hex = this.hex.bind(this);
         var number = this.number.bind(this);
         var type = this.type.bind(this);
         var timestamp = this.timestamp.bind(this);
@@ -75,22 +73,6 @@ var Formatter = /** @class */ (function () {
             status: Formatter.allowNull(number),
             type: type
         };
-        formats.block = {
-            hash: hash48,
-            parentHash: hash48,
-            number: number,
-            timestamp: number,
-            nonce: Formatter.allowNull(hex),
-            difficulty: this.difficulty.bind(this),
-            gasLimit: bigNumber,
-            gasUsed: bigNumber,
-            miner: address,
-            extraData: data,
-            transactions: Formatter.allowNull(Formatter.arrayOf(hash48)),
-            baseFeePerGas: Formatter.allowNull(bigNumber)
-        };
-        formats.blockWithTransactions = (0, properties_1.shallowCopy)(formats.block);
-        formats.blockWithTransactions.transactions = Formatter.allowNull(Formatter.arrayOf(this.transactionResponse.bind(this)));
         formats.filter = {
             fromTimestamp: Formatter.allowNull(timestamp, undefined),
             toTimestamp: Formatter.allowNull(timestamp, undefined),
@@ -206,22 +188,6 @@ var Formatter = /** @class */ (function () {
     Formatter.prototype.contractAddress = function (value) {
         return (0, address_1.getContractAddress)(value);
     };
-    // Strict! Used on input.
-    Formatter.prototype.blockTag = function (blockTag) {
-        if (blockTag == null) {
-            return "latest";
-        }
-        if (blockTag === "earliest") {
-            return "0x0";
-        }
-        if (blockTag === "latest" || blockTag === "pending") {
-            return blockTag;
-        }
-        if (typeof (blockTag) === "number" || (0, bytes_1.isHexString)(blockTag)) {
-            return (0, bytes_1.hexValue)(blockTag);
-        }
-        throw new Error("invalid blockTag");
-    };
     // Requires a hash, optionally requires 0x prefix; returns prefixed lowercase hash.
     Formatter.prototype.hash48 = function (value, strict) {
         var result = this.hex(value, strict);
@@ -255,22 +221,6 @@ var Formatter = /** @class */ (function () {
             throw new Error("invalid uint256");
         }
         return (0, bytes_1.hexZeroPad)(value, 32);
-    };
-    Formatter.prototype._block = function (value, format) {
-        if (value.author != null && value.miner == null) {
-            value.miner = value.author;
-        }
-        // The difficulty may need to come from _difficulty in recursed blocks
-        var difficulty = (value._difficulty != null) ? value._difficulty : value.difficulty;
-        var result = Formatter.check(format, value);
-        result._difficulty = ((difficulty == null) ? null : bignumber_1.BigNumber.from(difficulty));
-        return result;
-    };
-    Formatter.prototype.block = function (value) {
-        return this._block(value, this.formats.block);
-    };
-    Formatter.prototype.blockWithTransactions = function (value) {
-        return this._block(value, this.formats.blockWithTransactions);
     };
     // Strict! Used on input.
     Formatter.prototype.transactionRequest = function (value) {
@@ -463,33 +413,4 @@ var Formatter = /** @class */ (function () {
     return Formatter;
 }());
 exports.Formatter = Formatter;
-function isCommunityResourcable(value) {
-    return (value && typeof (value.isCommunityResource) === "function");
-}
-exports.isCommunityResourcable = isCommunityResourcable;
-function isCommunityResource(value) {
-    return (isCommunityResourcable(value) && value.isCommunityResource());
-}
-exports.isCommunityResource = isCommunityResource;
-// Show the throttle message only once
-var throttleMessage = false;
-function showThrottleMessage() {
-    if (throttleMessage) {
-        return;
-    }
-    throttleMessage = true;
-    console.log("========= NOTICE =========");
-    console.log("Request-Rate Exceeded  (this message will not be repeated)");
-    console.log("");
-    console.log("The default API keys for each service are provided as a highly-throttled,");
-    console.log("community resource for low-traffic projects and early prototyping.");
-    console.log("");
-    console.log("While your application will continue to function, we highly recommended");
-    console.log("signing up for your own API keys to improve performance, increase your");
-    console.log("request rate/limit and enable other perks, such as metrics and advanced APIs.");
-    console.log("");
-    console.log("For more details: https:/\/docs.ethers.io/api-keys/");
-    console.log("==========================");
-}
-exports.showThrottleMessage = showThrottleMessage;
 //# sourceMappingURL=formatter.js.map
