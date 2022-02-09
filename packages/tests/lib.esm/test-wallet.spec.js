@@ -273,16 +273,6 @@ describe('Test Signing Messages', function () {
         });
     });
 });
-describe("Serialize Transactions", function () {
-    it("allows odd-length numeric values", function () {
-        ethers.utils.serializeTransaction({
-            gasLimit: "0x1",
-            gasPrice: "0x1",
-            value: "0x1"
-        });
-        //console.log(result);
-    });
-});
 describe("Wallet Errors", function () {
     it("fails on privateKey/address mismatch", function () {
         assert.throws(() => {

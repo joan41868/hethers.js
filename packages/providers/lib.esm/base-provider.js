@@ -8,7 +8,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { ForkEvent, Provider } from "@ethersproject/abstract-provider";
+import { Provider } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexDataLength, hexlify } from "@ethersproject/bytes";
 import { getNetwork } from "@ethersproject/networks";
@@ -821,10 +821,6 @@ function getEventTag(eventName) {
     }
     else if (Array.isArray(eventName)) {
         return "filter:*:" + serializeTopics(eventName);
-    }
-    else if (ForkEvent.isForkEvent(eventName)) {
-        logger.warn("not implemented");
-        throw new Error("not implemented");
     }
     else if (eventName && typeof (eventName) === "object") {
         return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);

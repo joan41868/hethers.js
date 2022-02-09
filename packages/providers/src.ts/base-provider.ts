@@ -2,7 +2,7 @@
 
 import {
     EventType,
-    Filter, ForkEvent,
+    Filter,
     Listener,
     Log,
     Provider,
@@ -899,10 +899,6 @@ function getEventTag(eventName: EventType): string {
 
     } else if (Array.isArray(eventName)) {
         return "filter:*:" + serializeTopics(eventName);
-
-    } else if (ForkEvent.isForkEvent(eventName)) {
-        logger.warn("not implemented");
-        throw new Error("not implemented");
 
     } else if (eventName && typeof(eventName) === "object") {
         return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);

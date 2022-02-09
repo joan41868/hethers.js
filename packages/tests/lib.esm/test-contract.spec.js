@@ -129,7 +129,6 @@ describe("Test Contract Transaction Population", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const contractSigner = contract.connect(testAddress);
             const tx = yield contractSigner.populateTransaction.unstake({
-                blockTag: null,
                 from: null
             });
             //console.log("Tx", tx);

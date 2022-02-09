@@ -1054,10 +1054,6 @@ function getEventTag(eventName) {
     else if (Array.isArray(eventName)) {
         return "filter:*:" + serializeTopics(eventName);
     }
-    else if (abstract_provider_1.ForkEvent.isForkEvent(eventName)) {
-        logger.warn("not implemented");
-        throw new Error("not implemented");
-    }
     else if (eventName && typeof (eventName) === "object") {
         return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
     }
