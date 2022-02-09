@@ -851,7 +851,7 @@ var BaseContract = /** @class */ (function () {
             }
         }
     };
-    BaseContract.prototype.queryFilter = function (event, fromBlockOrBlockhash, toBlock) {
+    BaseContract.prototype.queryFilter = function (event) {
         var _this = this;
         this._requireAddressSet();
         var runningEvent = this._getRunningEvent(event);

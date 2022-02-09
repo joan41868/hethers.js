@@ -32,7 +32,7 @@ export interface Nameprep {
 }
 export interface Wallet {
     name: string;
-    type: "crowdsale" | "secret-storage";
+    type: "secret-storage";
     hasAddress: boolean;
     address: string;
     alias: string;

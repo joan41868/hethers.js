@@ -1,4 +1,4 @@
-import { BlockTag, Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable } from "@ethersproject/properties";
@@ -50,7 +50,7 @@ export declare abstract class Signer {
     readonly _isSigner: boolean;
     constructor();
     getGasPrice(): Promise<BigNumber>;
-    getBalance(blockTag?: BlockTag): Promise<BigNumber>;
+    getBalance(): Promise<BigNumber>;
     estimateGas(transaction: Deferrable<TransactionRequest>): Promise<BigNumber>;
     call(txRequest: Deferrable<TransactionRequest>): Promise<string>;
     /**

@@ -1,5 +1,5 @@
 import { Fragment, Indexed, Interface, JsonFragment, Result } from "@ethersproject/abi";
-import { BlockTag, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
+import { Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { Signer } from "@ethersproject/abstract-signer";
 import { AccountLike } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
@@ -115,7 +115,7 @@ export declare class BaseContract {
     _checkRunningEvents(runningEvent: RunningEvent): void;
     _wrapEvent(runningEvent: RunningEvent, log: Log, listener: Listener): Event;
     private _addEventListener;
-    queryFilter(event: EventFilter, fromBlockOrBlockhash?: BlockTag | string, toBlock?: BlockTag): Promise<Array<Event>>;
+    queryFilter(event: EventFilter): Promise<Array<Event>>;
     on(event: EventFilter | string, listener: Listener): this;
     once(event: EventFilter | string, listener: Listener): this;
     emit(eventName: EventFilter | string, ...args: Array<any>): boolean;

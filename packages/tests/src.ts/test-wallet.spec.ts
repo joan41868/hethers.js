@@ -92,7 +92,7 @@ describe('Test JSON Wallets', function() {
                             're-encrypted wallet - ' + wallet.privateKey);
                     });
                 });
-           });
+            });
         });
     });
 });
@@ -305,22 +305,11 @@ describe('Test Signing Messages', function() {
     });
 
     tests.forEach(function(test) {
-      it(('hashes a message "' + test.name + '"'), function() {
-          this.timeout(120000);
-          let hash = ethers.utils.hashMessage(test.message);
-          assert.equal(hash, test.messageHash, 'calculates message hash');
-      });
-  });
-});
-
-describe("Serialize Transactions", function() {
-    it("allows odd-length numeric values", function() {
-        ethers.utils.serializeTransaction({
-            gasLimit: "0x1",
-            gasPrice: "0x1",
-            value: "0x1"
+        it(('hashes a message "' + test.name + '"'), function() {
+            this.timeout(120000);
+            let hash = ethers.utils.hashMessage(test.message);
+            assert.equal(hash, test.messageHash, 'calculates message hash');
         });
-        //console.log(result);
     });
 });
 
@@ -412,14 +401,14 @@ describe("Wallet tx signing", function () {
     });
 
     it("Should sign FileCreate", async function() {
-       const tx = {
-           from: wallet.address,
-           gasLimit: 10000,
-           customData: {
-               fileChunk: "Hello world! I will definitely break your smart contract experience",
-               fileKey: PublicKey.fromString("302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0")
-           }
-       };
+        const tx = {
+            from: wallet.address,
+            gasLimit: 10000,
+            customData: {
+                fileChunk: "Hello world! I will definitely break your smart contract experience",
+                fileKey: PublicKey.fromString("302a300506032b65700321004aed2e9e0cb6cbcd12b58476a2c39875d27e2a856444173830cc1618d32ca2f0")
+            }
+        };
         const signed = await wallet.signTransaction(tx);
         assert.ok(signed !== "", "Unexpected nil signed tx");
         const fromBytes = Transaction.fromBytes(arrayify(signed));

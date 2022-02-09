@@ -110,9 +110,6 @@
       "path": "./packages/asm"
     },
     {
-      "path": "./packages/experimental"
-    },
-    {
       "path": "./packages/testcases"
     },
     {

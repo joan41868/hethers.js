@@ -283,7 +283,6 @@ module.exports = {
       "link-icap": "https:/\/github.com/ethereum/wiki/wiki/Inter-exchange-Client-Address-Protocol-%28ICAP%29",
       "link-jsonrpc": "https:/\/github.com/ethereum/wiki/wiki/JSON-RPC",
       "link-mit": { name: "MIT License", url: "https:/\/en.m.wikipedia.org/wiki/MIT_License" },
-      "link-namehash": { name: "namehash", url: "https:/\/docs.ens.domains/contract-api-reference/name-processing#hashing-names" },
       "link-rlp": { name: "Recursive Length Prefix", url: "https:/\/github.com/ethereum/wiki/wiki/RLP" },
 
       "link-ethersio": "https:/\/ethers.io/",

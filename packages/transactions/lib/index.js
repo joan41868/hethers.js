@@ -10,25 +10,6 @@ var __assign = (this && this.__assign) || function () {
     };
     return __assign.apply(this, arguments);
 };
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -66,14 +47,12 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parse = exports.serializeHederaTransaction = exports.serialize = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
+exports.parse = exports.serializeHederaTransaction = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
 var address_1 = require("@ethersproject/address");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var constants_1 = require("@ethersproject/constants");
 var keccak256_1 = require("@ethersproject/keccak256");
-var properties_1 = require("@ethersproject/properties");
-var RLP = __importStar(require("@ethersproject/rlp"));
 var signing_key_1 = require("@ethersproject/signing-key");
 var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
@@ -93,18 +72,6 @@ function handleNumber(value) {
     }
     return bignumber_1.BigNumber.from(value);
 }
-// Legacy Transaction Fields
-var transactionFields = [
-    { name: "nonce", maxLength: 32, numeric: true },
-    { name: "gasPrice", maxLength: 32, numeric: true },
-    { name: "gasLimit", maxLength: 32, numeric: true },
-    { name: "to", length: 20 },
-    { name: "value", maxLength: 32, numeric: true },
-    { name: "data" },
-];
-var allowedTransactionKeys = {
-    chainId: true, data: true, gasLimit: true, gasPrice: true, nonce: true, to: true, type: true, value: true
-};
 function computeAddress(key) {
     var publicKey = (0, signing_key_1.computePublicKey)(key);
     return (0, address_1.getAddress)((0, bytes_1.hexDataSlice)((0, keccak256_1.keccak256)((0, bytes_1.hexDataSlice)(publicKey, 1)), 12));
@@ -123,13 +90,6 @@ function recoverAddress(digest, signature) {
     return computeAddress((0, signing_key_1.recoverPublicKey)((0, bytes_1.arrayify)(digest), signature));
 }
 exports.recoverAddress = recoverAddress;
-function formatNumber(value, name) {
-    var result = (0, bytes_1.stripZeros)(bignumber_1.BigNumber.from(value).toHexString());
-    if (result.length > 32) {
-        logger.throwArgumentError("invalid length for " + name, ("transaction:" + name), value);
-    }
-    return result;
-}
 function accessSetify(addr, storageKeys) {
     return {
         address: (0, address_1.getAddress)(addr),
@@ -164,153 +124,6 @@ function accessListify(value) {
     return result;
 }
 exports.accessListify = accessListify;
-function formatAccessList(value) {
-    return accessListify(value).map(function (set) { return [set.address, set.storageKeys]; });
-}
-function _serializeEip1559(transaction, signature) {
-    // If there is an explicit gasPrice, make sure it matches the
-    // EIP-1559 fees; otherwise they may not understand what they
-    // think they are setting in terms of fee.
-    if (transaction.gasPrice != null) {
-        var gasPrice = bignumber_1.BigNumber.from(transaction.gasPrice);
-        var maxFeePerGas = bignumber_1.BigNumber.from(transaction.maxFeePerGas || 0);
-        if (!gasPrice.eq(maxFeePerGas)) {
-            logger.throwArgumentError("mismatch EIP-1559 gasPrice != maxFeePerGas", "tx", {
-                gasPrice: gasPrice,
-                maxFeePerGas: maxFeePerGas
-            });
-        }
-    }
-    var fields = [
-        formatNumber(transaction.chainId || 0, "chainId"),
-        formatNumber(transaction.nonce || 0, "nonce"),
-        formatNumber(transaction.maxPriorityFeePerGas || 0, "maxPriorityFeePerGas"),
-        formatNumber(transaction.maxFeePerGas || 0, "maxFeePerGas"),
-        formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
-        formatNumber(transaction.value || 0, "value"),
-        (transaction.data || "0x"),
-        (formatAccessList(transaction.accessList || []))
-    ];
-    if (signature) {
-        var sig = (0, bytes_1.splitSignature)(signature);
-        fields.push(formatNumber(sig.recoveryParam, "recoveryParam"));
-        fields.push((0, bytes_1.stripZeros)(sig.r));
-        fields.push((0, bytes_1.stripZeros)(sig.s));
-    }
-    return (0, bytes_1.hexConcat)(["0x02", RLP.encode(fields)]);
-}
-function _serializeEip2930(transaction, signature) {
-    var fields = [
-        formatNumber(transaction.chainId || 0, "chainId"),
-        formatNumber(transaction.nonce || 0, "nonce"),
-        formatNumber(transaction.gasPrice || 0, "gasPrice"),
-        formatNumber(transaction.gasLimit || 0, "gasLimit"),
-        // ((transaction.to != null) ? getAddress(transaction.to): "0x"),
-        formatNumber(transaction.value || 0, "value"),
-        (transaction.data || "0x"),
-        (formatAccessList(transaction.accessList || []))
-    ];
-    if (signature) {
-        var sig = (0, bytes_1.splitSignature)(signature);
-        fields.push(formatNumber(sig.recoveryParam, "recoveryParam"));
-        fields.push((0, bytes_1.stripZeros)(sig.r));
-        fields.push((0, bytes_1.stripZeros)(sig.s));
-    }
-    return (0, bytes_1.hexConcat)(["0x01", RLP.encode(fields)]);
-}
-// Legacy Transactions and EIP-155
-function _serialize(transaction, signature) {
-    (0, properties_1.checkProperties)(transaction, allowedTransactionKeys);
-    var raw = [];
-    transactionFields.forEach(function (fieldInfo) {
-        var value = transaction[fieldInfo.name] || ([]);
-        var options = {};
-        if (fieldInfo.numeric) {
-            options.hexPad = "left";
-        }
-        value = (0, bytes_1.arrayify)((0, bytes_1.hexlify)(value, options));
-        // Fixed-width field
-        if (fieldInfo.length && value.length !== fieldInfo.length && value.length > 0) {
-            logger.throwArgumentError("invalid length for " + fieldInfo.name, ("transaction:" + fieldInfo.name), value);
-        }
-        // Variable-width (with a maximum)
-        if (fieldInfo.maxLength) {
-            value = (0, bytes_1.stripZeros)(value);
-            if (value.length > fieldInfo.maxLength) {
-                logger.throwArgumentError("invalid length for " + fieldInfo.name, ("transaction:" + fieldInfo.name), value);
-            }
-        }
-        raw.push((0, bytes_1.hexlify)(value));
-    });
-    var chainId = 0;
-    if (transaction.chainId != null) {
-        // A chainId was provided; if non-zero we'll use EIP-155
-        chainId = transaction.chainId;
-        if (typeof (chainId) !== "number") {
-            logger.throwArgumentError("invalid transaction.chainId", "transaction", transaction);
-        }
-    }
-    else if (signature && !(0, bytes_1.isBytesLike)(signature) && signature.v > 28) {
-        // No chainId provided, but the signature is signing with EIP-155; derive chainId
-        chainId = Math.floor((signature.v - 35) / 2);
-    }
-    // We have an EIP-155 transaction (chainId was specified and non-zero)
-    if (chainId !== 0) {
-        raw.push((0, bytes_1.hexlify)(chainId)); // @TODO: hexValue?
-        raw.push("0x");
-        raw.push("0x");
-    }
-    // Requesting an unsigned transaction
-    if (!signature) {
-        return RLP.encode(raw);
-    }
-    // The splitSignature will ensure the transaction has a recoveryParam in the
-    // case that the signTransaction function only adds a v.
-    var sig = (0, bytes_1.splitSignature)(signature);
-    // We pushed a chainId and null r, s on for hashing only; remove those
-    var v = 27 + sig.recoveryParam;
-    if (chainId !== 0) {
-        raw.pop();
-        raw.pop();
-        raw.pop();
-        v += chainId * 2 + 8;
-        // If an EIP-155 v (directly or indirectly; maybe _vs) was provided, check it!
-        if (sig.v > 28 && sig.v !== v) {
-            logger.throwArgumentError("transaction.chainId/signature.v mismatch", "signature", signature);
-        }
-    }
-    else if (sig.v !== v) {
-        logger.throwArgumentError("transaction.chainId/signature.v mismatch", "signature", signature);
-    }
-    raw.push((0, bytes_1.hexlify)(v));
-    raw.push((0, bytes_1.stripZeros)((0, bytes_1.arrayify)(sig.r)));
-    raw.push((0, bytes_1.stripZeros)((0, bytes_1.arrayify)(sig.s)));
-    return RLP.encode(raw);
-}
-function serialize(transaction, signature) {
-    // Legacy and EIP-155 Transactions
-    if (transaction.type == null || transaction.type === 0) {
-        if (transaction.accessList != null) {
-            logger.throwArgumentError("untyped transactions do not support accessList; include type: 1", "transaction", transaction);
-        }
-        return _serialize(transaction, signature);
-    }
-    // Typed Transactions (EIP-2718)
-    switch (transaction.type) {
-        case 1:
-            return _serializeEip2930(transaction, signature);
-        case 2:
-            return _serializeEip1559(transaction, signature);
-        default:
-            break;
-    }
-    return logger.throwError("unsupported transaction type: " + transaction.type, logger_1.Logger.errors.UNSUPPORTED_OPERATION, {
-        operation: "serializeTransaction",
-        transactionType: transaction.type
-    });
-}
-exports.serialize = serialize;
 function serializeHederaTransaction(transaction, pubKey) {
     var _a, _b;
     var tx;
