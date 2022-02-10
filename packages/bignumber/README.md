@@ -1,7 +1,7 @@
 Big Numbers
 ===========
 
-This sub-module is part of the [ethers project](https://github.com/ethers-io/ethers.js).
+This sub-module is part of the [hethers project](https://github.com/hashgraph/hethers.js). It is a fork of the original [ethers project](https://github.com/ethers-io/ethers.js) sub-module.
 
 It is responsible for handling arbitrarily large numbers and mathematic operations.
 
@@ -12,7 +12,7 @@ and [Fixed-Point Numbers](https://docs.ethers.io/v5/api/utils/fixednumber/).
 Importing
 ---------
 
-Most users will prefer to use the [umbrella package](https://www.npmjs.com/package/ethers),
+Most users will prefer to use the [umbrella package](https://www.npmjs.com/package/ethers) TODO link once deployed,
 but for those with more specific needs, individual components can be imported.
 
 ```javascript
