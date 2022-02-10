@@ -150,7 +150,6 @@ export class BaseProvider extends Provider {
         logger.checkNew(new.target, Provider);
         super();
         this._events = [];
-        this._emitted = {};
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -761,8 +760,6 @@ export class BaseProvider extends Provider {
                                 return;
                             }
                             logs.forEach((log) => {
-                                // TODO: check if ok - txIndex replaces blockNumber
-                                this._emitted["t:" + log.timestamp] = log.transactionIndex;
                                 this.emit(filter, log);
                             });
                         }).catch((error) => { this.emit("error", error); });

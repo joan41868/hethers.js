@@ -31,9 +31,6 @@ export declare class BaseProvider extends Provider {
     _network: Network;
     _events: Array<Event>;
     _pollingInterval: number;
-    _emitted: {
-        [eventName: string]: number | "pending";
-    };
     _poller: NodeJS.Timer;
     _bootstrapPoll: NodeJS.Timer;
     formatter: Formatter;

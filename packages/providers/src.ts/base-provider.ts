@@ -181,7 +181,6 @@ export class BaseProvider extends Provider {
     _events: Array<Event>;
 
     _pollingInterval: number;
-    _emitted: { [ eventName: string ]: number | "pending" };
 
     _poller: NodeJS.Timer;
     _bootstrapPoll: NodeJS.Timer;
@@ -198,7 +197,6 @@ export class BaseProvider extends Provider {
         super();
 
         this._events = [];
-        this._emitted = {};
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -829,8 +827,6 @@ export class BaseProvider extends Provider {
                     const runner = this.getLogs(filter).then((logs) => {
                         if (logs.length === 0) { return; }
                         logs.forEach((log: Log) => {
-                            // TODO: check if ok - txIndex replaces blockNumber
-                            this._emitted["t:" + log.timestamp] = log.transactionIndex;
                             this.emit(filter, log);
                         });
                     }).catch((error: Error) => { this.emit("error", error); });

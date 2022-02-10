@@ -229,7 +229,6 @@ var BaseProvider = /** @class */ (function (_super) {
         logger.checkNew(_newTarget, abstract_provider_1.Provider);
         _this = _super.call(this) || this;
         _this._events = [];
-        _this._emitted = {};
         _this.formatter = _newTarget.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -990,8 +989,6 @@ var BaseProvider = /** @class */ (function (_super) {
                                     return;
                                 }
                                 logs.forEach(function (log) {
-                                    // TODO: check if ok - txIndex replaces blockNumber
-                                    _this._emitted["t:" + log.timestamp] = log.transactionIndex;
                                     _this.emit(filter_1, log);
                                 });
                             }).catch(function (error) { _this.emit("error", error); });

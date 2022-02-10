@@ -665,9 +665,13 @@ export class BaseContract {
             runningEvent.removeListener(listener);
             this._checkRunningEvents(runningEvent);
         };
-        // TODO: those won't work with txHash. Refactor it to use hedera txId
-        event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); };
-        event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); };
+        event.getTransaction = () => {
+            // TODO: blocked by missing data from mirror node
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+        };
+        event.getTransactionReceipt = () => {
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+        };
         // This may throw if the topics and data mismatch the signature
         runningEvent.prepareEvent(event);
         return event;

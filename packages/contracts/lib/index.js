@@ -807,9 +807,13 @@ var BaseContract = /** @class */ (function () {
             runningEvent.removeListener(listener);
             _this._checkRunningEvents(runningEvent);
         };
-        // TODO: those won't work with txHash. Refactor it to use hedera txId
-        event.getTransaction = function () { return _this.provider.getTransaction(log.transactionHash); };
-        event.getTransactionReceipt = function () { return _this.provider.getTransactionReceipt(log.transactionHash); };
+        event.getTransaction = function () {
+            // TODO: blocked by missing data from mirror node
+            return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+        };
+        event.getTransactionReceipt = function () {
+            return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+        };
         // This may throw if the topics and data mismatch the signature
         runningEvent.prepareEvent(event);
         return event;
