@@ -523,7 +523,7 @@ describe('Contract Events', function () {
                     case 3:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4: return [4 /*yield*/, sleep(20000)];
+                    case 4: return [4 /*yield*/, sleep(30000)];
                     case 5:
                         _a.sent();
                         contract.removeAllListeners();
@@ -588,8 +588,9 @@ describe('Contract Events', function () {
                         provider.on(filter, noop);
                         provider.on('error', function (error) {
                             assert_1.default.notStrictEqual(error, null);
+                            assert_1.default.strictEqual(error.code, utils_1.Logger.errors.INVALID_ARGUMENT);
                         });
-                        return [4 /*yield*/, sleep(2000)];
+                        return [4 /*yield*/, sleep(10000)];
                     case 1:
                         _a.sent();
                         provider.removeAllListeners();

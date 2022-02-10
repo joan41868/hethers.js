@@ -19,7 +19,7 @@ import * as abiWithArgs from '../../../examples/assets/abi/GLDTokenWithConstruct
 abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
-import { arrayify } from "ethers/lib/utils";
+import { arrayify, Logger } from "ethers/lib/utils";
 const TIMEOUT_PERIOD = 120000;
 const hederaEoa = {
     account: '0.0.29562194',
@@ -299,7 +299,7 @@ describe('Contract Events', function () {
             for (let i = 0; i <= 20; i++) {
                 yield contract.mint(BigNumber.from(`${i + 1}`), { gasLimit: 300000 });
             }
-            yield sleep(20000);
+            yield sleep(30000);
             contract.removeAllListeners();
             assert.strictEqual(capturedMints.length > 0, 1 === 1, "expected at least 1 captured event (Mint).");
             for (let mint of capturedMints) {
@@ -337,8 +337,9 @@ describe('Contract Events', function () {
             provider.on(filter, noop);
             provider.on('error', (error) => {
                 assert.notStrictEqual(error, null);
+                assert.strictEqual(error.code, Logger.errors.INVALID_ARGUMENT);
             });
-            yield sleep(2000);
+            yield sleep(10000);
             provider.removeAllListeners();
         });
     }).timeout(TIMEOUT_PERIOD);
