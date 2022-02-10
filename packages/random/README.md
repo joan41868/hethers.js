@@ -5,7 +5,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 
 It contains functions to assist with random numbers.
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/bytes/#byte-manipulation--random-bytes).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/bytes/#byte-manipulation--random-bytes). TODO Docs
 
 
 Importing

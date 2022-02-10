@@ -6,7 +6,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 It contains functions to perform Solidity-specific packed (i.e. non-standard)
 encoding operations.
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/hashing/#utils--solidity-hashing).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/hashing/#utils--solidity-hashing). TODO Docs
 
 Importing
 ---------

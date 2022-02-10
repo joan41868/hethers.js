@@ -6,7 +6,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 It contains functions to safely convert between UTF-8 data, strings and Bytes32 strings
 (i.e. "short strings").
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/strings/).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/strings/). TODO Docs
 
 Importing
 ---------

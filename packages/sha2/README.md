@@ -5,7 +5,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 
 It is responsible for common cryptographic hashes and HMAC.
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/hashing/).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/hashing/). TODO Docs
 
 
 Importing

@@ -5,7 +5,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 
 It is responsible for secp256-k1 signing, verifying and recovery operations.
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/signing-key/).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/signing-key/). TODO Docs
 
 Importing
 ---------

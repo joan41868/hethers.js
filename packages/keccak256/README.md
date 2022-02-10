@@ -5,7 +5,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 
 It is responsible for the identify function (i.e. KECCAK256) use in Ethereum.
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/hashing/#utils-keccak256).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/hashing/#utils-keccak256). TODO Docs
 
 
 Importing

@@ -6,7 +6,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 It contains several useful utility methods for managing simple objects with
 defined properties.
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/properties/).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/properties/). TODO Docs
 
 
 Importing

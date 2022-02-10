@@ -5,8 +5,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 the [abstract-signer](https://github.com/ethers-io/ethers.js/tree/master/packages/abstract-signer) sub-module
 adapted for Hedera Hashgraph's Smart Contract Service.
 
-It is an abstraction of an EVM account, which may be backed by a [Wallet](https://www.npmjs.
-com/package/@hethers/wallet) instance.
+It is an abstraction of an EVM account, which may be backed by a [Wallet](https://www.npmjs.com/package/@hethers/wallet) instance.
 
 For more information, see the [documentation](https://docs.ethers.io/v5/api/signer/). TODO links to docs
 

@@ -5,7 +5,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 
 It contains several common hashing utilities (but not the actual hash functions).
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/hashing/).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/hashing/). TODO link
 
 Importing
 ---------

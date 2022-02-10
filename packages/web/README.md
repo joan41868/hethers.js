@@ -6,7 +6,7 @@ This sub-module is part of the [hethers project](https://github.com/hashgraph/he
 It contains functions to abstract safely and responsibly connecting to the web,
 including exponential back-off.
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/web/).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/web/). TODO Docs
 
 Importing
 ---------
