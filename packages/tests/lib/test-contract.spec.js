@@ -725,6 +725,16 @@ describe("Test Contract Query Filter", function () {
                     case 1:
                         events = _a.sent();
                         assert_1.default.strictEqual(events.length, 2, "queryFilter returns the contract events");
+                        assert_1.default.strictEqual(events[0].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+                        assert_1.default.notStrictEqual(events[0].data, null, "result data exists");
+                        assert_1.default.strict(events[0].topics.length > 0, "result topics not empty");
+                        assert_1.default.strict(events[0].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
+                        assert_1.default.strict(events[0].timestamp <= toTimestamp, "result is less or equal toTimestamp");
+                        assert_1.default.strictEqual(events[1].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+                        assert_1.default.notStrictEqual(events[1].data, null, "result data exists");
+                        assert_1.default.strict(events[1].topics.length > 0, "result topics not empty");
+                        assert_1.default.strict(events[1].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
+                        assert_1.default.strict(events[1].timestamp <= toTimestamp, "result is less or equal toTimestamp");
                         return [2 /*return*/];
                 }
             });

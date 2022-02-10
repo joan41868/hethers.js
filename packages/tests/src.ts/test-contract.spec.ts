@@ -518,6 +518,17 @@ describe("Test Contract Query Filter", function() {
         const events = await contract.queryFilter(filter, fromTimestamp, toTimestamp);
 
         assert.strictEqual(events.length, 2, "queryFilter returns the contract events");
+        assert.strictEqual(events[0].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+        assert.notStrictEqual(events[0].data, null, "result data exists");
+        assert.strict(events[0].topics.length > 0, "result topics not empty");
+        assert.strict(events[0].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
+        assert.strict(events[0].timestamp <= toTimestamp, "result is less or equal toTimestamp");
+
+        assert.strictEqual(events[1].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+        assert.notStrictEqual(events[1].data, null, "result data exists");
+        assert.strict(events[1].topics.length > 0, "result topics not empty");
+        assert.strict(events[1].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
+        assert.strict(events[1].timestamp <= toTimestamp, "result is less or equal toTimestamp");
     }).timeout(60000);
 });
 

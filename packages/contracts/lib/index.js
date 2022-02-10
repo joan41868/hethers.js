@@ -866,8 +866,14 @@ var BaseContract = /** @class */ (function () {
                         this._requireAddressSet();
                         runningEvent = this._getRunningEvent(event);
                         filter = (0, properties_1.shallowCopy)(runningEvent.filter);
-                        filter.fromTimestamp = fromTimestamp;
-                        filter.toTimestamp = toTimestamp;
+                        if (fromTimestamp && (typeof fromTimestamp !== "string")) {
+                            fromTimestamp = (0, bignumber_1.parseTimestamp)(fromTimestamp);
+                        }
+                        if (toTimestamp && (typeof toTimestamp !== "string")) {
+                            toTimestamp = (0, bignumber_1.parseTimestamp)(toTimestamp);
+                        }
+                        filter.fromTimestamp = (fromTimestamp != null) ? fromTimestamp.toString() : null;
+                        filter.toTimestamp = (toTimestamp != null) ? toTimestamp.toString() : null;
                         return [4 /*yield*/, this.provider.getLogs(filter)];
                     case 1:
                         logs = _a.sent();

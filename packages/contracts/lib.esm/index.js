@@ -12,7 +12,7 @@ import { checkResultErrors, Indexed, Interface } from "@ethersproject/abi";
 import { Provider } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { getAddress, getAddressFromAccount } from "@ethersproject/address";
-import { BigNumber } from "@ethersproject/bignumber";
+import { BigNumber, parseTimestamp } from "@ethersproject/bignumber";
 import { arrayify, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { deepCopy, defineReadOnly, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { accessListify } from "@ethersproject/transactions";
@@ -718,8 +718,14 @@ export class BaseContract {
             this._requireAddressSet();
             const runningEvent = this._getRunningEvent(event);
             const filter = shallowCopy(runningEvent.filter);
-            filter.fromTimestamp = fromTimestamp;
-            filter.toTimestamp = toTimestamp;
+            if (fromTimestamp && (typeof fromTimestamp !== "string")) {
+                fromTimestamp = parseTimestamp(fromTimestamp);
+            }
+            if (toTimestamp && (typeof toTimestamp !== "string")) {
+                toTimestamp = parseTimestamp(toTimestamp);
+            }
+            filter.fromTimestamp = (fromTimestamp != null) ? fromTimestamp.toString() : null;
+            filter.toTimestamp = (toTimestamp != null) ? toTimestamp.toString() : null;
             const logs = yield this.provider.getLogs(filter);
             return logs.map((log) => this._wrapEvent(runningEvent, log, null));
         });

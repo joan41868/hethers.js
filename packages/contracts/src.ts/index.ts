@@ -22,7 +22,7 @@ import {
 } from "@ethersproject/abstract-provider";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { AccountLike, getAddress, getAddressFromAccount } from "@ethersproject/address";
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
+import { BigNumber, BigNumberish, parseTimestamp } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import {
     deepCopy,
@@ -944,13 +944,21 @@ export class BaseContract {
         }
     }
 
-    async queryFilter(event: EventFilter, fromTimestamp?: string, toTimestamp?: string): Promise<Array<Event>> {
+    async queryFilter(event: EventFilter, fromTimestamp?: string | BigNumber, toTimestamp?: string | BigNumber): Promise<Array<Event>> {
         this._requireAddressSet();
         
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
-        (<Filter>filter).fromTimestamp = fromTimestamp;
-        (<Filter>filter).toTimestamp = toTimestamp;
+
+        if (fromTimestamp && (typeof fromTimestamp !== "string")) {
+            fromTimestamp = parseTimestamp(fromTimestamp);
+        } 
+        if (toTimestamp && (typeof toTimestamp !== "string")) {
+            toTimestamp = parseTimestamp(toTimestamp);
+        } 
+
+        (<Filter>filter).fromTimestamp = (fromTimestamp != null) ? fromTimestamp.toString() : null;
+        (<Filter>filter).toTimestamp = (toTimestamp != null) ? toTimestamp.toString() : null;
 
         const logs = await this.provider.getLogs(filter);
         return logs.map((log) => this._wrapEvent(runningEvent, log, null));
