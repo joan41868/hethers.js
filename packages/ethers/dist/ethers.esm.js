@@ -98456,9 +98456,11 @@ class BaseProvider extends Provider {
             if (params.filter.topics && params.filter.topics.length > 0) {
                 for (let i = 0; i < params.filter.topics.length; i++) {
                     const topic = params.filter.topics[i];
-                    // TODO: [][]string are not yet handled
                     if (typeof topic === "string") {
                         epContractsLogs += `&topic${i}=${topic}`;
+                    }
+                    else {
+                        epContractsLogs += `&topic${i}=${topic.join('')}`;
                     }
                 }
             }

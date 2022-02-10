@@ -771,9 +771,11 @@ var BaseProvider = /** @class */ (function (_super) {
                         if (params.filter.topics && params.filter.topics.length > 0) {
                             for (i = 0; i < params.filter.topics.length; i++) {
                                 topic = params.filter.topics[i];
-                                // TODO: [][]string are not yet handled
                                 if (typeof topic === "string") {
                                     epContractsLogs += "&topic" + i + "=" + topic;
+                                }
+                                else {
+                                    epContractsLogs += "&topic" + i + "=" + topic.join('');
                                 }
                             }
                         }
