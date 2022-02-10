@@ -354,18 +354,11 @@ var Signer = /** @class */ (function () {
                 logger.throwError("to address missing. Cannot execute a CryptoTransfer");
             if (tx.gasLimit)
                 logger.throwError("gasLimit provided. Cannot execute a CryptoTransfer");
-            this._checkProvider();
-            tx.isCryptoTransfer = Promise.resolve(this.provider.getCode(tx.to)).then(function (res) {
-                var isNonContract = res === '0x';
-                if (!isNonContract && tx.isCryptoTransfer) {
-                    logger.throwError("to is a contract address. Cannot execute a CryptoTransfer");
-                }
-                return isNonContract;
-            });
         }
         else if (!tx.hasOwnProperty('isCryptoTransfer')) {
             tx.isCryptoTransfer = false;
-            if (tx.to && this.provider && !tx.gasLimit && !tx.data) {
+            if (tx.to && !tx.gasLimit && !tx.data && tx.value != 0) {
+                this._checkProvider();
                 tx.isCryptoTransfer = Promise.resolve(this.provider.getCode(tx.to)).then(function (res) {
                     return res === '0x';
                 });
@@ -420,7 +413,7 @@ var Signer = /** @class */ (function () {
                         customData = _a.sent();
                         isFileCreateOrAppend = customData && customData.fileChunk;
                         isCreateAccount = customData && customData.publicKey;
-                        if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null && !tx.isCryptoTransfer) {
+                        if (!isFileCreateOrAppend && !isCreateAccount && !tx.isCryptoTransfer && tx.gasLimit == null) {
                             return [2 /*return*/, logger.throwError("cannot estimate gas; transaction requires manual gas limit", logger_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx })];
                         }
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(tx)];

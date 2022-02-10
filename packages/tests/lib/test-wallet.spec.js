@@ -672,11 +672,11 @@ describe("Wallet local calls", function () {
 });
 describe("Wallet createAccount", function () {
     var _this = this;
-    var wallet, newAccount, newAccountPublicKey, provider, acc1Wallet, acc2Wallet;
+    var wallet, newAccount, newAccountPublicKey, provider, acc1Wallet, acc2Wallet, acc1Eoa, acc2Eoa;
     var timeout = 60000;
     before(function () {
         return __awaiter(this, void 0, void 0, function () {
-            var hederaEoa, acc1Eoa, acc2Eoa;
+            var hederaEoa;
             return __generator(this, function (_a) {
                 this.timeout(timeout);
                 hederaEoa = {
@@ -874,6 +874,105 @@ describe("Wallet createAccount", function () {
                     case 3:
                         e_3 = _a.sent();
                         exceptionThrown = true;
+                        return [3 /*break*/, 4];
+                    case 4:
+                        assert_1.default.strictEqual(exceptionThrown, true);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should make a contract call with isCryptoTransfer false and set 'to' and 'value'", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var exceptionThrown, e_4;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        exceptionThrown = false;
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                to: acc2Wallet.account,
+                                value: 1,
+                                isCryptoTransfer: false,
+                                gasLimit: 300000
+                            })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_4 = _a.sent();
+                        exceptionThrown = true;
+                        assert_1.default.strictEqual(e_4.code, 'INVALID_CONTRACT_ID');
+                        return [3 /*break*/, 4];
+                    case 4:
+                        assert_1.default.strictEqual(exceptionThrown, true);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should make a contract call with 'to' and 'value' with provided contract address as 'to'", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractFactory, contract, exceptionThrown, e_5;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        abiGLDTokenWithConstructorArgs = JSON.parse((0, fs_1.readFileSync)('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+                        contractByteCodeGLDTokenWithConstructorArgs = (0, fs_1.readFileSync)('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+                        contractFactory = new ethers_1.ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, acc1Wallet);
+                        return [4 /*yield*/, contractFactory.deploy(ethers_1.ethers.BigNumber.from('10000'), { gasLimit: 3000000 })];
+                    case 1:
+                        contract = _a.sent();
+                        return [4 /*yield*/, contract.deployed()];
+                    case 2:
+                        _a.sent();
+                        exceptionThrown = false;
+                        _a.label = 3;
+                    case 3:
+                        _a.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                to: contract.address,
+                                value: 1,
+                            })];
+                    case 4:
+                        _a.sent();
+                        return [3 /*break*/, 6];
+                    case 5:
+                        e_5 = _a.sent();
+                        exceptionThrown = true;
+                        assert_1.default.strictEqual(e_5.code, 'UNPREDICTABLE_GAS_LIMIT');
+                        return [3 /*break*/, 6];
+                    case 6:
+                        assert_1.default.strictEqual(exceptionThrown, true);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(180000);
+    it("Should throw an exception if provider is not set", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var exceptionThrown, acc1WalletWithoutProvider, e_6;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        exceptionThrown = false;
+                        acc1WalletWithoutProvider = new ethers_1.ethers.Wallet(acc1Eoa);
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, acc1WalletWithoutProvider.sendTransaction({
+                                to: acc2Wallet.account,
+                                value: 1
+                            })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_6 = _a.sent();
+                        exceptionThrown = true;
+                        assert_1.default.strictEqual(e_6.reason, 'missing provider');
                         return [3 /*break*/, 4];
                     case 4:
                         assert_1.default.strictEqual(exceptionThrown, true);

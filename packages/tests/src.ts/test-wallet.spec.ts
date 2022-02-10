@@ -532,7 +532,8 @@ describe("Wallet local calls", async function () {
 describe("Wallet createAccount", function () {
 
     let wallet: ethers.Wallet, newAccount: ethers.Wallet, newAccountPublicKey: BytesLike,
-        provider: ethers.providers.BaseProvider, acc1Wallet: ethers.Wallet, acc2Wallet: ethers.Wallet;
+        provider: ethers.providers.BaseProvider, acc1Wallet: ethers.Wallet, acc2Wallet: ethers.Wallet,
+        acc1Eoa: any, acc2Eoa: any;
     const timeout = 60000;
 
     before( async function() {
@@ -541,8 +542,8 @@ describe("Wallet createAccount", function () {
             account: '0.0.29562194',
             privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
         };
-        const acc1Eoa = {"account":"0.0.29631749","privateKey":"0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b"};
-        const acc2Eoa = {"account":"0.0.29631750","privateKey":"0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee"};
+        acc1Eoa = {"account":"0.0.29631749","privateKey":"0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b"};
+        acc2Eoa = {"account":"0.0.29631750","privateKey":"0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee"};
         provider = ethers.providers.getDefaultProvider('testnet');
         // @ts-ignore
         wallet = new ethers.Wallet(hederaEoa, provider);
@@ -646,6 +647,61 @@ describe("Wallet createAccount", function () {
             });
         } catch (e: any) {
             exceptionThrown = true;
+        }
+
+        assert.strictEqual(exceptionThrown, true);
+    }).timeout(timeout);
+
+    it("Should make a contract call with isCryptoTransfer false and set 'to' and 'value'", async function () {
+        let exceptionThrown = false;
+        try {
+            await acc1Wallet.sendTransaction({
+                to: acc2Wallet.account,
+                value: 1,
+                isCryptoTransfer: false,
+                gasLimit: 300000
+            });
+        } catch (e: any) {
+            exceptionThrown = true;
+            assert.strictEqual(e.code, 'INVALID_CONTRACT_ID');
+        }
+
+        assert.strictEqual(exceptionThrown, true);
+    }).timeout(timeout);
+
+    it("Should make a contract call with 'to' and 'value' with provided contract address as 'to'", async function() {
+        const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+        const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+        const contractFactory = new ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, acc1Wallet);
+        const contract = await contractFactory.deploy(ethers.BigNumber.from('10000'), {gasLimit: 3000000});
+        await contract.deployed();
+
+        let exceptionThrown = false;
+        try {
+            await acc1Wallet.sendTransaction({
+                to: contract.address,
+                value: 1,
+            });
+        } catch (e: any) {
+            exceptionThrown = true;
+            assert.strictEqual(e.code, 'UNPREDICTABLE_GAS_LIMIT');
+        }
+
+        assert.strictEqual(exceptionThrown, true);
+    }).timeout(180000);
+
+    it("Should throw an exception if provider is not set", async function () {
+        let exceptionThrown = false;
+        // @ts-ignore
+        const acc1WalletWithoutProvider = new ethers.Wallet(acc1Eoa);
+        try {
+            await acc1WalletWithoutProvider.sendTransaction({
+                to: acc2Wallet.account,
+                value: 1
+            });
+        } catch (e: any) {
+            exceptionThrown = true;
+            assert.strictEqual(e.reason, 'missing provider');
         }
 
         assert.strictEqual(exceptionThrown, true);
