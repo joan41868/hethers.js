@@ -1,24 +1,15 @@
 {
-  "author": "Richard Moore <me@ricmoo.com>",
   "dependencies": {
     "@ethersproject/bignumber": "^5.5.0",
     "@ethersproject/constants": "^5.5.0",
     "@ethersproject/logger": "^5.5.0"
   },
-  "description": "Unit conversion functions for Ethereum.",
-  "ethereum": "donations.ethers.eth",
-  "funding": [
-    {
-      "type": "individual",
-      "url": "https://gitcoin.co/grants/13/ethersjs-complete-simple-and-tiny-2"
-    },
-    {
-      "type": "individual",
-      "url": "https://www.buymeacoffee.com/ricmoo"
-    }
-  ],
+  "description": "Unit conversion functions for Hedera Hashgraph.",
   "keywords": [
+    "Hedera",
+    "Hashgraph",
     "Ethereum",
+    "hethers",
     "ethers",
     "units",
     "conversion"

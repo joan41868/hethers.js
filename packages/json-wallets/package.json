@@ -1,5 +1,4 @@
 {
-  "author": "Richard Moore <me@ricmoo.com>",
   "dependencies": {
     "@ethersproject/abstract-signer": "^5.5.0",
     "@ethersproject/address": "^5.5.0",
@@ -15,20 +14,12 @@
     "aes-js": "3.0.0",
     "scrypt-js": "3.0.1"
   },
-  "description": "Wallet management utilities for KeyStore and Crowdsale JSON wallets.",
-  "ethereum": "donations.ethers.eth",
-  "funding": [
-    {
-      "type": "individual",
-      "url": "https://gitcoin.co/grants/13/ethersjs-complete-simple-and-tiny-2"
-    },
-    {
-      "type": "individual",
-      "url": "https://www.buymeacoffee.com/ricmoo"
-    }
-  ],
+  "description": "Wallet management utilities for KeyStore",
   "keywords": [
+    "Hedera",
+    "Hashgraph",
     "Ethereum",
+    "hethers",
     "ethers"
   ],
   "license": "MIT",

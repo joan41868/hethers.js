@@ -1,5 +1,4 @@
 {
-  "author": "Richard Moore <me@ricmoo.com>",
   "dependencies": {
     "@ethersproject/abi": "^5.5.0",
     "@ethersproject/abstract-provider": "^5.5.0",
@@ -12,20 +11,12 @@
     "@ethersproject/properties": "^5.5.0",
     "@ethersproject/transactions": "^5.5.0"
   },
-  "description": "Contract abstraction meta-class for ethers.",
-  "ethereum": "donations.ethers.eth",
-  "funding": [
-    {
-      "type": "individual",
-      "url": "https://gitcoin.co/grants/13/ethersjs-complete-simple-and-tiny-2"
-    },
-    {
-      "type": "individual",
-      "url": "https://www.buymeacoffee.com/ricmoo"
-    }
-  ],
+  "description": "Contract abstraction meta-class for hethers.",
   "keywords": [
+    "Hedera",
+    "Hashgraph",
     "Ethereum",
+    "hethers",
     "ethers"
   ],
   "license": "MIT",

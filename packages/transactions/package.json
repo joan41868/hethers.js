@@ -1,5 +1,4 @@
 {
-  "author": "Richard Moore <me@ricmoo.com>",
   "dependencies": {
     "@ethersproject/address": "^5.5.0",
     "@ethersproject/bignumber": "^5.5.0",
@@ -12,20 +11,12 @@
     "@ethersproject/signing-key": "^5.5.0",
     "@hashgraph/sdk": "2.7.0-beta.4"
   },
-  "description": "Utilities for decoding and encoding Ethereum transaction for ethers.",
-  "ethereum": "donations.ethers.eth",
-  "funding": [
-    {
-      "type": "individual",
-      "url": "https://gitcoin.co/grants/13/ethersjs-complete-simple-and-tiny-2"
-    },
-    {
-      "type": "individual",
-      "url": "https://www.buymeacoffee.com/ricmoo"
-    }
-  ],
+  "description": "Utilities for decoding and encoding Hedera Hashgraph transactions for hethers.",
   "keywords": [
+    "Hedera",
+    "Hashgraph",
     "Ethereum",
+    "hethers",
     "ethers"
   ],
   "license": "MIT",
