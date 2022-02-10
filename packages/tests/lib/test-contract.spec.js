@@ -478,18 +478,32 @@ describe("Test Contract Transaction Population", function () {
     }).timeout(60000);
 });
 describe('Contract Events', function () {
+    var _this = this;
     var provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
     // @ts-ignore
     var wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
-    it("should be able to capture events", function () {
+    var abiGLDTokenWithConstructorArgs = JSON.parse((0, fs_1.readFileSync)('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+    var contract = ethers_1.ethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, wallet);
+    var sleep = function (timeout) { return __awaiter(_this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, new Promise(function (resolve) {
+                        console.log("Waiting " + timeout / 1000 + " secs before removing contract listeners.");
+                        setTimeout(resolve, timeout);
+                    })];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    }); };
+    it("should be able to capture events via contract", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var capturedMints, abiGLDTokenWithConstructorArgs, contract, i, _i, capturedMints_1, mint;
+            var capturedMints, i, _i, capturedMints_1, mint;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         capturedMints = [];
-                        abiGLDTokenWithConstructorArgs = JSON.parse((0, fs_1.readFileSync)('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
-                        contract = ethers_1.ethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, wallet);
                         contract.on('Mint', function () {
                             var args = [];
                             for (var _i = 0; _i < arguments.length; _i++) {
@@ -509,10 +523,7 @@ describe('Contract Events', function () {
                     case 3:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4: return [4 /*yield*/, new Promise(function (resolve) {
-                            console.log('Waiting 20 secs before removing contract listeners.');
-                            setTimeout(resolve, 20000);
-                        })];
+                    case 4: return [4 /*yield*/, sleep(20000)];
                     case 5:
                         _a.sent();
                         contract.removeAllListeners();
@@ -521,6 +532,67 @@ describe('Contract Events', function () {
                             mint = capturedMints_1[_i];
                             assert_1.default.strictEqual(mint[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
                         }
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(TIMEOUT_PERIOD);
+    it('should be able to capture events via provider', function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var capturedMints, i;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        capturedMints = [];
+                        provider.on({ address: contract.address, topics: [
+                                '0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'
+                            ] }, function (args) {
+                            assert_1.default.notStrictEqual(args, null, "expected 1 argument - log");
+                            capturedMints.push([args]);
+                        });
+                        i = 0;
+                        _a.label = 1;
+                    case 1:
+                        if (!(i <= 20)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, contract.mint(ethers_1.BigNumber.from("" + (i + 1)), { gasLimit: 300000 })];
+                    case 2:
+                        _a.sent();
+                        _a.label = 3;
+                    case 3:
+                        i++;
+                        return [3 /*break*/, 1];
+                    case 4: return [4 /*yield*/, sleep(30000)];
+                    case 5:
+                        _a.sent();
+                        provider.removeAllListeners();
+                        assert_1.default.strictEqual(capturedMints.length > 0, 1 === 1, "expected at least 1 captured event (Mint).");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(TIMEOUT_PERIOD);
+    it('should throw on OR topics filter', function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var filter, noop;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        filter = {
+                            address: contract.address,
+                            topics: [
+                                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'],
+                                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885']
+                            ]
+                        };
+                        noop = function () { };
+                        provider.on(filter, noop);
+                        provider.on('error', function (error) {
+                            assert_1.default.notStrictEqual(error, null);
+                        });
+                        return [4 /*yield*/, sleep(2000)];
+                    case 1:
+                        _a.sent();
+                        provider.removeAllListeners();
                         return [2 /*return*/];
                 }
             });

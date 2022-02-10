@@ -753,20 +753,24 @@ var BaseProvider = /** @class */ (function (_super) {
      * @param filter The parameters to filter logs by.
      */
     BaseProvider.prototype.getLogs = function (filter) {
+        var _a;
         return __awaiter(this, void 0, void 0, function () {
             var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLength, epContractsLogs, i, topic, requestUrl, data, mappedLogs, error_6, errorParams;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         this._checkMirrorNode();
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({ filter: this._getFilter(filter) })];
                     case 1:
-                        params = _a.sent();
+                        params = _b.sent();
                         fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
                         toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
                         limit = 100;
                         oversizeResponseLength = limit + 1;
                         epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
+                        if (((_a = params.filter.topics) === null || _a === void 0 ? void 0 : _a.length) > 0 && (fromTimestampFilter == "" || toTimestampFilter == "")) {
+                            return [2 /*return*/, logger.throwArgumentError("topic filter requires fromTimestamp/toTimestamp fields set", logger_1.Logger.errors.INVALID_ARGUMENT, params.filter)];
+                        }
                         if (params.filter.topics && params.filter.topics.length > 0) {
                             for (i = 0; i < params.filter.topics.length; i++) {
                                 topic = params.filter.topics[i];
@@ -774,17 +778,17 @@ var BaseProvider = /** @class */ (function (_super) {
                                     epContractsLogs += "&topic" + i + "=" + topic;
                                 }
                                 else {
-                                    epContractsLogs += "&topic" + i + "=" + topic.join('');
+                                    return [2 /*return*/, logger.throwArgumentError("OR on topics", logger_1.Logger.errors.UNSUPPORTED_OPERATION, params.filter.topics)];
                                 }
                             }
                         }
                         requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
-                        _a.label = 2;
+                        _b.label = 2;
                     case 2:
-                        _a.trys.push([2, 4, , 5]);
+                        _b.trys.push([2, 4, , 5]);
                         return [4 /*yield*/, axios_1.default.get(requestUrl)];
                     case 3:
-                        data = (_a.sent()).data;
+                        data = (_b.sent()).data;
                         if (data) {
                             mappedLogs = this.formatter.logsMapper(data.logs);
                             if (mappedLogs.length == oversizeResponseLength) {
@@ -794,7 +798,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [3 /*break*/, 5];
                     case 4:
-                        error_6 = _a.sent();
+                        error_6 = _b.sent();
                         errorParams = { method: "ContractLogsQuery", error: error_6 };
                         if (error_6.response && error_6.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, errorParams);

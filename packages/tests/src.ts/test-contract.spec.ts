@@ -290,11 +290,17 @@ describe('Contract Events', function () {
     const provider = ethers.providers.getDefaultProvider('testnet');
     // @ts-ignore
     const wallet = new ethers.Wallet(hederaEoa, provider);
+    const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+    const contract = ethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, wallet);
+    const sleep = async (timeout: number) => {
+        await new Promise(resolve => {
+            console.log(`Waiting ${timeout/1000} secs before removing contract listeners.`)
+            setTimeout(resolve, timeout);
+        });
+    };
 
-    it("should be able to capture events", async function () {
+    it("should be able to capture events via contract", async function () {
         const capturedMints: any[] = [];
-        const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
-        const contract = ethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, wallet);
         contract.on('Mint', (...args) => {
             assert.strictEqual(args.length, 3, "expected 3 arguments - [address, unit256, log].");
             capturedMints.push([...args])
@@ -302,15 +308,45 @@ describe('Contract Events', function () {
         for (let i = 0; i <= 20; i++){
             await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
         }
-        await new Promise(resolve => {
-            console.log('Waiting 20 secs before removing contract listeners.')
-            setTimeout(resolve, 20000);
-        });
+        await sleep(20000);
         contract.removeAllListeners();
         assert.strictEqual(capturedMints.length > 0, 1 === 1, "expected at least 1 captured event (Mint).")
         for(let mint of capturedMints) {
             assert.strictEqual(mint[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
         }
+    }).timeout(TIMEOUT_PERIOD);
+
+    it('should be able to capture events via provider', async function() {
+        const capturedMints: any[] = [];
+        provider.on({address: contract.address, topics: [
+				'0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'
+            ]}, (args) => {
+            assert.notStrictEqual(args, null, "expected 1 argument - log");
+            capturedMints.push([args])
+        });
+        for (let i = 0; i <= 20; i++){
+            await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
+        }
+        await sleep(30000);
+        provider.removeAllListeners();
+        assert.strictEqual(capturedMints.length > 0, 1 === 1, "expected at least 1 captured event (Mint).")
+    }).timeout(TIMEOUT_PERIOD);
+
+    it('should throw on OR topics filter', async function() {
+        const filter = {
+            address: contract.address,
+            topics: [
+                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'],
+                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885']
+            ]
+        };
+        const noop = () => {};
+        provider.on(filter, noop);
+        provider.on('error', (error) => {
+            assert.notStrictEqual(error, null);
+        });
+        await sleep(20000);
+        provider.removeAllListeners();
     }).timeout(TIMEOUT_PERIOD);
 });
 

@@ -609,13 +609,19 @@ export class BaseProvider extends Provider {
         const limit = 100;
         const oversizeResponseLength = limit + 1;
         let epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
+        if (params.filter.topics?.length > 0 && (fromTimestampFilter == "" || toTimestampFilter == "")) {
+            return logger.throwArgumentError(
+                "topic filter requires fromTimestamp/toTimestamp fields set",
+                Logger.errors.INVALID_ARGUMENT,
+                params.filter);
+        }
         if (params.filter.topics && params.filter.topics.length > 0) {
-            for(let i=0; i< params.filter.topics.length; i++) {
+            for(let i=0; i < params.filter.topics.length; i++) {
                 const topic = params.filter.topics[i];
                 if (typeof topic === "string") {
                     epContractsLogs+= `&topic${i}=${topic}`;
                 } else {
-                    epContractsLogs+= `&topic${i}=${topic.join('')}`;
+                    return logger.throwArgumentError("OR on topics", Logger.errors.UNSUPPORTED_OPERATION, params.filter.topics);
                 }
             }
         }

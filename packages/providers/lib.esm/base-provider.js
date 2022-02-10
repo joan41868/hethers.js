@@ -553,6 +553,7 @@ export class BaseProvider extends Provider {
      * @param filter The parameters to filter logs by.
      */
     getLogs(filter) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
             this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
@@ -561,6 +562,9 @@ export class BaseProvider extends Provider {
             const limit = 100;
             const oversizeResponseLength = limit + 1;
             let epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
+            if (((_a = params.filter.topics) === null || _a === void 0 ? void 0 : _a.length) > 0 && (fromTimestampFilter == "" || toTimestampFilter == "")) {
+                return logger.throwArgumentError("topic filter requires fromTimestamp/toTimestamp fields set", Logger.errors.INVALID_ARGUMENT, params.filter);
+            }
             if (params.filter.topics && params.filter.topics.length > 0) {
                 for (let i = 0; i < params.filter.topics.length; i++) {
                     const topic = params.filter.topics[i];
@@ -568,7 +572,7 @@ export class BaseProvider extends Provider {
                         epContractsLogs += `&topic${i}=${topic}`;
                     }
                     else {
-                        epContractsLogs += `&topic${i}=${topic.join('')}`;
+                        return logger.throwArgumentError("OR on topics", Logger.errors.UNSUPPORTED_OPERATION, params.filter.topics);
                     }
                 }
             }
