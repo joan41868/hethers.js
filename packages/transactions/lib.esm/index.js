@@ -85,7 +85,7 @@ export function serializeHederaTransaction(transaction, pubKey) {
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
     if (transaction.to) {
-        if (transaction.isSimpleTransfer && transaction.value) {
+        if (transaction.isCryptoTransfer && transaction.value) {
             tx = new TransferTransaction()
                 .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString()).negated())
                 .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString()));

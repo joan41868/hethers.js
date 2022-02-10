@@ -29,7 +29,7 @@ const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
-    "nodeId", "isSimpleTransfer"
+    "nodeId", "isCryptoTransfer"
 ];
 
 // const forwardErrors = [
@@ -304,10 +304,25 @@ export abstract class Signer {
             }
         }
 
-        if (!tx.isSimpleTransfer) {
-            tx.isSimpleTransfer = tx.to && this.provider ? Promise.resolve(this.provider.getCode(tx.to)).then((res) => {
-                return res === '0x';
-            }) : false;
+        if (tx.isCryptoTransfer) {
+            if (tx.data) logger.throwError("Contract call data provided for contract execution. Cannot execute a CryptoTransfer");
+            if (!tx.to) logger.throwError("to address missing. Cannot execute a CryptoTransfer");
+            if (tx.gasLimit) logger.throwError("gasLimit provided. Cannot execute a CryptoTransfer");
+            this._checkProvider();
+            tx.isCryptoTransfer = Promise.resolve(this.provider.getCode(tx.to)).then(function (res) {
+                const isNonContract = res === '0x';
+                if (!isNonContract && tx.isCryptoTransfer) {
+                    logger.throwError("to is a contract address. Cannot execute a CryptoTransfer");
+                }
+                return isNonContract;
+            });
+        } else if (!tx.hasOwnProperty('isCryptoTransfer')) {
+            tx.isCryptoTransfer = false;
+            if (tx.to && this.provider && !tx.gasLimit && !tx.data) {
+                tx.isCryptoTransfer = Promise.resolve(this.provider.getCode(tx.to)).then((res) => {
+                    return res === '0x';
+                });
+            }
         }
 
         if (tx.from == null) {
@@ -355,7 +370,7 @@ export abstract class Signer {
         // CreateAccount always has a publicKey
         const isCreateAccount = customData && customData.publicKey;
 
-        if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
+        if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null && !tx.isCryptoTransfer) {
             return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
         }
 

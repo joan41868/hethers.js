@@ -130,7 +130,7 @@ function serializeHederaTransaction(transaction, pubKey) {
     var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
     var gas = (0, bignumber_1.numberify)(transaction.gasLimit ? transaction.gasLimit : 0);
     if (transaction.to) {
-        if (transaction.isSimpleTransfer && transaction.value) {
+        if (transaction.isCryptoTransfer && transaction.value) {
             tx = new sdk_1.TransferTransaction()
                 .addHbarTransfer(transaction.from.toString(), new sdk_1.Hbar(transaction.value.toString()).negated())
                 .addHbarTransfer(transaction.to.toString(), new sdk_1.Hbar(transaction.value.toString()));

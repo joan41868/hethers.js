@@ -86351,7 +86351,7 @@ var __awaiter$1 = (window && window.__awaiter) || function (thisArg, _arguments,
 const logger$e = new Logger(version$a);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
-    "nodeId", "isSimpleTransfer"
+    "nodeId", "isCryptoTransfer"
 ];
 ;
 ;
@@ -86542,10 +86542,29 @@ class Signer {
                 logger$e.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
         }
-        if (!tx.isSimpleTransfer) {
-            tx.isSimpleTransfer = tx.to && this.provider ? Promise.resolve(this.provider.getCode(tx.to)).then((res) => {
-                return res === '0x';
-            }) : false;
+        if (tx.isCryptoTransfer) {
+            if (tx.data)
+                logger$e.throwError("Contract call data provided for contract execution. Cannot execute a CryptoTransfer");
+            if (!tx.to)
+                logger$e.throwError("to address missing. Cannot execute a CryptoTransfer");
+            if (tx.gasLimit)
+                logger$e.throwError("gasLimit provided. Cannot execute a CryptoTransfer");
+            this._checkProvider();
+            tx.isCryptoTransfer = Promise.resolve(this.provider.getCode(tx.to)).then(function (res) {
+                const isNonContract = res === '0x';
+                if (!isNonContract && tx.isCryptoTransfer) {
+                    logger$e.throwError("to is a contract address. Cannot execute a CryptoTransfer");
+                }
+                return isNonContract;
+            });
+        }
+        else if (!tx.hasOwnProperty('isCryptoTransfer')) {
+            tx.isCryptoTransfer = false;
+            if (tx.to && this.provider && !tx.gasLimit && !tx.data) {
+                tx.isCryptoTransfer = Promise.resolve(this.provider.getCode(tx.to)).then((res) => {
+                    return res === '0x';
+                });
+            }
         }
         if (tx.from == null) {
             tx.from = this.getAddress();
@@ -86588,7 +86607,7 @@ class Signer {
             const isFileCreateOrAppend = customData && customData.fileChunk;
             // CreateAccount always has a publicKey
             const isCreateAccount = customData && customData.publicKey;
-            if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
+            if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null && !tx.isCryptoTransfer) {
                 return logger$e.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
             }
             return yield resolveProperties(tx);
@@ -92775,7 +92794,7 @@ function serializeHederaTransaction(transaction, pubKey) {
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
     if (transaction.to) {
-        if (transaction.isSimpleTransfer && transaction.value) {
+        if (transaction.isCryptoTransfer && transaction.value) {
             tx = new TransferTransaction()
                 .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString()).negated())
                 .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString()));

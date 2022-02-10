@@ -672,20 +672,26 @@ describe("Wallet local calls", function () {
 });
 describe("Wallet createAccount", function () {
     var _this = this;
-    var wallet, newAccount, newAccountPublicKey, provider;
+    var wallet, newAccount, newAccountPublicKey, provider, acc1Wallet, acc2Wallet;
     var timeout = 60000;
     before(function () {
         return __awaiter(this, void 0, void 0, function () {
-            var hederaEoa;
+            var hederaEoa, acc1Eoa, acc2Eoa;
             return __generator(this, function (_a) {
                 this.timeout(timeout);
                 hederaEoa = {
                     account: '0.0.29562194',
                     privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
                 };
+                acc1Eoa = { "account": "0.0.29631749", "privateKey": "0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b" };
+                acc2Eoa = { "account": "0.0.29631750", "privateKey": "0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee" };
                 provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
                 // @ts-ignore
                 wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
+                // @ts-ignore
+                acc1Wallet = new ethers_1.ethers.Wallet(acc1Eoa, provider);
+                // @ts-ignore
+                acc2Wallet = new ethers_1.ethers.Wallet(acc2Eoa, provider);
                 return [2 /*return*/];
             });
         });
@@ -759,16 +765,10 @@ describe("Wallet createAccount", function () {
     }).timeout(timeout);
     it("Should transfer funds between accounts", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var acc1Eoa, acc2Eoa, providerTestnet, acc1Wallet, acc2Wallet, acc1BalanceBefore, acc2BalanceBefore, acc1BalanceAfter, acc2BalanceAfter;
+            var acc1BalanceBefore, acc2BalanceBefore, acc1BalanceAfter, acc2BalanceAfter;
             return __generator(this, function (_a) {
                 switch (_a.label) {
-                    case 0:
-                        acc1Eoa = { "account": "0.0.29631749", "privateKey": "0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b" };
-                        acc2Eoa = { "account": "0.0.29631750", "privateKey": "0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee" };
-                        providerTestnet = ethers_1.ethers.providers.getDefaultProvider('testnet');
-                        acc1Wallet = new ethers_1.ethers.Wallet(acc1Eoa, providerTestnet);
-                        acc2Wallet = new ethers_1.ethers.Wallet(acc2Eoa, providerTestnet);
-                        return [4 /*yield*/, acc1Wallet.getBalance()];
+                    case 0: return [4 /*yield*/, acc1Wallet.getBalance()];
                     case 1:
                         acc1BalanceBefore = (_a.sent()).toNumber();
                         return [4 /*yield*/, acc2Wallet.getBalance()];
@@ -777,7 +777,6 @@ describe("Wallet createAccount", function () {
                         return [4 /*yield*/, acc1Wallet.sendTransaction({
                                 to: acc2Wallet.account,
                                 value: 1,
-                                gasLimit: 300000
                             })];
                     case 3:
                         _a.sent();
@@ -790,6 +789,94 @@ describe("Wallet createAccount", function () {
                         assert_1.default.strictEqual(acc1BalanceBefore > acc1BalanceAfter, true);
                         assert_1.default.strictEqual(acc2BalanceBefore < acc2BalanceAfter, true);
                         assert_1.default.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 100000000);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should throw an error for crypto transfer with data field", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var exceptionThrown, e_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        exceptionThrown = false;
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                to: acc2Wallet.account,
+                                value: 1,
+                                data: '0x',
+                                isCryptoTransfer: true
+                            })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_1 = _a.sent();
+                        exceptionThrown = true;
+                        return [3 /*break*/, 4];
+                    case 4:
+                        assert_1.default.strictEqual(exceptionThrown, true);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should throw an error for crypto transfer with gasLimit field", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var exceptionThrown, e_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        exceptionThrown = false;
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                to: acc2Wallet.account,
+                                value: 1,
+                                gasLimit: 300000,
+                                isCryptoTransfer: true
+                            })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_2 = _a.sent();
+                        exceptionThrown = true;
+                        return [3 /*break*/, 4];
+                    case 4:
+                        assert_1.default.strictEqual(exceptionThrown, true);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should throw an error for crypto transfer with missing to field", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var exceptionThrown, e_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        exceptionThrown = false;
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                value: 1,
+                                isCryptoTransfer: true
+                            })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_3 = _a.sent();
+                        exceptionThrown = true;
+                        return [3 /*break*/, 4];
+                    case 4:
+                        assert_1.default.strictEqual(exceptionThrown, true);
                         return [2 /*return*/];
                 }
             });

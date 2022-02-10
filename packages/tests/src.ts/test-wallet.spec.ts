@@ -531,7 +531,8 @@ describe("Wallet local calls", async function () {
 
 describe("Wallet createAccount", function () {
 
-    let wallet: ethers.Wallet, newAccount: ethers.Wallet, newAccountPublicKey: BytesLike, provider: ethers.providers.BaseProvider;
+    let wallet: ethers.Wallet, newAccount: ethers.Wallet, newAccountPublicKey: BytesLike,
+        provider: ethers.providers.BaseProvider, acc1Wallet: ethers.Wallet, acc2Wallet: ethers.Wallet;
     const timeout = 60000;
 
     before( async function() {
@@ -540,9 +541,15 @@ describe("Wallet createAccount", function () {
             account: '0.0.29562194',
             privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
         };
+        const acc1Eoa = {"account":"0.0.29631749","privateKey":"0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b"};
+        const acc2Eoa = {"account":"0.0.29631750","privateKey":"0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee"};
         provider = ethers.providers.getDefaultProvider('testnet');
         // @ts-ignore
         wallet = new ethers.Wallet(hederaEoa, provider);
+        // @ts-ignore
+        acc1Wallet = new ethers.Wallet(acc1Eoa, provider);
+        // @ts-ignore
+        acc2Wallet = new ethers.Wallet(acc2Eoa, provider);
     });
 
     beforeEach(async () => {
@@ -583,20 +590,11 @@ describe("Wallet createAccount", function () {
     }).timeout(timeout);
 
     it("Should transfer funds between accounts", async function() {
-        const acc1Eoa = {"account":"0.0.29631749","privateKey":"0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b"};
-        const acc2Eoa = {"account":"0.0.29631750","privateKey":"0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee"};
-        const providerTestnet = ethers.providers.getDefaultProvider('testnet');
-        // @ts-ignore
-        const acc1Wallet = new ethers.Wallet(acc1Eoa, providerTestnet);
-        // @ts-ignore
-        const acc2Wallet = new ethers.Wallet(acc2Eoa, providerTestnet);
-
         const acc1BalanceBefore = (await acc1Wallet.getBalance()).toNumber();
         const acc2BalanceBefore = (await acc2Wallet.getBalance()).toNumber();
         await acc1Wallet.sendTransaction({
             to: acc2Wallet.account,
             value: 1,
-            gasLimit: 300000
         });
         const acc1BalanceAfter = (await acc1Wallet.getBalance()).toNumber();
         const acc2BalanceAfter = (await acc2Wallet.getBalance()).toNumber();
@@ -604,5 +602,52 @@ describe("Wallet createAccount", function () {
         assert.strictEqual(acc1BalanceBefore > acc1BalanceAfter, true);
         assert.strictEqual(acc2BalanceBefore < acc2BalanceAfter, true);
         assert.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 100000000);
+    }).timeout(timeout);
+
+    it("Should throw an error for crypto transfer with data field", async function() {
+        let exceptionThrown = false;
+        try {
+            await acc1Wallet.sendTransaction({
+                to: acc2Wallet.account,
+                value: 1,
+                data: '0x',
+                isCryptoTransfer: true
+            });
+        } catch (e: any) {
+            exceptionThrown = true;
+        }
+
+        assert.strictEqual(exceptionThrown, true);
+    }).timeout(timeout);
+
+    it("Should throw an error for crypto transfer with gasLimit field", async function() {
+        let exceptionThrown = false;
+        try {
+            await acc1Wallet.sendTransaction({
+                to: acc2Wallet.account,
+                value: 1,
+                gasLimit: 300000,
+                isCryptoTransfer: true
+            });
+        } catch (e: any) {
+            exceptionThrown = true;
+        }
+
+        assert.strictEqual(exceptionThrown, true);
+    }).timeout(timeout);
+
+
+    it("Should throw an error for crypto transfer with missing to field", async function() {
+        let exceptionThrown = false;
+        try {
+            await acc1Wallet.sendTransaction({
+                value: 1,
+                isCryptoTransfer: true
+            });
+        } catch (e: any) {
+            exceptionThrown = true;
+        }
+
+        assert.strictEqual(exceptionThrown, true);
     }).timeout(timeout);
 });
