@@ -11,7 +11,7 @@ For more information, see the [documentation](https://docs.ethers.io/v5/api/util
 Importing
 ---------
 
-Most users will prefer to use the [umbrella package](https://www.npmjs.com/package/ethers) TODO link once deployed,
+Most users will prefer to use the [umbrella package](https://www.npmjs.com/package/@hashgraph/hethers),
 but for those with more specific needs, individual components can be imported.
 
 ```javascript
@@ -30,7 +30,7 @@ const {
 
     Mnemonic
 
-} = require("@ethersproject/hdnode");
+} = require("@hethers/hdnode");
 ```
 
 
