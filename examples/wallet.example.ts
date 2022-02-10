@@ -110,12 +110,12 @@ const hethers = require("ethers");
 	// @ts-ignore
 	const acc2Wallet = new hethers.Wallet(acc2Eoa, providerTestnet);
 	console.log(`Acc1 balance: ${(await acc1Wallet.getBalance()).toString()}`);
-	console.log(`Acc1 balance: ${(await acc2Wallet.getBalance()).toString()}\n\n`);
+	console.log(`Acc2 balance: ${(await acc2Wallet.getBalance()).toString()}\n\n`);
 	await acc1Wallet.sendTransaction({
 		to: acc2Wallet.account,
 		value: 1,
 		gasLimit: 300000
 	});
 	console.log(`Acc1 balance: ${(await acc1Wallet.getBalance()).toString()}`);
-	console.log(`Acc1 balance: ${(await acc2Wallet.getBalance()).toString()}\n\n`);
+	console.log(`Acc2 balance: ${(await acc2Wallet.getBalance()).toString()}\n\n`);
 })()
