@@ -336,7 +336,7 @@ describe('Contract Events', function () {
         }
         await sleep(20000);
         contract.removeAllListeners();
-        assert.strictEqual(capturedMints.length, 10, "expected 10 captured events (Mint).")
+        assert.strictEqual(capturedMints.length > 9, true, "expected 10 captured events (Mint).")
         for(let mint of capturedMints) {
             assert.strictEqual(mint[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
         }
@@ -355,7 +355,7 @@ describe('Contract Events', function () {
         }
         await sleep(30000);
         provider.removeAllListeners();
-        assert.strictEqual(capturedMints.length, 10, "expected 10 captured events (Mint).")
+        assert.strictEqual(capturedMints.length > 9, true, "expected 10 captured events (Mint).")
     }).timeout(TIMEOUT_PERIOD);
 
     it('should throw on OR topics filter', async function() {
