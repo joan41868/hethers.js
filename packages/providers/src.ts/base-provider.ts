@@ -516,12 +516,13 @@ export class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param transactionId - id of the transaction to search for
+     * @param transactionIdOrTimestamp - id or consensus timestamp of the transaction to search for
      */
-    async getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse> {
+    async getTransaction(transactionIdOrTimestamp: string | Promise<string>): Promise<TransactionResponse> {
         this._checkMirrorNode();
-        transactionId = await transactionId;
-        const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
+        transactionIdOrTimestamp = await transactionIdOrTimestamp;
+        let transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT;
+        !transactionIdOrTimestamp.includes("-") ? transactionsEndpoint += ('?timestamp=' + transactionIdOrTimestamp) : transactionsEndpoint += transactionIdOrTimestamp;
         try {
             let { data } = await axios.get(this._mirrorNodeUrl + transactionsEndpoint);
             if (data) {
@@ -530,13 +531,13 @@ export class BaseProvider extends Provider {
                     let record: any;
                     record = {
                         chainId: this._network.chainId,
-                        transactionId: transactionId,
+                        transactionId: filtered[0].transaction_id,
                         result: filtered[0].result,
                     };
 
                     const transactionName = filtered[0].name;
                     if (transactionName === 'CRYPTOCREATEACCOUNT') {
-                        record.from = getAccountFromTransactionId(transactionId);
+                        record.from = getAccountFromTransactionId(filtered[0].transaction_id);
                         record.timestamp = filtered[0].consensus_timestamp;
 
                         // Different endpoints of the mirror node API returns hashes in different formats.
@@ -547,7 +548,7 @@ export class BaseProvider extends Provider {
                         record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                     }
                     else {
-                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                        const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + filtered[0].transaction_id;
                         const dataWithLogs = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
                         record = Object.assign({}, record, {...dataWithLogs.data});
                     }

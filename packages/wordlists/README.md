@@ -1,7 +1,7 @@
 BIP39 Wordlists
 ===============
 
-This sub-module is part of the [ethers project](https://github.com/ethers-io/ethers.js).
+This sub-module is part of the [hethers project](https://github.com/hashgraph/hethers.js). It is a fork of the original [ethers project](https://github.com/ethers-io/ethers.js) sub-module.
 
 Supported Languages:
 
@@ -14,7 +14,7 @@ Supported Languages:
 - **zh_cn** - Chinese (simplified)
 - **zh_tw** - Chinese (traditional)
 
-For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/wordlists/).
+For more information, see the [documentation](https://docs.ethers.io/v5/api/utils/wordlists/). TODO Docs
 
 
 Browser
