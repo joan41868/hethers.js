@@ -7,7 +7,7 @@ const logger = new Logger(version);
 ///////////////////////////////
 // Exported Types
 
-export type Bytes = ArrayLike<number> | Uint8Array;
+export type Bytes = ArrayLike<number>;
 
 export type BytesLike = Bytes | string;
 
