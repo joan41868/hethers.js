@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.TypedDataEncoder = void 0;
-var address_1 = require("@ethersproject/address");
-var bignumber_1 = require("@ethersproject/bignumber");
-var bytes_1 = require("@ethersproject/bytes");
+var address_1 = require("@hethers/address");
+var bignumber_1 = require("@hethers/bignumber");
+var bytes_1 = require("@hethers/bytes");
 var keccak256_1 = require("@ethersproject/keccak256");
 var properties_1 = require("@ethersproject/properties");
-var logger_1 = require("@ethersproject/logger");
+var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 var id_1 = require("./id");

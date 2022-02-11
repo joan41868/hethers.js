@@ -2,10 +2,10 @@
 
 import { EC } from "./elliptic";
 
-import { arrayify, BytesLike, hexlify, hexZeroPad, Signature, SignatureLike, splitSignature } from "@ethersproject/bytes";
+import { arrayify, BytesLike, hexlify, hexZeroPad, Signature, SignatureLike, splitSignature } from "@hethers/bytes";
 import { defineReadOnly } from "@ethersproject/properties";
 
-import { Logger } from "@ethersproject/logger";
+import { Logger } from "@hethers/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 

@@ -8,12 +8,12 @@ import {
     hexDataSlice, hexlify,
     isHexString,
     stripZeros
-} from "@ethersproject/bytes";
-import {_base16To36, _base36To16, BigNumber, BigNumberish} from "@ethersproject/bignumber";
+} from "@hethers/bytes";
+import {_base16To36, _base36To16, BigNumber, BigNumberish} from "@hethers/bignumber";
 import {keccak256} from "@ethersproject/keccak256";
-import {encode} from "@ethersproject/rlp";
+import {encode} from "@hethers/rlp";
 
-import {Logger} from "@ethersproject/logger";
+import {Logger} from "@hethers/logger";
 import {version} from "./_version";
 
 const logger = new Logger(version);

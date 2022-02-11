@@ -66,19 +66,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.BaseProvider = exports.Event = void 0;
-var abstract_provider_1 = require("@ethersproject/abstract-provider");
-var bignumber_1 = require("@ethersproject/bignumber");
-var bytes_1 = require("@ethersproject/bytes");
-var networks_1 = require("@ethersproject/networks");
+var abstract_provider_1 = require("@hethers/abstract-provider");
+var bignumber_1 = require("@hethers/bignumber");
+var bytes_1 = require("@hethers/bytes");
+var networks_1 = require("@hethers/networks");
 var properties_1 = require("@ethersproject/properties");
-var logger_1 = require("@ethersproject/logger");
+var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 var formatter_1 = require("./formatter");
-var address_1 = require("@ethersproject/address");
+var address_1 = require("@hethers/address");
 var sdk_1 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
-var utils_1 = require("ethers/lib/utils");
+var utils_1 = require("hethers/lib/utils");
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore

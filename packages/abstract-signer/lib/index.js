@@ -71,16 +71,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.randomNumBetween = exports.VoidSigner = exports.Signer = void 0;
-var bignumber_1 = require("@ethersproject/bignumber");
-var bytes_1 = require("@ethersproject/bytes");
+var bignumber_1 = require("@hethers/bignumber");
+var bytes_1 = require("@hethers/bytes");
 var properties_1 = require("@ethersproject/properties");
-var logger_1 = require("@ethersproject/logger");
+var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");
-var address_1 = require("@ethersproject/address");
+var address_1 = require("@hethers/address");
 var sdk_1 = require("@hashgraph/sdk");
 var Long = __importStar(require("long"));
 var proto_1 = require("@hashgraph/proto");
-var strings_1 = require("@ethersproject/strings");
+var strings_1 = require("@hethers/strings");
 var logger = new logger_1.Logger(_version_1.version);
 var allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",

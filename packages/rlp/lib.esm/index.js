@@ -1,7 +1,7 @@
 "use strict";
 //See: https://github.com/ethereum/wiki/wiki/RLP
-import { arrayify, hexlify, isBytesLike } from "@ethersproject/bytes";
-import { Logger } from "@ethersproject/logger";
+import { arrayify, hexlify, isBytesLike } from "@hethers/bytes";
+import { Logger } from "@hethers/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 function arrayifyInteger(value) {

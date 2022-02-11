@@ -1,14 +1,14 @@
 {
   "author": "Richard Moore <me@ricmoo.com>",
   "dependencies": {
-    "@ethersproject/abstract-signer": "^5.5.0",
-    "@ethersproject/address": "^5.5.0",
-    "@ethersproject/bignumber": "^5.5.0",
-    "@ethersproject/bytes": "^5.5.0",
-    "@ethersproject/keccak256": "^5.5.0",
-    "@ethersproject/logger": "^5.5.0",
-    "@ethersproject/properties": "^5.5.0",
-    "@ethersproject/strings": "^5.5.0"
+    "@hethers/abstract-signer": "1.0.0",
+    "@hethers/address": "1.0.0",
+    "@hethers/bignumber": "1.0.0",
+    "@hethers/bytes": "1.0.0",
+    "@ethersproject/keccak256": "5.5.0",
+    "@hethers/logger": "1.0.0",
+    "@ethersproject/properties": "5.5.0",
+    "@hethers/strings": "1.0.0"
   },
   "description": "Hash utility functions for Ethereum.",
   "ethereum": "donations.ethers.eth",
@@ -29,14 +29,14 @@
   "license": "MIT",
   "main": "./lib/index.js",
   "module": "./lib.esm/index.js",
-  "name": "@ethersproject/hash",
+  "name": "@hethers/hash",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "directory": "packages/hash",
     "type": "git",
-    "url": "git://github.com/ethers-io/ethers.js.git"
+    "url": "git://github.com/hashgraph/hethers.js.git"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -44,5 +44,5 @@
   "sideEffects": false,
   "tarballHash": "0x7d9a6d1808386f7963885e757b739ee981616a16bc1f479d43278be9611e9cc1",
   "types": "./lib/index.d.ts",
-  "version": "5.5.0"
+  "version": "1.0.0"
 }

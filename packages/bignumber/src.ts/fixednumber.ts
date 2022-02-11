@@ -1,8 +1,8 @@
 "use strict";
 
-import { arrayify, BytesLike, hexZeroPad, isBytes } from "@ethersproject/bytes";
+import { arrayify, BytesLike, hexZeroPad, isBytes } from "@hethers/bytes";
 
-import { Logger } from "@ethersproject/logger";
+import { Logger } from "@hethers/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 

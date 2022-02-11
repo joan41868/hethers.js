@@ -18,11 +18,11 @@ import {
     TransactionReceipt,
     TransactionRequest,
     TransactionResponse
-} from "@ethersproject/abstract-provider";
-import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
-import { AccountLike, getAddress, getAddressFromAccount } from "@ethersproject/address";
-import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
-import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
+} from "@hethers/abstract-provider";
+import { Signer, VoidSigner } from "@hethers/abstract-signer";
+import { AccountLike, getAddress, getAddressFromAccount } from "@hethers/address";
+import { BigNumber, BigNumberish } from "@hethers/bignumber";
+import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@hethers/bytes";
 import {
     deepCopy,
     Deferrable,
@@ -31,9 +31,9 @@ import {
     resolveProperties,
     shallowCopy
 } from "@ethersproject/properties";
-import { AccessList, accessListify, AccessListish} from "@ethersproject/transactions";
+import { AccessList, accessListify, AccessListish} from "@hethers/transactions";
 
-import { Logger } from "@ethersproject/logger";
+import { Logger } from "@hethers/logger";
 import { version } from "./_version";
 
 const logger = new Logger(version);

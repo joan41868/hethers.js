@@ -21,19 +21,19 @@
   ],
   "license": "MIT",
   "main": "./src/index.js",
-  "name": "@ethersproject/shims",
+  "name": "@hethers/shims",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "directory": "packages/shims",
     "type": "git",
-    "url": "git://github.com/ethers-io/ethers.js.git"
+    "url": "git://github.com/hashgraph/hethers.js.git"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "tarballHash": "0x8cb0140eb461e4643404f56ba8d515f0bde32a7829cb58bec06b6034b6053ffa",
   "types": "./lib/index.d.ts",
-  "version": "5.5.0"
+  "version": "1.0.0"
 }

@@ -1,11 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.isAddress = exports.getAddress = exports.getChecksumAddress = exports.asAccountString = exports.getAccountFromTransactionId = void 0;
-var bytes_1 = require("@ethersproject/bytes");
-var bignumber_1 = require("@ethersproject/bignumber");
+var bytes_1 = require("@hethers/bytes");
+var bignumber_1 = require("@hethers/bignumber");
 var keccak256_1 = require("@ethersproject/keccak256");
-var rlp_1 = require("@ethersproject/rlp");
-var logger_1 = require("@ethersproject/logger");
+var rlp_1 = require("@hethers/rlp");
+var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 function getAccountFromTransactionId(transactionId) {

@@ -1,12 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Formatter = void 0;
-var address_1 = require("@ethersproject/address");
-var bignumber_1 = require("@ethersproject/bignumber");
-var bytes_1 = require("@ethersproject/bytes");
-var constants_1 = require("@ethersproject/constants");
-var transactions_1 = require("@ethersproject/transactions");
-var logger_1 = require("@ethersproject/logger");
+var address_1 = require("@hethers/address");
+var bignumber_1 = require("@hethers/bignumber");
+var bytes_1 = require("@hethers/bytes");
+var constants_1 = require("@hethers/constants");
+var transactions_1 = require("@hethers/transactions");
+var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 var Formatter = /** @class */ (function () {

@@ -1,5 +1,5 @@
-import { BytesLike } from "@ethersproject/bytes";
-import { BigNumberish } from "@ethersproject/bignumber";
+import { BytesLike } from "@hethers/bytes";
+import { BigNumberish } from "@hethers/bignumber";
 export declare function getAccountFromTransactionId(transactionId: string): string;
 export declare function asAccountString(accountLike: AccountLike): string;
 export declare function getChecksumAddress(address: string): string;

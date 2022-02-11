@@ -1,7 +1,7 @@
 {
   "author": "Richard Moore <me@ricmoo.com>",
   "dependencies": {
-    "ethers": "^5.5.0"
+    "hethers": "1.0.0"
   },
   "description": "ASM libraries and tools for the Ethereum EVM.",
   "ethereum": "donations.ethers.eth",
@@ -23,14 +23,14 @@
   "license": "MIT",
   "main": "./lib/index.js",
   "module": "./lib.esm/index.js",
-  "name": "@ethersproject/asm",
+  "name": "@hethers/asm",
   "publishConfig": {
     "access": "public"
   },
   "repository": {
     "directory": "packages/asm",
     "type": "git",
-    "url": "git://github.com/ethers-io/ethers.js.git"
+    "url": "git://github.com/hashgraph/hethers.js.git"
   },
   "scripts": {
     "generate": "node ./generate.js",
@@ -38,5 +38,5 @@
   },
   "tarballHash": "0x83b38ffcff16cd1e171859581851f4188ed87adc2e102d5517d9177859538a5c",
   "types": "./lib/index.d.ts",
-  "version": "5.5.0"
+  "version": "1.0.0"
 }

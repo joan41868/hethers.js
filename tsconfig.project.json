@@ -20,28 +20,13 @@
       "path": "./packages/bytes"
     },
     {
-      "path": "./packages/base64"
-    },
-    {
       "path": "./packages/bignumber"
     },
     {
       "path": "./packages/constants"
     },
     {
-      "path": "./packages/keccak256"
-    },
-    {
       "path": "./packages/networks"
-    },
-    {
-      "path": "./packages/properties"
-    },
-    {
-      "path": "./packages/basex"
-    },
-    {
-      "path": "./packages/random"
     },
     {
       "path": "./packages/rlp"
@@ -50,28 +35,13 @@
       "path": "./packages/address"
     },
     {
-      "path": "./packages/sha2"
-    },
-    {
-      "path": "./packages/pbkdf2"
-    },
-    {
       "path": "./packages/signing-key"
     },
     {
       "path": "./packages/strings"
     },
     {
-      "path": "./packages/solidity"
-    },
-    {
       "path": "./packages/transactions"
-    },
-    {
-      "path": "./packages/units"
-    },
-    {
-      "path": "./packages/web"
     },
     {
       "path": "./packages/abstract-provider"
@@ -80,19 +50,10 @@
       "path": "./packages/abstract-signer"
     },
     {
-      "path": "./packages/hash"
-    },
-    {
-      "path": "./packages/abi"
-    },
-    {
       "path": "./packages/contracts"
     },
     {
-      "path": "./packages/providers"
-    },
-    {
-      "path": "./packages/wordlists"
+      "path": "./packages/hash"
     },
     {
       "path": "./packages/hdnode"
@@ -101,10 +62,13 @@
       "path": "./packages/json-wallets"
     },
     {
+      "path": "./packages/providers"
+    },
+    {
       "path": "./packages/wallet"
     },
     {
-      "path": "./packages/ethers"
+      "path": "./packages/hethers"
     },
     {
       "path": "./packages/asm"

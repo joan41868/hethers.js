@@ -2,17 +2,17 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAccountPath = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.mnemonicToSeed = exports.HDNode = exports.defaultPath = void 0;
 var basex_1 = require("@ethersproject/basex");
-var bytes_1 = require("@ethersproject/bytes");
-var bignumber_1 = require("@ethersproject/bignumber");
-var strings_1 = require("@ethersproject/strings");
+var bytes_1 = require("@hethers/bytes");
+var bignumber_1 = require("@hethers/bignumber");
+var strings_1 = require("@hethers/strings");
 var pbkdf2_1 = require("@ethersproject/pbkdf2");
 var properties_1 = require("@ethersproject/properties");
-var signing_key_1 = require("@ethersproject/signing-key");
+var signing_key_1 = require("@hethers/signing-key");
 var sha2_1 = require("@ethersproject/sha2");
 var wordlists_1 = require("@ethersproject/wordlists");
-var logger_1 = require("@ethersproject/logger");
+var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");
-var transactions_1 = require("@ethersproject/transactions");
+var transactions_1 = require("@hethers/transactions");
 var logger = new logger_1.Logger(_version_1.version);
 var N = bignumber_1.BigNumber.from("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
 // "Bitcoin seed"

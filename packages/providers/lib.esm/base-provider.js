@@ -8,19 +8,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { Provider } from "@ethersproject/abstract-provider";
-import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, hexDataLength, hexlify } from "@ethersproject/bytes";
-import { getNetwork } from "@ethersproject/networks";
+import { Provider } from "@hethers/abstract-provider";
+import { BigNumber } from "@hethers/bignumber";
+import { arrayify, hexDataLength, hexlify } from "@hethers/bytes";
+import { getNetwork } from "@hethers/networks";
 import { defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
-import { Logger } from "@ethersproject/logger";
+import { Logger } from "@hethers/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 import { Formatter } from "./formatter";
-import { getAccountFromTransactionId, asAccountString, getAddressFromAccount } from "@ethersproject/address";
+import { getAccountFromTransactionId, asAccountString, getAddressFromAccount } from "@hethers/address";
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
-import { base64 } from "ethers/lib/utils";
+import { base64 } from "hethers/lib/utils";
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore

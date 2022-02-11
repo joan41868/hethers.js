@@ -8,16 +8,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { numberify } from "@ethersproject/bignumber";
-import { arrayify, hexlify } from "@ethersproject/bytes";
+import { numberify } from "@hethers/bignumber";
+import { arrayify, hexlify } from "@hethers/bytes";
 import { defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
-import { Logger } from "@ethersproject/logger";
+import { Logger } from "@hethers/logger";
 import { version } from "./_version";
-import { asAccountString, getAddressFromAccount, getChecksumAddress } from "@ethersproject/address";
+import { asAccountString, getAddressFromAccount, getChecksumAddress } from "@hethers/address";
 import { AccountId, ContractCallQuery, Hbar, PrivateKey, PublicKey as HederaPubKey, TransactionId } from "@hashgraph/sdk";
 import * as Long from "long";
 import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
-import { splitInChunks } from "@ethersproject/strings";
+import { splitInChunks } from "@hethers/strings";
 const logger = new Logger(version);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",

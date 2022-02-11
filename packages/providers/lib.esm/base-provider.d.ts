@@ -1,11 +1,11 @@
-import { EventType, Filter, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
-import { BigNumber } from "@ethersproject/bignumber";
-import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
+import { EventType, Filter, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@hethers/abstract-provider";
+import { BigNumber } from "@hethers/bignumber";
+import { Network, Networkish, HederaNetworkConfigLike } from "@hethers/networks";
 import { Deferrable } from "@ethersproject/properties";
-import { Transaction } from "@ethersproject/transactions";
+import { Transaction } from "@hethers/transactions";
 import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
-import { AccountLike } from "@ethersproject/address";
+import { AccountLike } from "@hethers/address";
 import { AccountId, Client } from "@hashgraph/sdk";
 export declare class Event {
     readonly listener: Listener;

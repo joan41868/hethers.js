@@ -1,6 +1,6 @@
 import { createHash } from "crypto";
 import { saveTests as _saveTests } from "../../lib/index";
-import { ethers } from "../../../ethers";
+import { ethers } from "../../../hethers";
 
 import * as TestCase from "../../lib/testcases";
 export { TestCase };

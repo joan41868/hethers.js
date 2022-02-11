@@ -1,7 +1,7 @@
 "use strict";
 
-import { AccountLike, getAccountFromAddress, getAddress } from "@ethersproject/address";
-import { BigNumber, BigNumberish, numberify } from "@ethersproject/bignumber";
+import { AccountLike, getAccountFromAddress, getAddress } from "@hethers/address";
+import { BigNumber, BigNumberish, numberify } from "@hethers/bignumber";
 import {
     arrayify,
     BytesLike,
@@ -9,14 +9,14 @@ import {
     hexDataSlice,
     hexlify,
     SignatureLike,
-} from "@ethersproject/bytes";
-import {Zero} from "@ethersproject/constants";
+} from "@hethers/bytes";
+import {Zero} from "@hethers/constants";
 import {keccak256} from "@ethersproject/keccak256";
-import {computePublicKey, recoverPublicKey} from "@ethersproject/signing-key";
+import {computePublicKey, recoverPublicKey} from "@hethers/signing-key";
 
-import {Logger} from "@ethersproject/logger";
+import {Logger} from "@hethers/logger";
 import {version} from "./_version";
-import {base64, getAddressFromAccount} from "ethers/lib/utils";
+import {base64, getAddressFromAccount} from "hethers/lib/utils";
 import {
     ContractCreateTransaction,
     ContractExecuteTransaction, ContractId, FileAppendTransaction,
@@ -24,7 +24,7 @@ import {
     Transaction as HederaTransaction,
     PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction, AccountCreateTransaction, Hbar
 } from "@hashgraph/sdk";
-import { TransactionRequest } from "@ethersproject/abstract-provider";
+import { TransactionRequest } from "@hethers/abstract-provider";
 
 const logger = new Logger(version);
 

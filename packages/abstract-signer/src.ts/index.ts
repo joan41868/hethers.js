@@ -1,18 +1,18 @@
 "use strict";
 
-import { Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
-import { BigNumber, BigNumberish, numberify } from "@ethersproject/bignumber";
-import { arrayify, Bytes, BytesLike, hexlify } from "@ethersproject/bytes";
+import { Provider, TransactionRequest, TransactionResponse } from "@hethers/abstract-provider";
+import { BigNumber, BigNumberish, numberify } from "@hethers/bignumber";
+import { arrayify, Bytes, BytesLike, hexlify } from "@hethers/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
-import { Logger } from "@ethersproject/logger";
+import { Logger } from "@hethers/logger";
 import { version } from "./_version";
 import {
     Account,
     asAccountString,
     getAddressFromAccount,
     getChecksumAddress
-} from "@ethersproject/address";
-import { SigningKey } from "@ethersproject/signing-key";
+} from "@hethers/address";
+import { SigningKey } from "@hethers/signing-key";
 import {
     AccountId,
     ContractCallQuery,
@@ -23,7 +23,7 @@ import {
 } from "@hashgraph/sdk";
 import * as Long from "long";
 import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
-import { splitInChunks } from "@ethersproject/strings";
+import { splitInChunks } from "@hethers/strings";
 
 const logger = new Logger(version);
 
