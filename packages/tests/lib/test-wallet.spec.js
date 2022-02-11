@@ -776,7 +776,7 @@ describe("Wallet createAccount", function () {
                         acc2BalanceBefore = (_a.sent()).toNumber();
                         return [4 /*yield*/, acc1Wallet.sendTransaction({
                                 to: acc2Wallet.account,
-                                value: 1,
+                                value: 1000,
                             })];
                     case 3:
                         _a.sent();
@@ -788,7 +788,7 @@ describe("Wallet createAccount", function () {
                         acc2BalanceAfter = (_a.sent()).toNumber();
                         assert_1.default.strictEqual(acc1BalanceBefore > acc1BalanceAfter, true);
                         assert_1.default.strictEqual(acc2BalanceBefore < acc2BalanceAfter, true);
-                        assert_1.default.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 100000000);
+                        assert_1.default.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 1000);
                         return [2 /*return*/];
                 }
             });
@@ -988,7 +988,7 @@ describe("Wallet createAccount", function () {
                 switch (_a.label) {
                     case 0: return [4 /*yield*/, acc1Wallet.sendTransaction({
                             to: acc2Wallet.account,
-                            value: 1.8925
+                            value: 18925
                         })];
                     case 1:
                         transaction = _a.sent();
@@ -1012,7 +1012,7 @@ describe("Wallet createAccount", function () {
                         assert_1.default.strictEqual(tx.customData.result, 'SUCCESS');
                         assert_1.default.strictEqual(tx.from, acc1Wallet.account);
                         assert_1.default.strictEqual(tx.to, acc2Wallet.account);
-                        assert_1.default.strictEqual(tx.value.toString(), '189250000');
+                        assert_1.default.strictEqual(tx.value.toString(), '18925');
                         return [2 /*return*/];
                 }
             });

@@ -689,6 +689,7 @@ var BaseProvider = /** @class */ (function (_super) {
                             chainId: this._network.chainId,
                             transactionId: transactionId,
                             result: filtered_1[0].result,
+                            customData: {}
                         };
                         transactionName = filtered_1[0].name;
                         if (!(transactionName === 'CRYPTOCREATEACCOUNT')) return [3 /*break*/, 4];
@@ -715,8 +716,13 @@ var BaseProvider = /** @class */ (function (_super) {
                         }).filter(function (t) {
                             return t.amount != charityFee_1;
                         });
-                        record_1.to = toTransfers[0].account;
-                        record_1.amount = toTransfers.reduce(function (a, b) { return a + b.amount; }, 0);
+                        if (toTransfers.length > 1) {
+                            record_1.transfersList = toTransfers;
+                        }
+                        else {
+                            record_1.to = toTransfers[0].account;
+                            record_1.amount = toTransfers[0].amount;
+                        }
                         return [3 /*break*/, 7];
                     case 5:
                         contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;

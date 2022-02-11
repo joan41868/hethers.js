@@ -595,14 +595,14 @@ describe("Wallet createAccount", function () {
         const acc2BalanceBefore = (await acc2Wallet.getBalance()).toNumber();
         await acc1Wallet.sendTransaction({
             to: acc2Wallet.account,
-            value: 1,
+            value: 1000,
         });
         const acc1BalanceAfter = (await acc1Wallet.getBalance()).toNumber();
         const acc2BalanceAfter = (await acc2Wallet.getBalance()).toNumber();
 
         assert.strictEqual(acc1BalanceBefore > acc1BalanceAfter, true);
         assert.strictEqual(acc2BalanceBefore < acc2BalanceAfter, true);
-        assert.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 100000000);
+        assert.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 1000);
     }).timeout(timeout);
 
     it("Should throw an error for crypto transfer with data field", async function() {
@@ -710,7 +710,7 @@ describe("Wallet createAccount", function () {
     it("Should be able to get a crypto transfer transaction via provider.getTransaction(tx.transactionId)", async function () {
         const transaction = await acc1Wallet.sendTransaction({
             to: acc2Wallet.account,
-            value: 1.8925
+            value: 18925
         });
         await transaction.wait();
 
@@ -730,6 +730,6 @@ describe("Wallet createAccount", function () {
 
         assert.strictEqual(tx.from, acc1Wallet.account);
         assert.strictEqual(tx.to, acc2Wallet.account);
-        assert.strictEqual(tx.value.toString(), '189250000');
+        assert.strictEqual(tx.value.toString(), '18925');
     }).timeout(timeout);
 });

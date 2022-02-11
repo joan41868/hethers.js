@@ -92789,8 +92789,8 @@ function serializeHederaTransaction(transaction, pubKey) {
     if (transaction.to) {
         if (transaction.isCryptoTransfer && transaction.value) {
             tx = new TransferTransaction()
-                .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString()).negated())
-                .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString()));
+                .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar).negated())
+                .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar));
         }
         else {
             tx = new ContractExecuteTransaction()
@@ -94330,7 +94330,8 @@ class Formatter {
                 gas_used: record.gas_used ? record.gas_used : null,
                 logs: record.logs ? record.logs : null,
                 result: record.result ? record.result : null,
-                accountAddress: record.accountAddress ? record.accountAddress : null
+                accountAddress: record.accountAddress ? record.accountAddress : null,
+                transfersList: record.transfersList ? record.transfersList : [],
             },
             wait: null,
         };
@@ -98540,6 +98541,7 @@ class BaseProvider extends Provider {
                             chainId: this._network.chainId,
                             transactionId: transactionId,
                             result: filtered[0].result,
+                            customData: {}
                         };
                         const transactionName = filtered[0].name;
                         if (transactionName === 'CRYPTOCREATEACCOUNT') {
@@ -98565,8 +98567,13 @@ class BaseProvider extends Provider {
                             }).filter(function (t) {
                                 return t.amount != charityFee;
                             });
-                            record.to = toTransfers[0].account;
-                            record.amount = toTransfers.reduce((a, b) => a + b.amount, 0);
+                            if (toTransfers.length > 1) {
+                                record.transfersList = toTransfers;
+                            }
+                            else {
+                                record.to = toTransfers[0].account;
+                                record.amount = toTransfers[0].amount;
+                            }
                         }
                         else {
                             const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;

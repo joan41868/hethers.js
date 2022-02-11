@@ -50,7 +50,8 @@ export type HederaTransactionRecord = {
     block_number?: number,
     hash: string,
     logs?: {},
-    accountAddress?: string
+    accountAddress?: string,
+    transfersList?: Array<{ to: string, amount: number }>
 }
 
 export interface TransactionResponse extends Transaction {

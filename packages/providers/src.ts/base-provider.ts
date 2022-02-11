@@ -539,6 +539,7 @@ export class BaseProvider extends Provider {
                         chainId: this._network.chainId,
                         transactionId: transactionId,
                         result: filtered[0].result,
+                        customData: {}
                     };
 
                     const transactionName = filtered[0].name;
@@ -568,8 +569,12 @@ export class BaseProvider extends Provider {
                             return t.amount != charityFee;
                         });
 
-                        record.to = toTransfers[0].account;
-                        record.amount = toTransfers.reduce((a: any, b: any) => a + b.amount, 0);
+                        if (toTransfers.length > 1) {
+                            record.transfersList = toTransfers;
+                        } else {
+                            record.to = toTransfers[0].account;
+                            record.amount = toTransfers[0].amount;
+                        }
                     }
                     else {
                         const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
