@@ -1,5 +1,5 @@
-import * as hethers from "ethers";
-import {arrayify, getAddressFromAccount} from "ethers/lib/utils";
+import * as hethers from "hethers";
+import {arrayify, getAddressFromAccount} from "hethers/lib/utils";
 import {AccountCreateTransaction, PrivateKey, Hbar, Client, Key as HederaKey, TransactionId} from "@hashgraph/sdk";
 import {readFileSync} from "fs";
 import {Key} from "@hashgraph/proto";

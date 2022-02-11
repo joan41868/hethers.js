@@ -1,4 +1,4 @@
-const hethers = require("ethers");
+const hethers = require("hethers");
 import { HederaNetworks } from "@hethers/providers/lib/default-hedera-provider";
 
 (async () => {
