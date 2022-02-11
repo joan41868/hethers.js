@@ -229,6 +229,7 @@ var BaseProvider = /** @class */ (function (_super) {
         logger.checkNew(_newTarget, abstract_provider_1.Provider);
         _this = _super.call(this) || this;
         _this._events = [];
+        _this._emittedEvents = {};
         _this.formatter = _newTarget.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -273,6 +274,7 @@ var BaseProvider = /** @class */ (function (_super) {
             }
         }
         _this._pollingInterval = 3000;
+        _this._previousToTimestamp = 0;
         return _this;
     }
     BaseProvider.prototype._ready = function () {
@@ -301,11 +303,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         network = _a.sent();
                         _a.label = 6;
                     case 6:
-                        // This should never happen; every Provider sub-class should have
-                        // suggested a network by here (or have thrown).
-                        // if (!network) {
-                        //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
-                        // }
                         // Possible this call stacked so do not call defineReadOnly again
                         if (this._network == null) {
                             if (this.anyNetwork) {
@@ -753,24 +750,28 @@ var BaseProvider = /** @class */ (function (_super) {
      * @param filter The parameters to filter logs by.
      */
     BaseProvider.prototype.getLogs = function (filter) {
-        var _a;
         return __awaiter(this, void 0, void 0, function () {
-            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLength, epContractsLogs, i, topic, requestUrl, data, mappedLogs, error_6, errorParams;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var params, now, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLength, epContractsLogs, i, topic, requestUrl, data, mappedLogs, error_6, errorParams;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
                     case 0:
                         this._checkMirrorNode();
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({ filter: this._getFilter(filter) })];
                     case 1:
-                        params = _b.sent();
-                        fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
-                        toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
+                        params = _a.sent();
+                        now = new Date().getTime();
+                        if (!params.filter.fromTimestamp) {
+                            // TODO: extract constant after you find the earliest timestamp
+                            params.filter.fromTimestamp = composeHederaTimestamp(1);
+                        }
+                        if (!params.filter.toTimestamp) {
+                            params.filter.toTimestamp = composeHederaTimestamp(now);
+                        }
+                        fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+                        toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
                         limit = 100;
                         oversizeResponseLength = limit + 1;
                         epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
-                        if (((_a = params.filter.topics) === null || _a === void 0 ? void 0 : _a.length) > 0 && (fromTimestampFilter == "" || toTimestampFilter == "")) {
-                            return [2 /*return*/, logger.throwArgumentError("topic filter requires fromTimestamp/toTimestamp fields set", logger_1.Logger.errors.INVALID_ARGUMENT, params.filter)];
-                        }
                         if (params.filter.topics && params.filter.topics.length > 0) {
                             for (i = 0; i < params.filter.topics.length; i++) {
                                 topic = params.filter.topics[i];
@@ -783,12 +784,12 @@ var BaseProvider = /** @class */ (function (_super) {
                             }
                         }
                         requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
-                        _b.label = 2;
+                        _a.label = 2;
                     case 2:
-                        _b.trys.push([2, 4, , 5]);
+                        _a.trys.push([2, 4, , 5]);
                         return [4 /*yield*/, axios_1.default.get(requestUrl)];
                     case 3:
-                        data = (_b.sent()).data;
+                        data = (_a.sent()).data;
                         if (data) {
                             mappedLogs = this.formatter.logsMapper(data.logs);
                             if (mappedLogs.length == oversizeResponseLength) {
@@ -798,7 +799,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         return [3 /*break*/, 5];
                     case 4:
-                        error_6 = _b.sent();
+                        error_6 = _a.sent();
                         errorParams = { method: "ContractLogsQuery", error: error_6 };
                         if (error_6.response && error_6.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, errorParams);
@@ -960,15 +961,17 @@ var BaseProvider = /** @class */ (function (_super) {
     });
     BaseProvider.prototype.poll = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var pollId, runners, now, previousPollTimestamp;
+            var pollId, runners;
             var _this = this;
             return __generator(this, function (_a) {
                 pollId = nextPollId++;
+                // cleanup on more than 100 events
+                if (Object.keys(this._emittedEvents).length > 100) {
+                    this.purgeOldEvents();
+                }
                 runners = [];
-                now = new Date().getTime();
-                previousPollTimestamp = now - this.pollingInterval;
-                // Emit a poll event after we have the previous polling timestamp
-                this.emit("poll", pollId, previousPollTimestamp);
+                // Emit a poll event with the current timestamp
+                this.emit("poll", pollId, new Date().getTime());
                 // Find all transaction hashes we are waiting on
                 this._events.forEach(function (event) {
                     switch (event.type) {
@@ -986,14 +989,21 @@ var BaseProvider = /** @class */ (function (_super) {
                         }
                         case "filter": {
                             var filter_1 = event.filter;
-                            filter_1.fromTimestamp = composeHederaTimestamp(previousPollTimestamp);
-                            filter_1.toTimestamp = composeHederaTimestamp(now);
+                            // ensure we don't get from == to
+                            var from = _this._previousToTimestamp || new Date().getTime() - _this._pollingInterval;
+                            var to = new Date().getTime();
+                            _this._previousToTimestamp = to;
+                            filter_1.fromTimestamp = composeHederaTimestamp(from - 12000);
+                            filter_1.toTimestamp = composeHederaTimestamp(to);
                             var runner = _this.getLogs(filter_1).then(function (logs) {
                                 if (logs.length === 0) {
                                     return;
                                 }
                                 logs.forEach(function (log) {
-                                    _this.emit(filter_1, log);
+                                    if (!_this._emittedEvents[log.timestamp]) {
+                                        _this.emit(filter_1, log);
+                                        _this._emittedEvents[log.timestamp] = true;
+                                    }
                                 });
                             }).catch(function (error) { _this.emit("error", error); });
                             runners.push(runner);
@@ -1008,6 +1018,17 @@ var BaseProvider = /** @class */ (function (_super) {
                 return [2 /*return*/];
             });
         });
+    };
+    BaseProvider.prototype.purgeOldEvents = function () {
+        for (var emittedEventsKey in this._emittedEvents) {
+            var ts = numericFromHederaTimestamp(emittedEventsKey);
+            var now = new Date().getTime();
+            // clean up events which are significantly old
+            // depends on the polling interval, 30 seconds with 3sec interval
+            if (ts < (now - this._pollingInterval * 10)) {
+                delete this._emittedEvents[emittedEventsKey];
+            }
+        }
     };
     return BaseProvider;
 }(abstract_provider_1.Provider));
@@ -1061,15 +1082,53 @@ function getEventTag(eventName) {
     }
     throw new Error("invalid event - " + eventName);
 }
+/**
+ * Always composes a hedera timestamp from the given string/numeric input.
+ * May lose precision - JavaScript's floating point loss
+ *
+ * @param timestamp - the timestamp to be formatted
+ */
 function composeHederaTimestamp(timestamp) {
-    var tsCopy = timestamp.toString();
-    var seconds = tsCopy.slice(0, tsCopy.length - 3);
-    var nanosTemp = tsCopy.slice(seconds.length);
-    if (nanosTemp.length < 9) {
-        for (var i = nanosTemp.length; i < 9; i++) {
-            nanosTemp += "0";
+    if (typeof timestamp === "number") {
+        var tsCopy = timestamp.toString();
+        var seconds = tsCopy.slice(0, tsCopy.length - 3);
+        if (seconds.length < 9) {
+            for (var i = seconds.length; i < 9; i++) {
+                seconds += "0";
+            }
+        }
+        var nanosTemp = tsCopy.slice(seconds.length);
+        if (nanosTemp.length < 9) {
+            for (var i = nanosTemp.length; i < 9; i++) {
+                nanosTemp += "0";
+            }
+        }
+        return seconds + "." + nanosTemp;
+    }
+    else if (typeof timestamp === "string") {
+        if (timestamp.includes(".")) {
+            // already formatted
+            var split = timestamp.split(".");
+            if (split[0].length === 10 && split[1].length === 9) {
+                return timestamp;
+            }
+            // floating point number - we lose precision
+            return composeHederaTimestamp(parseInt(timestamp.split('.')[0]));
+        }
+        else {
+            return composeHederaTimestamp(parseInt(timestamp));
         }
     }
-    return seconds + "." + nanosTemp;
+    else {
+        // not a string, neither a number
+        return logger.throwArgumentError('invalid timestamp', logger_1.Logger.errors.INVALID_ARGUMENT, { timestamp: timestamp });
+    }
+}
+// @ts-ignore
+function numericFromHederaTimestamp(ts) {
+    var seconds = ts.split(".")[0];
+    var nanos = ts.split(".")[1];
+    var parsedNanos = parseInt(nanos.slice(3));
+    return parseInt(seconds) + parsedNanos;
 }
 //# sourceMappingURL=base-provider.js.map

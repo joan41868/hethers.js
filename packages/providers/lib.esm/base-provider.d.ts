@@ -34,9 +34,13 @@ export declare class BaseProvider extends Provider {
     _poller: NodeJS.Timer;
     _bootstrapPoll: NodeJS.Timer;
     formatter: Formatter;
+    _emittedEvents: {
+        [key: string]: boolean;
+    };
     readonly anyNetwork: boolean;
     private readonly hederaClient;
     private readonly _mirrorNodeUrl;
+    private _previousToTimestamp;
     constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike);
     _ready(): Promise<Network>;
     static getFormatter(): Formatter;
@@ -105,5 +109,6 @@ export declare class BaseProvider extends Provider {
     get polling(): boolean;
     set polling(value: boolean);
     poll(): Promise<void>;
+    purgeOldEvents(): void;
 }
 //# sourceMappingURL=base-provider.d.ts.map

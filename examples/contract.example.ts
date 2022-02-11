@@ -118,6 +118,7 @@ const account = {
 	 * Creating a contract from ABI and bytecode
 	 */
 	const contractFactory = new hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
+	// const contract = hethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, contractWallet);
 
 	/**
 	 * Using contractFactory.deploy()
@@ -143,30 +144,34 @@ const account = {
 	/**
 	 * Calling another contract method
 	 */
-	const transferMethodCall = await contract.transfer(contract.address, 1, {gasLimit: 300000});
+	const transferMethodCall = await contract.transfer(contract.address, 1, { gasLimit: 300000 });
 	console.log(transferMethodCall.transactionId);
 
+	const capturedMints = [];
 	/**
 	 * Start listening for events.
 	 */
 	contract.on('Mint', (...args) => {
-			console.log('Mint event data:', args);
+		capturedMints.push({ evt: args });
+		console.log('Mint event data:', args);
 	});
-	contract.on('Transfer', (...args) => {
-		console.log('Transfer event data:', args);
-	});
+	contract.on('error', (err) => {
+		throw err;
+	})
 
+	const sleep = async (timeout:number) => {
+		console.log(`Sleep ${timeout}ms`)
+		await new Promise(resolve => setTimeout(resolve, timeout));
+	}
 	/**
 	 * Calling a contract method which emits events:
 	 *  - Mint(address, uint256)
-	 *  - Transfer(address, address, uint256)
 	 */
-	for (let i = 0; i <=10; i++){
-		const mint = await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
-		console.log(`Mint ${i+1}:`, mint.transactionId);
-		const transfer = await contract.transfer(contract.address, i+1, {gasLimit: 300000});
-		console.log(`Transfer ${i+1}:`,transfer.transactionId);
+	for (let i = 0; i < 10; i++) {
+		const mint = await contract.mint(BigNumber.from(`${i + 1}`), { gasLimit: 300000 });
+		console.log(`Mint ${i}:`, mint.transactionId);
 	}
+	await sleep(10000);
 	contract.removeAllListeners();
-
+	console.log(capturedMints.length);
 })();

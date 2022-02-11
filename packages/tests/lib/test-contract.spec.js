@@ -84,6 +84,34 @@ var hederaEoa = {
     account: '0.0.29562194',
     privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
 };
+// @ts-ignore
+function waitForEvent(contract, eventName, expected) {
+    return new Promise(function (resolve, reject) {
+        var done = false;
+        contract.on(eventName, function () {
+            if (done) {
+                return;
+            }
+            done = true;
+            var args = Array.prototype.slice.call(arguments);
+            var event = args[args.length - 1];
+            event.removeListener();
+            // equals(event.event, args.slice(0, args.length - 1), expected);
+            resolve();
+        });
+        var timer = setTimeout(function () {
+            if (done) {
+                return;
+            }
+            done = true;
+            contract.removeAllListeners();
+            reject(new Error("timeout"));
+        }, TIMEOUT_PERIOD);
+        if (timer.unref) {
+            timer.unref();
+        }
+    });
+}
 describe("Test Contract Transaction Population", function () {
     var testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03";
     var testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
@@ -515,7 +543,7 @@ describe('Contract Events', function () {
                         i = 0;
                         _a.label = 1;
                     case 1:
-                        if (!(i <= 20)) return [3 /*break*/, 4];
+                        if (!(i < 10)) return [3 /*break*/, 4];
                         return [4 /*yield*/, contract.mint(ethers_1.BigNumber.from("" + (i + 1)), { gasLimit: 300000 })];
                     case 2:
                         _a.sent();
@@ -523,11 +551,11 @@ describe('Contract Events', function () {
                     case 3:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4: return [4 /*yield*/, sleep(30000)];
+                    case 4: return [4 /*yield*/, sleep(20000)];
                     case 5:
                         _a.sent();
                         contract.removeAllListeners();
-                        assert_1.default.strictEqual(capturedMints.length > 0, 1 === 1, "expected at least 1 captured event (Mint).");
+                        assert_1.default.strictEqual(capturedMints.length, 10, "expected 10 captured events (Mint).");
                         for (_i = 0, capturedMints_1 = capturedMints; _i < capturedMints_1.length; _i++) {
                             mint = capturedMints_1[_i];
                             assert_1.default.strictEqual(mint[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
@@ -553,7 +581,7 @@ describe('Contract Events', function () {
                         i = 0;
                         _a.label = 1;
                     case 1:
-                        if (!(i <= 20)) return [3 /*break*/, 4];
+                        if (!(i < 10)) return [3 /*break*/, 4];
                         return [4 /*yield*/, contract.mint(ethers_1.BigNumber.from("" + (i + 1)), { gasLimit: 300000 })];
                     case 2:
                         _a.sent();
@@ -565,7 +593,7 @@ describe('Contract Events', function () {
                     case 5:
                         _a.sent();
                         provider.removeAllListeners();
-                        assert_1.default.strictEqual(capturedMints.length > 0, 1 === 1, "expected at least 1 captured event (Mint).");
+                        assert_1.default.strictEqual(capturedMints.length, 10, "expected 10 captured events (Mint).");
                         return [2 /*return*/];
                 }
             });

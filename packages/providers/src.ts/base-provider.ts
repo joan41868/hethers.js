@@ -186,10 +186,12 @@ export class BaseProvider extends Provider {
     _bootstrapPoll: NodeJS.Timer;
 
     formatter: Formatter;
+    _emittedEvents: { [key: string] : boolean}
 
     readonly anyNetwork: boolean;
     private readonly hederaClient: Client;
     private readonly _mirrorNodeUrl: string; // initial mirror node URL, which is resolved from the provider's network
+    private _previousToTimestamp: number;
 
 
     constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike) {
@@ -197,6 +199,7 @@ export class BaseProvider extends Provider {
         super();
 
         this._events = [];
+        this._emittedEvents = {};
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -239,6 +242,7 @@ export class BaseProvider extends Provider {
         }
 
         this._pollingInterval = 3000;
+        this._previousToTimestamp = 0;
     }
 
     async _ready(): Promise<Network> {
@@ -254,12 +258,6 @@ export class BaseProvider extends Provider {
             if (network == null) {
                 network = await this.detectNetwork();
             }
-
-            // This should never happen; every Provider sub-class should have
-            // suggested a network by here (or have thrown).
-            // if (!network) {
-            //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
-            // }
 
             // Possible this call stacked so do not call defineReadOnly again
             if (this._network == null) {
@@ -602,19 +600,23 @@ export class BaseProvider extends Provider {
      * @param filter The parameters to filter logs by.
      */
     async getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>> {
+
         this._checkMirrorNode();
         const params = await resolveProperties({ filter: this._getFilter(filter) });
-        const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
-        const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
+        // set default values
+        const now = new Date().getTime();
+        if (!params.filter.fromTimestamp) {
+            // TODO: extract constant after you find the earliest timestamp
+            params.filter.fromTimestamp = composeHederaTimestamp(1);
+        }
+        if (!params.filter.toTimestamp) {
+            params.filter.toTimestamp = composeHederaTimestamp(now);
+        }
+        const fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+        const toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
         const limit = 100;
         const oversizeResponseLength = limit + 1;
         let epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
-        if (params.filter.topics?.length > 0 && (fromTimestampFilter == "" || toTimestampFilter == "")) {
-            return logger.throwArgumentError(
-                "topic filter requires fromTimestamp/toTimestamp fields set",
-                Logger.errors.INVALID_ARGUMENT,
-                params.filter);
-        }
         if (params.filter.topics && params.filter.topics.length > 0) {
             for(let i=0; i < params.filter.topics.length; i++) {
                 const topic = params.filter.topics[i];
@@ -800,15 +802,15 @@ export class BaseProvider extends Provider {
 
     async poll(): Promise<void> {
         const pollId = nextPollId++;
-
+        // cleanup on more than 100 events
+        if (Object.keys(this._emittedEvents).length > 100) {
+            this.purgeOldEvents();
+        }
         // Track all running promises, so we can trigger a post-poll once they are complete
         const runners: Array<Promise<void>> = [];
 
-        const now = new Date().getTime();
-        const previousPollTimestamp = now - this.pollingInterval;
-
-        // Emit a poll event after we have the previous polling timestamp
-        this.emit("poll", pollId, previousPollTimestamp);
+        // Emit a poll event with the current timestamp
+        this.emit("poll", pollId, new Date().getTime());
 
         // Find all transaction hashes we are waiting on
         this._events.forEach((event) => {
@@ -828,12 +830,19 @@ export class BaseProvider extends Provider {
 
                 case "filter": {
                     const filter = event.filter;
-					filter.fromTimestamp = composeHederaTimestamp(previousPollTimestamp)
-                    filter.toTimestamp = composeHederaTimestamp(now);
+                    // ensure we don't get from == to
+                    const from = this._previousToTimestamp || new Date().getTime() - this._pollingInterval;
+                    const to = new Date().getTime();
+                    this._previousToTimestamp = to;
+                    filter.fromTimestamp = composeHederaTimestamp(from - 12000)
+                    filter.toTimestamp = composeHederaTimestamp(to);
                     const runner = this.getLogs(filter).then((logs) => {
                         if (logs.length === 0) { return; }
                         logs.forEach((log: Log) => {
-                            this.emit(filter, log);
+                            if (!this._emittedEvents[log.timestamp]) {
+                                this.emit(filter, log);
+                                this._emittedEvents[log.timestamp] = true;
+                            }
                         });
                     }).catch((error: Error) => { this.emit("error", error); });
                     runners.push(runner);
@@ -846,8 +855,19 @@ export class BaseProvider extends Provider {
         Promise.all(runners).then(() => {
             this.emit("didPoll", pollId);
         }).catch((error) => { this.emit("error", error); });
-
         return;
+    }
+
+    purgeOldEvents() {
+        for (let emittedEventsKey in this._emittedEvents) {
+            const ts = numericFromHederaTimestamp(emittedEventsKey);
+            const now = new Date().getTime();
+            // clean up events which are significantly old
+            // depends on the polling interval, 30 seconds with 3sec interval
+            if (ts < (now - this._pollingInterval*10)) {
+                delete this._emittedEvents[emittedEventsKey];
+            }
+        }
     }
 }
 
@@ -909,15 +929,50 @@ function getEventTag(eventName: EventType): string {
     throw new Error("invalid event - " + eventName);
 }
 
-
-function composeHederaTimestamp(timestamp: number): string {
-    const tsCopy = timestamp.toString();
-    const seconds = tsCopy.slice(0, tsCopy.length - 3);
-    let nanosTemp = tsCopy.slice(seconds.length);
-    if (nanosTemp.length < 9) {
-        for(let i = nanosTemp.length; i < 9; i ++) {
-            nanosTemp += "0";
+/**
+ * Always composes a hedera timestamp from the given string/numeric input.
+ * May lose precision - JavaScript's floating point loss
+ *
+ * @param timestamp - the timestamp to be formatted
+ */
+function composeHederaTimestamp(timestamp: number | string): string {
+    if (typeof timestamp === "number") {
+        const tsCopy = timestamp.toString();
+        let seconds = tsCopy.slice(0, tsCopy.length - 3);
+        if (seconds.length < 9) {
+            for (let i = seconds.length; i < 9; i++) {
+                seconds += "0";
+            }
         }
+        let nanosTemp = tsCopy.slice(seconds.length);
+        if (nanosTemp.length < 9) {
+            for (let i = nanosTemp.length; i < 9; i++) {
+                nanosTemp += "0";
+            }
+        }
+            return `${seconds}.${nanosTemp}`;
+     } else if (typeof timestamp === "string") {
+        if (timestamp.includes(".")) {
+                // already formatted
+            const split = timestamp.split(".");
+            if (split[0].length === 10 && split[1].length === 9) {
+                return timestamp;
+            }
+            // floating point number - we lose precision
+            return composeHederaTimestamp(parseInt(timestamp.split('.')[0]));
+        } else {
+            return composeHederaTimestamp(parseInt(timestamp));
+        }
+    } else {
+        // not a string, neither a number
+        return logger.throwArgumentError('invalid timestamp', Logger.errors.INVALID_ARGUMENT, {timestamp});
     }
-    return `${seconds}.${nanosTemp}`;
+}
+
+// @ts-ignore
+function numericFromHederaTimestamp(ts:string) :number {
+    const seconds = ts.split(".")[0];
+    const nanos = ts.split(".")[1];
+    const parsedNanos = parseInt(nanos.slice(3));
+    return parseInt(seconds) + parsedNanos;
 }
