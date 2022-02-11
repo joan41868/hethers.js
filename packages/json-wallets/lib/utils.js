@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.uuidV4 = exports.searchPath = exports.getPassword = exports.zpad = exports.looseArrayify = void 0;
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 var strings_1 = require("@hethers/strings");
 function looseArrayify(hexString) {
     if (typeof (hexString) === 'string' && hexString.substring(0, 2) !== '0x') {

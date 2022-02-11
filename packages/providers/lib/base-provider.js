@@ -68,7 +68,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BaseProvider = exports.Event = void 0;
 var abstract_provider_1 = require("@hethers/abstract-provider");
 var bignumber_1 = require("@hethers/bignumber");
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 var networks_1 = require("@hethers/networks");
 var properties_1 = require("@ethersproject/properties");
 var logger_1 = require("@hethers/logger");

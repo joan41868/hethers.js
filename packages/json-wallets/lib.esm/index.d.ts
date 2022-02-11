@@ -1,4 +1,4 @@
-import { Bytes } from "@hethers/bytes";
+import { Bytes } from "@ethersproject/bytes";
 import { ExternallyOwnedAccount } from "@hethers/abstract-signer";
 import { getJsonWalletAddress, isKeystoreWallet } from "./inspect";
 import { decrypt as decryptKeystore, decryptSync as decryptKeystoreSync, encrypt as encryptKeystore, EncryptOptions, ProgressCallback } from "./keystore";

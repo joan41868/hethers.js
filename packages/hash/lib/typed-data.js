@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.TypedDataEncoder = void 0;
 var address_1 = require("@hethers/address");
 var bignumber_1 = require("@hethers/bignumber");
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 var keccak256_1 = require("@ethersproject/keccak256");
 var properties_1 = require("@ethersproject/properties");
 var logger_1 = require("@hethers/logger");

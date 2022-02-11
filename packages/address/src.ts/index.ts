@@ -8,7 +8,7 @@ import {
     hexDataSlice, hexlify,
     isHexString,
     stripZeros
-} from "@hethers/bytes";
+} from "@ethersproject/bytes";
 import {_base16To36, _base36To16, BigNumber, BigNumberish} from "@hethers/bignumber";
 import {keccak256} from "@ethersproject/keccak256";
 import {encode} from "@hethers/rlp";

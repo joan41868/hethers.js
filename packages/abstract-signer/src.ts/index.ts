@@ -2,7 +2,7 @@
 
 import { Provider, TransactionRequest, TransactionResponse } from "@hethers/abstract-provider";
 import { BigNumber, BigNumberish, numberify } from "@hethers/bignumber";
-import { arrayify, Bytes, BytesLike, hexlify } from "@hethers/bytes";
+import { arrayify, Bytes, BytesLike, hexlify } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@hethers/logger";
 import { version } from "./_version";

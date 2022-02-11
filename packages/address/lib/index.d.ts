@@ -1,4 +1,4 @@
-import { BytesLike } from "@hethers/bytes";
+import { BytesLike } from "@ethersproject/bytes";
 import { BigNumberish } from "@hethers/bignumber";
 export declare function getAccountFromTransactionId(transactionId: string): string;
 export declare function asAccountString(accountLike: AccountLike): string;

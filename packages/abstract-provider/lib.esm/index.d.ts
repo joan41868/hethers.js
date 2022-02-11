@@ -1,5 +1,5 @@
 import { BigNumber, BigNumberish } from "@hethers/bignumber";
-import { BytesLike } from "@hethers/bytes";
+import { BytesLike } from "@ethersproject/bytes";
 import { Network } from "@hethers/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@hethers/transactions";

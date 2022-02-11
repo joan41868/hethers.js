@@ -11,7 +11,7 @@ import {
     TransactionResponse
 } from "@hethers/abstract-provider";
 import { BigNumber } from "@hethers/bignumber";
-import { arrayify, hexDataLength, hexlify } from "@hethers/bytes";
+import { arrayify, hexDataLength, hexlify } from "@ethersproject/bytes";
 import { getNetwork, Network, Networkish, HederaNetworkConfigLike } from "@hethers/networks";
 import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
 import { Transaction } from "@hethers/transactions";

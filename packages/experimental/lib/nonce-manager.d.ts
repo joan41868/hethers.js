@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import { TransactionRequest, TransactionResponse } from "@hethers/abstract-provider";
-import { BytesLike } from "@hethers/bytes";
+import { BytesLike } from "@ethersproject/bytes";
 /**
  * TODO: This class and it's usage in the hedera network must be explored.
  */

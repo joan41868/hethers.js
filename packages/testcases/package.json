@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@hethers/bignumber": "1.0.0",
-    "@hethers/bytes": "1.0.0",
+    "@ethersproject/bytes": "5.5.0",
     "@ethersproject/keccak256": "5.5.0",
     "@hethers/strings": "1.0.0",
     "hethers": "1.0.0",

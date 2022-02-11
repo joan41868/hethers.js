@@ -1,6 +1,6 @@
 "use strict";
 import { Base58 } from "@ethersproject/basex";
-import { arrayify, concat, hexDataSlice, hexZeroPad, hexlify } from "@hethers/bytes";
+import { arrayify, concat, hexDataSlice, hexZeroPad, hexlify } from "@ethersproject/bytes";
 import { BigNumber } from "@hethers/bignumber";
 import { toUtf8Bytes, UnicodeNormalizationForm } from "@hethers/strings";
 import { pbkdf2 } from "@ethersproject/pbkdf2";

@@ -9,7 +9,7 @@ import {
     hexDataSlice,
     hexlify,
     SignatureLike,
-} from "@hethers/bytes";
+} from "@ethersproject/bytes";
 import {Zero} from "@hethers/constants";
 import {keccak256} from "@ethersproject/keccak256";
 import {computePublicKey, recoverPublicKey} from "@hethers/signing-key";

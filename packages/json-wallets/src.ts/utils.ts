@@ -1,6 +1,6 @@
 "use strict";
 
-import { arrayify, Bytes, BytesLike, hexlify } from "@hethers/bytes";
+import { arrayify, Bytes, BytesLike, hexlify } from "@ethersproject/bytes";
 import { toUtf8Bytes, UnicodeNormalizationForm } from '@hethers/strings';
 
 export function looseArrayify(hexString: string): Uint8Array {

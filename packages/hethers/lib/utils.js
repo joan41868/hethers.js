@@ -50,7 +50,7 @@ var base64 = __importStar(require("@ethersproject/base64"));
 exports.base64 = base64;
 var basex_1 = require("@ethersproject/basex");
 Object.defineProperty(exports, "base58", { enumerable: true, get: function () { return basex_1.Base58; } });
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 Object.defineProperty(exports, "arrayify", { enumerable: true, get: function () { return bytes_1.arrayify; } });
 Object.defineProperty(exports, "concat", { enumerable: true, get: function () { return bytes_1.concat; } });
 Object.defineProperty(exports, "hexConcat", { enumerable: true, get: function () { return bytes_1.hexConcat; } });

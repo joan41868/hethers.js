@@ -22,7 +22,7 @@ import {
 	isHexString,
 	joinSignature,
 	SignatureLike
-} from "@hethers/bytes";
+} from "@ethersproject/bytes";
 import { hashMessage } from "@hethers/hash";
 import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@hethers/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";

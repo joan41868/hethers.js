@@ -4,7 +4,7 @@ import { ethers } from "ethers";
 
 import { version } from "./_version";
 import { TransactionRequest, TransactionResponse } from "@hethers/abstract-provider";
-import { BytesLike } from "@hethers/bytes";
+import { BytesLike } from "@ethersproject/bytes";
 
 const logger = new ethers.utils.Logger(version);
 

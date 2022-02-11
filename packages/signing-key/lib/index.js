@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.computePublicKey = exports.recoverPublicKey = exports.SigningKey = void 0;
 var elliptic_1 = require("./elliptic");
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
 var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");

@@ -4,7 +4,7 @@ import assert from "assert";
 
 import { hethers } from "hethers";
 import { loadTests, TestCase } from "@hethers/testcases";
-import { BytesLike } from "@hethers/bytes";
+import { BytesLike } from "@ethersproject/bytes";
 import * as utils from './utils';
 import { arrayify, getAddressFromAccount, Logger } from "hethers/lib/utils";
 import {

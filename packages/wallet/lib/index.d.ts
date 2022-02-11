@@ -1,7 +1,7 @@
 import { Account, AccountLike } from "@hethers/address";
 import { Provider, TransactionRequest, TransactionResponse } from "@hethers/abstract-provider";
 import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@hethers/abstract-signer";
-import { Bytes, BytesLike, SignatureLike } from "@hethers/bytes";
+import { Bytes, BytesLike, SignatureLike } from "@ethersproject/bytes";
 import { Mnemonic } from "@hethers/hdnode";
 import { SigningKey } from "@hethers/signing-key";
 import { ProgressCallback } from "@hethers/json-wallets";

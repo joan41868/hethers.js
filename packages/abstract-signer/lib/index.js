@@ -72,7 +72,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.randomNumBetween = exports.VoidSigner = exports.Signer = void 0;
 var bignumber_1 = require("@hethers/bignumber");
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
 var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");

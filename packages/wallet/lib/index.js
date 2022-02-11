@@ -55,7 +55,7 @@ exports.verifyTypedData = exports.verifyMessage = exports.Wallet = void 0;
 var address_1 = require("@hethers/address");
 var abstract_provider_1 = require("@hethers/abstract-provider");
 var abstract_signer_1 = require("@hethers/abstract-signer");
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 var hash_1 = require("@hethers/hash");
 var hdnode_1 = require("@hethers/hdnode");
 var keccak256_1 = require("@ethersproject/keccak256");

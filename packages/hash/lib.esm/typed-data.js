@@ -1,6 +1,6 @@
 import { getAddress } from "@hethers/address";
 import { BigNumber } from "@hethers/bignumber";
-import { arrayify, hexConcat, hexlify, hexZeroPad } from "@hethers/bytes";
+import { arrayify, hexConcat, hexlify, hexZeroPad } from "@ethersproject/bytes";
 import { keccak256 } from "@ethersproject/keccak256";
 import { deepCopy, defineReadOnly, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@hethers/logger";

@@ -2,7 +2,7 @@ import { AbiCoder, checkResultErrors, ConstructorFragment, defaultAbiCoder, Erro
 import { getAddress, getChecksumAddress, getCreate2Address, getContractAddress, getIcapAddress, isAddress, getAccountFromAddress, getAddressFromAccount, parseAccount, Account, AccountLike } from "@hethers/address";
 import * as base64 from "@ethersproject/base64";
 import { Base58 as base58 } from "@ethersproject/basex";
-import { arrayify, concat, hexConcat, hexDataSlice, hexDataLength, hexlify, hexStripZeros, hexValue, hexZeroPad, isBytes, isBytesLike, isHexString, joinSignature, zeroPad, splitSignature, stripZeros } from "@hethers/bytes";
+import { arrayify, concat, hexConcat, hexDataSlice, hexDataLength, hexlify, hexStripZeros, hexValue, hexZeroPad, isBytes, isBytesLike, isHexString, joinSignature, zeroPad, splitSignature, stripZeros } from "@ethersproject/bytes";
 import { _TypedDataEncoder, hashMessage, id } from "@hethers/hash";
 import { defaultPath, entropyToMnemonic, getAccountPath, HDNode, isValidMnemonic, mnemonicToEntropy, mnemonicToSeed } from "@hethers/hdnode";
 import { getJsonWalletAddress } from "@hethers/json-wallets";
@@ -23,7 +23,7 @@ import { SupportedAlgorithm } from "@ethersproject/sha2";
 import { UnicodeNormalizationForm, Utf8ErrorReason } from "@hethers/strings";
 import { UnsignedTransaction } from "@hethers/transactions";
 import { CoerceFunc } from "@ethersproject/abi";
-import { Bytes, BytesLike, Hexable } from "@hethers/bytes";
+import { Bytes, BytesLike, Hexable } from "@ethersproject/bytes";
 import { Mnemonic } from "@hethers/hdnode";
 import { EncryptOptions, ProgressCallback } from "@hethers/json-wallets";
 import { Deferrable } from "@ethersproject/properties";

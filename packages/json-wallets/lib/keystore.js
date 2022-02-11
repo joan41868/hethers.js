@@ -58,7 +58,7 @@ exports.encrypt = exports.decrypt = exports.decryptSync = exports.KeystoreAccoun
 var aes_js_1 = __importDefault(require("aes-js"));
 var scrypt_js_1 = __importDefault(require("scrypt-js"));
 var address_1 = require("@hethers/address");
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 var hdnode_1 = require("@hethers/hdnode");
 var keccak256_1 = require("@ethersproject/keccak256");
 var pbkdf2_1 = require("@ethersproject/pbkdf2");

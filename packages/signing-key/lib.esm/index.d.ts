@@ -1,4 +1,4 @@
-import { BytesLike, Signature, SignatureLike } from "@hethers/bytes";
+import { BytesLike, Signature, SignatureLike } from "@ethersproject/bytes";
 export declare class SigningKey {
     readonly curve: string;
     readonly privateKey: string;

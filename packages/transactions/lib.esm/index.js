@@ -10,7 +10,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { getAccountFromAddress, getAddress } from "@hethers/address";
 import { BigNumber, numberify } from "@hethers/bignumber";
-import { arrayify, hexDataLength, hexDataSlice, hexlify, } from "@hethers/bytes";
+import { arrayify, hexDataLength, hexDataSlice, hexlify, } from "@ethersproject/bytes";
 import { Zero } from "@hethers/constants";
 import { keccak256 } from "@ethersproject/keccak256";
 import { computePublicKey, recoverPublicKey } from "@hethers/signing-key";

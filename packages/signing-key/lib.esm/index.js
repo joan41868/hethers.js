@@ -1,6 +1,6 @@
 "use strict";
 import { EC } from "./elliptic";
-import { arrayify, hexlify, hexZeroPad, splitSignature } from "@hethers/bytes";
+import { arrayify, hexlify, hexZeroPad, splitSignature } from "@ethersproject/bytes";
 import { defineReadOnly } from "@ethersproject/properties";
 import { Logger } from "@hethers/logger";
 import { version } from "./_version";

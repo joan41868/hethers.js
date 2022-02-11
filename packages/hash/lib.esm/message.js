@@ -1,4 +1,4 @@
-import { concat } from "@hethers/bytes";
+import { concat } from "@ethersproject/bytes";
 import { keccak256 } from "@ethersproject/keccak256";
 import { toUtf8Bytes } from "@hethers/strings";
 export const messagePrefix = "\x19Ethereum Signed Message:\n";

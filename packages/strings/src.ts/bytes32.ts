@@ -1,7 +1,7 @@
 "use strict";
 
 import { HashZero } from "@hethers/constants";
-import { arrayify, BytesLike, concat, hexlify } from "@hethers/bytes";
+import { arrayify, BytesLike, concat, hexlify } from "@ethersproject/bytes";
 
 import { toUtf8Bytes, toUtf8String } from "./utf8";
 

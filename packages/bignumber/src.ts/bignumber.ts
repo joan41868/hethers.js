@@ -11,7 +11,7 @@
 import _BN from "bn.js";
 import BN = _BN.BN;
 
-import { Bytes, Hexable, hexlify, isBytes, isHexString } from "@hethers/bytes";
+import { Bytes, Hexable, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 
 import { Logger } from "@hethers/logger";
 import { version } from "./_version";

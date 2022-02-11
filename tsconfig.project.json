@@ -17,9 +17,6 @@
       "path": "./packages/logger"
     },
     {
-      "path": "./packages/bytes"
-    },
-    {
       "path": "./packages/bignumber"
     },
     {

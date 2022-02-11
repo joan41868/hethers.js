@@ -1,7 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.isAddress = exports.getAddress = exports.getChecksumAddress = exports.asAccountString = exports.getAccountFromTransactionId = void 0;
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 var bignumber_1 = require("@hethers/bignumber");
 var keccak256_1 = require("@ethersproject/keccak256");
 var rlp_1 = require("@hethers/rlp");

@@ -50,7 +50,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.parse = exports.serializeHederaTransaction = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
 var address_1 = require("@hethers/address");
 var bignumber_1 = require("@hethers/bignumber");
-var bytes_1 = require("@hethers/bytes");
+var bytes_1 = require("@ethersproject/bytes");
 var constants_1 = require("@hethers/constants");
 var keccak256_1 = require("@ethersproject/keccak256");
 var signing_key_1 = require("@hethers/signing-key");

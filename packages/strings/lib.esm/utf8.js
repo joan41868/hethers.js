@@ -1,5 +1,5 @@
 "use strict";
-import { arrayify } from "@hethers/bytes";
+import { arrayify } from "@ethersproject/bytes";
 import { Logger } from "@hethers/logger";
 import { version } from "./_version";
 const logger = new Logger(version);

@@ -22,7 +22,7 @@ import {
 import { Signer, VoidSigner } from "@hethers/abstract-signer";
 import { AccountLike, getAddress, getAddressFromAccount } from "@hethers/address";
 import { BigNumber, BigNumberish } from "@hethers/bignumber";
-import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@hethers/bytes";
+import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import {
     deepCopy,
     Deferrable,

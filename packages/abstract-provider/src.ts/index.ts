@@ -1,7 +1,7 @@
 "use strict";
 
 import { BigNumber, BigNumberish } from "@hethers/bignumber";
-import { BytesLike } from "@hethers/bytes";
+import { BytesLike } from "@ethersproject/bytes";
 import { Network } from "@hethers/networks";
 import { Deferrable, defineReadOnly } from "@ethersproject/properties";
 import { AccessListish, Transaction } from "@hethers/transactions";

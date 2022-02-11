@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { numberify } from "@hethers/bignumber";
-import { arrayify, hexlify } from "@hethers/bytes";
+import { arrayify, hexlify } from "@ethersproject/bytes";
 import { defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@hethers/logger";
 import { version } from "./_version";

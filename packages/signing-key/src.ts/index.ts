@@ -2,7 +2,7 @@
 
 import { EC } from "./elliptic";
 
-import { arrayify, BytesLike, hexlify, hexZeroPad, Signature, SignatureLike, splitSignature } from "@hethers/bytes";
+import { arrayify, BytesLike, hexlify, hexZeroPad, Signature, SignatureLike, splitSignature } from "@ethersproject/bytes";
 import { defineReadOnly } from "@ethersproject/properties";
 
 import { Logger } from "@hethers/logger";

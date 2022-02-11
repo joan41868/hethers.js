@@ -13,7 +13,7 @@ import { Provider } from "@hethers/abstract-provider";
 import { Signer, VoidSigner } from "@hethers/abstract-signer";
 import { getAddress, getAddressFromAccount } from "@hethers/address";
 import { BigNumber } from "@hethers/bignumber";
-import { arrayify, concat, hexlify, isBytes, isHexString } from "@hethers/bytes";
+import { arrayify, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { deepCopy, defineReadOnly, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { accessListify } from "@hethers/transactions";
 import { Logger } from "@hethers/logger";

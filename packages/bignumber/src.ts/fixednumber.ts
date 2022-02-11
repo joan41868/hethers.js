@@ -1,6 +1,6 @@
 "use strict";
 
-import { arrayify, BytesLike, hexZeroPad, isBytes } from "@hethers/bytes";
+import { arrayify, BytesLike, hexZeroPad, isBytes } from "@ethersproject/bytes";
 
 import { Logger } from "@hethers/logger";
 import { version } from "./_version";

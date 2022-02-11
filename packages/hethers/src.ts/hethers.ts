@@ -22,7 +22,7 @@ import { ErrorCode as errors, Logger } from "@hethers/logger";
 // Types
 
 import { BigNumberish } from "@hethers/bignumber";
-import { Bytes, BytesLike, Signature } from "@hethers/bytes";
+import { Bytes, BytesLike, Signature } from "@ethersproject/bytes";
 import { Transaction, UnsignedTransaction } from "@hethers/transactions";
 
 

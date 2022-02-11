@@ -5,7 +5,7 @@ import scrypt from "scrypt-js";
 
 import { ExternallyOwnedAccount } from "@hethers/abstract-signer";
 import { getAddress } from "@hethers/address";
-import { arrayify, Bytes, BytesLike, concat, hexlify } from "@hethers/bytes";
+import { arrayify, Bytes, BytesLike, concat, hexlify } from "@ethersproject/bytes";
 import { defaultPath, entropyToMnemonic, HDNode, Mnemonic, mnemonicToEntropy } from "@hethers/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
 import { pbkdf2 as _pbkdf2 } from "@ethersproject/pbkdf2";

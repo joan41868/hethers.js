@@ -1,7 +1,7 @@
 "use strict";
 import { getAddress, getAddressFromAccount, getContractAddress } from "@hethers/address";
 import { BigNumber } from "@hethers/bignumber";
-import { hexDataLength, hexDataSlice, hexZeroPad, isHexString } from "@hethers/bytes";
+import { hexDataLength, hexDataSlice, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@hethers/constants";
 import { accessListify, parse as parseTransaction } from "@hethers/transactions";
 import { Logger } from "@hethers/logger";

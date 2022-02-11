@@ -78,6 +78,7 @@
     "@ethersproject/abi": "5.5.0",
     "@ethersproject/base64": "5.5.0",
     "@ethersproject/basex": "5.5.0",
+    "@ethersproject/bytes": "5.5.0",
     "@ethersproject/cli": "5.5.0",
     "@ethersproject/keccak256": "5.5.0",
     "@ethersproject/pbkdf2": "5.5.0",

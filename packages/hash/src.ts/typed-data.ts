@@ -1,7 +1,7 @@
 import { TypedDataDomain, TypedDataField } from "@hethers/abstract-signer";
 import { getAddress } from "@hethers/address";
 import { BigNumber, BigNumberish } from "@hethers/bignumber";
-import { arrayify, BytesLike, hexConcat, hexlify, hexZeroPad } from "@hethers/bytes";
+import { arrayify, BytesLike, hexConcat, hexlify, hexZeroPad } from "@ethersproject/bytes";
 import { keccak256 } from "@ethersproject/keccak256";
 import { deepCopy, defineReadOnly, shallowCopy } from "@ethersproject/properties";
 

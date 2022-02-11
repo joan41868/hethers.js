@@ -3,7 +3,7 @@ import { Listener, Log, Provider, TransactionReceipt, TransactionRequest, Transa
 import { Signer } from "@hethers/abstract-signer";
 import { AccountLike } from "@hethers/address";
 import { BigNumber, BigNumberish } from "@hethers/bignumber";
-import { BytesLike } from "@hethers/bytes";
+import { BytesLike } from "@ethersproject/bytes";
 import { AccessList, AccessListish } from "@hethers/transactions";
 export interface Overrides {
     gasLimit?: BigNumberish | Promise<BigNumberish>;
