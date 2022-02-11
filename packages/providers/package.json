@@ -7,7 +7,6 @@
     "ipc-provider.js": "browser-ipc-provider.js",
     "ws.js": "browser-ws.js"
   },
-  "author": "Richard Moore <me@ricmoo.com>",
   "browser": {
     "./lib/ipc-provider": "./lib/browser-ipc-provider.js",
     "./lib/ws": "./lib/browser-ws.js",
@@ -38,20 +37,12 @@
     "bech32": "1.1.4",
     "ws": "7.4.6"
   },
-  "description": "Ethereum Providers for ethers.",
-  "ethereum": "donations.ethers.eth",
-  "funding": [
-    {
-      "type": "individual",
-      "url": "https://gitcoin.co/grants/13/ethersjs-complete-simple-and-tiny-2"
-    },
-    {
-      "type": "individual",
-      "url": "https://www.buymeacoffee.com/ricmoo"
-    }
-  ],
+  "description": "Hedera Hashgraph Providers for hethers.",
   "keywords": [
+    "Hedera",
+    "Hashgraph",
     "Ethereum",
+    "hethers",
     "ethers"
   ],
   "license": "MIT",

@@ -1,5 +1,4 @@
 {
-  "author": "Richard Moore <me@ricmoo.com>",
   "dependencies": {
     "@ethersproject/abstract-signer": "^5.5.0",
     "@ethersproject/basex": "^5.5.0",
@@ -15,19 +14,11 @@
     "@ethersproject/wordlists": "^5.5.0"
   },
   "description": "BIP32 Hierarchal Deterministic Node operations.",
-  "ethereum": "donations.ethers.eth",
-  "funding": [
-    {
-      "type": "individual",
-      "url": "https://gitcoin.co/grants/13/ethersjs-complete-simple-and-tiny-2"
-    },
-    {
-      "type": "individual",
-      "url": "https://www.buymeacoffee.com/ricmoo"
-    }
-  ],
   "keywords": [
+    "Hedera",
+    "Hashgraph",
     "Ethereum",
+    "hethers",
     "ethers"
   ],
   "license": "MIT",

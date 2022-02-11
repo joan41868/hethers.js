@@ -11,7 +11,6 @@
   "_ethers.alias": {
     "disk-utils.js": "browser-disk-utils.js"
   },
-  "author": "Richard Moore <me@ricmoo.com>",
   "browser": {
     "./lib/disk-utils": "./lib/browser-disk-utils.js"
   },
@@ -23,20 +22,12 @@
     "ethers": "^5.5.0",
     "tiny-inflate": "1.0.3"
   },
-  "description": "Testcases for Ethereum and scripts to generate testcases.",
-  "ethereum": "donations.ethers.eth",
-  "funding": [
-    {
-      "type": "individual",
-      "url": "https://gitcoin.co/grants/13/ethersjs-complete-simple-and-tiny-2"
-    },
-    {
-      "type": "individual",
-      "url": "https://www.buymeacoffee.com/ricmoo"
-    }
-  ],
+  "description": "Testcases for Hethers and scripts to generate testcases.",
   "keywords": [
+    "Hedera",
+    "Hashgraph",
     "Ethereum",
+    "hethers",
     "ethers"
   ],
   "license": "MIT",
