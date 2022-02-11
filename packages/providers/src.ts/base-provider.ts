@@ -525,7 +525,7 @@ export class BaseProvider extends Provider {
      *
      * @param transactionIdOrTimestamp - id or consensus timestamp of the transaction to search for
      */
-     async getTransaction(transactionIdOrTimestamp: string | Promise<string>): Promise<TransactionResponse> {
+    async getTransaction(transactionIdOrTimestamp: string | Promise<string>): Promise<TransactionResponse> {
         this._checkMirrorNode();
         transactionIdOrTimestamp = await transactionIdOrTimestamp;
         let transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT;
