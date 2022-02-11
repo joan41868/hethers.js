@@ -606,7 +606,6 @@ export class BaseProvider extends Provider {
         // set default values
         const now = new Date().getTime();
         if (!params.filter.fromTimestamp) {
-            // TODO: extract constant after you find the earliest timestamp
             params.filter.fromTimestamp = composeHederaTimestamp(1);
         }
         if (!params.filter.toTimestamp) {

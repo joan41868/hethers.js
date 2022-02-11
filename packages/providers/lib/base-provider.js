@@ -761,7 +761,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         params = _a.sent();
                         now = new Date().getTime();
                         if (!params.filter.fromTimestamp) {
-                            // TODO: extract constant after you find the earliest timestamp
                             params.filter.fromTimestamp = composeHederaTimestamp(1);
                         }
                         if (!params.filter.toTimestamp) {
