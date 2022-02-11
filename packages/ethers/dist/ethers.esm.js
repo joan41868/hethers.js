@@ -93634,10 +93634,7 @@ class BaseContract {
             runningEvent.removeListener(listener);
             this._checkRunningEvents(runningEvent);
         };
-        event.getTransaction = () => {
-            // TODO: blocked by missing data from mirrornode
-            return logger$r.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-        };
+        event.getTransaction = () => { return this.provider.getTransaction(log.timestamp); };
         event.getTransactionReceipt = () => {
             return logger$r.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         };

@@ -886,10 +886,7 @@ export class BaseContract {
             this._checkRunningEvents(runningEvent);
         };
 
-        event.getTransaction = () => { 
-            // TODO: blocked by missing data from mirrornode
-            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
-        }
+        event.getTransaction = () => { return this.provider.getTransaction(log.timestamp); }
         event.getTransactionReceipt = () => { 
             return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         }
