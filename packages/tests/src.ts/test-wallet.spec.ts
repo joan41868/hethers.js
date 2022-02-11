@@ -706,4 +706,30 @@ describe("Wallet createAccount", function () {
 
         assert.strictEqual(exceptionThrown, true);
     }).timeout(timeout);
+
+    it("Should be able to get a crypto transfer transaction via provider.getTransaction(tx.transactionId)", async function () {
+        const transaction = await acc1Wallet.sendTransaction({
+            to: acc2Wallet.account,
+            value: 1.8925
+        });
+        await transaction.wait();
+
+        const tx = await provider.getTransaction(transaction.transactionId);
+        assert.strictEqual(tx.hasOwnProperty('chainId'), true);
+        assert.strictEqual(tx.hasOwnProperty('hash'), true);
+        assert.strictEqual(tx.hasOwnProperty('timestamp'), true);
+        assert.strictEqual(tx.hasOwnProperty('transactionId'), true);
+        assert.strictEqual(tx.hasOwnProperty('from'), true);
+        assert.strictEqual(tx.hasOwnProperty('to'), true);
+        assert.strictEqual(tx.hasOwnProperty('data'), true);
+        assert.strictEqual(tx.hasOwnProperty('gasLimit'), true);
+        assert.strictEqual(tx.hasOwnProperty('value'), true);
+        assert.strictEqual(tx.hasOwnProperty('customData'), true);
+        assert.strictEqual(tx.customData.hasOwnProperty('result'), true);
+        assert.strictEqual(tx.customData.result, 'SUCCESS');
+
+        assert.strictEqual(tx.from, acc1Wallet.account);
+        assert.strictEqual(tx.to, acc2Wallet.account);
+        assert.strictEqual(tx.value.toString(), '189250000');
+    }).timeout(timeout);
 });
