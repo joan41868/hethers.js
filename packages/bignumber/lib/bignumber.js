@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parseTimestamp = exports._base16To36 = exports._base36To16 = exports.numberify = exports.BigNumber = exports.isBigNumberish = void 0;
+exports._base16To36 = exports._base36To16 = exports.numberify = exports.BigNumber = exports.isBigNumberish = void 0;
 /**
  *  BigNumber
  *
@@ -318,15 +318,4 @@ function _base16To36(value) {
     return (new BN(value, 16)).toString(36);
 }
 exports._base16To36 = _base16To36;
-// return value matches mirrornode required format
-function parseTimestamp(timestamp) {
-    var stringValue = timestamp.toString();
-    var millis = stringValue.slice(0, 10);
-    var nanos = stringValue.slice(10);
-    for (var i = nanos.length; i < 9; i++) {
-        nanos += "0";
-    }
-    return millis + "." + nanos;
-}
-exports.parseTimestamp = parseTimestamp;
 //# sourceMappingURL=bignumber.js.map

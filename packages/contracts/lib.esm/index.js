@@ -10,9 +10,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 import { checkResultErrors, Indexed, Interface } from "@ethersproject/abi";
 import { Provider } from "@ethersproject/abstract-provider";
+import { composeHederaTimestamp } from "@ethersproject/providers";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { getAddress, getAddressFromAccount } from "@ethersproject/address";
-import { BigNumber, parseTimestamp } from "@ethersproject/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { deepCopy, defineReadOnly, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { accessListify } from "@ethersproject/transactions";
@@ -716,10 +717,10 @@ export class BaseContract {
             const runningEvent = this._getRunningEvent(event);
             const filter = shallowCopy(runningEvent.filter);
             if (fromTimestamp && (typeof fromTimestamp !== "string")) {
-                fromTimestamp = parseTimestamp(fromTimestamp);
+                fromTimestamp = composeHederaTimestamp(fromTimestamp.toNumber());
             }
             if (toTimestamp && (typeof toTimestamp !== "string")) {
-                toTimestamp = parseTimestamp(toTimestamp);
+                toTimestamp = composeHederaTimestamp(toTimestamp.toNumber());
             }
             filter.fromTimestamp = (fromTimestamp != null) ? fromTimestamp.toString() : null;
             filter.toTimestamp = (toTimestamp != null) ? toTimestamp.toString() : null;

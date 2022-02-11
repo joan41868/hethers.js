@@ -371,14 +371,3 @@ export function _base36To16(value: string): string {
 export function _base16To36(value: string): string {
     return (new BN(value, 16)).toString(36);
 }
-
-// return value matches mirrornode required format
-export function parseTimestamp(timestamp: BigNumber): string {
-    const stringValue = timestamp.toString();
-    const millis = stringValue.slice(0,10);
-    let nanos = stringValue.slice(10)
-    for (let i = nanos.length; i < 9; i++) {
-        nanos+="0";
-    }
-    return millis + "." + nanos;
-}

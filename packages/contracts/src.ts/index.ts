@@ -20,9 +20,10 @@ import {
     TransactionRequest,
     TransactionResponse
 } from "@ethersproject/abstract-provider";
+import { composeHederaTimestamp } from "@ethersproject/providers";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { AccountLike, getAddress, getAddressFromAccount } from "@ethersproject/address";
-import { BigNumber, BigNumberish, parseTimestamp } from "@ethersproject/bignumber";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import {
     deepCopy,
@@ -948,10 +949,10 @@ export class BaseContract {
         const filter = shallowCopy(runningEvent.filter);
 
         if (fromTimestamp && (typeof fromTimestamp !== "string")) {
-            fromTimestamp = parseTimestamp(fromTimestamp);
+            fromTimestamp = composeHederaTimestamp(fromTimestamp.toNumber());
         } 
         if (toTimestamp && (typeof toTimestamp !== "string")) {
-            toTimestamp = parseTimestamp(toTimestamp);
+            toTimestamp = composeHederaTimestamp(toTimestamp.toNumber());
         } 
 
         (<Filter>filter).fromTimestamp = (fromTimestamp != null) ? fromTimestamp.toString() : null;

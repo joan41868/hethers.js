@@ -74,6 +74,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContractFactory = exports.Contract = exports.BaseContract = void 0;
 var abi_1 = require("@ethersproject/abi");
 var abstract_provider_1 = require("@ethersproject/abstract-provider");
+var providers_1 = require("@ethersproject/providers");
 var abstract_signer_1 = require("@ethersproject/abstract-signer");
 var address_1 = require("@ethersproject/address");
 var bignumber_1 = require("@ethersproject/bignumber");
@@ -864,10 +865,10 @@ var BaseContract = /** @class */ (function () {
                         runningEvent = this._getRunningEvent(event);
                         filter = (0, properties_1.shallowCopy)(runningEvent.filter);
                         if (fromTimestamp && (typeof fromTimestamp !== "string")) {
-                            fromTimestamp = (0, bignumber_1.parseTimestamp)(fromTimestamp);
+                            fromTimestamp = (0, providers_1.composeHederaTimestamp)(fromTimestamp.toNumber());
                         }
                         if (toTimestamp && (typeof toTimestamp !== "string")) {
-                            toTimestamp = (0, bignumber_1.parseTimestamp)(toTimestamp);
+                            toTimestamp = (0, providers_1.composeHederaTimestamp)(toTimestamp.toNumber());
                         }
                         filter.fromTimestamp = (fromTimestamp != null) ? fromTimestamp.toString() : null;
                         filter.toTimestamp = (toTimestamp != null) ? toTimestamp.toString() : null;
