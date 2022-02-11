@@ -1,5 +1,4 @@
 {
-  "author": "Richard Moore <me@ricmoo.com>",
   "dependencies": {
     "@hethers/abstract-provider": "1.0.0",
     "@hethers/abstract-signer": "1.0.0",
@@ -17,20 +16,12 @@
     "@hethers/transactions": "1.0.0",
     "@ethersproject/wordlists": "5.5.0"
   },
-  "description": "Classes for managing, encrypting and decrypting Ethereum private keys as a Signer for ethers.",
-  "ethereum": "donations.ethers.eth",
-  "funding": [
-    {
-      "type": "individual",
-      "url": "https://gitcoin.co/grants/13/ethersjs-complete-simple-and-tiny-2"
-    },
-    {
-      "type": "individual",
-      "url": "https://www.buymeacoffee.com/ricmoo"
-    }
-  ],
+  "description": "Classes for managing, encrypting and decrypting ECDSA private keys as a Signer for hethers.",
   "keywords": [
+    "Hedera",
+    "Hashgraph",
     "Ethereum",
+    "hethers",
     "ethers"
   ],
   "license": "MIT",

@@ -1,5 +1,4 @@
 {
-  "author": "Richard Moore <me@ricmoo.com>",
   "browser-old": "./dist/ethers.umd.js",
   "dependencies": {
     "@hethers/abstract-provider": "1.0.0",
@@ -33,20 +32,12 @@
     "@ethersproject/web": "5.5.0",
     "@ethersproject/wordlists": "5.5.0"
   },
-  "description": "Umbrella package for most common Ethers libraries.",
-  "ethereum": "donations.ethers.eth",
-  "funding": [
-    {
-      "type": "individual",
-      "url": "https://gitcoin.co/grants/13/ethersjs-complete-simple-and-tiny-2"
-    },
-    {
-      "type": "individual",
-      "url": "https://www.buymeacoffee.com/ricmoo"
-    }
-  ],
+  "description": "Umbrella package for most common Hethers libraries.",
   "keywords": [
+    "Hedera",
+    "Hashgraph",
     "Ethereum",
+    "hethers",
     "ethers"
   ],
   "license": "MIT",
