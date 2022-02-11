@@ -22249,12 +22249,6 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$1 = keccak(256);
 
-var _args = [
-	[
-		"elliptic@6.5.4",
-		"/home/nikolay/Desktop/hethers.js"
-	]
-];
 var _from = "elliptic@6.5.4";
 var _id = "elliptic@6.5.4";
 var _inBundle = false;
@@ -22277,8 +22271,9 @@ var _requiredBy = [
 	"/@hashgraph/cryptography"
 ];
 var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
-var _spec = "6.5.4";
-var _where = "/home/nikolay/Desktop/hethers.js";
+var _shasum = "da37cebd31e79a1367e941b592ed1fbebd58abbb";
+var _spec = "elliptic@6.5.4";
+var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
 var author = {
 	name: "Fedor Indutny",
 	email: "fedor@indutny.com"
@@ -22286,6 +22281,7 @@ var author = {
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
+var bundleDependencies = false;
 var dependencies = {
 	"bn.js": "^4.11.9",
 	brorand: "^1.1.0",
@@ -22295,6 +22291,7 @@ var dependencies = {
 	"minimalistic-assert": "^1.0.1",
 	"minimalistic-crypto-utils": "^1.0.1"
 };
+var deprecated = false;
 var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
@@ -22337,7 +22334,6 @@ var scripts = {
 };
 var version$b = "6.5.4";
 var require$$0 = {
-	_args: _args,
 	_from: _from,
 	_id: _id,
 	_inBundle: _inBundle,
@@ -22347,11 +22343,14 @@ var require$$0 = {
 	_requested: _requested,
 	_requiredBy: _requiredBy,
 	_resolved: _resolved,
+	_shasum: _shasum,
 	_spec: _spec,
 	_where: _where,
 	author: author,
 	bugs: bugs,
+	bundleDependencies: bundleDependencies,
 	dependencies: dependencies,
+	deprecated: deprecated,
 	description: description,
 	devDependencies: devDependencies,
 	files: files,
@@ -80602,13 +80601,7 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var _args$1 = [
-	[
-		"@grpc/grpc-js@1.5.1",
-		"/home/nikolay/Desktop/hethers.js"
-	]
-];
-var _from$1 = "@grpc/grpc-js@1.5.1";
+var _from$1 = "@grpc/grpc-js@^1.4.4";
 var _id$1 = "@grpc/grpc-js@1.5.1";
 var _inBundle$1 = false;
 var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
@@ -80616,25 +80609,27 @@ var _location$1 = "/@grpc/grpc-js";
 var _phantomChildren$1 = {
 };
 var _requested$1 = {
-	type: "version",
+	type: "range",
 	registry: true,
-	raw: "@grpc/grpc-js@1.5.1",
+	raw: "@grpc/grpc-js@^1.4.4",
 	name: "@grpc/grpc-js",
 	escapedName: "@grpc%2fgrpc-js",
 	scope: "@grpc",
-	rawSpec: "1.5.1",
+	rawSpec: "^1.4.4",
 	saveSpec: null,
-	fetchSpec: "1.5.1"
+	fetchSpec: "^1.4.4"
 };
 var _requiredBy$1 = [
 	"/@hashgraph/sdk"
 ];
 var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
-var _spec$1 = "1.5.1";
-var _where$1 = "/home/nikolay/Desktop/hethers.js";
+var _shasum$1 = "934571ae351e868e61d2bd1d56249b79ce8bd1f5";
+var _spec$1 = "@grpc/grpc-js@^1.4.4";
+var _where$1 = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js\\node_modules\\@hashgraph\\sdk";
 var author$1 = {
 	name: "Google Inc."
 };
+var bundleDependencies$1 = false;
 var contributors = [
 	{
 		name: "Google Inc."
@@ -80644,6 +80639,7 @@ var dependencies$1 = {
 	"@grpc/proto-loader": "^0.6.4",
 	"@types/node": ">=12.12.47"
 };
+var deprecated$1 = false;
 var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
@@ -80713,7 +80709,6 @@ var scripts$1 = {
 var types = "build/src/index.d.ts";
 var version$c = "1.5.1";
 var require$$0$2 = {
-	_args: _args$1,
 	_from: _from$1,
 	_id: _id$1,
 	_inBundle: _inBundle$1,
@@ -80723,11 +80718,14 @@ var require$$0$2 = {
 	_requested: _requested$1,
 	_requiredBy: _requiredBy$1,
 	_resolved: _resolved$1,
+	_shasum: _shasum$1,
 	_spec: _spec$1,
 	_where: _where$1,
 	author: author$1,
+	bundleDependencies: bundleDependencies$1,
 	contributors: contributors,
 	dependencies: dependencies$1,
+	deprecated: deprecated$1,
 	description: description$1,
 	devDependencies: devDependencies$1,
 	engines: engines,
@@ -98499,13 +98497,14 @@ class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param transactionId - id of the transaction to search for
+     * @param transactionIdOrTimestamp - id or consensus timestamp of the transaction to search for
      */
-    getTransaction(transactionId) {
+    getTransaction(transactionIdOrTimestamp) {
         return __awaiter$8(this, void 0, void 0, function* () {
             this._checkMirrorNode();
-            transactionId = yield transactionId;
-            const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
+            transactionIdOrTimestamp = yield transactionIdOrTimestamp;
+            let transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT;
+            !transactionIdOrTimestamp.includes("-") ? transactionsEndpoint += ('?timestamp=' + transactionIdOrTimestamp) : transactionsEndpoint += transactionIdOrTimestamp;
             try {
                 let { data } = yield axios$1.get(this._mirrorNodeUrl + transactionsEndpoint);
                 if (data) {
@@ -98514,12 +98513,12 @@ class BaseProvider extends Provider {
                         let record;
                         record = {
                             chainId: this._network.chainId,
-                            transactionId: transactionId,
+                            transactionId: filtered[0].transaction_id,
                             result: filtered[0].result,
                         };
                         const transactionName = filtered[0].name;
                         if (transactionName === 'CRYPTOCREATEACCOUNT') {
-                            record.from = getAccountFromTransactionId(transactionId);
+                            record.from = getAccountFromTransactionId(filtered[0].transaction_id);
                             record.timestamp = filtered[0].consensus_timestamp;
                             // Different endpoints of the mirror node API returns hashes in different formats.
                             // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
@@ -98528,7 +98527,7 @@ class BaseProvider extends Provider {
                             record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                         }
                         else {
-                            const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                            const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + filtered[0].transaction_id;
                             const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
                             record = Object.assign({}, record, Object.assign({}, dataWithLogs.data));
                         }

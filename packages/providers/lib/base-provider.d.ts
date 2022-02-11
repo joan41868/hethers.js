@@ -79,9 +79,9 @@ export declare class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param transactionId - id of the transaction to search for
+     * @param transactionIdOrTimestamp - id or consensus timestamp of the transaction to search for
      */
-    getTransaction(transactionId: string | Promise<string>): Promise<TransactionResponse>;
+    getTransaction(transactionIdOrTimestamp: string | Promise<string>): Promise<TransactionResponse>;
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
