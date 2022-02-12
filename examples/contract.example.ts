@@ -150,8 +150,10 @@ const account = {
     const filter = {
         address: contract.address
     };
-    const fromTimestampNumber = hethers.BigNumber.from(1000000000000000);
-    const toTimestampNumber = hethers.BigNumber.from(1999999999999999);
+    // const fromTimestampNumber = hethers.BigNumber.from(1000000000000000);
+    // const toTimestampNumber = hethers.BigNumber.from(1999999999999999);
+    const fromTimestampNumber = 1000000000000000;
+    const toTimestampNumber = 1999999999999999;
     const events1 = await contract.queryFilter(filter, fromTimestampNumber, toTimestampNumber);
     console.log('events1:', events1);
 

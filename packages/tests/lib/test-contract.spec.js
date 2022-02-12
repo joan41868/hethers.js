@@ -708,7 +708,7 @@ describe("Test Contract Query Filter", function () {
     var provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
     // @ts-ignore
     var wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
-    it("should filter contract events by timestamp", function () {
+    it("should filter contract events by timestamp string", function () {
         return __awaiter(this, void 0, void 0, function () {
             var contractAddress, fromTimestamp, toTimestamp, contract, filter, events;
             return __generator(this, function (_a) {
@@ -735,6 +735,34 @@ describe("Test Contract Query Filter", function () {
                         assert_1.default.strict(events[1].topics.length > 0, "result topics not empty");
                         assert_1.default.strict(events[1].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
                         assert_1.default.strict(events[1].timestamp <= toTimestamp, "result is less or equal toTimestamp");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(60000);
+    it("should filter contract events by timestamp number", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var contractAddress, fromTimestamp, toTimestamp, contract, filter, events;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        contractAddress = '0x000000000000000000000000000000000186fb1a';
+                        fromTimestamp = 1642065156264170;
+                        toTimestamp = 1642080642176150;
+                        contract = ethers_1.ethers.ContractFactory.getContract(contractAddress, abi, wallet);
+                        filter = {
+                            address: contractAddress,
+                        };
+                        return [4 /*yield*/, contract.queryFilter(filter, fromTimestamp, toTimestamp)];
+                    case 1:
+                        events = _a.sent();
+                        assert_1.default.strictEqual(events.length, 2, "queryFilter returns the contract events");
+                        assert_1.default.strictEqual(events[0].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+                        assert_1.default.notStrictEqual(events[0].data, null, "result data exists");
+                        assert_1.default.strict(events[0].topics.length > 0, "result topics not empty");
+                        assert_1.default.strictEqual(events[1].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+                        assert_1.default.notStrictEqual(events[1].data, null, "result data exists");
+                        assert_1.default.strict(events[1].topics.length > 0, "result topics not empty");
                         return [2 /*return*/];
                 }
             });

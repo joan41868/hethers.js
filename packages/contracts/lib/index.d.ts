@@ -115,7 +115,7 @@ export declare class BaseContract {
     _checkRunningEvents(runningEvent: RunningEvent): void;
     _wrapEvent(runningEvent: RunningEvent, log: Log, listener: Listener): Event;
     private _addEventListener;
-    queryFilter(event: EventFilter, fromTimestamp?: string | BigNumber, toTimestamp?: string | BigNumber): Promise<Array<Event>>;
+    queryFilter(event: EventFilter, fromTimestamp?: string | number, toTimestamp?: string | number): Promise<Array<Event>>;
     on(event: EventFilter | string, listener: Listener): this;
     once(event: EventFilter | string, listener: Listener): this;
     emit(eventName: EventFilter | string, ...args: Array<any>): boolean;

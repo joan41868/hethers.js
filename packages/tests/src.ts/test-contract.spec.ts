@@ -507,7 +507,7 @@ describe("Test Contract Query Filter", function() {
     // @ts-ignore
     const wallet = new ethers.Wallet(hederaEoa, provider);
 
-    it("should filter contract events by timestamp", async function() {
+    it("should filter contract events by timestamp string", async function() {
         const contractAddress = '0x000000000000000000000000000000000186fb1a';
         const fromTimestamp = '1642065156.264170833';
 		const toTimestamp = '1642080642.176149864';
@@ -529,6 +529,26 @@ describe("Test Contract Query Filter", function() {
         assert.strict(events[1].topics.length > 0, "result topics not empty");
         assert.strict(events[1].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
         assert.strict(events[1].timestamp <= toTimestamp, "result is less or equal toTimestamp");
+    }).timeout(60000);
+
+    it("should filter contract events by timestamp number", async function() {
+        const contractAddress = '0x000000000000000000000000000000000186fb1a';
+        const fromTimestamp = 1642065156264170;
+		const toTimestamp = 1642080642176150;
+        const contract = ethers.ContractFactory.getContract(contractAddress, abi, wallet);
+        const filter = {
+            address: contractAddress,
+        }
+        const events = await contract.queryFilter(filter, fromTimestamp, toTimestamp);
+
+        assert.strictEqual(events.length, 2, "queryFilter returns the contract events");
+        assert.strictEqual(events[0].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+        assert.notStrictEqual(events[0].data, null, "result data exists");
+        assert.strict(events[0].topics.length > 0, "result topics not empty");
+
+        assert.strictEqual(events[1].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+        assert.notStrictEqual(events[1].data, null, "result data exists");
+        assert.strict(events[1].topics.length > 0, "result topics not empty");
     }).timeout(60000);
 });
 
