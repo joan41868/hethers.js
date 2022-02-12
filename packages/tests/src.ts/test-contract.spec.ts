@@ -351,6 +351,7 @@ describe("Test Contract Transaction Population", function() {
         const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
         const contractFactory = new ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
         const contract = await contractFactory.deploy(ethers.BigNumber.from('10000'), {gasLimit: 3000000});
+        await contract.deployed();
 
         // client wallet init
         let clientWallet = ethers.Wallet.createRandom();

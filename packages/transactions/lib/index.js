@@ -129,20 +129,18 @@ function serializeHederaTransaction(transaction, pubKey) {
     var tx;
     var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
     var gas = (0, bignumber_1.numberify)(transaction.gasLimit ? transaction.gasLimit : 0);
-    if (transaction.to) {
-        if (transaction.isCryptoTransfer && transaction.value) {
-            tx = new sdk_1.TransferTransaction()
-                .addHbarTransfer(transaction.from.toString(), new sdk_1.Hbar(transaction.value.toString()).negated())
-                .addHbarTransfer(transaction.to.toString(), new sdk_1.Hbar(transaction.value.toString()));
-        }
-        else {
-            tx = new sdk_1.ContractExecuteTransaction()
-                .setContractId(sdk_1.ContractId.fromSolidityAddress((0, utils_1.getAddressFromAccount)(transaction.to)))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
+    if (transaction.isCryptoTransfer) {
+        tx = new sdk_1.TransferTransaction()
+            .addHbarTransfer(transaction.from.toString(), new sdk_1.Hbar(transaction.value.toString()).negated())
+            .addHbarTransfer(transaction.to.toString(), new sdk_1.Hbar(transaction.value.toString()));
+    }
+    else if (transaction.to) {
+        tx = new sdk_1.ContractExecuteTransaction()
+            .setContractId(sdk_1.ContractId.fromSolidityAddress((0, utils_1.getAddressFromAccount)(transaction.to)))
+            .setFunctionParameters(arrayifiedData)
+            .setGas(gas);
+        if (transaction.value) {
+            tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
         }
     }
     else {

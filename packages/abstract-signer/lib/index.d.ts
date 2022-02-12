@@ -67,7 +67,7 @@ export declare abstract class Signer {
     checkTransaction(transaction: Deferrable<TransactionRequest>): Deferrable<TransactionRequest>;
     /**
      * Populates any missing properties in a transaction request.
-     * Properties affected - `to`, `chainId`
+     * Properties affected - `to`, `chainId`, `isCryptoTransfer`
      * @param transaction
      */
     populateTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionRequest>;

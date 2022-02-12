@@ -29,7 +29,7 @@ const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
-    "nodeId", "isCryptoTransfer"
+    "nodeId"
 ];
 
 // const forwardErrors = [
@@ -304,20 +304,6 @@ export abstract class Signer {
             }
         }
 
-        if (tx.isCryptoTransfer) {
-            if (tx.data) logger.throwError("Contract call data provided for contract execution. Cannot execute a CryptoTransfer");
-            if (!tx.to) logger.throwError("to address missing. Cannot execute a CryptoTransfer");
-            if (tx.gasLimit) logger.throwError("gasLimit provided. Cannot execute a CryptoTransfer");
-        } else if (!tx.hasOwnProperty('isCryptoTransfer')) {
-            tx.isCryptoTransfer = false;
-            if (tx.to && !tx.gasLimit && !tx.data && tx.value != 0) {
-                this._checkProvider();
-                tx.isCryptoTransfer = Promise.resolve(this.provider.getCode(tx.to)).then((res) => {
-                    return res === '0x';
-                });
-            }
-        }
-
         if (tx.from == null) {
             tx.from = this.getAddress();
 
@@ -339,7 +325,7 @@ export abstract class Signer {
 
     /**
      * Populates any missing properties in a transaction request.
-     * Properties affected - `to`, `chainId`
+     * Properties affected - `to`, `chainId`, `isCryptoTransfer`
      * @param transaction
      */
     async populateTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionRequest> {
@@ -353,6 +339,19 @@ export abstract class Signer {
 
             // Prevent this error from causing an UnhandledPromiseException
             tx.to.catch((error) => {  });
+        }
+
+        if (tx.to && tx.value) {
+            if (tx.data && !tx.gasLimit) {
+                logger.throwError("gasLimit is not provided. Cannot execute a Contract Call");
+            }
+
+            this._checkProvider();
+            if (((await this.provider.getCode(tx.to)) === '0x') && tx.gasLimit) {
+                logger.throwError("gasLimit is provided. Cannot execute a Crypto Transfer");
+            }
+
+            tx.isCryptoTransfer = true;
         }
 
         const customData = await tx.customData;
