@@ -25,7 +25,8 @@ var lib_esm$k = /*#__PURE__*/Object.freeze({
 	get recoverAddress () { return recoverAddress; },
 	get accessListify () { return accessListify; },
 	get serializeHederaTransaction () { return serializeHederaTransaction; },
-	get parse () { return parse$2; }
+	get parse () { return parse$2; },
+	get numberify () { return numberify; }
 });
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -4534,9 +4535,6 @@ function throwFault(fault, operation, value) {
         params.value = value;
     }
     return logger$1.throwError(fault, Logger.errors.NUMERIC_FAULT, params);
-}
-function numberify(num) {
-    return BigNumber.from(num).toNumber();
 }
 // value should have no prefix
 function _base36To16(value) {
@@ -93082,6 +93080,9 @@ function parse$2(rawTransaction) {
         // TODO populate r, s ,v
         return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
+}
+function numberify(num) {
+    return BigNumber.from(num).toNumber();
 }
 
 "use strict";

@@ -1,7 +1,7 @@
 "use strict";
 
 import { AccountLike, getAccountFromAddress, getAddress } from "@ethersproject/address";
-import { BigNumber, BigNumberish, numberify } from "@ethersproject/bignumber";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import {
     arrayify,
     BytesLike,
@@ -363,3 +363,6 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     };
 }
 
+export function numberify(num: BigNumberish) {
+    return BigNumber.from(num).toNumber();
+}
