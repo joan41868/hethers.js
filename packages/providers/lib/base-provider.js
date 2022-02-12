@@ -663,19 +663,20 @@ var BaseProvider = /** @class */ (function (_super) {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param transactionId - id of the transaction to search for
+     * @param transactionIdOrTimestamp - id or consensus timestamp of the transaction to search for
      */
-    BaseProvider.prototype.getTransaction = function (transactionId) {
+    BaseProvider.prototype.getTransaction = function (transactionIdOrTimestamp) {
         return __awaiter(this, void 0, void 0, function () {
             var transactionsEndpoint, data, filtered, record, transactionName, contractsEndpoint, dataWithLogs, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         this._checkMirrorNode();
-                        return [4 /*yield*/, transactionId];
+                        return [4 /*yield*/, transactionIdOrTimestamp];
                     case 1:
-                        transactionId = _a.sent();
-                        transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
+                        transactionIdOrTimestamp = _a.sent();
+                        transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT;
+                        !transactionIdOrTimestamp.includes("-") ? transactionsEndpoint += ('?timestamp=' + transactionIdOrTimestamp) : transactionsEndpoint += transactionIdOrTimestamp;
                         _a.label = 2;
                     case 2:
                         _a.trys.push([2, 8, , 9]);
@@ -688,12 +689,12 @@ var BaseProvider = /** @class */ (function (_super) {
                         record = void 0;
                         record = {
                             chainId: this._network.chainId,
-                            transactionId: transactionId,
+                            transactionId: filtered[0].transaction_id,
                             result: filtered[0].result,
                         };
                         transactionName = filtered[0].name;
                         if (!(transactionName === 'CRYPTOCREATEACCOUNT')) return [3 /*break*/, 4];
-                        record.from = (0, address_1.getAccountFromTransactionId)(transactionId);
+                        record.from = (0, address_1.getAccountFromTransactionId)(filtered[0].transaction_id);
                         record.timestamp = filtered[0].consensus_timestamp;
                         // Different endpoints of the mirror node API returns hashes in different formats.
                         // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
@@ -702,7 +703,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         record.accountAddress = (0, address_1.getAddressFromAccount)(filtered[0].entity_id);
                         return [3 /*break*/, 6];
                     case 4:
-                        contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                        contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + filtered[0].transaction_id;
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
                     case 5:
                         dataWithLogs = _a.sent();
