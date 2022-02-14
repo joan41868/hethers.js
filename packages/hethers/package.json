@@ -28,7 +28,7 @@
     "@ethersproject/random": "5.5.0",
     "@ethersproject/sha2": "5.5.0",
     "@ethersproject/solidity": "5.5.0",
-    "@ethersproject/units": "5.5.0",
+    "@hethers/units": "1.0.0",
     "@ethersproject/web": "5.5.0",
     "@ethersproject/wordlists": "5.5.0"
   },

@@ -126,7 +126,7 @@ Object.defineProperty(exports, "computeAlias", { enumerable: true, get: function
 Object.defineProperty(exports, "parseTransaction", { enumerable: true, get: function () { return transactions_1.parse; } });
 Object.defineProperty(exports, "recoverAddress", { enumerable: true, get: function () { return transactions_1.recoverAddress; } });
 Object.defineProperty(exports, "TransactionTypes", { enumerable: true, get: function () { return transactions_1.TransactionTypes; } });
-var units_1 = require("@ethersproject/units");
+var units_1 = require("@hethers/units");
 Object.defineProperty(exports, "commify", { enumerable: true, get: function () { return units_1.commify; } });
 Object.defineProperty(exports, "formatEther", { enumerable: true, get: function () { return units_1.formatEther; } });
 Object.defineProperty(exports, "parseEther", { enumerable: true, get: function () { return units_1.parseEther; } });

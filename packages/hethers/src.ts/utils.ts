@@ -18,7 +18,7 @@ import * as RLP from "@hethers/rlp";
 import { computePublicKey, recoverPublicKey, SigningKey } from "@ethersproject/signing-key";
 import { formatBytes32String, nameprep, parseBytes32String, _toEscapedUtf8String, toUtf8Bytes, toUtf8CodePoints, toUtf8String, Utf8ErrorFuncs } from "@ethersproject/strings";
 import { accessListify, computeAddress, computeAlias, parse as parseTransaction, recoverAddress, TransactionTypes } from "@hethers/transactions";
-import { commify, formatEther, parseEther, formatUnits, parseUnits } from "@ethersproject/units";
+import { commify, formatEther, parseEther, formatUnits, parseUnits } from "@hethers/units";
 import { verifyMessage, verifyTypedData } from "@hethers/wallet";
 import { _fetchData, fetchJson, poll } from "@ethersproject/web";
 

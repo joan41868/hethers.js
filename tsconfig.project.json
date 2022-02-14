@@ -50,6 +50,9 @@
       "path": "./packages/providers"
     },
     {
+      "path": "./packages/units"
+    },
+    {
       "path": "./packages/wallet"
     },
     {
