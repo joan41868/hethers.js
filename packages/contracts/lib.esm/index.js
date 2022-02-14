@@ -716,16 +716,12 @@ export class BaseContract {
             this._requireAddressSet();
             const runningEvent = this._getRunningEvent(event);
             const filter = shallowCopy(runningEvent.filter);
-            let fromTimestampComposed;
-            let toTimestampComposed;
             if (fromTimestamp) {
-                fromTimestampComposed = composeHederaTimestamp(fromTimestamp);
+                filter.fromTimestamp = composeHederaTimestamp(fromTimestamp);
             }
             if (toTimestamp) {
-                toTimestampComposed = composeHederaTimestamp(toTimestamp);
+                filter.toTimestamp = composeHederaTimestamp(toTimestamp);
             }
-            filter.fromTimestamp = fromTimestampComposed;
-            filter.toTimestamp = toTimestampComposed;
             const logs = yield this.provider.getLogs(filter);
             return logs.map((log) => this._wrapEvent(runningEvent, log, null));
         });

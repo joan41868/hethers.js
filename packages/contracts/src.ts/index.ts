@@ -888,7 +888,7 @@ export class BaseContract {
         };
 
         event.getTransaction = () => { return this.provider.getTransaction(log.timestamp); }
-        event.getTransactionReceipt = () => { 
+        event.getTransactionReceipt = () => {
             return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         }
 
@@ -943,21 +943,16 @@ export class BaseContract {
     }
 
     async queryFilter(event: EventFilter, fromTimestamp?: string | number, toTimestamp?: string | number): Promise<Array<Event>> {
-        this._requireAddressSet();   
+        this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
 
-        let fromTimestampComposed;
-        let toTimestampComposed;
         if (fromTimestamp) {
-            fromTimestampComposed = composeHederaTimestamp(fromTimestamp);
-        } 
+            (<Filter>filter).fromTimestamp = composeHederaTimestamp(fromTimestamp);
+        }
         if (toTimestamp) {
-            toTimestampComposed = composeHederaTimestamp(toTimestamp);
-        } 
-
-        (<Filter>filter).fromTimestamp = fromTimestampComposed;
-        (<Filter>filter).toTimestamp = toTimestampComposed;
+            (<Filter>filter).toTimestamp = composeHederaTimestamp(toTimestamp);
+        }
 
         const logs = await this.provider.getLogs(filter);
         return logs.map((log) => this._wrapEvent(runningEvent, log, null));

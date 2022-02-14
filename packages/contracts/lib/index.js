@@ -856,7 +856,7 @@ var BaseContract = /** @class */ (function () {
     };
     BaseContract.prototype.queryFilter = function (event, fromTimestamp, toTimestamp) {
         return __awaiter(this, void 0, void 0, function () {
-            var runningEvent, filter, fromTimestampComposed, toTimestampComposed, logs;
+            var runningEvent, filter, logs;
             var _this = this;
             return __generator(this, function (_a) {
                 switch (_a.label) {
@@ -865,13 +865,11 @@ var BaseContract = /** @class */ (function () {
                         runningEvent = this._getRunningEvent(event);
                         filter = (0, properties_1.shallowCopy)(runningEvent.filter);
                         if (fromTimestamp) {
-                            fromTimestampComposed = (0, providers_1.composeHederaTimestamp)(fromTimestamp);
+                            filter.fromTimestamp = (0, providers_1.composeHederaTimestamp)(fromTimestamp);
                         }
                         if (toTimestamp) {
-                            toTimestampComposed = (0, providers_1.composeHederaTimestamp)(toTimestamp);
+                            filter.toTimestamp = (0, providers_1.composeHederaTimestamp)(toTimestamp);
                         }
-                        filter.fromTimestamp = fromTimestampComposed;
-                        filter.toTimestamp = toTimestampComposed;
                         return [4 /*yield*/, this.provider.getLogs(filter)];
                     case 1:
                         logs = _a.sent();
