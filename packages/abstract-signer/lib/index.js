@@ -403,22 +403,27 @@ var Signer = /** @class */ (function () {
                             tx.to.catch(function (error) { });
                         }
                         isCryptoTransfer = false;
-                        if (!(tx.to && tx.value)) return [3 /*break*/, 3];
-                        if (tx.data && !tx.gasLimit) {
-                            logger.throwError("gasLimit is not provided. Cannot execute a Contract Call");
-                        }
+                        if (!(tx.to && tx.value)) return [3 /*break*/, 5];
+                        if (!(!tx.data && !tx.gasLimit)) return [3 /*break*/, 2];
+                        isCryptoTransfer = true;
+                        return [3 /*break*/, 5];
+                    case 2:
+                        if (!(tx.data && !tx.gasLimit)) return [3 /*break*/, 3];
+                        logger.throwError("gasLimit is not provided. Cannot execute a Contract Call");
+                        return [3 /*break*/, 5];
+                    case 3:
+                        if (!(!tx.data && tx.gasLimit)) return [3 /*break*/, 5];
                         this._checkProvider();
                         return [4 /*yield*/, this.provider.getCode(tx.to)];
-                    case 2:
-                        if (((_a.sent()) === '0x') && tx.gasLimit) {
-                            logger.throwError("gasLimit is provided. Cannot execute a Crypto Transfer");
+                    case 4:
+                        if ((_a.sent()) === '0x') {
+                            logger.throwError("receiver is an account. Cannot execute a Contract Call");
                         }
-                        isCryptoTransfer = true;
-                        _a.label = 3;
-                    case 3:
+                        _a.label = 5;
+                    case 5:
                         tx.customData = __assign(__assign({}, tx.customData), { isCryptoTransfer: isCryptoTransfer });
                         return [4 /*yield*/, tx.customData];
-                    case 4:
+                    case 6:
                         customData = _a.sent();
                         isFileCreateOrAppend = customData && customData.fileChunk;
                         isCreateAccount = customData && customData.publicKey;
@@ -426,7 +431,7 @@ var Signer = /** @class */ (function () {
                             return [2 /*return*/, logger.throwError("cannot estimate gas; transaction requires manual gas limit", logger_1.Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx })];
                         }
                         return [4 /*yield*/, (0, properties_1.resolveProperties)(tx)];
-                    case 5: return [2 /*return*/, _a.sent()];
+                    case 7: return [2 /*return*/, _a.sent()];
                 }
             });
         });

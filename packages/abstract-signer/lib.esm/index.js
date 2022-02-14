@@ -250,14 +250,18 @@ export class Signer {
             }
             let isCryptoTransfer = false;
             if (tx.to && tx.value) {
-                if (tx.data && !tx.gasLimit) {
+                if (!tx.data && !tx.gasLimit) {
+                    isCryptoTransfer = true;
+                }
+                else if (tx.data && !tx.gasLimit) {
                     logger.throwError("gasLimit is not provided. Cannot execute a Contract Call");
                 }
-                this._checkProvider();
-                if (((yield this.provider.getCode(tx.to)) === '0x') && tx.gasLimit) {
-                    logger.throwError("gasLimit is provided. Cannot execute a Crypto Transfer");
+                else if (!tx.data && tx.gasLimit) {
+                    this._checkProvider();
+                    if ((yield this.provider.getCode(tx.to)) === '0x') {
+                        logger.throwError("receiver is an account. Cannot execute a Contract Call");
+                    }
                 }
-                isCryptoTransfer = true;
             }
             tx.customData = Object.assign(Object.assign({}, tx.customData), { isCryptoTransfer });
             const customData = yield tx.customData;
