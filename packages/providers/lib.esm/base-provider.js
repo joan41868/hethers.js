@@ -510,7 +510,7 @@ export class BaseProvider extends Provider {
                             record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                         }
                         else if (transactionName === 'CRYPTOTRANSFER') {
-                            record.from = getAccountFromTransactionId(transactionId);
+                            record.from = getAccountFromTransactionId(filtered[0].transaction_id);
                             record.timestamp = filtered[0].consensus_timestamp;
                             record.hash = base64ToHex(filtered[0].transaction_hash);
                             let charityFee = 0;
