@@ -73,14 +73,15 @@ var __spreadArray = (this && this.__spreadArray) || function (to, from, pack) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ContractFactory = exports.Contract = exports.BaseContract = void 0;
 var abi_1 = require("@ethersproject/abi");
-var abstract_provider_1 = require("@hethers/abstract-provider");
-var abstract_signer_1 = require("@hethers/abstract-signer");
-var address_1 = require("@hethers/address");
-var bignumber_1 = require("@hethers/bignumber");
+var abstract_provider_1 = require("@ethersproject/abstract-provider");
+var providers_1 = require("@ethersproject/providers");
+var abstract_signer_1 = require("@ethersproject/abstract-signer");
+var address_1 = require("@ethersproject/address");
+var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
-var transactions_1 = require("@hethers/transactions");
-var logger_1 = require("@hethers/logger");
+var transactions_1 = require("@ethersproject/transactions");
+var logger_1 = require("@ethersproject/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 ///////////////////////////////
@@ -807,8 +808,10 @@ var BaseContract = /** @class */ (function () {
             runningEvent.removeListener(listener);
             _this._checkRunningEvents(runningEvent);
         };
-        event.getTransaction = function () { return _this.provider.getTransaction(log.transactionHash); };
-        event.getTransactionReceipt = function () { return _this.provider.getTransactionReceipt(log.transactionHash); };
+        event.getTransaction = function () { return _this.provider.getTransaction(log.timestamp); };
+        event.getTransactionReceipt = function () {
+            return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+        };
         // This may throw if the topics and data mismatch the signature
         runningEvent.prepareEvent(event);
         return event;
@@ -851,22 +854,28 @@ var BaseContract = /** @class */ (function () {
             }
         }
     };
-    BaseContract.prototype.queryFilter = function (event) {
-        var _this = this;
-        this._requireAddressSet();
-        var runningEvent = this._getRunningEvent(event);
-        var filter = (0, properties_1.shallowCopy)(runningEvent.filter);
-        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-        //     if (toBlock != null) {
-        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-        //     }
-        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
-        // } else {
-        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
-        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
-        // }
-        return this.provider.getLogs(filter).then(function (logs) {
-            return logs.map(function (log) { return _this._wrapEvent(runningEvent, log, null); });
+    BaseContract.prototype.queryFilter = function (event, fromTimestamp, toTimestamp) {
+        return __awaiter(this, void 0, void 0, function () {
+            var runningEvent, filter, logs;
+            var _this = this;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        this._requireAddressSet();
+                        runningEvent = this._getRunningEvent(event);
+                        filter = (0, properties_1.shallowCopy)(runningEvent.filter);
+                        if (fromTimestamp) {
+                            filter.fromTimestamp = (0, providers_1.composeHederaTimestamp)(fromTimestamp);
+                        }
+                        if (toTimestamp) {
+                            filter.toTimestamp = (0, providers_1.composeHederaTimestamp)(toTimestamp);
+                        }
+                        return [4 /*yield*/, this.provider.getLogs(filter)];
+                    case 1:
+                        logs = _a.sent();
+                        return [2 /*return*/, logs.map(function (log) { return _this._wrapEvent(runningEvent, log, null); })];
+                }
+            });
         });
     };
     BaseContract.prototype.on = function (event, listener) {

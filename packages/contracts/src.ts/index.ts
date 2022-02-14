@@ -12,16 +12,18 @@ import {
     Result
 } from "@ethersproject/abi";
 import {
+    Filter,
     Listener,
     Log,
     Provider,
     TransactionReceipt,
     TransactionRequest,
     TransactionResponse
-} from "@hethers/abstract-provider";
-import { Signer, VoidSigner } from "@hethers/abstract-signer";
-import { AccountLike, getAddress, getAddressFromAccount } from "@hethers/address";
-import { BigNumber, BigNumberish } from "@hethers/bignumber";
+} from "@ethersproject/abstract-provider";
+import { composeHederaTimestamp } from "@ethersproject/providers";
+import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
+import { AccountLike, getAddress, getAddressFromAccount } from "@ethersproject/address";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { arrayify, BytesLike, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import {
     deepCopy,
@@ -31,9 +33,9 @@ import {
     resolveProperties,
     shallowCopy
 } from "@ethersproject/properties";
-import { AccessList, accessListify, AccessListish} from "@hethers/transactions";
+import { AccessList, accessListify, AccessListish} from "@ethersproject/transactions";
 
-import { Logger } from "@hethers/logger";
+import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 
 const logger = new Logger(version);
@@ -885,8 +887,10 @@ export class BaseContract {
             this._checkRunningEvents(runningEvent);
         };
 
-        event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); }
-        event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); }
+        event.getTransaction = () => { return this.provider.getTransaction(log.timestamp); }
+        event.getTransactionReceipt = () => {
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+        }
 
         // This may throw if the topics and data mismatch the signature
         runningEvent.prepareEvent(event);
@@ -938,23 +942,20 @@ export class BaseContract {
         }
     }
 
-    queryFilter(event: EventFilter): Promise<Array<Event>> {
+    async queryFilter(event: EventFilter, fromTimestamp?: string | number, toTimestamp?: string | number): Promise<Array<Event>> {
         this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
 
-        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-        //     if (toBlock != null) {
-        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-        //     }
-        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
-        // } else {
-        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
-        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
-        // }
-        return this.provider.getLogs(filter).then((logs) => {
-            return logs.map((log) => this._wrapEvent(runningEvent, log, null));
-        });
+        if (fromTimestamp) {
+            (<Filter>filter).fromTimestamp = composeHederaTimestamp(fromTimestamp);
+        }
+        if (toTimestamp) {
+            (<Filter>filter).toTimestamp = composeHederaTimestamp(toTimestamp);
+        }
+
+        const logs = await this.provider.getLogs(filter);
+        return logs.map((log) => this._wrapEvent(runningEvent, log, null));
     }
 
     on(event: EventFilter | string, listener: Listener): this {

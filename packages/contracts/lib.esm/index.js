@@ -9,14 +9,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { checkResultErrors, Indexed, Interface } from "@ethersproject/abi";
-import { Provider } from "@hethers/abstract-provider";
-import { Signer, VoidSigner } from "@hethers/abstract-signer";
-import { getAddress, getAddressFromAccount } from "@hethers/address";
-import { BigNumber } from "@hethers/bignumber";
+import { Provider } from "@ethersproject/abstract-provider";
+import { composeHederaTimestamp } from "@ethersproject/providers";
+import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
+import { getAddress, getAddressFromAccount } from "@ethersproject/address";
+import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, concat, hexlify, isBytes, isHexString } from "@ethersproject/bytes";
 import { deepCopy, defineReadOnly, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
-import { accessListify } from "@hethers/transactions";
-import { Logger } from "@hethers/logger";
+import { accessListify } from "@ethersproject/transactions";
+import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
 ///////////////////////////////
@@ -665,8 +666,10 @@ export class BaseContract {
             runningEvent.removeListener(listener);
             this._checkRunningEvents(runningEvent);
         };
-        event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); };
-        event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); };
+        event.getTransaction = () => { return this.provider.getTransaction(log.timestamp); };
+        event.getTransactionReceipt = () => {
+            return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+        };
         // This may throw if the topics and data mismatch the signature
         runningEvent.prepareEvent(event);
         return event;
@@ -708,20 +711,18 @@ export class BaseContract {
             }
         }
     }
-    queryFilter(event) {
-        this._requireAddressSet();
-        const runningEvent = this._getRunningEvent(event);
-        const filter = shallowCopy(runningEvent.filter);
-        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-        //     if (toBlock != null) {
-        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-        //     }
-        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
-        // } else {
-        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
-        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
-        // }
-        return this.provider.getLogs(filter).then((logs) => {
+    queryFilter(event, fromTimestamp, toTimestamp) {
+        return __awaiter(this, void 0, void 0, function* () {
+            this._requireAddressSet();
+            const runningEvent = this._getRunningEvent(event);
+            const filter = shallowCopy(runningEvent.filter);
+            if (fromTimestamp) {
+                filter.fromTimestamp = composeHederaTimestamp(fromTimestamp);
+            }
+            if (toTimestamp) {
+                filter.toTimestamp = composeHederaTimestamp(toTimestamp);
+            }
+            const logs = yield this.provider.getLogs(filter);
             return logs.map((log) => this._wrapEvent(runningEvent, log, null));
         });
     }

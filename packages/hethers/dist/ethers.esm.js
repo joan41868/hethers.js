@@ -13,7 +13,7 @@ import path from 'path';
 import zlib from 'zlib';
 import dns from 'dns';
 import https from 'https';
-import assert$b from 'assert';
+import assert$f from 'assert';
 import tty from 'tty';
 
 var lib_esm$k = /*#__PURE__*/Object.freeze({
@@ -25,7 +25,8 @@ var lib_esm$k = /*#__PURE__*/Object.freeze({
 	get recoverAddress () { return recoverAddress; },
 	get accessListify () { return accessListify; },
 	get serializeHederaTransaction () { return serializeHederaTransaction; },
-	get parse () { return parse$2; }
+	get parse () { return parse$2; },
+	get numberify () { return numberify; }
 });
 
 var commonjsGlobal = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
@@ -4534,9 +4535,6 @@ function throwFault(fault, operation, value) {
         params.value = value;
     }
     return logger$1.throwError(fault, Logger.errors.NUMERIC_FAULT, params);
-}
-function numberify(num) {
-    return BigNumber.from(num).toNumber();
 }
 // value should have no prefix
 function _base36To16(value) {
@@ -9141,7 +9139,6680 @@ class Provider {
     }
 }
 
-const version$a = "abstract-signer/5.5.0";
+const version$a = "networks/5.5.0";
+
+"use strict";
+const logger$e = new Logger(version$a);
+function isRenetworkable(value) {
+    return (value && typeof (value.renetwork) === "function");
+}
+function hederaDefaultProvider(network) {
+    const func = function (providers, options) {
+        if (options == null) {
+            options = {};
+        }
+        const providerList = [];
+        // TODO: JSON RPC provider, FallbackProvider for hedera
+        if (providers.DefaultHederaProvider) {
+            providerList.push(new providers.DefaultHederaProvider(network));
+        }
+        if (providerList.length === 0) {
+            return null;
+        }
+        return providerList[0];
+    };
+    func.renetwork = function (network) {
+        return hederaDefaultProvider(network);
+    };
+    return func;
+}
+const networks = {
+    // hedera networks
+    mainnet: {
+        chainId: 290,
+        name: 'mainnet',
+        _defaultProvider: hederaDefaultProvider("mainnet")
+    },
+    testnet: {
+        chainId: 291,
+        name: 'testnet',
+        _defaultProvider: hederaDefaultProvider("testnet")
+    },
+    previewnet: {
+        chainId: 292,
+        name: 'previewnet',
+        _defaultProvider: hederaDefaultProvider("previewnet")
+    }
+};
+/**
+ *  getNetwork
+ *
+ *  Converts a named common networks or chain ID (network ID) to a Network
+ *  and verifies a network is a valid Network..
+ */
+function getNetwork(network) {
+    // No network (null)
+    if (network == null) {
+        return null;
+    }
+    if (typeof (network) === "number") {
+        for (const name in networks) {
+            const standard = networks[name];
+            if (standard.chainId === network) {
+                return {
+                    name: standard.name,
+                    chainId: standard.chainId,
+                    ensAddress: (standard.ensAddress || null),
+                    _defaultProvider: (standard._defaultProvider || null)
+                };
+            }
+        }
+        return {
+            chainId: network,
+            name: "unknown"
+        };
+    }
+    if (typeof (network) === "string") {
+        const standard = networks[network];
+        if (standard == null) {
+            return null;
+        }
+        return {
+            name: standard.name,
+            chainId: standard.chainId,
+            ensAddress: standard.ensAddress,
+            _defaultProvider: (standard._defaultProvider || null)
+        };
+    }
+    const standard = networks[network.name];
+    // Not a standard network; check that it is a valid network in general
+    if (!standard) {
+        if (typeof (network.chainId) !== "number") {
+            logger$e.throwArgumentError("invalid network chainId", "network", network);
+        }
+        return network;
+    }
+    // Make sure the chainId matches the expected network chainId (or is 0; disable EIP-155)
+    if (network.chainId !== 0 && network.chainId !== standard.chainId) {
+        logger$e.throwArgumentError("network chainId mismatch", "network", network);
+    }
+    // @TODO: In the next major version add an attach function to a defaultProvider
+    // class and move the _defaultProvider internal to this file (extend Network)
+    let defaultProvider = network._defaultProvider || null;
+    if (defaultProvider == null && standard._defaultProvider) {
+        if (isRenetworkable(standard._defaultProvider)) {
+            defaultProvider = standard._defaultProvider.renetwork(network);
+        }
+        else {
+            defaultProvider = standard._defaultProvider;
+        }
+    }
+    // Standard Network (allow overriding the ENS address)
+    return {
+        name: network.name,
+        chainId: standard.chainId,
+        ensAddress: (network.ensAddress || standard.ensAddress || null),
+        _defaultProvider: defaultProvider
+    };
+}
+
+const version$b = "providers/5.5.0";
+
+var minimalisticAssert = assert;
+
+function assert(val, msg) {
+  if (!val)
+    throw new Error(msg || 'Assertion failed');
+}
+
+assert.equal = function assertEqual(l, r, msg) {
+  if (l != r)
+    throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
+};
+
+var inherits_browser = createCommonjsModule(function (module) {
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    if (superCtor) {
+      ctor.super_ = superCtor;
+      ctor.prototype = Object.create(superCtor.prototype, {
+        constructor: {
+          value: ctor,
+          enumerable: false,
+          writable: true,
+          configurable: true
+        }
+      });
+    }
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    if (superCtor) {
+      ctor.super_ = superCtor;
+      var TempCtor = function () {};
+      TempCtor.prototype = superCtor.prototype;
+      ctor.prototype = new TempCtor();
+      ctor.prototype.constructor = ctor;
+    }
+  };
+}
+});
+
+var inherits = createCommonjsModule(function (module) {
+try {
+  var util = /*RicMoo:ethers:require(util)*/(null);
+  /* istanbul ignore next */
+  if (typeof util.inherits !== 'function') throw '';
+  module.exports = util.inherits;
+} catch (e) {
+  /* istanbul ignore next */
+  module.exports = inherits_browser;
+}
+});
+
+'use strict';
+
+
+
+
+var inherits_1 = inherits;
+
+function isSurrogatePair(msg, i) {
+  if ((msg.charCodeAt(i) & 0xFC00) !== 0xD800) {
+    return false;
+  }
+  if (i < 0 || i + 1 >= msg.length) {
+    return false;
+  }
+  return (msg.charCodeAt(i + 1) & 0xFC00) === 0xDC00;
+}
+
+function toArray(msg, enc) {
+  if (Array.isArray(msg))
+    return msg.slice();
+  if (!msg)
+    return [];
+  var res = [];
+  if (typeof msg === 'string') {
+    if (!enc) {
+      // Inspired by stringToUtf8ByteArray() in closure-library by Google
+      // https://github.com/google/closure-library/blob/8598d87242af59aac233270742c8984e2b2bdbe0/closure/goog/crypt/crypt.js#L117-L143
+      // Apache License 2.0
+      // https://github.com/google/closure-library/blob/master/LICENSE
+      var p = 0;
+      for (var i = 0; i < msg.length; i++) {
+        var c = msg.charCodeAt(i);
+        if (c < 128) {
+          res[p++] = c;
+        } else if (c < 2048) {
+          res[p++] = (c >> 6) | 192;
+          res[p++] = (c & 63) | 128;
+        } else if (isSurrogatePair(msg, i)) {
+          c = 0x10000 + ((c & 0x03FF) << 10) + (msg.charCodeAt(++i) & 0x03FF);
+          res[p++] = (c >> 18) | 240;
+          res[p++] = ((c >> 12) & 63) | 128;
+          res[p++] = ((c >> 6) & 63) | 128;
+          res[p++] = (c & 63) | 128;
+        } else {
+          res[p++] = (c >> 12) | 224;
+          res[p++] = ((c >> 6) & 63) | 128;
+          res[p++] = (c & 63) | 128;
+        }
+      }
+    } else if (enc === 'hex') {
+      msg = msg.replace(/[^a-z0-9]+/ig, '');
+      if (msg.length % 2 !== 0)
+        msg = '0' + msg;
+      for (i = 0; i < msg.length; i += 2)
+        res.push(parseInt(msg[i] + msg[i + 1], 16));
+    }
+  } else {
+    for (i = 0; i < msg.length; i++)
+      res[i] = msg[i] | 0;
+  }
+  return res;
+}
+var toArray_1 = toArray;
+
+function toHex$1(msg) {
+  var res = '';
+  for (var i = 0; i < msg.length; i++)
+    res += zero2(msg[i].toString(16));
+  return res;
+}
+var toHex_1 = toHex$1;
+
+function htonl(w) {
+  var res = (w >>> 24) |
+            ((w >>> 8) & 0xff00) |
+            ((w << 8) & 0xff0000) |
+            ((w & 0xff) << 24);
+  return res >>> 0;
+}
+var htonl_1 = htonl;
+
+function toHex32(msg, endian) {
+  var res = '';
+  for (var i = 0; i < msg.length; i++) {
+    var w = msg[i];
+    if (endian === 'little')
+      w = htonl(w);
+    res += zero8(w.toString(16));
+  }
+  return res;
+}
+var toHex32_1 = toHex32;
+
+function zero2(word) {
+  if (word.length === 1)
+    return '0' + word;
+  else
+    return word;
+}
+var zero2_1 = zero2;
+
+function zero8(word) {
+  if (word.length === 7)
+    return '0' + word;
+  else if (word.length === 6)
+    return '00' + word;
+  else if (word.length === 5)
+    return '000' + word;
+  else if (word.length === 4)
+    return '0000' + word;
+  else if (word.length === 3)
+    return '00000' + word;
+  else if (word.length === 2)
+    return '000000' + word;
+  else if (word.length === 1)
+    return '0000000' + word;
+  else
+    return word;
+}
+var zero8_1 = zero8;
+
+function join32(msg, start, end, endian) {
+  var len = end - start;
+  minimalisticAssert(len % 4 === 0);
+  var res = new Array(len / 4);
+  for (var i = 0, k = start; i < res.length; i++, k += 4) {
+    var w;
+    if (endian === 'big')
+      w = (msg[k] << 24) | (msg[k + 1] << 16) | (msg[k + 2] << 8) | msg[k + 3];
+    else
+      w = (msg[k + 3] << 24) | (msg[k + 2] << 16) | (msg[k + 1] << 8) | msg[k];
+    res[i] = w >>> 0;
+  }
+  return res;
+}
+var join32_1 = join32;
+
+function split32(msg, endian) {
+  var res = new Array(msg.length * 4);
+  for (var i = 0, k = 0; i < msg.length; i++, k += 4) {
+    var m = msg[i];
+    if (endian === 'big') {
+      res[k] = m >>> 24;
+      res[k + 1] = (m >>> 16) & 0xff;
+      res[k + 2] = (m >>> 8) & 0xff;
+      res[k + 3] = m & 0xff;
+    } else {
+      res[k + 3] = m >>> 24;
+      res[k + 2] = (m >>> 16) & 0xff;
+      res[k + 1] = (m >>> 8) & 0xff;
+      res[k] = m & 0xff;
+    }
+  }
+  return res;
+}
+var split32_1 = split32;
+
+function rotr32(w, b) {
+  return (w >>> b) | (w << (32 - b));
+}
+var rotr32_1 = rotr32;
+
+function rotl32(w, b) {
+  return (w << b) | (w >>> (32 - b));
+}
+var rotl32_1 = rotl32;
+
+function sum32(a, b) {
+  return (a + b) >>> 0;
+}
+var sum32_1 = sum32;
+
+function sum32_3(a, b, c) {
+  return (a + b + c) >>> 0;
+}
+var sum32_3_1 = sum32_3;
+
+function sum32_4(a, b, c, d) {
+  return (a + b + c + d) >>> 0;
+}
+var sum32_4_1 = sum32_4;
+
+function sum32_5(a, b, c, d, e) {
+  return (a + b + c + d + e) >>> 0;
+}
+var sum32_5_1 = sum32_5;
+
+function sum64(buf, pos, ah, al) {
+  var bh = buf[pos];
+  var bl = buf[pos + 1];
+
+  var lo = (al + bl) >>> 0;
+  var hi = (lo < al ? 1 : 0) + ah + bh;
+  buf[pos] = hi >>> 0;
+  buf[pos + 1] = lo;
+}
+var sum64_1 = sum64;
+
+function sum64_hi(ah, al, bh, bl) {
+  var lo = (al + bl) >>> 0;
+  var hi = (lo < al ? 1 : 0) + ah + bh;
+  return hi >>> 0;
+}
+var sum64_hi_1 = sum64_hi;
+
+function sum64_lo(ah, al, bh, bl) {
+  var lo = al + bl;
+  return lo >>> 0;
+}
+var sum64_lo_1 = sum64_lo;
+
+function sum64_4_hi(ah, al, bh, bl, ch, cl, dh, dl) {
+  var carry = 0;
+  var lo = al;
+  lo = (lo + bl) >>> 0;
+  carry += lo < al ? 1 : 0;
+  lo = (lo + cl) >>> 0;
+  carry += lo < cl ? 1 : 0;
+  lo = (lo + dl) >>> 0;
+  carry += lo < dl ? 1 : 0;
+
+  var hi = ah + bh + ch + dh + carry;
+  return hi >>> 0;
+}
+var sum64_4_hi_1 = sum64_4_hi;
+
+function sum64_4_lo(ah, al, bh, bl, ch, cl, dh, dl) {
+  var lo = al + bl + cl + dl;
+  return lo >>> 0;
+}
+var sum64_4_lo_1 = sum64_4_lo;
+
+function sum64_5_hi(ah, al, bh, bl, ch, cl, dh, dl, eh, el) {
+  var carry = 0;
+  var lo = al;
+  lo = (lo + bl) >>> 0;
+  carry += lo < al ? 1 : 0;
+  lo = (lo + cl) >>> 0;
+  carry += lo < cl ? 1 : 0;
+  lo = (lo + dl) >>> 0;
+  carry += lo < dl ? 1 : 0;
+  lo = (lo + el) >>> 0;
+  carry += lo < el ? 1 : 0;
+
+  var hi = ah + bh + ch + dh + eh + carry;
+  return hi >>> 0;
+}
+var sum64_5_hi_1 = sum64_5_hi;
+
+function sum64_5_lo(ah, al, bh, bl, ch, cl, dh, dl, eh, el) {
+  var lo = al + bl + cl + dl + el;
+
+  return lo >>> 0;
+}
+var sum64_5_lo_1 = sum64_5_lo;
+
+function rotr64_hi(ah, al, num) {
+  var r = (al << (32 - num)) | (ah >>> num);
+  return r >>> 0;
+}
+var rotr64_hi_1 = rotr64_hi;
+
+function rotr64_lo(ah, al, num) {
+  var r = (ah << (32 - num)) | (al >>> num);
+  return r >>> 0;
+}
+var rotr64_lo_1 = rotr64_lo;
+
+function shr64_hi(ah, al, num) {
+  return ah >>> num;
+}
+var shr64_hi_1 = shr64_hi;
+
+function shr64_lo(ah, al, num) {
+  var r = (ah << (32 - num)) | (al >>> num);
+  return r >>> 0;
+}
+var shr64_lo_1 = shr64_lo;
+
+var utils = {
+	inherits: inherits_1,
+	toArray: toArray_1,
+	toHex: toHex_1,
+	htonl: htonl_1,
+	toHex32: toHex32_1,
+	zero2: zero2_1,
+	zero8: zero8_1,
+	join32: join32_1,
+	split32: split32_1,
+	rotr32: rotr32_1,
+	rotl32: rotl32_1,
+	sum32: sum32_1,
+	sum32_3: sum32_3_1,
+	sum32_4: sum32_4_1,
+	sum32_5: sum32_5_1,
+	sum64: sum64_1,
+	sum64_hi: sum64_hi_1,
+	sum64_lo: sum64_lo_1,
+	sum64_4_hi: sum64_4_hi_1,
+	sum64_4_lo: sum64_4_lo_1,
+	sum64_5_hi: sum64_5_hi_1,
+	sum64_5_lo: sum64_5_lo_1,
+	rotr64_hi: rotr64_hi_1,
+	rotr64_lo: rotr64_lo_1,
+	shr64_hi: shr64_hi_1,
+	shr64_lo: shr64_lo_1
+};
+
+'use strict';
+
+
+
+
+function BlockHash() {
+  this.pending = null;
+  this.pendingTotal = 0;
+  this.blockSize = this.constructor.blockSize;
+  this.outSize = this.constructor.outSize;
+  this.hmacStrength = this.constructor.hmacStrength;
+  this.padLength = this.constructor.padLength / 8;
+  this.endian = 'big';
+
+  this._delta8 = this.blockSize / 8;
+  this._delta32 = this.blockSize / 32;
+}
+var BlockHash_1 = BlockHash;
+
+BlockHash.prototype.update = function update(msg, enc) {
+  // Convert message to array, pad it, and join into 32bit blocks
+  msg = utils.toArray(msg, enc);
+  if (!this.pending)
+    this.pending = msg;
+  else
+    this.pending = this.pending.concat(msg);
+  this.pendingTotal += msg.length;
+
+  // Enough data, try updating
+  if (this.pending.length >= this._delta8) {
+    msg = this.pending;
+
+    // Process pending data in blocks
+    var r = msg.length % this._delta8;
+    this.pending = msg.slice(msg.length - r, msg.length);
+    if (this.pending.length === 0)
+      this.pending = null;
+
+    msg = utils.join32(msg, 0, msg.length - r, this.endian);
+    for (var i = 0; i < msg.length; i += this._delta32)
+      this._update(msg, i, i + this._delta32);
+  }
+
+  return this;
+};
+
+BlockHash.prototype.digest = function digest(enc) {
+  this.update(this._pad());
+  minimalisticAssert(this.pending === null);
+
+  return this._digest(enc);
+};
+
+BlockHash.prototype._pad = function pad() {
+  var len = this.pendingTotal;
+  var bytes = this._delta8;
+  var k = bytes - ((len + this.padLength) % bytes);
+  var res = new Array(k + this.padLength);
+  res[0] = 0x80;
+  for (var i = 1; i < k; i++)
+    res[i] = 0;
+
+  // Append length
+  len <<= 3;
+  if (this.endian === 'big') {
+    for (var t = 8; t < this.padLength; t++)
+      res[i++] = 0;
+
+    res[i++] = 0;
+    res[i++] = 0;
+    res[i++] = 0;
+    res[i++] = 0;
+    res[i++] = (len >>> 24) & 0xff;
+    res[i++] = (len >>> 16) & 0xff;
+    res[i++] = (len >>> 8) & 0xff;
+    res[i++] = len & 0xff;
+  } else {
+    res[i++] = len & 0xff;
+    res[i++] = (len >>> 8) & 0xff;
+    res[i++] = (len >>> 16) & 0xff;
+    res[i++] = (len >>> 24) & 0xff;
+    res[i++] = 0;
+    res[i++] = 0;
+    res[i++] = 0;
+    res[i++] = 0;
+
+    for (t = 8; t < this.padLength; t++)
+      res[i++] = 0;
+  }
+
+  return res;
+};
+
+var common = {
+	BlockHash: BlockHash_1
+};
+
+'use strict';
+
+
+var rotr32$1 = utils.rotr32;
+
+function ft_1(s, x, y, z) {
+  if (s === 0)
+    return ch32(x, y, z);
+  if (s === 1 || s === 3)
+    return p32(x, y, z);
+  if (s === 2)
+    return maj32(x, y, z);
+}
+var ft_1_1 = ft_1;
+
+function ch32(x, y, z) {
+  return (x & y) ^ ((~x) & z);
+}
+var ch32_1 = ch32;
+
+function maj32(x, y, z) {
+  return (x & y) ^ (x & z) ^ (y & z);
+}
+var maj32_1 = maj32;
+
+function p32(x, y, z) {
+  return x ^ y ^ z;
+}
+var p32_1 = p32;
+
+function s0_256(x) {
+  return rotr32$1(x, 2) ^ rotr32$1(x, 13) ^ rotr32$1(x, 22);
+}
+var s0_256_1 = s0_256;
+
+function s1_256(x) {
+  return rotr32$1(x, 6) ^ rotr32$1(x, 11) ^ rotr32$1(x, 25);
+}
+var s1_256_1 = s1_256;
+
+function g0_256(x) {
+  return rotr32$1(x, 7) ^ rotr32$1(x, 18) ^ (x >>> 3);
+}
+var g0_256_1 = g0_256;
+
+function g1_256(x) {
+  return rotr32$1(x, 17) ^ rotr32$1(x, 19) ^ (x >>> 10);
+}
+var g1_256_1 = g1_256;
+
+var common$1 = {
+	ft_1: ft_1_1,
+	ch32: ch32_1,
+	maj32: maj32_1,
+	p32: p32_1,
+	s0_256: s0_256_1,
+	s1_256: s1_256_1,
+	g0_256: g0_256_1,
+	g1_256: g1_256_1
+};
+
+'use strict';
+
+
+
+
+
+var rotl32$1 = utils.rotl32;
+var sum32$1 = utils.sum32;
+var sum32_5$1 = utils.sum32_5;
+var ft_1$1 = common$1.ft_1;
+var BlockHash$1 = common.BlockHash;
+
+var sha1_K = [
+  0x5A827999, 0x6ED9EBA1,
+  0x8F1BBCDC, 0xCA62C1D6
+];
+
+function SHA1() {
+  if (!(this instanceof SHA1))
+    return new SHA1();
+
+  BlockHash$1.call(this);
+  this.h = [
+    0x67452301, 0xefcdab89, 0x98badcfe,
+    0x10325476, 0xc3d2e1f0 ];
+  this.W = new Array(80);
+}
+
+utils.inherits(SHA1, BlockHash$1);
+var _1 = SHA1;
+
+SHA1.blockSize = 512;
+SHA1.outSize = 160;
+SHA1.hmacStrength = 80;
+SHA1.padLength = 64;
+
+SHA1.prototype._update = function _update(msg, start) {
+  var W = this.W;
+
+  for (var i = 0; i < 16; i++)
+    W[i] = msg[start + i];
+
+  for(; i < W.length; i++)
+    W[i] = rotl32$1(W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16], 1);
+
+  var a = this.h[0];
+  var b = this.h[1];
+  var c = this.h[2];
+  var d = this.h[3];
+  var e = this.h[4];
+
+  for (i = 0; i < W.length; i++) {
+    var s = ~~(i / 20);
+    var t = sum32_5$1(rotl32$1(a, 5), ft_1$1(s, b, c, d), e, W[i], sha1_K[s]);
+    e = d;
+    d = c;
+    c = rotl32$1(b, 30);
+    b = a;
+    a = t;
+  }
+
+  this.h[0] = sum32$1(this.h[0], a);
+  this.h[1] = sum32$1(this.h[1], b);
+  this.h[2] = sum32$1(this.h[2], c);
+  this.h[3] = sum32$1(this.h[3], d);
+  this.h[4] = sum32$1(this.h[4], e);
+};
+
+SHA1.prototype._digest = function digest(enc) {
+  if (enc === 'hex')
+    return utils.toHex32(this.h, 'big');
+  else
+    return utils.split32(this.h, 'big');
+};
+
+'use strict';
+
+
+
+
+
+
+var sum32$2 = utils.sum32;
+var sum32_4$1 = utils.sum32_4;
+var sum32_5$2 = utils.sum32_5;
+var ch32$1 = common$1.ch32;
+var maj32$1 = common$1.maj32;
+var s0_256$1 = common$1.s0_256;
+var s1_256$1 = common$1.s1_256;
+var g0_256$1 = common$1.g0_256;
+var g1_256$1 = common$1.g1_256;
+
+var BlockHash$2 = common.BlockHash;
+
+var sha256_K = [
+  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
+  0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
+  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
+  0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
+  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+  0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
+  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
+  0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
+  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
+  0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
+  0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
+  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
+  0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
+  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+  0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+];
+
+function SHA256() {
+  if (!(this instanceof SHA256))
+    return new SHA256();
+
+  BlockHash$2.call(this);
+  this.h = [
+    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
+    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
+  ];
+  this.k = sha256_K;
+  this.W = new Array(64);
+}
+utils.inherits(SHA256, BlockHash$2);
+var _256 = SHA256;
+
+SHA256.blockSize = 512;
+SHA256.outSize = 256;
+SHA256.hmacStrength = 192;
+SHA256.padLength = 64;
+
+SHA256.prototype._update = function _update(msg, start) {
+  var W = this.W;
+
+  for (var i = 0; i < 16; i++)
+    W[i] = msg[start + i];
+  for (; i < W.length; i++)
+    W[i] = sum32_4$1(g1_256$1(W[i - 2]), W[i - 7], g0_256$1(W[i - 15]), W[i - 16]);
+
+  var a = this.h[0];
+  var b = this.h[1];
+  var c = this.h[2];
+  var d = this.h[3];
+  var e = this.h[4];
+  var f = this.h[5];
+  var g = this.h[6];
+  var h = this.h[7];
+
+  minimalisticAssert(this.k.length === W.length);
+  for (i = 0; i < W.length; i++) {
+    var T1 = sum32_5$2(h, s1_256$1(e), ch32$1(e, f, g), this.k[i], W[i]);
+    var T2 = sum32$2(s0_256$1(a), maj32$1(a, b, c));
+    h = g;
+    g = f;
+    f = e;
+    e = sum32$2(d, T1);
+    d = c;
+    c = b;
+    b = a;
+    a = sum32$2(T1, T2);
+  }
+
+  this.h[0] = sum32$2(this.h[0], a);
+  this.h[1] = sum32$2(this.h[1], b);
+  this.h[2] = sum32$2(this.h[2], c);
+  this.h[3] = sum32$2(this.h[3], d);
+  this.h[4] = sum32$2(this.h[4], e);
+  this.h[5] = sum32$2(this.h[5], f);
+  this.h[6] = sum32$2(this.h[6], g);
+  this.h[7] = sum32$2(this.h[7], h);
+};
+
+SHA256.prototype._digest = function digest(enc) {
+  if (enc === 'hex')
+    return utils.toHex32(this.h, 'big');
+  else
+    return utils.split32(this.h, 'big');
+};
+
+'use strict';
+
+
+
+
+function SHA224() {
+  if (!(this instanceof SHA224))
+    return new SHA224();
+
+  _256.call(this);
+  this.h = [
+    0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
+    0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4 ];
+}
+utils.inherits(SHA224, _256);
+var _224 = SHA224;
+
+SHA224.blockSize = 512;
+SHA224.outSize = 224;
+SHA224.hmacStrength = 192;
+SHA224.padLength = 64;
+
+SHA224.prototype._digest = function digest(enc) {
+  // Just truncate output
+  if (enc === 'hex')
+    return utils.toHex32(this.h.slice(0, 7), 'big');
+  else
+    return utils.split32(this.h.slice(0, 7), 'big');
+};
+
+'use strict';
+
+
+
+
+
+var rotr64_hi$1 = utils.rotr64_hi;
+var rotr64_lo$1 = utils.rotr64_lo;
+var shr64_hi$1 = utils.shr64_hi;
+var shr64_lo$1 = utils.shr64_lo;
+var sum64$1 = utils.sum64;
+var sum64_hi$1 = utils.sum64_hi;
+var sum64_lo$1 = utils.sum64_lo;
+var sum64_4_hi$1 = utils.sum64_4_hi;
+var sum64_4_lo$1 = utils.sum64_4_lo;
+var sum64_5_hi$1 = utils.sum64_5_hi;
+var sum64_5_lo$1 = utils.sum64_5_lo;
+
+var BlockHash$3 = common.BlockHash;
+
+var sha512_K = [
+  0x428a2f98, 0xd728ae22, 0x71374491, 0x23ef65cd,
+  0xb5c0fbcf, 0xec4d3b2f, 0xe9b5dba5, 0x8189dbbc,
+  0x3956c25b, 0xf348b538, 0x59f111f1, 0xb605d019,
+  0x923f82a4, 0xaf194f9b, 0xab1c5ed5, 0xda6d8118,
+  0xd807aa98, 0xa3030242, 0x12835b01, 0x45706fbe,
+  0x243185be, 0x4ee4b28c, 0x550c7dc3, 0xd5ffb4e2,
+  0x72be5d74, 0xf27b896f, 0x80deb1fe, 0x3b1696b1,
+  0x9bdc06a7, 0x25c71235, 0xc19bf174, 0xcf692694,
+  0xe49b69c1, 0x9ef14ad2, 0xefbe4786, 0x384f25e3,
+  0x0fc19dc6, 0x8b8cd5b5, 0x240ca1cc, 0x77ac9c65,
+  0x2de92c6f, 0x592b0275, 0x4a7484aa, 0x6ea6e483,
+  0x5cb0a9dc, 0xbd41fbd4, 0x76f988da, 0x831153b5,
+  0x983e5152, 0xee66dfab, 0xa831c66d, 0x2db43210,
+  0xb00327c8, 0x98fb213f, 0xbf597fc7, 0xbeef0ee4,
+  0xc6e00bf3, 0x3da88fc2, 0xd5a79147, 0x930aa725,
+  0x06ca6351, 0xe003826f, 0x14292967, 0x0a0e6e70,
+  0x27b70a85, 0x46d22ffc, 0x2e1b2138, 0x5c26c926,
+  0x4d2c6dfc, 0x5ac42aed, 0x53380d13, 0x9d95b3df,
+  0x650a7354, 0x8baf63de, 0x766a0abb, 0x3c77b2a8,
+  0x81c2c92e, 0x47edaee6, 0x92722c85, 0x1482353b,
+  0xa2bfe8a1, 0x4cf10364, 0xa81a664b, 0xbc423001,
+  0xc24b8b70, 0xd0f89791, 0xc76c51a3, 0x0654be30,
+  0xd192e819, 0xd6ef5218, 0xd6990624, 0x5565a910,
+  0xf40e3585, 0x5771202a, 0x106aa070, 0x32bbd1b8,
+  0x19a4c116, 0xb8d2d0c8, 0x1e376c08, 0x5141ab53,
+  0x2748774c, 0xdf8eeb99, 0x34b0bcb5, 0xe19b48a8,
+  0x391c0cb3, 0xc5c95a63, 0x4ed8aa4a, 0xe3418acb,
+  0x5b9cca4f, 0x7763e373, 0x682e6ff3, 0xd6b2b8a3,
+  0x748f82ee, 0x5defb2fc, 0x78a5636f, 0x43172f60,
+  0x84c87814, 0xa1f0ab72, 0x8cc70208, 0x1a6439ec,
+  0x90befffa, 0x23631e28, 0xa4506ceb, 0xde82bde9,
+  0xbef9a3f7, 0xb2c67915, 0xc67178f2, 0xe372532b,
+  0xca273ece, 0xea26619c, 0xd186b8c7, 0x21c0c207,
+  0xeada7dd6, 0xcde0eb1e, 0xf57d4f7f, 0xee6ed178,
+  0x06f067aa, 0x72176fba, 0x0a637dc5, 0xa2c898a6,
+  0x113f9804, 0xbef90dae, 0x1b710b35, 0x131c471b,
+  0x28db77f5, 0x23047d84, 0x32caab7b, 0x40c72493,
+  0x3c9ebe0a, 0x15c9bebc, 0x431d67c4, 0x9c100d4c,
+  0x4cc5d4be, 0xcb3e42b6, 0x597f299c, 0xfc657e2a,
+  0x5fcb6fab, 0x3ad6faec, 0x6c44198c, 0x4a475817
+];
+
+function SHA512() {
+  if (!(this instanceof SHA512))
+    return new SHA512();
+
+  BlockHash$3.call(this);
+  this.h = [
+    0x6a09e667, 0xf3bcc908,
+    0xbb67ae85, 0x84caa73b,
+    0x3c6ef372, 0xfe94f82b,
+    0xa54ff53a, 0x5f1d36f1,
+    0x510e527f, 0xade682d1,
+    0x9b05688c, 0x2b3e6c1f,
+    0x1f83d9ab, 0xfb41bd6b,
+    0x5be0cd19, 0x137e2179 ];
+  this.k = sha512_K;
+  this.W = new Array(160);
+}
+utils.inherits(SHA512, BlockHash$3);
+var _512 = SHA512;
+
+SHA512.blockSize = 1024;
+SHA512.outSize = 512;
+SHA512.hmacStrength = 192;
+SHA512.padLength = 128;
+
+SHA512.prototype._prepareBlock = function _prepareBlock(msg, start) {
+  var W = this.W;
+
+  // 32 x 32bit words
+  for (var i = 0; i < 32; i++)
+    W[i] = msg[start + i];
+  for (; i < W.length; i += 2) {
+    var c0_hi = g1_512_hi(W[i - 4], W[i - 3]);  // i - 2
+    var c0_lo = g1_512_lo(W[i - 4], W[i - 3]);
+    var c1_hi = W[i - 14];  // i - 7
+    var c1_lo = W[i - 13];
+    var c2_hi = g0_512_hi(W[i - 30], W[i - 29]);  // i - 15
+    var c2_lo = g0_512_lo(W[i - 30], W[i - 29]);
+    var c3_hi = W[i - 32];  // i - 16
+    var c3_lo = W[i - 31];
+
+    W[i] = sum64_4_hi$1(
+      c0_hi, c0_lo,
+      c1_hi, c1_lo,
+      c2_hi, c2_lo,
+      c3_hi, c3_lo);
+    W[i + 1] = sum64_4_lo$1(
+      c0_hi, c0_lo,
+      c1_hi, c1_lo,
+      c2_hi, c2_lo,
+      c3_hi, c3_lo);
+  }
+};
+
+SHA512.prototype._update = function _update(msg, start) {
+  this._prepareBlock(msg, start);
+
+  var W = this.W;
+
+  var ah = this.h[0];
+  var al = this.h[1];
+  var bh = this.h[2];
+  var bl = this.h[3];
+  var ch = this.h[4];
+  var cl = this.h[5];
+  var dh = this.h[6];
+  var dl = this.h[7];
+  var eh = this.h[8];
+  var el = this.h[9];
+  var fh = this.h[10];
+  var fl = this.h[11];
+  var gh = this.h[12];
+  var gl = this.h[13];
+  var hh = this.h[14];
+  var hl = this.h[15];
+
+  minimalisticAssert(this.k.length === W.length);
+  for (var i = 0; i < W.length; i += 2) {
+    var c0_hi = hh;
+    var c0_lo = hl;
+    var c1_hi = s1_512_hi(eh, el);
+    var c1_lo = s1_512_lo(eh, el);
+    var c2_hi = ch64_hi(eh, el, fh, fl, gh, gl);
+    var c2_lo = ch64_lo(eh, el, fh, fl, gh, gl);
+    var c3_hi = this.k[i];
+    var c3_lo = this.k[i + 1];
+    var c4_hi = W[i];
+    var c4_lo = W[i + 1];
+
+    var T1_hi = sum64_5_hi$1(
+      c0_hi, c0_lo,
+      c1_hi, c1_lo,
+      c2_hi, c2_lo,
+      c3_hi, c3_lo,
+      c4_hi, c4_lo);
+    var T1_lo = sum64_5_lo$1(
+      c0_hi, c0_lo,
+      c1_hi, c1_lo,
+      c2_hi, c2_lo,
+      c3_hi, c3_lo,
+      c4_hi, c4_lo);
+
+    c0_hi = s0_512_hi(ah, al);
+    c0_lo = s0_512_lo(ah, al);
+    c1_hi = maj64_hi(ah, al, bh, bl, ch, cl);
+    c1_lo = maj64_lo(ah, al, bh, bl, ch, cl);
+
+    var T2_hi = sum64_hi$1(c0_hi, c0_lo, c1_hi, c1_lo);
+    var T2_lo = sum64_lo$1(c0_hi, c0_lo, c1_hi, c1_lo);
+
+    hh = gh;
+    hl = gl;
+
+    gh = fh;
+    gl = fl;
+
+    fh = eh;
+    fl = el;
+
+    eh = sum64_hi$1(dh, dl, T1_hi, T1_lo);
+    el = sum64_lo$1(dl, dl, T1_hi, T1_lo);
+
+    dh = ch;
+    dl = cl;
+
+    ch = bh;
+    cl = bl;
+
+    bh = ah;
+    bl = al;
+
+    ah = sum64_hi$1(T1_hi, T1_lo, T2_hi, T2_lo);
+    al = sum64_lo$1(T1_hi, T1_lo, T2_hi, T2_lo);
+  }
+
+  sum64$1(this.h, 0, ah, al);
+  sum64$1(this.h, 2, bh, bl);
+  sum64$1(this.h, 4, ch, cl);
+  sum64$1(this.h, 6, dh, dl);
+  sum64$1(this.h, 8, eh, el);
+  sum64$1(this.h, 10, fh, fl);
+  sum64$1(this.h, 12, gh, gl);
+  sum64$1(this.h, 14, hh, hl);
+};
+
+SHA512.prototype._digest = function digest(enc) {
+  if (enc === 'hex')
+    return utils.toHex32(this.h, 'big');
+  else
+    return utils.split32(this.h, 'big');
+};
+
+function ch64_hi(xh, xl, yh, yl, zh) {
+  var r = (xh & yh) ^ ((~xh) & zh);
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function ch64_lo(xh, xl, yh, yl, zh, zl) {
+  var r = (xl & yl) ^ ((~xl) & zl);
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function maj64_hi(xh, xl, yh, yl, zh) {
+  var r = (xh & yh) ^ (xh & zh) ^ (yh & zh);
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function maj64_lo(xh, xl, yh, yl, zh, zl) {
+  var r = (xl & yl) ^ (xl & zl) ^ (yl & zl);
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function s0_512_hi(xh, xl) {
+  var c0_hi = rotr64_hi$1(xh, xl, 28);
+  var c1_hi = rotr64_hi$1(xl, xh, 2);  // 34
+  var c2_hi = rotr64_hi$1(xl, xh, 7);  // 39
+
+  var r = c0_hi ^ c1_hi ^ c2_hi;
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function s0_512_lo(xh, xl) {
+  var c0_lo = rotr64_lo$1(xh, xl, 28);
+  var c1_lo = rotr64_lo$1(xl, xh, 2);  // 34
+  var c2_lo = rotr64_lo$1(xl, xh, 7);  // 39
+
+  var r = c0_lo ^ c1_lo ^ c2_lo;
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function s1_512_hi(xh, xl) {
+  var c0_hi = rotr64_hi$1(xh, xl, 14);
+  var c1_hi = rotr64_hi$1(xh, xl, 18);
+  var c2_hi = rotr64_hi$1(xl, xh, 9);  // 41
+
+  var r = c0_hi ^ c1_hi ^ c2_hi;
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function s1_512_lo(xh, xl) {
+  var c0_lo = rotr64_lo$1(xh, xl, 14);
+  var c1_lo = rotr64_lo$1(xh, xl, 18);
+  var c2_lo = rotr64_lo$1(xl, xh, 9);  // 41
+
+  var r = c0_lo ^ c1_lo ^ c2_lo;
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function g0_512_hi(xh, xl) {
+  var c0_hi = rotr64_hi$1(xh, xl, 1);
+  var c1_hi = rotr64_hi$1(xh, xl, 8);
+  var c2_hi = shr64_hi$1(xh, xl, 7);
+
+  var r = c0_hi ^ c1_hi ^ c2_hi;
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function g0_512_lo(xh, xl) {
+  var c0_lo = rotr64_lo$1(xh, xl, 1);
+  var c1_lo = rotr64_lo$1(xh, xl, 8);
+  var c2_lo = shr64_lo$1(xh, xl, 7);
+
+  var r = c0_lo ^ c1_lo ^ c2_lo;
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function g1_512_hi(xh, xl) {
+  var c0_hi = rotr64_hi$1(xh, xl, 19);
+  var c1_hi = rotr64_hi$1(xl, xh, 29);  // 61
+  var c2_hi = shr64_hi$1(xh, xl, 6);
+
+  var r = c0_hi ^ c1_hi ^ c2_hi;
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+function g1_512_lo(xh, xl) {
+  var c0_lo = rotr64_lo$1(xh, xl, 19);
+  var c1_lo = rotr64_lo$1(xl, xh, 29);  // 61
+  var c2_lo = shr64_lo$1(xh, xl, 6);
+
+  var r = c0_lo ^ c1_lo ^ c2_lo;
+  if (r < 0)
+    r += 0x100000000;
+  return r;
+}
+
+'use strict';
+
+
+
+
+
+function SHA384() {
+  if (!(this instanceof SHA384))
+    return new SHA384();
+
+  _512.call(this);
+  this.h = [
+    0xcbbb9d5d, 0xc1059ed8,
+    0x629a292a, 0x367cd507,
+    0x9159015a, 0x3070dd17,
+    0x152fecd8, 0xf70e5939,
+    0x67332667, 0xffc00b31,
+    0x8eb44a87, 0x68581511,
+    0xdb0c2e0d, 0x64f98fa7,
+    0x47b5481d, 0xbefa4fa4 ];
+}
+utils.inherits(SHA384, _512);
+var _384 = SHA384;
+
+SHA384.blockSize = 1024;
+SHA384.outSize = 384;
+SHA384.hmacStrength = 192;
+SHA384.padLength = 128;
+
+SHA384.prototype._digest = function digest(enc) {
+  if (enc === 'hex')
+    return utils.toHex32(this.h.slice(0, 12), 'big');
+  else
+    return utils.split32(this.h.slice(0, 12), 'big');
+};
+
+'use strict';
+
+var sha1 = _1;
+var sha224 = _224;
+var sha256 = _256;
+var sha384 = _384;
+var sha512 = _512;
+
+var sha = {
+	sha1: sha1,
+	sha224: sha224,
+	sha256: sha256,
+	sha384: sha384,
+	sha512: sha512
+};
+
+'use strict';
+
+
+
+
+var rotl32$2 = utils.rotl32;
+var sum32$3 = utils.sum32;
+var sum32_3$1 = utils.sum32_3;
+var sum32_4$2 = utils.sum32_4;
+var BlockHash$4 = common.BlockHash;
+
+function RIPEMD160() {
+  if (!(this instanceof RIPEMD160))
+    return new RIPEMD160();
+
+  BlockHash$4.call(this);
+
+  this.h = [ 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 ];
+  this.endian = 'little';
+}
+utils.inherits(RIPEMD160, BlockHash$4);
+var ripemd160 = RIPEMD160;
+
+RIPEMD160.blockSize = 512;
+RIPEMD160.outSize = 160;
+RIPEMD160.hmacStrength = 192;
+RIPEMD160.padLength = 64;
+
+RIPEMD160.prototype._update = function update(msg, start) {
+  var A = this.h[0];
+  var B = this.h[1];
+  var C = this.h[2];
+  var D = this.h[3];
+  var E = this.h[4];
+  var Ah = A;
+  var Bh = B;
+  var Ch = C;
+  var Dh = D;
+  var Eh = E;
+  for (var j = 0; j < 80; j++) {
+    var T = sum32$3(
+      rotl32$2(
+        sum32_4$2(A, f(j, B, C, D), msg[r[j] + start], K(j)),
+        s[j]),
+      E);
+    A = E;
+    E = D;
+    D = rotl32$2(C, 10);
+    C = B;
+    B = T;
+    T = sum32$3(
+      rotl32$2(
+        sum32_4$2(Ah, f(79 - j, Bh, Ch, Dh), msg[rh[j] + start], Kh(j)),
+        sh[j]),
+      Eh);
+    Ah = Eh;
+    Eh = Dh;
+    Dh = rotl32$2(Ch, 10);
+    Ch = Bh;
+    Bh = T;
+  }
+  T = sum32_3$1(this.h[1], C, Dh);
+  this.h[1] = sum32_3$1(this.h[2], D, Eh);
+  this.h[2] = sum32_3$1(this.h[3], E, Ah);
+  this.h[3] = sum32_3$1(this.h[4], A, Bh);
+  this.h[4] = sum32_3$1(this.h[0], B, Ch);
+  this.h[0] = T;
+};
+
+RIPEMD160.prototype._digest = function digest(enc) {
+  if (enc === 'hex')
+    return utils.toHex32(this.h, 'little');
+  else
+    return utils.split32(this.h, 'little');
+};
+
+function f(j, x, y, z) {
+  if (j <= 15)
+    return x ^ y ^ z;
+  else if (j <= 31)
+    return (x & y) | ((~x) & z);
+  else if (j <= 47)
+    return (x | (~y)) ^ z;
+  else if (j <= 63)
+    return (x & z) | (y & (~z));
+  else
+    return x ^ (y | (~z));
+}
+
+function K(j) {
+  if (j <= 15)
+    return 0x00000000;
+  else if (j <= 31)
+    return 0x5a827999;
+  else if (j <= 47)
+    return 0x6ed9eba1;
+  else if (j <= 63)
+    return 0x8f1bbcdc;
+  else
+    return 0xa953fd4e;
+}
+
+function Kh(j) {
+  if (j <= 15)
+    return 0x50a28be6;
+  else if (j <= 31)
+    return 0x5c4dd124;
+  else if (j <= 47)
+    return 0x6d703ef3;
+  else if (j <= 63)
+    return 0x7a6d76e9;
+  else
+    return 0x00000000;
+}
+
+var r = [
+  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+  7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
+  3, 10, 14, 4, 9, 15, 8, 1, 2, 7, 0, 6, 13, 11, 5, 12,
+  1, 9, 11, 10, 0, 8, 12, 4, 13, 3, 7, 15, 14, 5, 6, 2,
+  4, 0, 5, 9, 7, 12, 2, 10, 14, 1, 3, 8, 11, 6, 15, 13
+];
+
+var rh = [
+  5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12,
+  6, 11, 3, 7, 0, 13, 5, 10, 14, 15, 8, 12, 4, 9, 1, 2,
+  15, 5, 1, 3, 7, 14, 6, 9, 11, 8, 12, 2, 10, 0, 4, 13,
+  8, 6, 4, 1, 3, 11, 15, 0, 5, 12, 2, 13, 9, 7, 10, 14,
+  12, 15, 10, 4, 1, 5, 8, 7, 6, 2, 13, 14, 0, 3, 9, 11
+];
+
+var s = [
+  11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8,
+  7, 6, 8, 13, 11, 9, 7, 15, 7, 12, 15, 9, 11, 7, 13, 12,
+  11, 13, 6, 7, 14, 9, 13, 15, 14, 8, 13, 6, 5, 12, 7, 5,
+  11, 12, 14, 15, 14, 15, 9, 8, 9, 14, 5, 6, 8, 6, 5, 12,
+  9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6
+];
+
+var sh = [
+  8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6,
+  9, 13, 15, 7, 12, 8, 9, 11, 7, 7, 12, 7, 6, 15, 13, 11,
+  9, 7, 15, 11, 8, 6, 6, 14, 12, 13, 5, 14, 13, 13, 7, 5,
+  15, 5, 8, 11, 14, 14, 6, 14, 6, 9, 12, 9, 12, 5, 15, 8,
+  8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
+];
+
+var ripemd = {
+	ripemd160: ripemd160
+};
+
+'use strict';
+
+
+
+
+function Hmac(hash, key, enc) {
+  if (!(this instanceof Hmac))
+    return new Hmac(hash, key, enc);
+  this.Hash = hash;
+  this.blockSize = hash.blockSize / 8;
+  this.outSize = hash.outSize / 8;
+  this.inner = null;
+  this.outer = null;
+
+  this._init(utils.toArray(key, enc));
+}
+var hmac = Hmac;
+
+Hmac.prototype._init = function init(key) {
+  // Shorten key, if needed
+  if (key.length > this.blockSize)
+    key = new this.Hash().update(key).digest();
+  minimalisticAssert(key.length <= this.blockSize);
+
+  // Add padding to key
+  for (var i = key.length; i < this.blockSize; i++)
+    key.push(0);
+
+  for (i = 0; i < key.length; i++)
+    key[i] ^= 0x36;
+  this.inner = new this.Hash().update(key);
+
+  // 0x36 ^ 0x5c = 0x6a
+  for (i = 0; i < key.length; i++)
+    key[i] ^= 0x6a;
+  this.outer = new this.Hash().update(key);
+};
+
+Hmac.prototype.update = function update(msg, enc) {
+  this.inner.update(msg, enc);
+  return this;
+};
+
+Hmac.prototype.digest = function digest(enc) {
+  this.outer.update(this.inner.digest());
+  return this.outer.digest(enc);
+};
+
+var hash_1 = createCommonjsModule(function (module, exports) {
+var hash = exports;
+
+hash.utils = utils;
+hash.common = common;
+hash.sha = sha;
+hash.ripemd = ripemd;
+hash.hmac = hmac;
+
+// Proxy hash functions to the main object
+hash.sha1 = hash.sha.sha1;
+hash.sha256 = hash.sha.sha256;
+hash.sha224 = hash.sha.sha224;
+hash.sha384 = hash.sha.sha384;
+hash.sha512 = hash.sha.sha512;
+hash.ripemd160 = hash.ripemd.ripemd160;
+});
+
+var commonjsGlobal$1 = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
+
+function getDefaultExportFromCjs$1 (x) {
+	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+}
+
+function createCommonjsModule$1(fn, basedir, module) {
+	return module = {
+		path: basedir,
+		exports: {},
+		require: function (path, base) {
+			return commonjsRequire$1(path, (base === undefined || base === null) ? module.path : base);
+		}
+	}, fn(module, module.exports), module.exports;
+}
+
+function getDefaultExportFromNamespaceIfPresent$1 (n) {
+	return n && Object.prototype.hasOwnProperty.call(n, 'default') ? n['default'] : n;
+}
+
+function getDefaultExportFromNamespaceIfNotNamed$1 (n) {
+	return n && Object.prototype.hasOwnProperty.call(n, 'default') && Object.keys(n).length === 1 ? n['default'] : n;
+}
+
+function getAugmentedNamespace$1(n) {
+	if (n.__esModule) return n;
+	var a = Object.defineProperty({}, '__esModule', {value: true});
+	Object.keys(n).forEach(function (k) {
+		var d = Object.getOwnPropertyDescriptor(n, k);
+		Object.defineProperty(a, k, d.get ? d : {
+			enumerable: true,
+			get: function () {
+				return n[k];
+			}
+		});
+	});
+	return a;
+}
+
+function commonjsRequire$1 () {
+	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
+}
+
+var minimalisticAssert$1 = assert$1;
+
+function assert$1(val, msg) {
+  if (!val)
+    throw new Error(msg || 'Assertion failed');
+}
+
+assert$1.equal = function assertEqual(l, r, msg) {
+  if (l != r)
+    throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
+};
+
+var utils_1 = createCommonjsModule$1(function (module, exports) {
+'use strict';
+
+var utils = exports;
+
+function toArray(msg, enc) {
+  if (Array.isArray(msg))
+    return msg.slice();
+  if (!msg)
+    return [];
+  var res = [];
+  if (typeof msg !== 'string') {
+    for (var i = 0; i < msg.length; i++)
+      res[i] = msg[i] | 0;
+    return res;
+  }
+  if (enc === 'hex') {
+    msg = msg.replace(/[^a-z0-9]+/ig, '');
+    if (msg.length % 2 !== 0)
+      msg = '0' + msg;
+    for (var i = 0; i < msg.length; i += 2)
+      res.push(parseInt(msg[i] + msg[i + 1], 16));
+  } else {
+    for (var i = 0; i < msg.length; i++) {
+      var c = msg.charCodeAt(i);
+      var hi = c >> 8;
+      var lo = c & 0xff;
+      if (hi)
+        res.push(hi, lo);
+      else
+        res.push(lo);
+    }
+  }
+  return res;
+}
+utils.toArray = toArray;
+
+function zero2(word) {
+  if (word.length === 1)
+    return '0' + word;
+  else
+    return word;
+}
+utils.zero2 = zero2;
+
+function toHex(msg) {
+  var res = '';
+  for (var i = 0; i < msg.length; i++)
+    res += zero2(msg[i].toString(16));
+  return res;
+}
+utils.toHex = toHex;
+
+utils.encode = function encode(arr, enc) {
+  if (enc === 'hex')
+    return toHex(arr);
+  else
+    return arr;
+};
+});
+
+var utils_1$1 = createCommonjsModule$1(function (module, exports) {
+'use strict';
+
+var utils = exports;
+
+
+
+
+utils.assert = minimalisticAssert$1;
+utils.toArray = utils_1.toArray;
+utils.zero2 = utils_1.zero2;
+utils.toHex = utils_1.toHex;
+utils.encode = utils_1.encode;
+
+// Represent num in a w-NAF form
+function getNAF(num, w, bits) {
+  var naf = new Array(Math.max(num.bitLength(), bits) + 1);
+  naf.fill(0);
+
+  var ws = 1 << (w + 1);
+  var k = num.clone();
+
+  for (var i = 0; i < naf.length; i++) {
+    var z;
+    var mod = k.andln(ws - 1);
+    if (k.isOdd()) {
+      if (mod > (ws >> 1) - 1)
+        z = (ws >> 1) - mod;
+      else
+        z = mod;
+      k.isubn(z);
+    } else {
+      z = 0;
+    }
+
+    naf[i] = z;
+    k.iushrn(1);
+  }
+
+  return naf;
+}
+utils.getNAF = getNAF;
+
+// Represent k1, k2 in a Joint Sparse Form
+function getJSF(k1, k2) {
+  var jsf = [
+    [],
+    [],
+  ];
+
+  k1 = k1.clone();
+  k2 = k2.clone();
+  var d1 = 0;
+  var d2 = 0;
+  var m8;
+  while (k1.cmpn(-d1) > 0 || k2.cmpn(-d2) > 0) {
+    // First phase
+    var m14 = (k1.andln(3) + d1) & 3;
+    var m24 = (k2.andln(3) + d2) & 3;
+    if (m14 === 3)
+      m14 = -1;
+    if (m24 === 3)
+      m24 = -1;
+    var u1;
+    if ((m14 & 1) === 0) {
+      u1 = 0;
+    } else {
+      m8 = (k1.andln(7) + d1) & 7;
+      if ((m8 === 3 || m8 === 5) && m24 === 2)
+        u1 = -m14;
+      else
+        u1 = m14;
+    }
+    jsf[0].push(u1);
+
+    var u2;
+    if ((m24 & 1) === 0) {
+      u2 = 0;
+    } else {
+      m8 = (k2.andln(7) + d2) & 7;
+      if ((m8 === 3 || m8 === 5) && m14 === 2)
+        u2 = -m24;
+      else
+        u2 = m24;
+    }
+    jsf[1].push(u2);
+
+    // Second phase
+    if (2 * d1 === u1 + 1)
+      d1 = 1 - d1;
+    if (2 * d2 === u2 + 1)
+      d2 = 1 - d2;
+    k1.iushrn(1);
+    k2.iushrn(1);
+  }
+
+  return jsf;
+}
+utils.getJSF = getJSF;
+
+function cachedProperty(obj, name, computer) {
+  var key = '_' + name;
+  obj.prototype[name] = function cachedProperty() {
+    return this[key] !== undefined ? this[key] :
+      this[key] = computer.call(this);
+  };
+}
+utils.cachedProperty = cachedProperty;
+
+function parseBytes(bytes) {
+  return typeof bytes === 'string' ? utils.toArray(bytes, 'hex') :
+    bytes;
+}
+utils.parseBytes = parseBytes;
+
+function intFromLE(bytes) {
+  return new bn(bytes, 'hex', 'le');
+}
+utils.intFromLE = intFromLE;
+});
+
+'use strict';
+
+
+
+var getNAF = utils_1$1.getNAF;
+var getJSF = utils_1$1.getJSF;
+var assert$1$1 = utils_1$1.assert;
+
+function BaseCurve(type, conf) {
+  this.type = type;
+  this.p = new bn(conf.p, 16);
+
+  // Use Montgomery, when there is no fast reduction for the prime
+  this.red = conf.prime ? bn.red(conf.prime) : bn.mont(this.p);
+
+  // Useful for many curves
+  this.zero = new bn(0).toRed(this.red);
+  this.one = new bn(1).toRed(this.red);
+  this.two = new bn(2).toRed(this.red);
+
+  // Curve configuration, optional
+  this.n = conf.n && new bn(conf.n, 16);
+  this.g = conf.g && this.pointFromJSON(conf.g, conf.gRed);
+
+  // Temporary arrays
+  this._wnafT1 = new Array(4);
+  this._wnafT2 = new Array(4);
+  this._wnafT3 = new Array(4);
+  this._wnafT4 = new Array(4);
+
+  this._bitLength = this.n ? this.n.bitLength() : 0;
+
+  // Generalized Greg Maxwell's trick
+  var adjustCount = this.n && this.p.div(this.n);
+  if (!adjustCount || adjustCount.cmpn(100) > 0) {
+    this.redN = null;
+  } else {
+    this._maxwellTrick = true;
+    this.redN = this.n.toRed(this.red);
+  }
+}
+var base = BaseCurve;
+
+BaseCurve.prototype.point = function point() {
+  throw new Error('Not implemented');
+};
+
+BaseCurve.prototype.validate = function validate() {
+  throw new Error('Not implemented');
+};
+
+BaseCurve.prototype._fixedNafMul = function _fixedNafMul(p, k) {
+  assert$1$1(p.precomputed);
+  var doubles = p._getDoubles();
+
+  var naf = getNAF(k, 1, this._bitLength);
+  var I = (1 << (doubles.step + 1)) - (doubles.step % 2 === 0 ? 2 : 1);
+  I /= 3;
+
+  // Translate into more windowed form
+  var repr = [];
+  var j;
+  var nafW;
+  for (j = 0; j < naf.length; j += doubles.step) {
+    nafW = 0;
+    for (var l = j + doubles.step - 1; l >= j; l--)
+      nafW = (nafW << 1) + naf[l];
+    repr.push(nafW);
+  }
+
+  var a = this.jpoint(null, null, null);
+  var b = this.jpoint(null, null, null);
+  for (var i = I; i > 0; i--) {
+    for (j = 0; j < repr.length; j++) {
+      nafW = repr[j];
+      if (nafW === i)
+        b = b.mixedAdd(doubles.points[j]);
+      else if (nafW === -i)
+        b = b.mixedAdd(doubles.points[j].neg());
+    }
+    a = a.add(b);
+  }
+  return a.toP();
+};
+
+BaseCurve.prototype._wnafMul = function _wnafMul(p, k) {
+  var w = 4;
+
+  // Precompute window
+  var nafPoints = p._getNAFPoints(w);
+  w = nafPoints.wnd;
+  var wnd = nafPoints.points;
+
+  // Get NAF form
+  var naf = getNAF(k, w, this._bitLength);
+
+  // Add `this`*(N+1) for every w-NAF index
+  var acc = this.jpoint(null, null, null);
+  for (var i = naf.length - 1; i >= 0; i--) {
+    // Count zeroes
+    for (var l = 0; i >= 0 && naf[i] === 0; i--)
+      l++;
+    if (i >= 0)
+      l++;
+    acc = acc.dblp(l);
+
+    if (i < 0)
+      break;
+    var z = naf[i];
+    assert$1$1(z !== 0);
+    if (p.type === 'affine') {
+      // J +- P
+      if (z > 0)
+        acc = acc.mixedAdd(wnd[(z - 1) >> 1]);
+      else
+        acc = acc.mixedAdd(wnd[(-z - 1) >> 1].neg());
+    } else {
+      // J +- J
+      if (z > 0)
+        acc = acc.add(wnd[(z - 1) >> 1]);
+      else
+        acc = acc.add(wnd[(-z - 1) >> 1].neg());
+    }
+  }
+  return p.type === 'affine' ? acc.toP() : acc;
+};
+
+BaseCurve.prototype._wnafMulAdd = function _wnafMulAdd(defW,
+  points,
+  coeffs,
+  len,
+  jacobianResult) {
+  var wndWidth = this._wnafT1;
+  var wnd = this._wnafT2;
+  var naf = this._wnafT3;
+
+  // Fill all arrays
+  var max = 0;
+  var i;
+  var j;
+  var p;
+  for (i = 0; i < len; i++) {
+    p = points[i];
+    var nafPoints = p._getNAFPoints(defW);
+    wndWidth[i] = nafPoints.wnd;
+    wnd[i] = nafPoints.points;
+  }
+
+  // Comb small window NAFs
+  for (i = len - 1; i >= 1; i -= 2) {
+    var a = i - 1;
+    var b = i;
+    if (wndWidth[a] !== 1 || wndWidth[b] !== 1) {
+      naf[a] = getNAF(coeffs[a], wndWidth[a], this._bitLength);
+      naf[b] = getNAF(coeffs[b], wndWidth[b], this._bitLength);
+      max = Math.max(naf[a].length, max);
+      max = Math.max(naf[b].length, max);
+      continue;
+    }
+
+    var comb = [
+      points[a], /* 1 */
+      null, /* 3 */
+      null, /* 5 */
+      points[b], /* 7 */
+    ];
+
+    // Try to avoid Projective points, if possible
+    if (points[a].y.cmp(points[b].y) === 0) {
+      comb[1] = points[a].add(points[b]);
+      comb[2] = points[a].toJ().mixedAdd(points[b].neg());
+    } else if (points[a].y.cmp(points[b].y.redNeg()) === 0) {
+      comb[1] = points[a].toJ().mixedAdd(points[b]);
+      comb[2] = points[a].add(points[b].neg());
+    } else {
+      comb[1] = points[a].toJ().mixedAdd(points[b]);
+      comb[2] = points[a].toJ().mixedAdd(points[b].neg());
+    }
+
+    var index = [
+      -3, /* -1 -1 */
+      -1, /* -1 0 */
+      -5, /* -1 1 */
+      -7, /* 0 -1 */
+      0, /* 0 0 */
+      7, /* 0 1 */
+      5, /* 1 -1 */
+      1, /* 1 0 */
+      3,  /* 1 1 */
+    ];
+
+    var jsf = getJSF(coeffs[a], coeffs[b]);
+    max = Math.max(jsf[0].length, max);
+    naf[a] = new Array(max);
+    naf[b] = new Array(max);
+    for (j = 0; j < max; j++) {
+      var ja = jsf[0][j] | 0;
+      var jb = jsf[1][j] | 0;
+
+      naf[a][j] = index[(ja + 1) * 3 + (jb + 1)];
+      naf[b][j] = 0;
+      wnd[a] = comb;
+    }
+  }
+
+  var acc = this.jpoint(null, null, null);
+  var tmp = this._wnafT4;
+  for (i = max; i >= 0; i--) {
+    var k = 0;
+
+    while (i >= 0) {
+      var zero = true;
+      for (j = 0; j < len; j++) {
+        tmp[j] = naf[j][i] | 0;
+        if (tmp[j] !== 0)
+          zero = false;
+      }
+      if (!zero)
+        break;
+      k++;
+      i--;
+    }
+    if (i >= 0)
+      k++;
+    acc = acc.dblp(k);
+    if (i < 0)
+      break;
+
+    for (j = 0; j < len; j++) {
+      var z = tmp[j];
+      p;
+      if (z === 0)
+        continue;
+      else if (z > 0)
+        p = wnd[j][(z - 1) >> 1];
+      else if (z < 0)
+        p = wnd[j][(-z - 1) >> 1].neg();
+
+      if (p.type === 'affine')
+        acc = acc.mixedAdd(p);
+      else
+        acc = acc.add(p);
+    }
+  }
+  // Zeroify references
+  for (i = 0; i < len; i++)
+    wnd[i] = null;
+
+  if (jacobianResult)
+    return acc;
+  else
+    return acc.toP();
+};
+
+function BasePoint(curve, type) {
+  this.curve = curve;
+  this.type = type;
+  this.precomputed = null;
+}
+BaseCurve.BasePoint = BasePoint;
+
+BasePoint.prototype.eq = function eq(/*other*/) {
+  throw new Error('Not implemented');
+};
+
+BasePoint.prototype.validate = function validate() {
+  return this.curve.validate(this);
+};
+
+BaseCurve.prototype.decodePoint = function decodePoint(bytes, enc) {
+  bytes = utils_1$1.toArray(bytes, enc);
+
+  var len = this.p.byteLength();
+
+  // uncompressed, hybrid-odd, hybrid-even
+  if ((bytes[0] === 0x04 || bytes[0] === 0x06 || bytes[0] === 0x07) &&
+      bytes.length - 1 === 2 * len) {
+    if (bytes[0] === 0x06)
+      assert$1$1(bytes[bytes.length - 1] % 2 === 0);
+    else if (bytes[0] === 0x07)
+      assert$1$1(bytes[bytes.length - 1] % 2 === 1);
+
+    var res =  this.point(bytes.slice(1, 1 + len),
+      bytes.slice(1 + len, 1 + 2 * len));
+
+    return res;
+  } else if ((bytes[0] === 0x02 || bytes[0] === 0x03) &&
+              bytes.length - 1 === len) {
+    return this.pointFromX(bytes.slice(1, 1 + len), bytes[0] === 0x03);
+  }
+  throw new Error('Unknown point format');
+};
+
+BasePoint.prototype.encodeCompressed = function encodeCompressed(enc) {
+  return this.encode(enc, true);
+};
+
+BasePoint.prototype._encode = function _encode(compact) {
+  var len = this.curve.p.byteLength();
+  var x = this.getX().toArray('be', len);
+
+  if (compact)
+    return [ this.getY().isEven() ? 0x02 : 0x03 ].concat(x);
+
+  return [ 0x04 ].concat(x, this.getY().toArray('be', len));
+};
+
+BasePoint.prototype.encode = function encode(enc, compact) {
+  return utils_1$1.encode(this._encode(compact), enc);
+};
+
+BasePoint.prototype.precompute = function precompute(power) {
+  if (this.precomputed)
+    return this;
+
+  var precomputed = {
+    doubles: null,
+    naf: null,
+    beta: null,
+  };
+  precomputed.naf = this._getNAFPoints(8);
+  precomputed.doubles = this._getDoubles(4, power);
+  precomputed.beta = this._getBeta();
+  this.precomputed = precomputed;
+
+  return this;
+};
+
+BasePoint.prototype._hasDoubles = function _hasDoubles(k) {
+  if (!this.precomputed)
+    return false;
+
+  var doubles = this.precomputed.doubles;
+  if (!doubles)
+    return false;
+
+  return doubles.points.length >= Math.ceil((k.bitLength() + 1) / doubles.step);
+};
+
+BasePoint.prototype._getDoubles = function _getDoubles(step, power) {
+  if (this.precomputed && this.precomputed.doubles)
+    return this.precomputed.doubles;
+
+  var doubles = [ this ];
+  var acc = this;
+  for (var i = 0; i < power; i += step) {
+    for (var j = 0; j < step; j++)
+      acc = acc.dbl();
+    doubles.push(acc);
+  }
+  return {
+    step: step,
+    points: doubles,
+  };
+};
+
+BasePoint.prototype._getNAFPoints = function _getNAFPoints(wnd) {
+  if (this.precomputed && this.precomputed.naf)
+    return this.precomputed.naf;
+
+  var res = [ this ];
+  var max = (1 << wnd) - 1;
+  var dbl = max === 1 ? null : this.dbl();
+  for (var i = 1; i < max; i++)
+    res[i] = res[i - 1].add(dbl);
+  return {
+    wnd: wnd,
+    points: res,
+  };
+};
+
+BasePoint.prototype._getBeta = function _getBeta() {
+  return null;
+};
+
+BasePoint.prototype.dblp = function dblp(k) {
+  var r = this;
+  for (var i = 0; i < k; i++)
+    r = r.dbl();
+  return r;
+};
+
+var inherits_browser$1 = createCommonjsModule$1(function (module) {
+if (typeof Object.create === 'function') {
+  // implementation from standard node.js 'util' module
+  module.exports = function inherits(ctor, superCtor) {
+    if (superCtor) {
+      ctor.super_ = superCtor;
+      ctor.prototype = Object.create(superCtor.prototype, {
+        constructor: {
+          value: ctor,
+          enumerable: false,
+          writable: true,
+          configurable: true
+        }
+      });
+    }
+  };
+} else {
+  // old school shim for old browsers
+  module.exports = function inherits(ctor, superCtor) {
+    if (superCtor) {
+      ctor.super_ = superCtor;
+      var TempCtor = function () {};
+      TempCtor.prototype = superCtor.prototype;
+      ctor.prototype = new TempCtor();
+      ctor.prototype.constructor = ctor;
+    }
+  };
+}
+});
+
+'use strict';
+
+
+
+
+
+
+var assert$2 = utils_1$1.assert;
+
+function ShortCurve(conf) {
+  base.call(this, 'short', conf);
+
+  this.a = new bn(conf.a, 16).toRed(this.red);
+  this.b = new bn(conf.b, 16).toRed(this.red);
+  this.tinv = this.two.redInvm();
+
+  this.zeroA = this.a.fromRed().cmpn(0) === 0;
+  this.threeA = this.a.fromRed().sub(this.p).cmpn(-3) === 0;
+
+  // If the curve is endomorphic, precalculate beta and lambda
+  this.endo = this._getEndomorphism(conf);
+  this._endoWnafT1 = new Array(4);
+  this._endoWnafT2 = new Array(4);
+}
+inherits_browser$1(ShortCurve, base);
+var short_1 = ShortCurve;
+
+ShortCurve.prototype._getEndomorphism = function _getEndomorphism(conf) {
+  // No efficient endomorphism
+  if (!this.zeroA || !this.g || !this.n || this.p.modn(3) !== 1)
+    return;
+
+  // Compute beta and lambda, that lambda * P = (beta * Px; Py)
+  var beta;
+  var lambda;
+  if (conf.beta) {
+    beta = new bn(conf.beta, 16).toRed(this.red);
+  } else {
+    var betas = this._getEndoRoots(this.p);
+    // Choose the smallest beta
+    beta = betas[0].cmp(betas[1]) < 0 ? betas[0] : betas[1];
+    beta = beta.toRed(this.red);
+  }
+  if (conf.lambda) {
+    lambda = new bn(conf.lambda, 16);
+  } else {
+    // Choose the lambda that is matching selected beta
+    var lambdas = this._getEndoRoots(this.n);
+    if (this.g.mul(lambdas[0]).x.cmp(this.g.x.redMul(beta)) === 0) {
+      lambda = lambdas[0];
+    } else {
+      lambda = lambdas[1];
+      assert$2(this.g.mul(lambda).x.cmp(this.g.x.redMul(beta)) === 0);
+    }
+  }
+
+  // Get basis vectors, used for balanced length-two representation
+  var basis;
+  if (conf.basis) {
+    basis = conf.basis.map(function(vec) {
+      return {
+        a: new bn(vec.a, 16),
+        b: new bn(vec.b, 16),
+      };
+    });
+  } else {
+    basis = this._getEndoBasis(lambda);
+  }
+
+  return {
+    beta: beta,
+    lambda: lambda,
+    basis: basis,
+  };
+};
+
+ShortCurve.prototype._getEndoRoots = function _getEndoRoots(num) {
+  // Find roots of for x^2 + x + 1 in F
+  // Root = (-1 +- Sqrt(-3)) / 2
+  //
+  var red = num === this.p ? this.red : bn.mont(num);
+  var tinv = new bn(2).toRed(red).redInvm();
+  var ntinv = tinv.redNeg();
+
+  var s = new bn(3).toRed(red).redNeg().redSqrt().redMul(tinv);
+
+  var l1 = ntinv.redAdd(s).fromRed();
+  var l2 = ntinv.redSub(s).fromRed();
+  return [ l1, l2 ];
+};
+
+ShortCurve.prototype._getEndoBasis = function _getEndoBasis(lambda) {
+  // aprxSqrt >= sqrt(this.n)
+  var aprxSqrt = this.n.ushrn(Math.floor(this.n.bitLength() / 2));
+
+  // 3.74
+  // Run EGCD, until r(L + 1) < aprxSqrt
+  var u = lambda;
+  var v = this.n.clone();
+  var x1 = new bn(1);
+  var y1 = new bn(0);
+  var x2 = new bn(0);
+  var y2 = new bn(1);
+
+  // NOTE: all vectors are roots of: a + b * lambda = 0 (mod n)
+  var a0;
+  var b0;
+  // First vector
+  var a1;
+  var b1;
+  // Second vector
+  var a2;
+  var b2;
+
+  var prevR;
+  var i = 0;
+  var r;
+  var x;
+  while (u.cmpn(0) !== 0) {
+    var q = v.div(u);
+    r = v.sub(q.mul(u));
+    x = x2.sub(q.mul(x1));
+    var y = y2.sub(q.mul(y1));
+
+    if (!a1 && r.cmp(aprxSqrt) < 0) {
+      a0 = prevR.neg();
+      b0 = x1;
+      a1 = r.neg();
+      b1 = x;
+    } else if (a1 && ++i === 2) {
+      break;
+    }
+    prevR = r;
+
+    v = u;
+    u = r;
+    x2 = x1;
+    x1 = x;
+    y2 = y1;
+    y1 = y;
+  }
+  a2 = r.neg();
+  b2 = x;
+
+  var len1 = a1.sqr().add(b1.sqr());
+  var len2 = a2.sqr().add(b2.sqr());
+  if (len2.cmp(len1) >= 0) {
+    a2 = a0;
+    b2 = b0;
+  }
+
+  // Normalize signs
+  if (a1.negative) {
+    a1 = a1.neg();
+    b1 = b1.neg();
+  }
+  if (a2.negative) {
+    a2 = a2.neg();
+    b2 = b2.neg();
+  }
+
+  return [
+    { a: a1, b: b1 },
+    { a: a2, b: b2 },
+  ];
+};
+
+ShortCurve.prototype._endoSplit = function _endoSplit(k) {
+  var basis = this.endo.basis;
+  var v1 = basis[0];
+  var v2 = basis[1];
+
+  var c1 = v2.b.mul(k).divRound(this.n);
+  var c2 = v1.b.neg().mul(k).divRound(this.n);
+
+  var p1 = c1.mul(v1.a);
+  var p2 = c2.mul(v2.a);
+  var q1 = c1.mul(v1.b);
+  var q2 = c2.mul(v2.b);
+
+  // Calculate answer
+  var k1 = k.sub(p1).sub(p2);
+  var k2 = q1.add(q2).neg();
+  return { k1: k1, k2: k2 };
+};
+
+ShortCurve.prototype.pointFromX = function pointFromX(x, odd) {
+  x = new bn(x, 16);
+  if (!x.red)
+    x = x.toRed(this.red);
+
+  var y2 = x.redSqr().redMul(x).redIAdd(x.redMul(this.a)).redIAdd(this.b);
+  var y = y2.redSqrt();
+  if (y.redSqr().redSub(y2).cmp(this.zero) !== 0)
+    throw new Error('invalid point');
+
+  // XXX Is there any way to tell if the number is odd without converting it
+  // to non-red form?
+  var isOdd = y.fromRed().isOdd();
+  if (odd && !isOdd || !odd && isOdd)
+    y = y.redNeg();
+
+  return this.point(x, y);
+};
+
+ShortCurve.prototype.validate = function validate(point) {
+  if (point.inf)
+    return true;
+
+  var x = point.x;
+  var y = point.y;
+
+  var ax = this.a.redMul(x);
+  var rhs = x.redSqr().redMul(x).redIAdd(ax).redIAdd(this.b);
+  return y.redSqr().redISub(rhs).cmpn(0) === 0;
+};
+
+ShortCurve.prototype._endoWnafMulAdd =
+    function _endoWnafMulAdd(points, coeffs, jacobianResult) {
+      var npoints = this._endoWnafT1;
+      var ncoeffs = this._endoWnafT2;
+      for (var i = 0; i < points.length; i++) {
+        var split = this._endoSplit(coeffs[i]);
+        var p = points[i];
+        var beta = p._getBeta();
+
+        if (split.k1.negative) {
+          split.k1.ineg();
+          p = p.neg(true);
+        }
+        if (split.k2.negative) {
+          split.k2.ineg();
+          beta = beta.neg(true);
+        }
+
+        npoints[i * 2] = p;
+        npoints[i * 2 + 1] = beta;
+        ncoeffs[i * 2] = split.k1;
+        ncoeffs[i * 2 + 1] = split.k2;
+      }
+      var res = this._wnafMulAdd(1, npoints, ncoeffs, i * 2, jacobianResult);
+
+      // Clean-up references to points and coefficients
+      for (var j = 0; j < i * 2; j++) {
+        npoints[j] = null;
+        ncoeffs[j] = null;
+      }
+      return res;
+    };
+
+function Point(curve, x, y, isRed) {
+  base.BasePoint.call(this, curve, 'affine');
+  if (x === null && y === null) {
+    this.x = null;
+    this.y = null;
+    this.inf = true;
+  } else {
+    this.x = new bn(x, 16);
+    this.y = new bn(y, 16);
+    // Force redgomery representation when loading from JSON
+    if (isRed) {
+      this.x.forceRed(this.curve.red);
+      this.y.forceRed(this.curve.red);
+    }
+    if (!this.x.red)
+      this.x = this.x.toRed(this.curve.red);
+    if (!this.y.red)
+      this.y = this.y.toRed(this.curve.red);
+    this.inf = false;
+  }
+}
+inherits_browser$1(Point, base.BasePoint);
+
+ShortCurve.prototype.point = function point(x, y, isRed) {
+  return new Point(this, x, y, isRed);
+};
+
+ShortCurve.prototype.pointFromJSON = function pointFromJSON(obj, red) {
+  return Point.fromJSON(this, obj, red);
+};
+
+Point.prototype._getBeta = function _getBeta() {
+  if (!this.curve.endo)
+    return;
+
+  var pre = this.precomputed;
+  if (pre && pre.beta)
+    return pre.beta;
+
+  var beta = this.curve.point(this.x.redMul(this.curve.endo.beta), this.y);
+  if (pre) {
+    var curve = this.curve;
+    var endoMul = function(p) {
+      return curve.point(p.x.redMul(curve.endo.beta), p.y);
+    };
+    pre.beta = beta;
+    beta.precomputed = {
+      beta: null,
+      naf: pre.naf && {
+        wnd: pre.naf.wnd,
+        points: pre.naf.points.map(endoMul),
+      },
+      doubles: pre.doubles && {
+        step: pre.doubles.step,
+        points: pre.doubles.points.map(endoMul),
+      },
+    };
+  }
+  return beta;
+};
+
+Point.prototype.toJSON = function toJSON() {
+  if (!this.precomputed)
+    return [ this.x, this.y ];
+
+  return [ this.x, this.y, this.precomputed && {
+    doubles: this.precomputed.doubles && {
+      step: this.precomputed.doubles.step,
+      points: this.precomputed.doubles.points.slice(1),
+    },
+    naf: this.precomputed.naf && {
+      wnd: this.precomputed.naf.wnd,
+      points: this.precomputed.naf.points.slice(1),
+    },
+  } ];
+};
+
+Point.fromJSON = function fromJSON(curve, obj, red) {
+  if (typeof obj === 'string')
+    obj = JSON.parse(obj);
+  var res = curve.point(obj[0], obj[1], red);
+  if (!obj[2])
+    return res;
+
+  function obj2point(obj) {
+    return curve.point(obj[0], obj[1], red);
+  }
+
+  var pre = obj[2];
+  res.precomputed = {
+    beta: null,
+    doubles: pre.doubles && {
+      step: pre.doubles.step,
+      points: [ res ].concat(pre.doubles.points.map(obj2point)),
+    },
+    naf: pre.naf && {
+      wnd: pre.naf.wnd,
+      points: [ res ].concat(pre.naf.points.map(obj2point)),
+    },
+  };
+  return res;
+};
+
+Point.prototype.inspect = function inspect() {
+  if (this.isInfinity())
+    return '<EC Point Infinity>';
+  return '<EC Point x: ' + this.x.fromRed().toString(16, 2) +
+      ' y: ' + this.y.fromRed().toString(16, 2) + '>';
+};
+
+Point.prototype.isInfinity = function isInfinity() {
+  return this.inf;
+};
+
+Point.prototype.add = function add(p) {
+  // O + P = P
+  if (this.inf)
+    return p;
+
+  // P + O = P
+  if (p.inf)
+    return this;
+
+  // P + P = 2P
+  if (this.eq(p))
+    return this.dbl();
+
+  // P + (-P) = O
+  if (this.neg().eq(p))
+    return this.curve.point(null, null);
+
+  // P + Q = O
+  if (this.x.cmp(p.x) === 0)
+    return this.curve.point(null, null);
+
+  var c = this.y.redSub(p.y);
+  if (c.cmpn(0) !== 0)
+    c = c.redMul(this.x.redSub(p.x).redInvm());
+  var nx = c.redSqr().redISub(this.x).redISub(p.x);
+  var ny = c.redMul(this.x.redSub(nx)).redISub(this.y);
+  return this.curve.point(nx, ny);
+};
+
+Point.prototype.dbl = function dbl() {
+  if (this.inf)
+    return this;
+
+  // 2P = O
+  var ys1 = this.y.redAdd(this.y);
+  if (ys1.cmpn(0) === 0)
+    return this.curve.point(null, null);
+
+  var a = this.curve.a;
+
+  var x2 = this.x.redSqr();
+  var dyinv = ys1.redInvm();
+  var c = x2.redAdd(x2).redIAdd(x2).redIAdd(a).redMul(dyinv);
+
+  var nx = c.redSqr().redISub(this.x.redAdd(this.x));
+  var ny = c.redMul(this.x.redSub(nx)).redISub(this.y);
+  return this.curve.point(nx, ny);
+};
+
+Point.prototype.getX = function getX() {
+  return this.x.fromRed();
+};
+
+Point.prototype.getY = function getY() {
+  return this.y.fromRed();
+};
+
+Point.prototype.mul = function mul(k) {
+  k = new bn(k, 16);
+  if (this.isInfinity())
+    return this;
+  else if (this._hasDoubles(k))
+    return this.curve._fixedNafMul(this, k);
+  else if (this.curve.endo)
+    return this.curve._endoWnafMulAdd([ this ], [ k ]);
+  else
+    return this.curve._wnafMul(this, k);
+};
+
+Point.prototype.mulAdd = function mulAdd(k1, p2, k2) {
+  var points = [ this, p2 ];
+  var coeffs = [ k1, k2 ];
+  if (this.curve.endo)
+    return this.curve._endoWnafMulAdd(points, coeffs);
+  else
+    return this.curve._wnafMulAdd(1, points, coeffs, 2);
+};
+
+Point.prototype.jmulAdd = function jmulAdd(k1, p2, k2) {
+  var points = [ this, p2 ];
+  var coeffs = [ k1, k2 ];
+  if (this.curve.endo)
+    return this.curve._endoWnafMulAdd(points, coeffs, true);
+  else
+    return this.curve._wnafMulAdd(1, points, coeffs, 2, true);
+};
+
+Point.prototype.eq = function eq(p) {
+  return this === p ||
+         this.inf === p.inf &&
+             (this.inf || this.x.cmp(p.x) === 0 && this.y.cmp(p.y) === 0);
+};
+
+Point.prototype.neg = function neg(_precompute) {
+  if (this.inf)
+    return this;
+
+  var res = this.curve.point(this.x, this.y.redNeg());
+  if (_precompute && this.precomputed) {
+    var pre = this.precomputed;
+    var negate = function(p) {
+      return p.neg();
+    };
+    res.precomputed = {
+      naf: pre.naf && {
+        wnd: pre.naf.wnd,
+        points: pre.naf.points.map(negate),
+      },
+      doubles: pre.doubles && {
+        step: pre.doubles.step,
+        points: pre.doubles.points.map(negate),
+      },
+    };
+  }
+  return res;
+};
+
+Point.prototype.toJ = function toJ() {
+  if (this.inf)
+    return this.curve.jpoint(null, null, null);
+
+  var res = this.curve.jpoint(this.x, this.y, this.curve.one);
+  return res;
+};
+
+function JPoint(curve, x, y, z) {
+  base.BasePoint.call(this, curve, 'jacobian');
+  if (x === null && y === null && z === null) {
+    this.x = this.curve.one;
+    this.y = this.curve.one;
+    this.z = new bn(0);
+  } else {
+    this.x = new bn(x, 16);
+    this.y = new bn(y, 16);
+    this.z = new bn(z, 16);
+  }
+  if (!this.x.red)
+    this.x = this.x.toRed(this.curve.red);
+  if (!this.y.red)
+    this.y = this.y.toRed(this.curve.red);
+  if (!this.z.red)
+    this.z = this.z.toRed(this.curve.red);
+
+  this.zOne = this.z === this.curve.one;
+}
+inherits_browser$1(JPoint, base.BasePoint);
+
+ShortCurve.prototype.jpoint = function jpoint(x, y, z) {
+  return new JPoint(this, x, y, z);
+};
+
+JPoint.prototype.toP = function toP() {
+  if (this.isInfinity())
+    return this.curve.point(null, null);
+
+  var zinv = this.z.redInvm();
+  var zinv2 = zinv.redSqr();
+  var ax = this.x.redMul(zinv2);
+  var ay = this.y.redMul(zinv2).redMul(zinv);
+
+  return this.curve.point(ax, ay);
+};
+
+JPoint.prototype.neg = function neg() {
+  return this.curve.jpoint(this.x, this.y.redNeg(), this.z);
+};
+
+JPoint.prototype.add = function add(p) {
+  // O + P = P
+  if (this.isInfinity())
+    return p;
+
+  // P + O = P
+  if (p.isInfinity())
+    return this;
+
+  // 12M + 4S + 7A
+  var pz2 = p.z.redSqr();
+  var z2 = this.z.redSqr();
+  var u1 = this.x.redMul(pz2);
+  var u2 = p.x.redMul(z2);
+  var s1 = this.y.redMul(pz2.redMul(p.z));
+  var s2 = p.y.redMul(z2.redMul(this.z));
+
+  var h = u1.redSub(u2);
+  var r = s1.redSub(s2);
+  if (h.cmpn(0) === 0) {
+    if (r.cmpn(0) !== 0)
+      return this.curve.jpoint(null, null, null);
+    else
+      return this.dbl();
+  }
+
+  var h2 = h.redSqr();
+  var h3 = h2.redMul(h);
+  var v = u1.redMul(h2);
+
+  var nx = r.redSqr().redIAdd(h3).redISub(v).redISub(v);
+  var ny = r.redMul(v.redISub(nx)).redISub(s1.redMul(h3));
+  var nz = this.z.redMul(p.z).redMul(h);
+
+  return this.curve.jpoint(nx, ny, nz);
+};
+
+JPoint.prototype.mixedAdd = function mixedAdd(p) {
+  // O + P = P
+  if (this.isInfinity())
+    return p.toJ();
+
+  // P + O = P
+  if (p.isInfinity())
+    return this;
+
+  // 8M + 3S + 7A
+  var z2 = this.z.redSqr();
+  var u1 = this.x;
+  var u2 = p.x.redMul(z2);
+  var s1 = this.y;
+  var s2 = p.y.redMul(z2).redMul(this.z);
+
+  var h = u1.redSub(u2);
+  var r = s1.redSub(s2);
+  if (h.cmpn(0) === 0) {
+    if (r.cmpn(0) !== 0)
+      return this.curve.jpoint(null, null, null);
+    else
+      return this.dbl();
+  }
+
+  var h2 = h.redSqr();
+  var h3 = h2.redMul(h);
+  var v = u1.redMul(h2);
+
+  var nx = r.redSqr().redIAdd(h3).redISub(v).redISub(v);
+  var ny = r.redMul(v.redISub(nx)).redISub(s1.redMul(h3));
+  var nz = this.z.redMul(h);
+
+  return this.curve.jpoint(nx, ny, nz);
+};
+
+JPoint.prototype.dblp = function dblp(pow) {
+  if (pow === 0)
+    return this;
+  if (this.isInfinity())
+    return this;
+  if (!pow)
+    return this.dbl();
+
+  var i;
+  if (this.curve.zeroA || this.curve.threeA) {
+    var r = this;
+    for (i = 0; i < pow; i++)
+      r = r.dbl();
+    return r;
+  }
+
+  // 1M + 2S + 1A + N * (4S + 5M + 8A)
+  // N = 1 => 6M + 6S + 9A
+  var a = this.curve.a;
+  var tinv = this.curve.tinv;
+
+  var jx = this.x;
+  var jy = this.y;
+  var jz = this.z;
+  var jz4 = jz.redSqr().redSqr();
+
+  // Reuse results
+  var jyd = jy.redAdd(jy);
+  for (i = 0; i < pow; i++) {
+    var jx2 = jx.redSqr();
+    var jyd2 = jyd.redSqr();
+    var jyd4 = jyd2.redSqr();
+    var c = jx2.redAdd(jx2).redIAdd(jx2).redIAdd(a.redMul(jz4));
+
+    var t1 = jx.redMul(jyd2);
+    var nx = c.redSqr().redISub(t1.redAdd(t1));
+    var t2 = t1.redISub(nx);
+    var dny = c.redMul(t2);
+    dny = dny.redIAdd(dny).redISub(jyd4);
+    var nz = jyd.redMul(jz);
+    if (i + 1 < pow)
+      jz4 = jz4.redMul(jyd4);
+
+    jx = nx;
+    jz = nz;
+    jyd = dny;
+  }
+
+  return this.curve.jpoint(jx, jyd.redMul(tinv), jz);
+};
+
+JPoint.prototype.dbl = function dbl() {
+  if (this.isInfinity())
+    return this;
+
+  if (this.curve.zeroA)
+    return this._zeroDbl();
+  else if (this.curve.threeA)
+    return this._threeDbl();
+  else
+    return this._dbl();
+};
+
+JPoint.prototype._zeroDbl = function _zeroDbl() {
+  var nx;
+  var ny;
+  var nz;
+  // Z = 1
+  if (this.zOne) {
+    // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html
+    //     #doubling-mdbl-2007-bl
+    // 1M + 5S + 14A
+
+    // XX = X1^2
+    var xx = this.x.redSqr();
+    // YY = Y1^2
+    var yy = this.y.redSqr();
+    // YYYY = YY^2
+    var yyyy = yy.redSqr();
+    // S = 2 * ((X1 + YY)^2 - XX - YYYY)
+    var s = this.x.redAdd(yy).redSqr().redISub(xx).redISub(yyyy);
+    s = s.redIAdd(s);
+    // M = 3 * XX + a; a = 0
+    var m = xx.redAdd(xx).redIAdd(xx);
+    // T = M ^ 2 - 2*S
+    var t = m.redSqr().redISub(s).redISub(s);
+
+    // 8 * YYYY
+    var yyyy8 = yyyy.redIAdd(yyyy);
+    yyyy8 = yyyy8.redIAdd(yyyy8);
+    yyyy8 = yyyy8.redIAdd(yyyy8);
+
+    // X3 = T
+    nx = t;
+    // Y3 = M * (S - T) - 8 * YYYY
+    ny = m.redMul(s.redISub(t)).redISub(yyyy8);
+    // Z3 = 2*Y1
+    nz = this.y.redAdd(this.y);
+  } else {
+    // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html
+    //     #doubling-dbl-2009-l
+    // 2M + 5S + 13A
+
+    // A = X1^2
+    var a = this.x.redSqr();
+    // B = Y1^2
+    var b = this.y.redSqr();
+    // C = B^2
+    var c = b.redSqr();
+    // D = 2 * ((X1 + B)^2 - A - C)
+    var d = this.x.redAdd(b).redSqr().redISub(a).redISub(c);
+    d = d.redIAdd(d);
+    // E = 3 * A
+    var e = a.redAdd(a).redIAdd(a);
+    // F = E^2
+    var f = e.redSqr();
+
+    // 8 * C
+    var c8 = c.redIAdd(c);
+    c8 = c8.redIAdd(c8);
+    c8 = c8.redIAdd(c8);
+
+    // X3 = F - 2 * D
+    nx = f.redISub(d).redISub(d);
+    // Y3 = E * (D - X3) - 8 * C
+    ny = e.redMul(d.redISub(nx)).redISub(c8);
+    // Z3 = 2 * Y1 * Z1
+    nz = this.y.redMul(this.z);
+    nz = nz.redIAdd(nz);
+  }
+
+  return this.curve.jpoint(nx, ny, nz);
+};
+
+JPoint.prototype._threeDbl = function _threeDbl() {
+  var nx;
+  var ny;
+  var nz;
+  // Z = 1
+  if (this.zOne) {
+    // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html
+    //     #doubling-mdbl-2007-bl
+    // 1M + 5S + 15A
+
+    // XX = X1^2
+    var xx = this.x.redSqr();
+    // YY = Y1^2
+    var yy = this.y.redSqr();
+    // YYYY = YY^2
+    var yyyy = yy.redSqr();
+    // S = 2 * ((X1 + YY)^2 - XX - YYYY)
+    var s = this.x.redAdd(yy).redSqr().redISub(xx).redISub(yyyy);
+    s = s.redIAdd(s);
+    // M = 3 * XX + a
+    var m = xx.redAdd(xx).redIAdd(xx).redIAdd(this.curve.a);
+    // T = M^2 - 2 * S
+    var t = m.redSqr().redISub(s).redISub(s);
+    // X3 = T
+    nx = t;
+    // Y3 = M * (S - T) - 8 * YYYY
+    var yyyy8 = yyyy.redIAdd(yyyy);
+    yyyy8 = yyyy8.redIAdd(yyyy8);
+    yyyy8 = yyyy8.redIAdd(yyyy8);
+    ny = m.redMul(s.redISub(t)).redISub(yyyy8);
+    // Z3 = 2 * Y1
+    nz = this.y.redAdd(this.y);
+  } else {
+    // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#doubling-dbl-2001-b
+    // 3M + 5S
+
+    // delta = Z1^2
+    var delta = this.z.redSqr();
+    // gamma = Y1^2
+    var gamma = this.y.redSqr();
+    // beta = X1 * gamma
+    var beta = this.x.redMul(gamma);
+    // alpha = 3 * (X1 - delta) * (X1 + delta)
+    var alpha = this.x.redSub(delta).redMul(this.x.redAdd(delta));
+    alpha = alpha.redAdd(alpha).redIAdd(alpha);
+    // X3 = alpha^2 - 8 * beta
+    var beta4 = beta.redIAdd(beta);
+    beta4 = beta4.redIAdd(beta4);
+    var beta8 = beta4.redAdd(beta4);
+    nx = alpha.redSqr().redISub(beta8);
+    // Z3 = (Y1 + Z1)^2 - gamma - delta
+    nz = this.y.redAdd(this.z).redSqr().redISub(gamma).redISub(delta);
+    // Y3 = alpha * (4 * beta - X3) - 8 * gamma^2
+    var ggamma8 = gamma.redSqr();
+    ggamma8 = ggamma8.redIAdd(ggamma8);
+    ggamma8 = ggamma8.redIAdd(ggamma8);
+    ggamma8 = ggamma8.redIAdd(ggamma8);
+    ny = alpha.redMul(beta4.redISub(nx)).redISub(ggamma8);
+  }
+
+  return this.curve.jpoint(nx, ny, nz);
+};
+
+JPoint.prototype._dbl = function _dbl() {
+  var a = this.curve.a;
+
+  // 4M + 6S + 10A
+  var jx = this.x;
+  var jy = this.y;
+  var jz = this.z;
+  var jz4 = jz.redSqr().redSqr();
+
+  var jx2 = jx.redSqr();
+  var jy2 = jy.redSqr();
+
+  var c = jx2.redAdd(jx2).redIAdd(jx2).redIAdd(a.redMul(jz4));
+
+  var jxd4 = jx.redAdd(jx);
+  jxd4 = jxd4.redIAdd(jxd4);
+  var t1 = jxd4.redMul(jy2);
+  var nx = c.redSqr().redISub(t1.redAdd(t1));
+  var t2 = t1.redISub(nx);
+
+  var jyd8 = jy2.redSqr();
+  jyd8 = jyd8.redIAdd(jyd8);
+  jyd8 = jyd8.redIAdd(jyd8);
+  jyd8 = jyd8.redIAdd(jyd8);
+  var ny = c.redMul(t2).redISub(jyd8);
+  var nz = jy.redAdd(jy).redMul(jz);
+
+  return this.curve.jpoint(nx, ny, nz);
+};
+
+JPoint.prototype.trpl = function trpl() {
+  if (!this.curve.zeroA)
+    return this.dbl().add(this);
+
+  // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#tripling-tpl-2007-bl
+  // 5M + 10S + ...
+
+  // XX = X1^2
+  var xx = this.x.redSqr();
+  // YY = Y1^2
+  var yy = this.y.redSqr();
+  // ZZ = Z1^2
+  var zz = this.z.redSqr();
+  // YYYY = YY^2
+  var yyyy = yy.redSqr();
+  // M = 3 * XX + a * ZZ2; a = 0
+  var m = xx.redAdd(xx).redIAdd(xx);
+  // MM = M^2
+  var mm = m.redSqr();
+  // E = 6 * ((X1 + YY)^2 - XX - YYYY) - MM
+  var e = this.x.redAdd(yy).redSqr().redISub(xx).redISub(yyyy);
+  e = e.redIAdd(e);
+  e = e.redAdd(e).redIAdd(e);
+  e = e.redISub(mm);
+  // EE = E^2
+  var ee = e.redSqr();
+  // T = 16*YYYY
+  var t = yyyy.redIAdd(yyyy);
+  t = t.redIAdd(t);
+  t = t.redIAdd(t);
+  t = t.redIAdd(t);
+  // U = (M + E)^2 - MM - EE - T
+  var u = m.redIAdd(e).redSqr().redISub(mm).redISub(ee).redISub(t);
+  // X3 = 4 * (X1 * EE - 4 * YY * U)
+  var yyu4 = yy.redMul(u);
+  yyu4 = yyu4.redIAdd(yyu4);
+  yyu4 = yyu4.redIAdd(yyu4);
+  var nx = this.x.redMul(ee).redISub(yyu4);
+  nx = nx.redIAdd(nx);
+  nx = nx.redIAdd(nx);
+  // Y3 = 8 * Y1 * (U * (T - U) - E * EE)
+  var ny = this.y.redMul(u.redMul(t.redISub(u)).redISub(e.redMul(ee)));
+  ny = ny.redIAdd(ny);
+  ny = ny.redIAdd(ny);
+  ny = ny.redIAdd(ny);
+  // Z3 = (Z1 + E)^2 - ZZ - EE
+  var nz = this.z.redAdd(e).redSqr().redISub(zz).redISub(ee);
+
+  return this.curve.jpoint(nx, ny, nz);
+};
+
+JPoint.prototype.mul = function mul(k, kbase) {
+  k = new bn(k, kbase);
+
+  return this.curve._wnafMul(this, k);
+};
+
+JPoint.prototype.eq = function eq(p) {
+  if (p.type === 'affine')
+    return this.eq(p.toJ());
+
+  if (this === p)
+    return true;
+
+  // x1 * z2^2 == x2 * z1^2
+  var z2 = this.z.redSqr();
+  var pz2 = p.z.redSqr();
+  if (this.x.redMul(pz2).redISub(p.x.redMul(z2)).cmpn(0) !== 0)
+    return false;
+
+  // y1 * z2^3 == y2 * z1^3
+  var z3 = z2.redMul(this.z);
+  var pz3 = pz2.redMul(p.z);
+  return this.y.redMul(pz3).redISub(p.y.redMul(z3)).cmpn(0) === 0;
+};
+
+JPoint.prototype.eqXToP = function eqXToP(x) {
+  var zs = this.z.redSqr();
+  var rx = x.toRed(this.curve.red).redMul(zs);
+  if (this.x.cmp(rx) === 0)
+    return true;
+
+  var xc = x.clone();
+  var t = this.curve.redN.redMul(zs);
+  for (;;) {
+    xc.iadd(this.curve.n);
+    if (xc.cmp(this.curve.p) >= 0)
+      return false;
+
+    rx.redIAdd(t);
+    if (this.x.cmp(rx) === 0)
+      return true;
+  }
+};
+
+JPoint.prototype.inspect = function inspect() {
+  if (this.isInfinity())
+    return '<EC JPoint Infinity>';
+  return '<EC JPoint x: ' + this.x.toString(16, 2) +
+      ' y: ' + this.y.toString(16, 2) +
+      ' z: ' + this.z.toString(16, 2) + '>';
+};
+
+JPoint.prototype.isInfinity = function isInfinity() {
+  // XXX This code assumes that zero is always zero in red
+  return this.z.cmpn(0) === 0;
+};
+
+var curve_1 = createCommonjsModule$1(function (module, exports) {
+'use strict';
+
+var curve = exports;
+
+curve.base = base;
+curve.short = short_1;
+curve.mont = /*RicMoo:ethers:require(./mont)*/(null);
+curve.edwards = /*RicMoo:ethers:require(./edwards)*/(null);
+});
+
+var curves_1 = createCommonjsModule$1(function (module, exports) {
+'use strict';
+
+var curves = exports;
+
+
+
+
+
+var assert = utils_1$1.assert;
+
+function PresetCurve(options) {
+  if (options.type === 'short')
+    this.curve = new curve_1.short(options);
+  else if (options.type === 'edwards')
+    this.curve = new curve_1.edwards(options);
+  else
+    this.curve = new curve_1.mont(options);
+  this.g = this.curve.g;
+  this.n = this.curve.n;
+  this.hash = options.hash;
+
+  assert(this.g.validate(), 'Invalid curve');
+  assert(this.g.mul(this.n).isInfinity(), 'Invalid curve, G*N != O');
+}
+curves.PresetCurve = PresetCurve;
+
+function defineCurve(name, options) {
+  Object.defineProperty(curves, name, {
+    configurable: true,
+    enumerable: true,
+    get: function() {
+      var curve = new PresetCurve(options);
+      Object.defineProperty(curves, name, {
+        configurable: true,
+        enumerable: true,
+        value: curve,
+      });
+      return curve;
+    },
+  });
+}
+
+defineCurve('p192', {
+  type: 'short',
+  prime: 'p192',
+  p: 'ffffffff ffffffff ffffffff fffffffe ffffffff ffffffff',
+  a: 'ffffffff ffffffff ffffffff fffffffe ffffffff fffffffc',
+  b: '64210519 e59c80e7 0fa7e9ab 72243049 feb8deec c146b9b1',
+  n: 'ffffffff ffffffff ffffffff 99def836 146bc9b1 b4d22831',
+  hash: hash_1.sha256,
+  gRed: false,
+  g: [
+    '188da80e b03090f6 7cbf20eb 43a18800 f4ff0afd 82ff1012',
+    '07192b95 ffc8da78 631011ed 6b24cdd5 73f977a1 1e794811',
+  ],
+});
+
+defineCurve('p224', {
+  type: 'short',
+  prime: 'p224',
+  p: 'ffffffff ffffffff ffffffff ffffffff 00000000 00000000 00000001',
+  a: 'ffffffff ffffffff ffffffff fffffffe ffffffff ffffffff fffffffe',
+  b: 'b4050a85 0c04b3ab f5413256 5044b0b7 d7bfd8ba 270b3943 2355ffb4',
+  n: 'ffffffff ffffffff ffffffff ffff16a2 e0b8f03e 13dd2945 5c5c2a3d',
+  hash: hash_1.sha256,
+  gRed: false,
+  g: [
+    'b70e0cbd 6bb4bf7f 321390b9 4a03c1d3 56c21122 343280d6 115c1d21',
+    'bd376388 b5f723fb 4c22dfe6 cd4375a0 5a074764 44d58199 85007e34',
+  ],
+});
+
+defineCurve('p256', {
+  type: 'short',
+  prime: null,
+  p: 'ffffffff 00000001 00000000 00000000 00000000 ffffffff ffffffff ffffffff',
+  a: 'ffffffff 00000001 00000000 00000000 00000000 ffffffff ffffffff fffffffc',
+  b: '5ac635d8 aa3a93e7 b3ebbd55 769886bc 651d06b0 cc53b0f6 3bce3c3e 27d2604b',
+  n: 'ffffffff 00000000 ffffffff ffffffff bce6faad a7179e84 f3b9cac2 fc632551',
+  hash: hash_1.sha256,
+  gRed: false,
+  g: [
+    '6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296',
+    '4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5',
+  ],
+});
+
+defineCurve('p384', {
+  type: 'short',
+  prime: null,
+  p: 'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
+     'fffffffe ffffffff 00000000 00000000 ffffffff',
+  a: 'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
+     'fffffffe ffffffff 00000000 00000000 fffffffc',
+  b: 'b3312fa7 e23ee7e4 988e056b e3f82d19 181d9c6e fe814112 0314088f ' +
+     '5013875a c656398d 8a2ed19d 2a85c8ed d3ec2aef',
+  n: 'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff c7634d81 ' +
+     'f4372ddf 581a0db2 48b0a77a ecec196a ccc52973',
+  hash: hash_1.sha384,
+  gRed: false,
+  g: [
+    'aa87ca22 be8b0537 8eb1c71e f320ad74 6e1d3b62 8ba79b98 59f741e0 82542a38 ' +
+    '5502f25d bf55296c 3a545e38 72760ab7',
+    '3617de4a 96262c6f 5d9e98bf 9292dc29 f8f41dbd 289a147c e9da3113 b5f0b8c0 ' +
+    '0a60b1ce 1d7e819d 7a431d7c 90ea0e5f',
+  ],
+});
+
+defineCurve('p521', {
+  type: 'short',
+  prime: null,
+  p: '000001ff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
+     'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
+     'ffffffff ffffffff ffffffff ffffffff ffffffff',
+  a: '000001ff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
+     'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
+     'ffffffff ffffffff ffffffff ffffffff fffffffc',
+  b: '00000051 953eb961 8e1c9a1f 929a21a0 b68540ee a2da725b ' +
+     '99b315f3 b8b48991 8ef109e1 56193951 ec7e937b 1652c0bd ' +
+     '3bb1bf07 3573df88 3d2c34f1 ef451fd4 6b503f00',
+  n: '000001ff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
+     'ffffffff ffffffff fffffffa 51868783 bf2f966b 7fcc0148 ' +
+     'f709a5d0 3bb5c9b8 899c47ae bb6fb71e 91386409',
+  hash: hash_1.sha512,
+  gRed: false,
+  g: [
+    '000000c6 858e06b7 0404e9cd 9e3ecb66 2395b442 9c648139 ' +
+    '053fb521 f828af60 6b4d3dba a14b5e77 efe75928 fe1dc127 ' +
+    'a2ffa8de 3348b3c1 856a429b f97e7e31 c2e5bd66',
+    '00000118 39296a78 9a3bc004 5c8a5fb4 2c7d1bd9 98f54449 ' +
+    '579b4468 17afbd17 273e662c 97ee7299 5ef42640 c550b901 ' +
+    '3fad0761 353c7086 a272c240 88be9476 9fd16650',
+  ],
+});
+
+defineCurve('curve25519', {
+  type: 'mont',
+  prime: 'p25519',
+  p: '7fffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffed',
+  a: '76d06',
+  b: '1',
+  n: '1000000000000000 0000000000000000 14def9dea2f79cd6 5812631a5cf5d3ed',
+  hash: hash_1.sha256,
+  gRed: false,
+  g: [
+    '9',
+  ],
+});
+
+defineCurve('ed25519', {
+  type: 'edwards',
+  prime: 'p25519',
+  p: '7fffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffed',
+  a: '-1',
+  c: '1',
+  // -121665 * (121666^(-1)) (mod P)
+  d: '52036cee2b6ffe73 8cc740797779e898 00700a4d4141d8ab 75eb4dca135978a3',
+  n: '1000000000000000 0000000000000000 14def9dea2f79cd6 5812631a5cf5d3ed',
+  hash: hash_1.sha256,
+  gRed: false,
+  g: [
+    '216936d3cd6e53fec0a4e231fdd6dc5c692cc7609525a7b2c9562d608f25d51a',
+
+    // 4/5
+    '6666666666666666666666666666666666666666666666666666666666666658',
+  ],
+});
+
+var pre;
+try {
+  pre = /*RicMoo:ethers:require(./precomputed/secp256k1)*/(null).crash();
+} catch (e) {
+  pre = undefined;
+}
+
+defineCurve('secp256k1', {
+  type: 'short',
+  prime: 'k256',
+  p: 'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff fffffffe fffffc2f',
+  a: '0',
+  b: '7',
+  n: 'ffffffff ffffffff ffffffff fffffffe baaedce6 af48a03b bfd25e8c d0364141',
+  h: '1',
+  hash: hash_1.sha256,
+
+  // Precomputed endomorphism
+  beta: '7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee',
+  lambda: '5363ad4cc05c30e0a5261c028812645a122e22ea20816678df02967c1b23bd72',
+  basis: [
+    {
+      a: '3086d221a7d46bcde86c90e49284eb15',
+      b: '-e4437ed6010e88286f547fa90abfe4c3',
+    },
+    {
+      a: '114ca50f7a8e2f3f657c1108d9d44cfd8',
+      b: '3086d221a7d46bcde86c90e49284eb15',
+    },
+  ],
+
+  gRed: false,
+  g: [
+    '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
+    '483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8',
+    pre,
+  ],
+});
+});
+
+'use strict';
+
+
+
+
+
+function HmacDRBG(options) {
+  if (!(this instanceof HmacDRBG))
+    return new HmacDRBG(options);
+  this.hash = options.hash;
+  this.predResist = !!options.predResist;
+
+  this.outLen = this.hash.outSize;
+  this.minEntropy = options.minEntropy || this.hash.hmacStrength;
+
+  this._reseed = null;
+  this.reseedInterval = null;
+  this.K = null;
+  this.V = null;
+
+  var entropy = utils_1.toArray(options.entropy, options.entropyEnc || 'hex');
+  var nonce = utils_1.toArray(options.nonce, options.nonceEnc || 'hex');
+  var pers = utils_1.toArray(options.pers, options.persEnc || 'hex');
+  minimalisticAssert$1(entropy.length >= (this.minEntropy / 8),
+         'Not enough entropy. Minimum is: ' + this.minEntropy + ' bits');
+  this._init(entropy, nonce, pers);
+}
+var hmacDrbg = HmacDRBG;
+
+HmacDRBG.prototype._init = function init(entropy, nonce, pers) {
+  var seed = entropy.concat(nonce).concat(pers);
+
+  this.K = new Array(this.outLen / 8);
+  this.V = new Array(this.outLen / 8);
+  for (var i = 0; i < this.V.length; i++) {
+    this.K[i] = 0x00;
+    this.V[i] = 0x01;
+  }
+
+  this._update(seed);
+  this._reseed = 1;
+  this.reseedInterval = 0x1000000000000;  // 2^48
+};
+
+HmacDRBG.prototype._hmac = function hmac() {
+  return new hash_1.hmac(this.hash, this.K);
+};
+
+HmacDRBG.prototype._update = function update(seed) {
+  var kmac = this._hmac()
+                 .update(this.V)
+                 .update([ 0x00 ]);
+  if (seed)
+    kmac = kmac.update(seed);
+  this.K = kmac.digest();
+  this.V = this._hmac().update(this.V).digest();
+  if (!seed)
+    return;
+
+  this.K = this._hmac()
+               .update(this.V)
+               .update([ 0x01 ])
+               .update(seed)
+               .digest();
+  this.V = this._hmac().update(this.V).digest();
+};
+
+HmacDRBG.prototype.reseed = function reseed(entropy, entropyEnc, add, addEnc) {
+  // Optional entropy enc
+  if (typeof entropyEnc !== 'string') {
+    addEnc = add;
+    add = entropyEnc;
+    entropyEnc = null;
+  }
+
+  entropy = utils_1.toArray(entropy, entropyEnc);
+  add = utils_1.toArray(add, addEnc);
+
+  minimalisticAssert$1(entropy.length >= (this.minEntropy / 8),
+         'Not enough entropy. Minimum is: ' + this.minEntropy + ' bits');
+
+  this._update(entropy.concat(add || []));
+  this._reseed = 1;
+};
+
+HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
+  if (this._reseed > this.reseedInterval)
+    throw new Error('Reseed is required');
+
+  // Optional encoding
+  if (typeof enc !== 'string') {
+    addEnc = add;
+    add = enc;
+    enc = null;
+  }
+
+  // Optional additional data
+  if (add) {
+    add = utils_1.toArray(add, addEnc || 'hex');
+    this._update(add);
+  }
+
+  var temp = [];
+  while (temp.length < len) {
+    this.V = this._hmac().update(this.V).digest();
+    temp = temp.concat(this.V);
+  }
+
+  var res = temp.slice(0, len);
+  this._update(add);
+  this._reseed++;
+  return utils_1.encode(res, enc);
+};
+
+'use strict';
+
+
+
+var assert$3 = utils_1$1.assert;
+
+function KeyPair(ec, options) {
+  this.ec = ec;
+  this.priv = null;
+  this.pub = null;
+
+  // KeyPair(ec, { priv: ..., pub: ... })
+  if (options.priv)
+    this._importPrivate(options.priv, options.privEnc);
+  if (options.pub)
+    this._importPublic(options.pub, options.pubEnc);
+}
+var key = KeyPair;
+
+KeyPair.fromPublic = function fromPublic(ec, pub, enc) {
+  if (pub instanceof KeyPair)
+    return pub;
+
+  return new KeyPair(ec, {
+    pub: pub,
+    pubEnc: enc,
+  });
+};
+
+KeyPair.fromPrivate = function fromPrivate(ec, priv, enc) {
+  if (priv instanceof KeyPair)
+    return priv;
+
+  return new KeyPair(ec, {
+    priv: priv,
+    privEnc: enc,
+  });
+};
+
+KeyPair.prototype.validate = function validate() {
+  var pub = this.getPublic();
+
+  if (pub.isInfinity())
+    return { result: false, reason: 'Invalid public key' };
+  if (!pub.validate())
+    return { result: false, reason: 'Public key is not a point' };
+  if (!pub.mul(this.ec.curve.n).isInfinity())
+    return { result: false, reason: 'Public key * N != O' };
+
+  return { result: true, reason: null };
+};
+
+KeyPair.prototype.getPublic = function getPublic(compact, enc) {
+  // compact is optional argument
+  if (typeof compact === 'string') {
+    enc = compact;
+    compact = null;
+  }
+
+  if (!this.pub)
+    this.pub = this.ec.g.mul(this.priv);
+
+  if (!enc)
+    return this.pub;
+
+  return this.pub.encode(enc, compact);
+};
+
+KeyPair.prototype.getPrivate = function getPrivate(enc) {
+  if (enc === 'hex')
+    return this.priv.toString(16, 2);
+  else
+    return this.priv;
+};
+
+KeyPair.prototype._importPrivate = function _importPrivate(key, enc) {
+  this.priv = new bn(key, enc || 16);
+
+  // Ensure that the priv won't be bigger than n, otherwise we may fail
+  // in fixed multiplication method
+  this.priv = this.priv.umod(this.ec.curve.n);
+};
+
+KeyPair.prototype._importPublic = function _importPublic(key, enc) {
+  if (key.x || key.y) {
+    // Montgomery points only have an `x` coordinate.
+    // Weierstrass/Edwards points on the other hand have both `x` and
+    // `y` coordinates.
+    if (this.ec.curve.type === 'mont') {
+      assert$3(key.x, 'Need x coordinate');
+    } else if (this.ec.curve.type === 'short' ||
+               this.ec.curve.type === 'edwards') {
+      assert$3(key.x && key.y, 'Need both x and y coordinate');
+    }
+    this.pub = this.ec.curve.point(key.x, key.y);
+    return;
+  }
+  this.pub = this.ec.curve.decodePoint(key, enc);
+};
+
+// ECDH
+KeyPair.prototype.derive = function derive(pub) {
+  if(!pub.validate()) {
+    assert$3(pub.validate(), 'public point not validated');
+  }
+  return pub.mul(this.priv).getX();
+};
+
+// ECDSA
+KeyPair.prototype.sign = function sign(msg, enc, options) {
+  return this.ec.sign(msg, this, enc, options);
+};
+
+KeyPair.prototype.verify = function verify(msg, signature) {
+  return this.ec.verify(msg, signature, this);
+};
+
+KeyPair.prototype.inspect = function inspect() {
+  return '<Key priv: ' + (this.priv && this.priv.toString(16, 2)) +
+         ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
+};
+
+'use strict';
+
+
+
+
+var assert$4 = utils_1$1.assert;
+
+function Signature(options, enc) {
+  if (options instanceof Signature)
+    return options;
+
+  if (this._importDER(options, enc))
+    return;
+
+  assert$4(options.r && options.s, 'Signature without r or s');
+  this.r = new bn(options.r, 16);
+  this.s = new bn(options.s, 16);
+  if (options.recoveryParam === undefined)
+    this.recoveryParam = null;
+  else
+    this.recoveryParam = options.recoveryParam;
+}
+var signature = Signature;
+
+function Position() {
+  this.place = 0;
+}
+
+function getLength(buf, p) {
+  var initial = buf[p.place++];
+  if (!(initial & 0x80)) {
+    return initial;
+  }
+  var octetLen = initial & 0xf;
+
+  // Indefinite length or overflow
+  if (octetLen === 0 || octetLen > 4) {
+    return false;
+  }
+
+  var val = 0;
+  for (var i = 0, off = p.place; i < octetLen; i++, off++) {
+    val <<= 8;
+    val |= buf[off];
+    val >>>= 0;
+  }
+
+  // Leading zeroes
+  if (val <= 0x7f) {
+    return false;
+  }
+
+  p.place = off;
+  return val;
+}
+
+function rmPadding(buf) {
+  var i = 0;
+  var len = buf.length - 1;
+  while (!buf[i] && !(buf[i + 1] & 0x80) && i < len) {
+    i++;
+  }
+  if (i === 0) {
+    return buf;
+  }
+  return buf.slice(i);
+}
+
+Signature.prototype._importDER = function _importDER(data, enc) {
+  data = utils_1$1.toArray(data, enc);
+  var p = new Position();
+  if (data[p.place++] !== 0x30) {
+    return false;
+  }
+  var len = getLength(data, p);
+  if (len === false) {
+    return false;
+  }
+  if ((len + p.place) !== data.length) {
+    return false;
+  }
+  if (data[p.place++] !== 0x02) {
+    return false;
+  }
+  var rlen = getLength(data, p);
+  if (rlen === false) {
+    return false;
+  }
+  var r = data.slice(p.place, rlen + p.place);
+  p.place += rlen;
+  if (data[p.place++] !== 0x02) {
+    return false;
+  }
+  var slen = getLength(data, p);
+  if (slen === false) {
+    return false;
+  }
+  if (data.length !== slen + p.place) {
+    return false;
+  }
+  var s = data.slice(p.place, slen + p.place);
+  if (r[0] === 0) {
+    if (r[1] & 0x80) {
+      r = r.slice(1);
+    } else {
+      // Leading zeroes
+      return false;
+    }
+  }
+  if (s[0] === 0) {
+    if (s[1] & 0x80) {
+      s = s.slice(1);
+    } else {
+      // Leading zeroes
+      return false;
+    }
+  }
+
+  this.r = new bn(r);
+  this.s = new bn(s);
+  this.recoveryParam = null;
+
+  return true;
+};
+
+function constructLength(arr, len) {
+  if (len < 0x80) {
+    arr.push(len);
+    return;
+  }
+  var octets = 1 + (Math.log(len) / Math.LN2 >>> 3);
+  arr.push(octets | 0x80);
+  while (--octets) {
+    arr.push((len >>> (octets << 3)) & 0xff);
+  }
+  arr.push(len);
+}
+
+Signature.prototype.toDER = function toDER(enc) {
+  var r = this.r.toArray();
+  var s = this.s.toArray();
+
+  // Pad values
+  if (r[0] & 0x80)
+    r = [ 0 ].concat(r);
+  // Pad values
+  if (s[0] & 0x80)
+    s = [ 0 ].concat(s);
+
+  r = rmPadding(r);
+  s = rmPadding(s);
+
+  while (!s[0] && !(s[1] & 0x80)) {
+    s = s.slice(1);
+  }
+  var arr = [ 0x02 ];
+  constructLength(arr, r.length);
+  arr = arr.concat(r);
+  arr.push(0x02);
+  constructLength(arr, s.length);
+  var backHalf = arr.concat(s);
+  var res = [ 0x30 ];
+  constructLength(res, backHalf.length);
+  res = res.concat(backHalf);
+  return utils_1$1.encode(res, enc);
+};
+
+'use strict';
+
+
+
+
+
+var rand = /*RicMoo:ethers:require(brorand)*/(function() { throw new Error('unsupported'); });
+var assert$5 = utils_1$1.assert;
+
+
+
+
+function EC(options) {
+  if (!(this instanceof EC))
+    return new EC(options);
+
+  // Shortcut `elliptic.ec(curve-name)`
+  if (typeof options === 'string') {
+    assert$5(Object.prototype.hasOwnProperty.call(curves_1, options),
+      'Unknown curve ' + options);
+
+    options = curves_1[options];
+  }
+
+  // Shortcut for `elliptic.ec(elliptic.curves.curveName)`
+  if (options instanceof curves_1.PresetCurve)
+    options = { curve: options };
+
+  this.curve = options.curve.curve;
+  this.n = this.curve.n;
+  this.nh = this.n.ushrn(1);
+  this.g = this.curve.g;
+
+  // Point on curve
+  this.g = options.curve.g;
+  this.g.precompute(options.curve.n.bitLength() + 1);
+
+  // Hash for function for DRBG
+  this.hash = options.hash || options.curve.hash;
+}
+var ec = EC;
+
+EC.prototype.keyPair = function keyPair(options) {
+  return new key(this, options);
+};
+
+EC.prototype.keyFromPrivate = function keyFromPrivate(priv, enc) {
+  return key.fromPrivate(this, priv, enc);
+};
+
+EC.prototype.keyFromPublic = function keyFromPublic(pub, enc) {
+  return key.fromPublic(this, pub, enc);
+};
+
+EC.prototype.genKeyPair = function genKeyPair(options) {
+  if (!options)
+    options = {};
+
+  // Instantiate Hmac_DRBG
+  var drbg = new hmacDrbg({
+    hash: this.hash,
+    pers: options.pers,
+    persEnc: options.persEnc || 'utf8',
+    entropy: options.entropy || rand(this.hash.hmacStrength),
+    entropyEnc: options.entropy && options.entropyEnc || 'utf8',
+    nonce: this.n.toArray(),
+  });
+
+  var bytes = this.n.byteLength();
+  var ns2 = this.n.sub(new bn(2));
+  for (;;) {
+    var priv = new bn(drbg.generate(bytes));
+    if (priv.cmp(ns2) > 0)
+      continue;
+
+    priv.iaddn(1);
+    return this.keyFromPrivate(priv);
+  }
+};
+
+EC.prototype._truncateToN = function _truncateToN(msg, truncOnly) {
+  var delta = msg.byteLength() * 8 - this.n.bitLength();
+  if (delta > 0)
+    msg = msg.ushrn(delta);
+  if (!truncOnly && msg.cmp(this.n) >= 0)
+    return msg.sub(this.n);
+  else
+    return msg;
+};
+
+EC.prototype.sign = function sign(msg, key, enc, options) {
+  if (typeof enc === 'object') {
+    options = enc;
+    enc = null;
+  }
+  if (!options)
+    options = {};
+
+  key = this.keyFromPrivate(key, enc);
+  msg = this._truncateToN(new bn(msg, 16));
+
+  // Zero-extend key to provide enough entropy
+  var bytes = this.n.byteLength();
+  var bkey = key.getPrivate().toArray('be', bytes);
+
+  // Zero-extend nonce to have the same byte size as N
+  var nonce = msg.toArray('be', bytes);
+
+  // Instantiate Hmac_DRBG
+  var drbg = new hmacDrbg({
+    hash: this.hash,
+    entropy: bkey,
+    nonce: nonce,
+    pers: options.pers,
+    persEnc: options.persEnc || 'utf8',
+  });
+
+  // Number of bytes to generate
+  var ns1 = this.n.sub(new bn(1));
+
+  for (var iter = 0; ; iter++) {
+    var k = options.k ?
+      options.k(iter) :
+      new bn(drbg.generate(this.n.byteLength()));
+    k = this._truncateToN(k, true);
+    if (k.cmpn(1) <= 0 || k.cmp(ns1) >= 0)
+      continue;
+
+    var kp = this.g.mul(k);
+    if (kp.isInfinity())
+      continue;
+
+    var kpX = kp.getX();
+    var r = kpX.umod(this.n);
+    if (r.cmpn(0) === 0)
+      continue;
+
+    var s = k.invm(this.n).mul(r.mul(key.getPrivate()).iadd(msg));
+    s = s.umod(this.n);
+    if (s.cmpn(0) === 0)
+      continue;
+
+    var recoveryParam = (kp.getY().isOdd() ? 1 : 0) |
+                        (kpX.cmp(r) !== 0 ? 2 : 0);
+
+    // Use complement of `s`, if it is > `n / 2`
+    if (options.canonical && s.cmp(this.nh) > 0) {
+      s = this.n.sub(s);
+      recoveryParam ^= 1;
+    }
+
+    return new signature({ r: r, s: s, recoveryParam: recoveryParam });
+  }
+};
+
+EC.prototype.verify = function verify(msg, signature$1, key, enc) {
+  msg = this._truncateToN(new bn(msg, 16));
+  key = this.keyFromPublic(key, enc);
+  signature$1 = new signature(signature$1, 'hex');
+
+  // Perform primitive values validation
+  var r = signature$1.r;
+  var s = signature$1.s;
+  if (r.cmpn(1) < 0 || r.cmp(this.n) >= 0)
+    return false;
+  if (s.cmpn(1) < 0 || s.cmp(this.n) >= 0)
+    return false;
+
+  // Validate signature
+  var sinv = s.invm(this.n);
+  var u1 = sinv.mul(msg).umod(this.n);
+  var u2 = sinv.mul(r).umod(this.n);
+  var p;
+
+  if (!this.curve._maxwellTrick) {
+    p = this.g.mulAdd(u1, key.getPublic(), u2);
+    if (p.isInfinity())
+      return false;
+
+    return p.getX().umod(this.n).cmp(r) === 0;
+  }
+
+  // NOTE: Greg Maxwell's trick, inspired by:
+  // https://git.io/vad3K
+
+  p = this.g.jmulAdd(u1, key.getPublic(), u2);
+  if (p.isInfinity())
+    return false;
+
+  // Compare `p.x` of Jacobian point with `r`,
+  // this will do `p.x == r * p.z^2` instead of multiplying `p.x` by the
+  // inverse of `p.z^2`
+  return p.eqXToP(r);
+};
+
+EC.prototype.recoverPubKey = function(msg, signature$1, j, enc) {
+  assert$5((3 & j) === j, 'The recovery param is more than two bits');
+  signature$1 = new signature(signature$1, enc);
+
+  var n = this.n;
+  var e = new bn(msg);
+  var r = signature$1.r;
+  var s = signature$1.s;
+
+  // A set LSB signifies that the y-coordinate is odd
+  var isYOdd = j & 1;
+  var isSecondKey = j >> 1;
+  if (r.cmp(this.curve.p.umod(this.curve.n)) >= 0 && isSecondKey)
+    throw new Error('Unable to find sencond key candinate');
+
+  // 1.1. Let x = r + jn.
+  if (isSecondKey)
+    r = this.curve.pointFromX(r.add(this.curve.n), isYOdd);
+  else
+    r = this.curve.pointFromX(r, isYOdd);
+
+  var rInv = signature$1.r.invm(n);
+  var s1 = n.sub(e).mul(rInv).umod(n);
+  var s2 = s.mul(rInv).umod(n);
+
+  // 1.6.1 Compute Q = r^-1 (sR -  eG)
+  //               Q = r^-1 (sR + -eG)
+  return this.g.mulAdd(s1, r, s2);
+};
+
+EC.prototype.getKeyRecoveryParam = function(e, signature$1, Q, enc) {
+  signature$1 = new signature(signature$1, enc);
+  if (signature$1.recoveryParam !== null)
+    return signature$1.recoveryParam;
+
+  for (var i = 0; i < 4; i++) {
+    var Qprime;
+    try {
+      Qprime = this.recoverPubKey(e, signature$1, i);
+    } catch (e) {
+      continue;
+    }
+
+    if (Qprime.eq(Q))
+      return i;
+  }
+  throw new Error('Unable to find valid recovery factor');
+};
+
+var elliptic_1 = createCommonjsModule$1(function (module, exports) {
+'use strict';
+
+var elliptic = exports;
+
+elliptic.version = /*RicMoo:ethers*/{ version: "6.5.4" }.version;
+elliptic.utils = utils_1$1;
+elliptic.rand = /*RicMoo:ethers:require(brorand)*/(function() { throw new Error('unsupported'); });
+elliptic.curve = curve_1;
+elliptic.curves = curves_1;
+
+// Protocols
+elliptic.ec = ec;
+elliptic.eddsa = /*RicMoo:ethers:require(./elliptic/eddsa)*/(null);
+});
+
+var EC$1 = elliptic_1.ec;
+
+const version$c = "signing-key/5.5.0";
+
+"use strict";
+const logger$f = new Logger(version$c);
+let _curve = null;
+function getCurve() {
+    if (!_curve) {
+        _curve = new EC$1("secp256k1");
+    }
+    return _curve;
+}
+class SigningKey {
+    constructor(privateKey) {
+        defineReadOnly(this, "curve", "secp256k1");
+        defineReadOnly(this, "privateKey", hexlify(privateKey));
+        const keyPair = getCurve().keyFromPrivate(arrayify(this.privateKey));
+        defineReadOnly(this, "publicKey", "0x" + keyPair.getPublic(false, "hex"));
+        defineReadOnly(this, "compressedPublicKey", "0x" + keyPair.getPublic(true, "hex"));
+        defineReadOnly(this, "_isSigningKey", true);
+    }
+    _addPoint(other) {
+        const p0 = getCurve().keyFromPublic(arrayify(this.publicKey));
+        const p1 = getCurve().keyFromPublic(arrayify(other));
+        return "0x" + p0.pub.add(p1.pub).encodeCompressed("hex");
+    }
+    signDigest(digest) {
+        const keyPair = getCurve().keyFromPrivate(arrayify(this.privateKey));
+        const digestBytes = arrayify(digest);
+        if (digestBytes.length !== 32) {
+            logger$f.throwArgumentError("bad digest length", "digest", digest);
+        }
+        const signature = keyPair.sign(digestBytes, { canonical: true });
+        return splitSignature({
+            recoveryParam: signature.recoveryParam,
+            r: hexZeroPad("0x" + signature.r.toString(16), 32),
+            s: hexZeroPad("0x" + signature.s.toString(16), 32),
+        });
+    }
+    computeSharedSecret(otherKey) {
+        const keyPair = getCurve().keyFromPrivate(arrayify(this.privateKey));
+        const otherKeyPair = getCurve().keyFromPublic(arrayify(computePublicKey(otherKey)));
+        return hexZeroPad("0x" + keyPair.derive(otherKeyPair.getPublic()).toString(16), 32);
+    }
+    static isSigningKey(value) {
+        return !!(value && value._isSigningKey);
+    }
+}
+function recoverPublicKey(digest, signature) {
+    const sig = splitSignature(signature);
+    const rs = { r: arrayify(sig.r), s: arrayify(sig.s) };
+    return "0x" + getCurve().recoverPubKey(arrayify(digest), rs, sig.recoveryParam).encode("hex", false);
+}
+function computePublicKey(key, compressed) {
+    const bytes = arrayify(key);
+    if (bytes.length === 32) {
+        const signingKey = new SigningKey(bytes);
+        if (compressed) {
+            return "0x" + getCurve().keyFromPrivate(bytes).getPublic(true, "hex");
+        }
+        return signingKey.publicKey;
+    }
+    else if (bytes.length === 33) {
+        if (compressed) {
+            return hexlify(bytes);
+        }
+        return "0x" + getCurve().keyFromPublic(bytes).getPublic(false, "hex");
+    }
+    else if (bytes.length === 65) {
+        if (!compressed) {
+            return hexlify(bytes);
+        }
+        return "0x" + getCurve().keyFromPublic(bytes).getPublic(true, "hex");
+    }
+    return logger$f.throwArgumentError("invalid public or private key", "key", "[REDACTED]");
+}
+
+var lib_esm$9 = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	SigningKey: SigningKey,
+	recoverPublicKey: recoverPublicKey,
+	computePublicKey: computePublicKey
+});
+
+const version$d = "transactions/5.5.0";
+
+"use strict";
+function decode$1(textData) {
+    textData = atob(textData);
+    const data = [];
+    for (let i = 0; i < textData.length; i++) {
+        data.push(textData.charCodeAt(i));
+    }
+    return arrayify(data);
+}
+function encode$1(data) {
+    data = arrayify(data);
+    let textData = "";
+    for (let i = 0; i < data.length; i++) {
+        textData += String.fromCharCode(data[i]);
+    }
+    return btoa(textData);
+}
+
+"use strict";
+
+var lib_esm$a = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	decode: decode$1,
+	encode: encode$1
+});
+
+/**
+ * var basex = require("base-x");
+ *
+ * This implementation is heavily based on base-x. The main reason to
+ * deviate was to prevent the dependency of Buffer.
+ *
+ * Contributors:
+ *
+ * base-x encoding
+ * Forked from https://github.com/cryptocoinjs/bs58
+ * Originally written by Mike Hearn for BitcoinJ
+ * Copyright (c) 2011 Google Inc
+ * Ported to JavaScript by Stefan Thomas
+ * Merged Buffer refactorings from base58-native by Stephen Pair
+ * Copyright (c) 2013 BitPay Inc
+ *
+ * The MIT License (MIT)
+ *
+ * Copyright base-x contributors (c) 2016
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ *
+ */
+class BaseX {
+    constructor(alphabet) {
+        defineReadOnly(this, "alphabet", alphabet);
+        defineReadOnly(this, "base", alphabet.length);
+        defineReadOnly(this, "_alphabetMap", {});
+        defineReadOnly(this, "_leader", alphabet.charAt(0));
+        // pre-compute lookup table
+        for (let i = 0; i < alphabet.length; i++) {
+            this._alphabetMap[alphabet.charAt(i)] = i;
+        }
+    }
+    encode(value) {
+        let source = arrayify(value);
+        if (source.length === 0) {
+            return "";
+        }
+        let digits = [0];
+        for (let i = 0; i < source.length; ++i) {
+            let carry = source[i];
+            for (let j = 0; j < digits.length; ++j) {
+                carry += digits[j] << 8;
+                digits[j] = carry % this.base;
+                carry = (carry / this.base) | 0;
+            }
+            while (carry > 0) {
+                digits.push(carry % this.base);
+                carry = (carry / this.base) | 0;
+            }
+        }
+        let string = "";
+        // deal with leading zeros
+        for (let k = 0; source[k] === 0 && k < source.length - 1; ++k) {
+            string += this._leader;
+        }
+        // convert digits to a string
+        for (let q = digits.length - 1; q >= 0; --q) {
+            string += this.alphabet[digits[q]];
+        }
+        return string;
+    }
+    decode(value) {
+        if (typeof (value) !== "string") {
+            throw new TypeError("Expected String");
+        }
+        let bytes = [];
+        if (value.length === 0) {
+            return new Uint8Array(bytes);
+        }
+        bytes.push(0);
+        for (let i = 0; i < value.length; i++) {
+            let byte = this._alphabetMap[value[i]];
+            if (byte === undefined) {
+                throw new Error("Non-base" + this.base + " character");
+            }
+            let carry = byte;
+            for (let j = 0; j < bytes.length; ++j) {
+                carry += bytes[j] * this.base;
+                bytes[j] = carry & 0xff;
+                carry >>= 8;
+            }
+            while (carry > 0) {
+                bytes.push(carry & 0xff);
+                carry >>= 8;
+            }
+        }
+        // deal with leading zeros
+        for (let k = 0; value[k] === this._leader && k < value.length - 1; ++k) {
+            bytes.push(0);
+        }
+        return arrayify(new Uint8Array(bytes.reverse()));
+    }
+}
+const Base32 = new BaseX("abcdefghijklmnopqrstuvwxyz234567");
+const Base58 = new BaseX("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
+//console.log(Base58.decode("Qmd2V777o5XvJbYMeMb8k2nU5f8d3ciUQ5YpYuWhzv8iDj"))
+//console.log(Base58.encode(Base58.decode("Qmd2V777o5XvJbYMeMb8k2nU5f8d3ciUQ5YpYuWhzv8iDj")))
+
+var lib_esm$b = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	BaseX: BaseX,
+	Base32: Base32,
+	Base58: Base58
+});
+
+var SupportedAlgorithm;
+(function (SupportedAlgorithm) {
+    SupportedAlgorithm["sha256"] = "sha256";
+    SupportedAlgorithm["sha512"] = "sha512";
+})(SupportedAlgorithm || (SupportedAlgorithm = {}));
+;
+
+const version$e = "sha2/5.5.0";
+
+"use strict";
+const logger$g = new Logger(version$e);
+function ripemd160$1(data) {
+    return "0x" + (hash_1.ripemd160().update(arrayify(data)).digest("hex"));
+}
+function sha256$1(data) {
+    return "0x" + (hash_1.sha256().update(arrayify(data)).digest("hex"));
+}
+function sha512$1(data) {
+    return "0x" + (hash_1.sha512().update(arrayify(data)).digest("hex"));
+}
+function computeHmac(algorithm, key, data) {
+    if (!SupportedAlgorithm[algorithm]) {
+        logger$g.throwError("unsupported algorithm " + algorithm, Logger.errors.UNSUPPORTED_OPERATION, {
+            operation: "hmac",
+            algorithm: algorithm
+        });
+    }
+    return "0x" + hash_1.hmac(hash_1[algorithm], arrayify(key)).update(arrayify(data)).digest("hex");
+}
+
+var lib_esm$c = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	computeHmac: computeHmac,
+	ripemd160: ripemd160$1,
+	sha256: sha256$1,
+	sha512: sha512$1,
+	get SupportedAlgorithm () { return SupportedAlgorithm; }
+});
+
+"use strict";
+function pbkdf2(password, salt, iterations, keylen, hashAlgorithm) {
+    password = arrayify(password);
+    salt = arrayify(salt);
+    let hLen;
+    let l = 1;
+    const DK = new Uint8Array(keylen);
+    const block1 = new Uint8Array(salt.length + 4);
+    block1.set(salt);
+    //salt.copy(block1, 0, 0, salt.length)
+    let r;
+    let T;
+    for (let i = 1; i <= l; i++) {
+        //block1.writeUInt32BE(i, salt.length)
+        block1[salt.length] = (i >> 24) & 0xff;
+        block1[salt.length + 1] = (i >> 16) & 0xff;
+        block1[salt.length + 2] = (i >> 8) & 0xff;
+        block1[salt.length + 3] = i & 0xff;
+        //let U = createHmac(password).update(block1).digest();
+        let U = arrayify(computeHmac(hashAlgorithm, password, block1));
+        if (!hLen) {
+            hLen = U.length;
+            T = new Uint8Array(hLen);
+            l = Math.ceil(keylen / hLen);
+            r = keylen - (l - 1) * hLen;
+        }
+        //U.copy(T, 0, 0, hLen)
+        T.set(U);
+        for (let j = 1; j < iterations; j++) {
+            //U = createHmac(password).update(U).digest();
+            U = arrayify(computeHmac(hashAlgorithm, password, U));
+            for (let k = 0; k < hLen; k++)
+                T[k] ^= U[k];
+        }
+        const destPos = (i - 1) * hLen;
+        const len = (i === l ? r : hLen);
+        //T.copy(DK, destPos, 0, len)
+        DK.set(arrayify(T).slice(0, len), destPos);
+    }
+    return hexlify(DK);
+}
+
+const version$f = "wordlists/5.5.0";
+
+"use strict";
+// This gets overridden by rollup
+const exportWordlist = false;
+const logger$h = new Logger(version$f);
+class Wordlist {
+    constructor(locale) {
+        logger$h.checkAbstract(new.target, Wordlist);
+        defineReadOnly(this, "locale", locale);
+    }
+    // Subclasses may override this
+    split(mnemonic) {
+        return mnemonic.toLowerCase().split(/ +/g);
+    }
+    // Subclasses may override this
+    join(words) {
+        return words.join(" ");
+    }
+    static check(wordlist) {
+        const words = [];
+        for (let i = 0; i < 2048; i++) {
+            const word = wordlist.getWord(i);
+            /* istanbul ignore if */
+            if (i !== wordlist.getWordIndex(word)) {
+                return "0x";
+            }
+            words.push(word);
+        }
+        return id(words.join("\n") + "\n");
+    }
+    static register(lang, name) {
+        if (!name) {
+            name = lang.locale;
+        }
+        /* istanbul ignore if */
+        if (exportWordlist) {
+            try {
+                const anyGlobal = window;
+                if (anyGlobal._ethers && anyGlobal._ethers.wordlists) {
+                    if (!anyGlobal._ethers.wordlists[name]) {
+                        defineReadOnly(anyGlobal._ethers.wordlists, name, lang);
+                    }
+                }
+            }
+            catch (error) { }
+        }
+    }
+}
+
+"use strict";
+const words = "AbandonAbilityAbleAboutAboveAbsentAbsorbAbstractAbsurdAbuseAccessAccidentAccountAccuseAchieveAcidAcousticAcquireAcrossActActionActorActressActualAdaptAddAddictAddressAdjustAdmitAdultAdvanceAdviceAerobicAffairAffordAfraidAgainAgeAgentAgreeAheadAimAirAirportAisleAlarmAlbumAlcoholAlertAlienAllAlleyAllowAlmostAloneAlphaAlreadyAlsoAlterAlwaysAmateurAmazingAmongAmountAmusedAnalystAnchorAncientAngerAngleAngryAnimalAnkleAnnounceAnnualAnotherAnswerAntennaAntiqueAnxietyAnyApartApologyAppearAppleApproveAprilArchArcticAreaArenaArgueArmArmedArmorArmyAroundArrangeArrestArriveArrowArtArtefactArtistArtworkAskAspectAssaultAssetAssistAssumeAsthmaAthleteAtomAttackAttendAttitudeAttractAuctionAuditAugustAuntAuthorAutoAutumnAverageAvocadoAvoidAwakeAwareAwayAwesomeAwfulAwkwardAxisBabyBachelorBaconBadgeBagBalanceBalconyBallBambooBananaBannerBarBarelyBargainBarrelBaseBasicBasketBattleBeachBeanBeautyBecauseBecomeBeefBeforeBeginBehaveBehindBelieveBelowBeltBenchBenefitBestBetrayBetterBetweenBeyondBicycleBidBikeBindBiologyBirdBirthBitterBlackBladeBlameBlanketBlastBleakBlessBlindBloodBlossomBlouseBlueBlurBlushBoardBoatBodyBoilBombBoneBonusBookBoostBorderBoringBorrowBossBottomBounceBoxBoyBracketBrainBrandBrassBraveBreadBreezeBrickBridgeBriefBrightBringBriskBroccoliBrokenBronzeBroomBrotherBrownBrushBubbleBuddyBudgetBuffaloBuildBulbBulkBulletBundleBunkerBurdenBurgerBurstBusBusinessBusyButterBuyerBuzzCabbageCabinCableCactusCageCakeCallCalmCameraCampCanCanalCancelCandyCannonCanoeCanvasCanyonCapableCapitalCaptainCarCarbonCardCargoCarpetCarryCartCaseCashCasinoCastleCasualCatCatalogCatchCategoryCattleCaughtCauseCautionCaveCeilingCeleryCementCensusCenturyCerealCertainChairChalkChampionChangeChaosChapterChargeChaseChatCheapCheckCheeseChefCherryChestChickenChiefChildChimneyChoiceChooseChronicChuckleChunkChurnCigarCinnamonCircleCitizenCityCivilClaimClapClarifyClawClayCleanClerkCleverClickClientCliffClimbClinicClipClockClogCloseClothCloudClownClubClumpClusterClutchCoachCoastCoconutCodeCoffeeCoilCoinCollectColorColumnCombineComeComfortComicCommonCompanyConcertConductConfirmCongressConnectConsiderControlConvinceCookCoolCopperCopyCoralCoreCornCorrectCostCottonCouchCountryCoupleCourseCousinCoverCoyoteCrackCradleCraftCramCraneCrashCraterCrawlCrazyCreamCreditCreekCrewCricketCrimeCrispCriticCropCrossCrouchCrowdCrucialCruelCruiseCrumbleCrunchCrushCryCrystalCubeCultureCupCupboardCuriousCurrentCurtainCurveCushionCustomCuteCycleDadDamageDampDanceDangerDaringDashDaughterDawnDayDealDebateDebrisDecadeDecemberDecideDeclineDecorateDecreaseDeerDefenseDefineDefyDegreeDelayDeliverDemandDemiseDenialDentistDenyDepartDependDepositDepthDeputyDeriveDescribeDesertDesignDeskDespairDestroyDetailDetectDevelopDeviceDevoteDiagramDialDiamondDiaryDiceDieselDietDifferDigitalDignityDilemmaDinnerDinosaurDirectDirtDisagreeDiscoverDiseaseDishDismissDisorderDisplayDistanceDivertDivideDivorceDizzyDoctorDocumentDogDollDolphinDomainDonateDonkeyDonorDoorDoseDoubleDoveDraftDragonDramaDrasticDrawDreamDressDriftDrillDrinkDripDriveDropDrumDryDuckDumbDuneDuringDustDutchDutyDwarfDynamicEagerEagleEarlyEarnEarthEasilyEastEasyEchoEcologyEconomyEdgeEditEducateEffortEggEightEitherElbowElderElectricElegantElementElephantElevatorEliteElseEmbarkEmbodyEmbraceEmergeEmotionEmployEmpowerEmptyEnableEnactEndEndlessEndorseEnemyEnergyEnforceEngageEngineEnhanceEnjoyEnlistEnoughEnrichEnrollEnsureEnterEntireEntryEnvelopeEpisodeEqualEquipEraEraseErodeErosionErrorEruptEscapeEssayEssenceEstateEternalEthicsEvidenceEvilEvokeEvolveExactExampleExcessExchangeExciteExcludeExcuseExecuteExerciseExhaustExhibitExileExistExitExoticExpandExpectExpireExplainExposeExpressExtendExtraEyeEyebrowFabricFaceFacultyFadeFaintFaithFallFalseFameFamilyFamousFanFancyFantasyFarmFashionFatFatalFatherFatigueFaultFavoriteFeatureFebruaryFederalFeeFeedFeelFemaleFenceFestivalFetchFeverFewFiberFictionFieldFigureFileFilmFilterFinalFindFineFingerFinishFireFirmFirstFiscalFishFitFitnessFixFlagFlameFlashFlatFlavorFleeFlightFlipFloatFlockFloorFlowerFluidFlushFlyFoamFocusFogFoilFoldFollowFoodFootForceForestForgetForkFortuneForumForwardFossilFosterFoundFoxFragileFrameFrequentFreshFriendFringeFrogFrontFrostFrownFrozenFruitFuelFunFunnyFurnaceFuryFutureGadgetGainGalaxyGalleryGameGapGarageGarbageGardenGarlicGarmentGasGaspGateGatherGaugeGazeGeneralGeniusGenreGentleGenuineGestureGhostGiantGiftGiggleGingerGiraffeGirlGiveGladGlanceGlareGlassGlideGlimpseGlobeGloomGloryGloveGlowGlueGoatGoddessGoldGoodGooseGorillaGospelGossipGovernGownGrabGraceGrainGrantGrapeGrassGravityGreatGreenGridGriefGritGroceryGroupGrowGruntGuardGuessGuideGuiltGuitarGunGymHabitHairHalfHammerHamsterHandHappyHarborHardHarshHarvestHatHaveHawkHazardHeadHealthHeartHeavyHedgehogHeightHelloHelmetHelpHenHeroHiddenHighHillHintHipHireHistoryHobbyHockeyHoldHoleHolidayHollowHomeHoneyHoodHopeHornHorrorHorseHospitalHostHotelHourHoverHubHugeHumanHumbleHumorHundredHungryHuntHurdleHurryHurtHusbandHybridIceIconIdeaIdentifyIdleIgnoreIllIllegalIllnessImageImitateImmenseImmuneImpactImposeImproveImpulseInchIncludeIncomeIncreaseIndexIndicateIndoorIndustryInfantInflictInformInhaleInheritInitialInjectInjuryInmateInnerInnocentInputInquiryInsaneInsectInsideInspireInstallIntactInterestIntoInvestInviteInvolveIronIslandIsolateIssueItemIvoryJacketJaguarJarJazzJealousJeansJellyJewelJobJoinJokeJourneyJoyJudgeJuiceJumpJungleJuniorJunkJustKangarooKeenKeepKetchupKeyKickKidKidneyKindKingdomKissKitKitchenKiteKittenKiwiKneeKnifeKnockKnowLabLabelLaborLadderLadyLakeLampLanguageLaptopLargeLaterLatinLaughLaundryLavaLawLawnLawsuitLayerLazyLeaderLeafLearnLeaveLectureLeftLegLegalLegendLeisureLemonLendLengthLensLeopardLessonLetterLevelLiarLibertyLibraryLicenseLifeLiftLightLikeLimbLimitLinkLionLiquidListLittleLiveLizardLoadLoanLobsterLocalLockLogicLonelyLongLoopLotteryLoudLoungeLoveLoyalLuckyLuggageLumberLunarLunchLuxuryLyricsMachineMadMagicMagnetMaidMailMainMajorMakeMammalManManageMandateMangoMansionManualMapleMarbleMarchMarginMarineMarketMarriageMaskMassMasterMatchMaterialMathMatrixMatterMaximumMazeMeadowMeanMeasureMeatMechanicMedalMediaMelodyMeltMemberMemoryMentionMenuMercyMergeMeritMerryMeshMessageMetalMethodMiddleMidnightMilkMillionMimicMindMinimumMinorMinuteMiracleMirrorMiseryMissMistakeMixMixedMixtureMobileModelModifyMomMomentMonitorMonkeyMonsterMonthMoonMoralMoreMorningMosquitoMotherMotionMotorMountainMouseMoveMovieMuchMuffinMuleMultiplyMuscleMuseumMushroomMusicMustMutualMyselfMysteryMythNaiveNameNapkinNarrowNastyNationNatureNearNeckNeedNegativeNeglectNeitherNephewNerveNestNetNetworkNeutralNeverNewsNextNiceNightNobleNoiseNomineeNoodleNormalNorthNoseNotableNoteNothingNoticeNovelNowNuclearNumberNurseNutOakObeyObjectObligeObscureObserveObtainObviousOccurOceanOctoberOdorOffOfferOfficeOftenOilOkayOldOliveOlympicOmitOnceOneOnionOnlineOnlyOpenOperaOpinionOpposeOptionOrangeOrbitOrchardOrderOrdinaryOrganOrientOriginalOrphanOstrichOtherOutdoorOuterOutputOutsideOvalOvenOverOwnOwnerOxygenOysterOzonePactPaddlePagePairPalacePalmPandaPanelPanicPantherPaperParadeParentParkParrotPartyPassPatchPathPatientPatrolPatternPausePavePaymentPeacePeanutPearPeasantPelicanPenPenaltyPencilPeoplePepperPerfectPermitPersonPetPhonePhotoPhrasePhysicalPianoPicnicPicturePiecePigPigeonPillPilotPinkPioneerPipePistolPitchPizzaPlacePlanetPlasticPlatePlayPleasePledgePluckPlugPlungePoemPoetPointPolarPolePolicePondPonyPoolPopularPortionPositionPossiblePostPotatoPotteryPovertyPowderPowerPracticePraisePredictPreferPreparePresentPrettyPreventPricePridePrimaryPrintPriorityPrisonPrivatePrizeProblemProcessProduceProfitProgramProjectPromoteProofPropertyProsperProtectProudProvidePublicPuddingPullPulpPulsePumpkinPunchPupilPuppyPurchasePurityPurposePursePushPutPuzzlePyramidQualityQuantumQuarterQuestionQuickQuitQuizQuoteRabbitRaccoonRaceRackRadarRadioRailRainRaiseRallyRampRanchRandomRangeRapidRareRateRatherRavenRawRazorReadyRealReasonRebelRebuildRecallReceiveRecipeRecordRecycleReduceReflectReformRefuseRegionRegretRegularRejectRelaxReleaseReliefRelyRemainRememberRemindRemoveRenderRenewRentReopenRepairRepeatReplaceReportRequireRescueResembleResistResourceResponseResultRetireRetreatReturnReunionRevealReviewRewardRhythmRibRibbonRiceRichRideRidgeRifleRightRigidRingRiotRippleRiskRitualRivalRiverRoadRoastRobotRobustRocketRomanceRoofRookieRoomRoseRotateRoughRoundRouteRoyalRubberRudeRugRuleRunRunwayRuralSadSaddleSadnessSafeSailSaladSalmonSalonSaltSaluteSameSampleSandSatisfySatoshiSauceSausageSaveSayScaleScanScareScatterSceneSchemeSchoolScienceScissorsScorpionScoutScrapScreenScriptScrubSeaSearchSeasonSeatSecondSecretSectionSecuritySeedSeekSegmentSelectSellSeminarSeniorSenseSentenceSeriesServiceSessionSettleSetupSevenShadowShaftShallowShareShedShellSheriffShieldShiftShineShipShiverShockShoeShootShopShortShoulderShoveShrimpShrugShuffleShySiblingSickSideSiegeSightSignSilentSilkSillySilverSimilarSimpleSinceSingSirenSisterSituateSixSizeSkateSketchSkiSkillSkinSkirtSkullSlabSlamSleepSlenderSliceSlideSlightSlimSloganSlotSlowSlushSmallSmartSmileSmokeSmoothSnackSnakeSnapSniffSnowSoapSoccerSocialSockSodaSoftSolarSoldierSolidSolutionSolveSomeoneSongSoonSorrySortSoulSoundSoupSourceSouthSpaceSpareSpatialSpawnSpeakSpecialSpeedSpellSpendSphereSpiceSpiderSpikeSpinSpiritSplitSpoilSponsorSpoonSportSpotSpraySpreadSpringSpySquareSqueezeSquirrelStableStadiumStaffStageStairsStampStandStartStateStaySteakSteelStemStepStereoStickStillStingStockStomachStoneStoolStoryStoveStrategyStreetStrikeStrongStruggleStudentStuffStumbleStyleSubjectSubmitSubwaySuccessSuchSuddenSufferSugarSuggestSuitSummerSunSunnySunsetSuperSupplySupremeSureSurfaceSurgeSurpriseSurroundSurveySuspectSustainSwallowSwampSwapSwarmSwearSweetSwiftSwimSwingSwitchSwordSymbolSymptomSyrupSystemTableTackleTagTailTalentTalkTankTapeTargetTaskTasteTattooTaxiTeachTeamTellTenTenantTennisTentTermTestTextThankThatThemeThenTheoryThereTheyThingThisThoughtThreeThriveThrowThumbThunderTicketTideTigerTiltTimberTimeTinyTipTiredTissueTitleToastTobaccoTodayToddlerToeTogetherToiletTokenTomatoTomorrowToneTongueTonightToolToothTopTopicToppleTorchTornadoTortoiseTossTotalTouristTowardTowerTownToyTrackTradeTrafficTragicTrainTransferTrapTrashTravelTrayTreatTreeTrendTrialTribeTrickTriggerTrimTripTrophyTroubleTruckTrueTrulyTrumpetTrustTruthTryTubeTuitionTumbleTunaTunnelTurkeyTurnTurtleTwelveTwentyTwiceTwinTwistTwoTypeTypicalUglyUmbrellaUnableUnawareUncleUncoverUnderUndoUnfairUnfoldUnhappyUniformUniqueUnitUniverseUnknownUnlockUntilUnusualUnveilUpdateUpgradeUpholdUponUpperUpsetUrbanUrgeUsageUseUsedUsefulUselessUsualUtilityVacantVacuumVagueValidValleyValveVanVanishVaporVariousVastVaultVehicleVelvetVendorVentureVenueVerbVerifyVersionVeryVesselVeteranViableVibrantViciousVictoryVideoViewVillageVintageViolinVirtualVirusVisaVisitVisualVitalVividVocalVoiceVoidVolcanoVolumeVoteVoyageWageWagonWaitWalkWallWalnutWantWarfareWarmWarriorWashWaspWasteWaterWaveWayWealthWeaponWearWeaselWeatherWebWeddingWeekendWeirdWelcomeWestWetWhaleWhatWheatWheelWhenWhereWhipWhisperWideWidthWifeWildWillWinWindowWineWingWinkWinnerWinterWireWisdomWiseWishWitnessWolfWomanWonderWoodWoolWordWorkWorldWorryWorthWrapWreckWrestleWristWriteWrongYardYearYellowYouYoungYouthZebraZeroZoneZoo";
+let wordlist = null;
+function loadWords(lang) {
+    if (wordlist != null) {
+        return;
+    }
+    wordlist = words.replace(/([A-Z])/g, " $1").toLowerCase().substring(1).split(" ");
+    // Verify the computed list matches the official list
+    /* istanbul ignore if */
+    if (Wordlist.check(lang) !== "0x3c8acc1e7b08d8e76f9fda015ef48dc8c710a73cb7e0f77b2c18a9b5a7adde60") {
+        wordlist = null;
+        throw new Error("BIP39 Wordlist for en (English) FAILED");
+    }
+}
+class LangEn extends Wordlist {
+    constructor() {
+        super("en");
+    }
+    getWord(index) {
+        loadWords(this);
+        return wordlist[index];
+    }
+    getWordIndex(word) {
+        loadWords(this);
+        return wordlist.indexOf(word);
+    }
+}
+const langEn = new LangEn();
+Wordlist.register(langEn);
+
+"use strict";
+const wordlists = {
+    en: langEn
+};
+
+"use strict";
+
+const version$g = "hdnode/5.5.0";
+
+"use strict";
+const logger$i = new Logger(version$g);
+const N = BigNumber.from("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
+// "Bitcoin seed"
+const MasterSecret = toUtf8Bytes("Bitcoin seed");
+const HardenedBit = 0x80000000;
+// Returns a byte with the MSB bits set
+function getUpperMask(bits) {
+    return ((1 << bits) - 1) << (8 - bits);
+}
+// Returns a byte with the LSB bits set
+function getLowerMask(bits) {
+    return (1 << bits) - 1;
+}
+function bytes32(value) {
+    return hexZeroPad(hexlify(value), 32);
+}
+function base58check(data) {
+    return Base58.encode(concat([data, hexDataSlice(sha256$1(sha256$1(data)), 0, 4)]));
+}
+function getWordlist(wordlist) {
+    if (wordlist == null) {
+        return wordlists["en"];
+    }
+    if (typeof (wordlist) === "string") {
+        const words = wordlists[wordlist];
+        if (words == null) {
+            logger$i.throwArgumentError("unknown locale", "wordlist", wordlist);
+        }
+        return words;
+    }
+    return wordlist;
+}
+const _constructorGuard$3 = {};
+const defaultPath = "m/44'/60'/0'/0/0";
+class HDNode {
+    /**
+     *  This constructor should not be called directly.
+     *
+     *  Please use:
+     *   - fromMnemonic
+     *   - fromSeed
+     */
+    constructor(constructorGuard, privateKey, publicKey, parentFingerprint, chainCode, index, depth, mnemonicOrPath) {
+        logger$i.checkNew(new.target, HDNode);
+        /* istanbul ignore if */
+        if (constructorGuard !== _constructorGuard$3) {
+            throw new Error("HDNode constructor cannot be called directly");
+        }
+        if (privateKey) {
+            const signingKey = new SigningKey(privateKey);
+            defineReadOnly(this, "privateKey", signingKey.privateKey);
+            defineReadOnly(this, "publicKey", signingKey.compressedPublicKey);
+            defineReadOnly(this, "alias", computeAlias(this.privateKey));
+        }
+        else {
+            defineReadOnly(this, "privateKey", null);
+            defineReadOnly(this, "alias", null);
+            defineReadOnly(this, "publicKey", hexlify(publicKey));
+        }
+        defineReadOnly(this, "parentFingerprint", parentFingerprint);
+        defineReadOnly(this, "fingerprint", hexDataSlice(ripemd160$1(sha256$1(this.publicKey)), 0, 4));
+        defineReadOnly(this, "chainCode", chainCode);
+        defineReadOnly(this, "index", index);
+        defineReadOnly(this, "depth", depth);
+        if (mnemonicOrPath == null) {
+            // From a source that does not preserve the path (e.g. extended keys)
+            defineReadOnly(this, "mnemonic", null);
+            defineReadOnly(this, "path", null);
+        }
+        else if (typeof (mnemonicOrPath) === "string") {
+            // From a source that does not preserve the mnemonic (e.g. neutered)
+            defineReadOnly(this, "mnemonic", null);
+            defineReadOnly(this, "path", mnemonicOrPath);
+        }
+        else {
+            // From a fully qualified source
+            defineReadOnly(this, "mnemonic", mnemonicOrPath);
+            defineReadOnly(this, "path", mnemonicOrPath.path);
+        }
+    }
+    get extendedKey() {
+        // We only support the mainnet values for now, but if anyone needs
+        // testnet values, let me know. I believe current sentiment is that
+        // we should always use mainnet, and use BIP-44 to derive the network
+        //   - Mainnet: public=0x0488B21E, private=0x0488ADE4
+        //   - Testnet: public=0x043587CF, private=0x04358394
+        if (this.depth >= 256) {
+            throw new Error("Depth too large!");
+        }
+        return base58check(concat([
+            ((this.privateKey != null) ? "0x0488ADE4" : "0x0488B21E"),
+            hexlify(this.depth),
+            this.parentFingerprint,
+            hexZeroPad(hexlify(this.index), 4),
+            this.chainCode,
+            ((this.privateKey != null) ? concat(["0x00", this.privateKey]) : this.publicKey),
+        ]));
+    }
+    neuter() {
+        return new HDNode(_constructorGuard$3, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
+    }
+    _derive(index) {
+        if (index > 0xffffffff) {
+            throw new Error("invalid index - " + String(index));
+        }
+        // Base path
+        let path = this.path;
+        if (path) {
+            path += "/" + (index & ~HardenedBit);
+        }
+        const data = new Uint8Array(37);
+        if (index & HardenedBit) {
+            if (!this.privateKey) {
+                throw new Error("cannot derive child of neutered node");
+            }
+            // Data = 0x00 || ser_256(k_par)
+            data.set(arrayify(this.privateKey), 1);
+            // Hardened path
+            if (path) {
+                path += "'";
+            }
+        }
+        else {
+            // Data = ser_p(point(k_par))
+            data.set(arrayify(this.publicKey));
+        }
+        // Data += ser_32(i)
+        for (let i = 24; i >= 0; i -= 8) {
+            data[33 + (i >> 3)] = ((index >> (24 - i)) & 0xff);
+        }
+        const I = arrayify(computeHmac(SupportedAlgorithm.sha512, this.chainCode, data));
+        const IL = I.slice(0, 32);
+        const IR = I.slice(32);
+        // The private key
+        let ki = null;
+        // The public key
+        let Ki = null;
+        if (this.privateKey) {
+            ki = bytes32(BigNumber.from(IL).add(this.privateKey).mod(N));
+        }
+        else {
+            const ek = new SigningKey(hexlify(IL));
+            Ki = ek._addPoint(this.publicKey);
+        }
+        let mnemonicOrPath = path;
+        const srcMnemonic = this.mnemonic;
+        if (srcMnemonic) {
+            mnemonicOrPath = Object.freeze({
+                phrase: srcMnemonic.phrase,
+                path: path,
+                locale: (srcMnemonic.locale || "en")
+            });
+        }
+        return new HDNode(_constructorGuard$3, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
+    }
+    derivePath(path) {
+        const components = path.split("/");
+        if (components.length === 0 || (components[0] === "m" && this.depth !== 0)) {
+            throw new Error("invalid path - " + path);
+        }
+        if (components[0] === "m") {
+            components.shift();
+        }
+        let result = this;
+        for (let i = 0; i < components.length; i++) {
+            const component = components[i];
+            if (component.match(/^[0-9]+'$/)) {
+                const index = parseInt(component.substring(0, component.length - 1));
+                if (index >= HardenedBit) {
+                    throw new Error("invalid path index - " + component);
+                }
+                result = result._derive(HardenedBit + index);
+            }
+            else if (component.match(/^[0-9]+$/)) {
+                const index = parseInt(component);
+                if (index >= HardenedBit) {
+                    throw new Error("invalid path index - " + component);
+                }
+                result = result._derive(index);
+            }
+            else {
+                throw new Error("invalid path component - " + component);
+            }
+        }
+        return result;
+    }
+    static _fromSeed(seed, mnemonic) {
+        const seedArray = arrayify(seed);
+        if (seedArray.length < 16 || seedArray.length > 64) {
+            throw new Error("invalid seed");
+        }
+        const I = arrayify(computeHmac(SupportedAlgorithm.sha512, MasterSecret, seedArray));
+        return new HDNode(_constructorGuard$3, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
+    }
+    static fromMnemonic(mnemonic, password, wordlist) {
+        // If a locale name was passed in, find the associated wordlist
+        wordlist = getWordlist(wordlist);
+        // Normalize the case and spacing in the mnemonic (throws if the mnemonic is invalid)
+        mnemonic = entropyToMnemonic(mnemonicToEntropy(mnemonic, wordlist), wordlist);
+        return HDNode._fromSeed(mnemonicToSeed(mnemonic, password), {
+            phrase: mnemonic,
+            path: "m",
+            locale: wordlist.locale
+        });
+    }
+    static fromSeed(seed) {
+        return HDNode._fromSeed(seed, null);
+    }
+    static fromExtendedKey(extendedKey) {
+        const bytes = Base58.decode(extendedKey);
+        if (bytes.length !== 82 || base58check(bytes.slice(0, 78)) !== extendedKey) {
+            logger$i.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
+        }
+        const depth = bytes[4];
+        const parentFingerprint = hexlify(bytes.slice(5, 9));
+        const index = parseInt(hexlify(bytes.slice(9, 13)).substring(2), 16);
+        const chainCode = hexlify(bytes.slice(13, 45));
+        const key = bytes.slice(45, 78);
+        switch (hexlify(bytes.slice(0, 4))) {
+            // Public Key
+            case "0x0488b21e":
+            case "0x043587cf":
+                return new HDNode(_constructorGuard$3, null, hexlify(key), parentFingerprint, chainCode, index, depth, null);
+            // Private Key
+            case "0x0488ade4":
+            case "0x04358394 ":
+                if (key[0] !== 0) {
+                    break;
+                }
+                return new HDNode(_constructorGuard$3, hexlify(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
+        }
+        return logger$i.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
+    }
+}
+function mnemonicToSeed(mnemonic, password) {
+    if (!password) {
+        password = "";
+    }
+    const salt = toUtf8Bytes("mnemonic" + password, UnicodeNormalizationForm.NFKD);
+    return pbkdf2(toUtf8Bytes(mnemonic, UnicodeNormalizationForm.NFKD), salt, 2048, 64, "sha512");
+}
+function mnemonicToEntropy(mnemonic, wordlist) {
+    wordlist = getWordlist(wordlist);
+    logger$i.checkNormalize();
+    const words = wordlist.split(mnemonic);
+    if ((words.length % 3) !== 0) {
+        throw new Error("invalid mnemonic");
+    }
+    const entropy = arrayify(new Uint8Array(Math.ceil(11 * words.length / 8)));
+    let offset = 0;
+    for (let i = 0; i < words.length; i++) {
+        let index = wordlist.getWordIndex(words[i].normalize("NFKD"));
+        if (index === -1) {
+            throw new Error("invalid mnemonic");
+        }
+        for (let bit = 0; bit < 11; bit++) {
+            if (index & (1 << (10 - bit))) {
+                entropy[offset >> 3] |= (1 << (7 - (offset % 8)));
+            }
+            offset++;
+        }
+    }
+    const entropyBits = 32 * words.length / 3;
+    const checksumBits = words.length / 3;
+    const checksumMask = getUpperMask(checksumBits);
+    const checksum = arrayify(sha256$1(entropy.slice(0, entropyBits / 8)))[0] & checksumMask;
+    if (checksum !== (entropy[entropy.length - 1] & checksumMask)) {
+        throw new Error("invalid checksum");
+    }
+    return hexlify(entropy.slice(0, entropyBits / 8));
+}
+function entropyToMnemonic(entropy, wordlist) {
+    wordlist = getWordlist(wordlist);
+    entropy = arrayify(entropy);
+    if ((entropy.length % 4) !== 0 || entropy.length < 16 || entropy.length > 32) {
+        throw new Error("invalid entropy");
+    }
+    const indices = [0];
+    let remainingBits = 11;
+    for (let i = 0; i < entropy.length; i++) {
+        // Consume the whole byte (with still more to go)
+        if (remainingBits > 8) {
+            indices[indices.length - 1] <<= 8;
+            indices[indices.length - 1] |= entropy[i];
+            remainingBits -= 8;
+            // This byte will complete an 11-bit index
+        }
+        else {
+            indices[indices.length - 1] <<= remainingBits;
+            indices[indices.length - 1] |= entropy[i] >> (8 - remainingBits);
+            // Start the next word
+            indices.push(entropy[i] & getLowerMask(8 - remainingBits));
+            remainingBits += 3;
+        }
+    }
+    // Compute the checksum bits
+    const checksumBits = entropy.length / 4;
+    const checksum = arrayify(sha256$1(entropy))[0] & getUpperMask(checksumBits);
+    // Shift the checksum into the word indices
+    indices[indices.length - 1] <<= checksumBits;
+    indices[indices.length - 1] |= (checksum >> (8 - checksumBits));
+    return wordlist.join(indices.map((index) => wordlist.getWord(index)));
+}
+function isValidMnemonic(mnemonic, wordlist) {
+    try {
+        mnemonicToEntropy(mnemonic, wordlist);
+        return true;
+    }
+    catch (error) { }
+    return false;
+}
+function getAccountPath(index) {
+    if (typeof (index) !== "number" || index < 0 || index >= HardenedBit || index % 1) {
+        logger$i.throwArgumentError("invalid account index", "index", index);
+    }
+    return `m/44'/60'/${index}'/0/0`;
+}
+
+var lib_esm$d = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	defaultPath: defaultPath,
+	HDNode: HDNode,
+	mnemonicToSeed: mnemonicToSeed,
+	mnemonicToEntropy: mnemonicToEntropy,
+	entropyToMnemonic: entropyToMnemonic,
+	isValidMnemonic: isValidMnemonic,
+	getAccountPath: getAccountPath
+});
+
+var aesJs = createCommonjsModule(function (module, exports) {
+"use strict";
+
+(function(root) {
+
+    function checkInt(value) {
+        return (parseInt(value) === value);
+    }
+
+    function checkInts(arrayish) {
+        if (!checkInt(arrayish.length)) { return false; }
+
+        for (var i = 0; i < arrayish.length; i++) {
+            if (!checkInt(arrayish[i]) || arrayish[i] < 0 || arrayish[i] > 255) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function coerceArray(arg, copy) {
+
+        // ArrayBuffer view
+        if (arg.buffer && ArrayBuffer.isView(arg) && arg.name === 'Uint8Array') {
+
+            if (copy) {
+                if (arg.slice) {
+                    arg = arg.slice();
+                } else {
+                    arg = Array.prototype.slice.call(arg);
+                }
+            }
+
+            return arg;
+        }
+
+        // It's an array; check it is a valid representation of a byte
+        if (Array.isArray(arg)) {
+            if (!checkInts(arg)) {
+                throw new Error('Array contains invalid value: ' + arg);
+            }
+
+            return new Uint8Array(arg);
+        }
+
+        // Something else, but behaves like an array (maybe a Buffer? Arguments?)
+        if (checkInt(arg.length) && checkInts(arg)) {
+            return new Uint8Array(arg);
+        }
+
+        throw new Error('unsupported array-like object');
+    }
+
+    function createArray(length) {
+        return new Uint8Array(length);
+    }
+
+    function copyArray(sourceArray, targetArray, targetStart, sourceStart, sourceEnd) {
+        if (sourceStart != null || sourceEnd != null) {
+            if (sourceArray.slice) {
+                sourceArray = sourceArray.slice(sourceStart, sourceEnd);
+            } else {
+                sourceArray = Array.prototype.slice.call(sourceArray, sourceStart, sourceEnd);
+            }
+        }
+        targetArray.set(sourceArray, targetStart);
+    }
+
+
+
+    var convertUtf8 = (function() {
+        function toBytes(text) {
+            var result = [], i = 0;
+            text = encodeURI(text);
+            while (i < text.length) {
+                var c = text.charCodeAt(i++);
+
+                // if it is a % sign, encode the following 2 bytes as a hex value
+                if (c === 37) {
+                    result.push(parseInt(text.substr(i, 2), 16));
+                    i += 2;
+
+                // otherwise, just the actual byte
+                } else {
+                    result.push(c);
+                }
+            }
+
+            return coerceArray(result);
+        }
+
+        function fromBytes(bytes) {
+            var result = [], i = 0;
+
+            while (i < bytes.length) {
+                var c = bytes[i];
+
+                if (c < 128) {
+                    result.push(String.fromCharCode(c));
+                    i++;
+                } else if (c > 191 && c < 224) {
+                    result.push(String.fromCharCode(((c & 0x1f) << 6) | (bytes[i + 1] & 0x3f)));
+                    i += 2;
+                } else {
+                    result.push(String.fromCharCode(((c & 0x0f) << 12) | ((bytes[i + 1] & 0x3f) << 6) | (bytes[i + 2] & 0x3f)));
+                    i += 3;
+                }
+            }
+
+            return result.join('');
+        }
+
+        return {
+            toBytes: toBytes,
+            fromBytes: fromBytes,
+        }
+    })();
+
+    var convertHex = (function() {
+        function toBytes(text) {
+            var result = [];
+            for (var i = 0; i < text.length; i += 2) {
+                result.push(parseInt(text.substr(i, 2), 16));
+            }
+
+            return result;
+        }
+
+        // http://ixti.net/development/javascript/2011/11/11/base64-encodedecode-of-utf8-in-browser-with-js.html
+        var Hex = '0123456789abcdef';
+
+        function fromBytes(bytes) {
+                var result = [];
+                for (var i = 0; i < bytes.length; i++) {
+                    var v = bytes[i];
+                    result.push(Hex[(v & 0xf0) >> 4] + Hex[v & 0x0f]);
+                }
+                return result.join('');
+        }
+
+        return {
+            toBytes: toBytes,
+            fromBytes: fromBytes,
+        }
+    })();
+
+
+    // Number of rounds by keysize
+    var numberOfRounds = {16: 10, 24: 12, 32: 14};
+
+    // Round constant words
+    var rcon = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91];
+
+    // S-box and Inverse S-box (S is for Substitution)
+    var S = [0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76, 0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0, 0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15, 0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a, 0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75, 0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0, 0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84, 0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b, 0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf, 0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85, 0x45, 0xf9, 0x02, 0x7f, 0x50, 0x3c, 0x9f, 0xa8, 0x51, 0xa3, 0x40, 0x8f, 0x92, 0x9d, 0x38, 0xf5, 0xbc, 0xb6, 0xda, 0x21, 0x10, 0xff, 0xf3, 0xd2, 0xcd, 0x0c, 0x13, 0xec, 0x5f, 0x97, 0x44, 0x17, 0xc4, 0xa7, 0x7e, 0x3d, 0x64, 0x5d, 0x19, 0x73, 0x60, 0x81, 0x4f, 0xdc, 0x22, 0x2a, 0x90, 0x88, 0x46, 0xee, 0xb8, 0x14, 0xde, 0x5e, 0x0b, 0xdb, 0xe0, 0x32, 0x3a, 0x0a, 0x49, 0x06, 0x24, 0x5c, 0xc2, 0xd3, 0xac, 0x62, 0x91, 0x95, 0xe4, 0x79, 0xe7, 0xc8, 0x37, 0x6d, 0x8d, 0xd5, 0x4e, 0xa9, 0x6c, 0x56, 0xf4, 0xea, 0x65, 0x7a, 0xae, 0x08, 0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a, 0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e, 0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf, 0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16];
+    var Si =[0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb, 0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb, 0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e, 0x08, 0x2e, 0xa1, 0x66, 0x28, 0xd9, 0x24, 0xb2, 0x76, 0x5b, 0xa2, 0x49, 0x6d, 0x8b, 0xd1, 0x25, 0x72, 0xf8, 0xf6, 0x64, 0x86, 0x68, 0x98, 0x16, 0xd4, 0xa4, 0x5c, 0xcc, 0x5d, 0x65, 0xb6, 0x92, 0x6c, 0x70, 0x48, 0x50, 0xfd, 0xed, 0xb9, 0xda, 0x5e, 0x15, 0x46, 0x57, 0xa7, 0x8d, 0x9d, 0x84, 0x90, 0xd8, 0xab, 0x00, 0x8c, 0xbc, 0xd3, 0x0a, 0xf7, 0xe4, 0x58, 0x05, 0xb8, 0xb3, 0x45, 0x06, 0xd0, 0x2c, 0x1e, 0x8f, 0xca, 0x3f, 0x0f, 0x02, 0xc1, 0xaf, 0xbd, 0x03, 0x01, 0x13, 0x8a, 0x6b, 0x3a, 0x91, 0x11, 0x41, 0x4f, 0x67, 0xdc, 0xea, 0x97, 0xf2, 0xcf, 0xce, 0xf0, 0xb4, 0xe6, 0x73, 0x96, 0xac, 0x74, 0x22, 0xe7, 0xad, 0x35, 0x85, 0xe2, 0xf9, 0x37, 0xe8, 0x1c, 0x75, 0xdf, 0x6e, 0x47, 0xf1, 0x1a, 0x71, 0x1d, 0x29, 0xc5, 0x89, 0x6f, 0xb7, 0x62, 0x0e, 0xaa, 0x18, 0xbe, 0x1b, 0xfc, 0x56, 0x3e, 0x4b, 0xc6, 0xd2, 0x79, 0x20, 0x9a, 0xdb, 0xc0, 0xfe, 0x78, 0xcd, 0x5a, 0xf4, 0x1f, 0xdd, 0xa8, 0x33, 0x88, 0x07, 0xc7, 0x31, 0xb1, 0x12, 0x10, 0x59, 0x27, 0x80, 0xec, 0x5f, 0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d, 0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef, 0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61, 0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d];
+
+    // Transformations for encryption
+    var T1 = [0xc66363a5, 0xf87c7c84, 0xee777799, 0xf67b7b8d, 0xfff2f20d, 0xd66b6bbd, 0xde6f6fb1, 0x91c5c554, 0x60303050, 0x02010103, 0xce6767a9, 0x562b2b7d, 0xe7fefe19, 0xb5d7d762, 0x4dababe6, 0xec76769a, 0x8fcaca45, 0x1f82829d, 0x89c9c940, 0xfa7d7d87, 0xeffafa15, 0xb25959eb, 0x8e4747c9, 0xfbf0f00b, 0x41adadec, 0xb3d4d467, 0x5fa2a2fd, 0x45afafea, 0x239c9cbf, 0x53a4a4f7, 0xe4727296, 0x9bc0c05b, 0x75b7b7c2, 0xe1fdfd1c, 0x3d9393ae, 0x4c26266a, 0x6c36365a, 0x7e3f3f41, 0xf5f7f702, 0x83cccc4f, 0x6834345c, 0x51a5a5f4, 0xd1e5e534, 0xf9f1f108, 0xe2717193, 0xabd8d873, 0x62313153, 0x2a15153f, 0x0804040c, 0x95c7c752, 0x46232365, 0x9dc3c35e, 0x30181828, 0x379696a1, 0x0a05050f, 0x2f9a9ab5, 0x0e070709, 0x24121236, 0x1b80809b, 0xdfe2e23d, 0xcdebeb26, 0x4e272769, 0x7fb2b2cd, 0xea75759f, 0x1209091b, 0x1d83839e, 0x582c2c74, 0x341a1a2e, 0x361b1b2d, 0xdc6e6eb2, 0xb45a5aee, 0x5ba0a0fb, 0xa45252f6, 0x763b3b4d, 0xb7d6d661, 0x7db3b3ce, 0x5229297b, 0xdde3e33e, 0x5e2f2f71, 0x13848497, 0xa65353f5, 0xb9d1d168, 0x00000000, 0xc1eded2c, 0x40202060, 0xe3fcfc1f, 0x79b1b1c8, 0xb65b5bed, 0xd46a6abe, 0x8dcbcb46, 0x67bebed9, 0x7239394b, 0x944a4ade, 0x984c4cd4, 0xb05858e8, 0x85cfcf4a, 0xbbd0d06b, 0xc5efef2a, 0x4faaaae5, 0xedfbfb16, 0x864343c5, 0x9a4d4dd7, 0x66333355, 0x11858594, 0x8a4545cf, 0xe9f9f910, 0x04020206, 0xfe7f7f81, 0xa05050f0, 0x783c3c44, 0x259f9fba, 0x4ba8a8e3, 0xa25151f3, 0x5da3a3fe, 0x804040c0, 0x058f8f8a, 0x3f9292ad, 0x219d9dbc, 0x70383848, 0xf1f5f504, 0x63bcbcdf, 0x77b6b6c1, 0xafdada75, 0x42212163, 0x20101030, 0xe5ffff1a, 0xfdf3f30e, 0xbfd2d26d, 0x81cdcd4c, 0x180c0c14, 0x26131335, 0xc3ecec2f, 0xbe5f5fe1, 0x359797a2, 0x884444cc, 0x2e171739, 0x93c4c457, 0x55a7a7f2, 0xfc7e7e82, 0x7a3d3d47, 0xc86464ac, 0xba5d5de7, 0x3219192b, 0xe6737395, 0xc06060a0, 0x19818198, 0x9e4f4fd1, 0xa3dcdc7f, 0x44222266, 0x542a2a7e, 0x3b9090ab, 0x0b888883, 0x8c4646ca, 0xc7eeee29, 0x6bb8b8d3, 0x2814143c, 0xa7dede79, 0xbc5e5ee2, 0x160b0b1d, 0xaddbdb76, 0xdbe0e03b, 0x64323256, 0x743a3a4e, 0x140a0a1e, 0x924949db, 0x0c06060a, 0x4824246c, 0xb85c5ce4, 0x9fc2c25d, 0xbdd3d36e, 0x43acacef, 0xc46262a6, 0x399191a8, 0x319595a4, 0xd3e4e437, 0xf279798b, 0xd5e7e732, 0x8bc8c843, 0x6e373759, 0xda6d6db7, 0x018d8d8c, 0xb1d5d564, 0x9c4e4ed2, 0x49a9a9e0, 0xd86c6cb4, 0xac5656fa, 0xf3f4f407, 0xcfeaea25, 0xca6565af, 0xf47a7a8e, 0x47aeaee9, 0x10080818, 0x6fbabad5, 0xf0787888, 0x4a25256f, 0x5c2e2e72, 0x381c1c24, 0x57a6a6f1, 0x73b4b4c7, 0x97c6c651, 0xcbe8e823, 0xa1dddd7c, 0xe874749c, 0x3e1f1f21, 0x964b4bdd, 0x61bdbddc, 0x0d8b8b86, 0x0f8a8a85, 0xe0707090, 0x7c3e3e42, 0x71b5b5c4, 0xcc6666aa, 0x904848d8, 0x06030305, 0xf7f6f601, 0x1c0e0e12, 0xc26161a3, 0x6a35355f, 0xae5757f9, 0x69b9b9d0, 0x17868691, 0x99c1c158, 0x3a1d1d27, 0x279e9eb9, 0xd9e1e138, 0xebf8f813, 0x2b9898b3, 0x22111133, 0xd26969bb, 0xa9d9d970, 0x078e8e89, 0x339494a7, 0x2d9b9bb6, 0x3c1e1e22, 0x15878792, 0xc9e9e920, 0x87cece49, 0xaa5555ff, 0x50282878, 0xa5dfdf7a, 0x038c8c8f, 0x59a1a1f8, 0x09898980, 0x1a0d0d17, 0x65bfbfda, 0xd7e6e631, 0x844242c6, 0xd06868b8, 0x824141c3, 0x299999b0, 0x5a2d2d77, 0x1e0f0f11, 0x7bb0b0cb, 0xa85454fc, 0x6dbbbbd6, 0x2c16163a];
+    var T2 = [0xa5c66363, 0x84f87c7c, 0x99ee7777, 0x8df67b7b, 0x0dfff2f2, 0xbdd66b6b, 0xb1de6f6f, 0x5491c5c5, 0x50603030, 0x03020101, 0xa9ce6767, 0x7d562b2b, 0x19e7fefe, 0x62b5d7d7, 0xe64dabab, 0x9aec7676, 0x458fcaca, 0x9d1f8282, 0x4089c9c9, 0x87fa7d7d, 0x15effafa, 0xebb25959, 0xc98e4747, 0x0bfbf0f0, 0xec41adad, 0x67b3d4d4, 0xfd5fa2a2, 0xea45afaf, 0xbf239c9c, 0xf753a4a4, 0x96e47272, 0x5b9bc0c0, 0xc275b7b7, 0x1ce1fdfd, 0xae3d9393, 0x6a4c2626, 0x5a6c3636, 0x417e3f3f, 0x02f5f7f7, 0x4f83cccc, 0x5c683434, 0xf451a5a5, 0x34d1e5e5, 0x08f9f1f1, 0x93e27171, 0x73abd8d8, 0x53623131, 0x3f2a1515, 0x0c080404, 0x5295c7c7, 0x65462323, 0x5e9dc3c3, 0x28301818, 0xa1379696, 0x0f0a0505, 0xb52f9a9a, 0x090e0707, 0x36241212, 0x9b1b8080, 0x3ddfe2e2, 0x26cdebeb, 0x694e2727, 0xcd7fb2b2, 0x9fea7575, 0x1b120909, 0x9e1d8383, 0x74582c2c, 0x2e341a1a, 0x2d361b1b, 0xb2dc6e6e, 0xeeb45a5a, 0xfb5ba0a0, 0xf6a45252, 0x4d763b3b, 0x61b7d6d6, 0xce7db3b3, 0x7b522929, 0x3edde3e3, 0x715e2f2f, 0x97138484, 0xf5a65353, 0x68b9d1d1, 0x00000000, 0x2cc1eded, 0x60402020, 0x1fe3fcfc, 0xc879b1b1, 0xedb65b5b, 0xbed46a6a, 0x468dcbcb, 0xd967bebe, 0x4b723939, 0xde944a4a, 0xd4984c4c, 0xe8b05858, 0x4a85cfcf, 0x6bbbd0d0, 0x2ac5efef, 0xe54faaaa, 0x16edfbfb, 0xc5864343, 0xd79a4d4d, 0x55663333, 0x94118585, 0xcf8a4545, 0x10e9f9f9, 0x06040202, 0x81fe7f7f, 0xf0a05050, 0x44783c3c, 0xba259f9f, 0xe34ba8a8, 0xf3a25151, 0xfe5da3a3, 0xc0804040, 0x8a058f8f, 0xad3f9292, 0xbc219d9d, 0x48703838, 0x04f1f5f5, 0xdf63bcbc, 0xc177b6b6, 0x75afdada, 0x63422121, 0x30201010, 0x1ae5ffff, 0x0efdf3f3, 0x6dbfd2d2, 0x4c81cdcd, 0x14180c0c, 0x35261313, 0x2fc3ecec, 0xe1be5f5f, 0xa2359797, 0xcc884444, 0x392e1717, 0x5793c4c4, 0xf255a7a7, 0x82fc7e7e, 0x477a3d3d, 0xacc86464, 0xe7ba5d5d, 0x2b321919, 0x95e67373, 0xa0c06060, 0x98198181, 0xd19e4f4f, 0x7fa3dcdc, 0x66442222, 0x7e542a2a, 0xab3b9090, 0x830b8888, 0xca8c4646, 0x29c7eeee, 0xd36bb8b8, 0x3c281414, 0x79a7dede, 0xe2bc5e5e, 0x1d160b0b, 0x76addbdb, 0x3bdbe0e0, 0x56643232, 0x4e743a3a, 0x1e140a0a, 0xdb924949, 0x0a0c0606, 0x6c482424, 0xe4b85c5c, 0x5d9fc2c2, 0x6ebdd3d3, 0xef43acac, 0xa6c46262, 0xa8399191, 0xa4319595, 0x37d3e4e4, 0x8bf27979, 0x32d5e7e7, 0x438bc8c8, 0x596e3737, 0xb7da6d6d, 0x8c018d8d, 0x64b1d5d5, 0xd29c4e4e, 0xe049a9a9, 0xb4d86c6c, 0xfaac5656, 0x07f3f4f4, 0x25cfeaea, 0xafca6565, 0x8ef47a7a, 0xe947aeae, 0x18100808, 0xd56fbaba, 0x88f07878, 0x6f4a2525, 0x725c2e2e, 0x24381c1c, 0xf157a6a6, 0xc773b4b4, 0x5197c6c6, 0x23cbe8e8, 0x7ca1dddd, 0x9ce87474, 0x213e1f1f, 0xdd964b4b, 0xdc61bdbd, 0x860d8b8b, 0x850f8a8a, 0x90e07070, 0x427c3e3e, 0xc471b5b5, 0xaacc6666, 0xd8904848, 0x05060303, 0x01f7f6f6, 0x121c0e0e, 0xa3c26161, 0x5f6a3535, 0xf9ae5757, 0xd069b9b9, 0x91178686, 0x5899c1c1, 0x273a1d1d, 0xb9279e9e, 0x38d9e1e1, 0x13ebf8f8, 0xb32b9898, 0x33221111, 0xbbd26969, 0x70a9d9d9, 0x89078e8e, 0xa7339494, 0xb62d9b9b, 0x223c1e1e, 0x92158787, 0x20c9e9e9, 0x4987cece, 0xffaa5555, 0x78502828, 0x7aa5dfdf, 0x8f038c8c, 0xf859a1a1, 0x80098989, 0x171a0d0d, 0xda65bfbf, 0x31d7e6e6, 0xc6844242, 0xb8d06868, 0xc3824141, 0xb0299999, 0x775a2d2d, 0x111e0f0f, 0xcb7bb0b0, 0xfca85454, 0xd66dbbbb, 0x3a2c1616];
+    var T3 = [0x63a5c663, 0x7c84f87c, 0x7799ee77, 0x7b8df67b, 0xf20dfff2, 0x6bbdd66b, 0x6fb1de6f, 0xc55491c5, 0x30506030, 0x01030201, 0x67a9ce67, 0x2b7d562b, 0xfe19e7fe, 0xd762b5d7, 0xabe64dab, 0x769aec76, 0xca458fca, 0x829d1f82, 0xc94089c9, 0x7d87fa7d, 0xfa15effa, 0x59ebb259, 0x47c98e47, 0xf00bfbf0, 0xadec41ad, 0xd467b3d4, 0xa2fd5fa2, 0xafea45af, 0x9cbf239c, 0xa4f753a4, 0x7296e472, 0xc05b9bc0, 0xb7c275b7, 0xfd1ce1fd, 0x93ae3d93, 0x266a4c26, 0x365a6c36, 0x3f417e3f, 0xf702f5f7, 0xcc4f83cc, 0x345c6834, 0xa5f451a5, 0xe534d1e5, 0xf108f9f1, 0x7193e271, 0xd873abd8, 0x31536231, 0x153f2a15, 0x040c0804, 0xc75295c7, 0x23654623, 0xc35e9dc3, 0x18283018, 0x96a13796, 0x050f0a05, 0x9ab52f9a, 0x07090e07, 0x12362412, 0x809b1b80, 0xe23ddfe2, 0xeb26cdeb, 0x27694e27, 0xb2cd7fb2, 0x759fea75, 0x091b1209, 0x839e1d83, 0x2c74582c, 0x1a2e341a, 0x1b2d361b, 0x6eb2dc6e, 0x5aeeb45a, 0xa0fb5ba0, 0x52f6a452, 0x3b4d763b, 0xd661b7d6, 0xb3ce7db3, 0x297b5229, 0xe33edde3, 0x2f715e2f, 0x84971384, 0x53f5a653, 0xd168b9d1, 0x00000000, 0xed2cc1ed, 0x20604020, 0xfc1fe3fc, 0xb1c879b1, 0x5bedb65b, 0x6abed46a, 0xcb468dcb, 0xbed967be, 0x394b7239, 0x4ade944a, 0x4cd4984c, 0x58e8b058, 0xcf4a85cf, 0xd06bbbd0, 0xef2ac5ef, 0xaae54faa, 0xfb16edfb, 0x43c58643, 0x4dd79a4d, 0x33556633, 0x85941185, 0x45cf8a45, 0xf910e9f9, 0x02060402, 0x7f81fe7f, 0x50f0a050, 0x3c44783c, 0x9fba259f, 0xa8e34ba8, 0x51f3a251, 0xa3fe5da3, 0x40c08040, 0x8f8a058f, 0x92ad3f92, 0x9dbc219d, 0x38487038, 0xf504f1f5, 0xbcdf63bc, 0xb6c177b6, 0xda75afda, 0x21634221, 0x10302010, 0xff1ae5ff, 0xf30efdf3, 0xd26dbfd2, 0xcd4c81cd, 0x0c14180c, 0x13352613, 0xec2fc3ec, 0x5fe1be5f, 0x97a23597, 0x44cc8844, 0x17392e17, 0xc45793c4, 0xa7f255a7, 0x7e82fc7e, 0x3d477a3d, 0x64acc864, 0x5de7ba5d, 0x192b3219, 0x7395e673, 0x60a0c060, 0x81981981, 0x4fd19e4f, 0xdc7fa3dc, 0x22664422, 0x2a7e542a, 0x90ab3b90, 0x88830b88, 0x46ca8c46, 0xee29c7ee, 0xb8d36bb8, 0x143c2814, 0xde79a7de, 0x5ee2bc5e, 0x0b1d160b, 0xdb76addb, 0xe03bdbe0, 0x32566432, 0x3a4e743a, 0x0a1e140a, 0x49db9249, 0x060a0c06, 0x246c4824, 0x5ce4b85c, 0xc25d9fc2, 0xd36ebdd3, 0xacef43ac, 0x62a6c462, 0x91a83991, 0x95a43195, 0xe437d3e4, 0x798bf279, 0xe732d5e7, 0xc8438bc8, 0x37596e37, 0x6db7da6d, 0x8d8c018d, 0xd564b1d5, 0x4ed29c4e, 0xa9e049a9, 0x6cb4d86c, 0x56faac56, 0xf407f3f4, 0xea25cfea, 0x65afca65, 0x7a8ef47a, 0xaee947ae, 0x08181008, 0xbad56fba, 0x7888f078, 0x256f4a25, 0x2e725c2e, 0x1c24381c, 0xa6f157a6, 0xb4c773b4, 0xc65197c6, 0xe823cbe8, 0xdd7ca1dd, 0x749ce874, 0x1f213e1f, 0x4bdd964b, 0xbddc61bd, 0x8b860d8b, 0x8a850f8a, 0x7090e070, 0x3e427c3e, 0xb5c471b5, 0x66aacc66, 0x48d89048, 0x03050603, 0xf601f7f6, 0x0e121c0e, 0x61a3c261, 0x355f6a35, 0x57f9ae57, 0xb9d069b9, 0x86911786, 0xc15899c1, 0x1d273a1d, 0x9eb9279e, 0xe138d9e1, 0xf813ebf8, 0x98b32b98, 0x11332211, 0x69bbd269, 0xd970a9d9, 0x8e89078e, 0x94a73394, 0x9bb62d9b, 0x1e223c1e, 0x87921587, 0xe920c9e9, 0xce4987ce, 0x55ffaa55, 0x28785028, 0xdf7aa5df, 0x8c8f038c, 0xa1f859a1, 0x89800989, 0x0d171a0d, 0xbfda65bf, 0xe631d7e6, 0x42c68442, 0x68b8d068, 0x41c38241, 0x99b02999, 0x2d775a2d, 0x0f111e0f, 0xb0cb7bb0, 0x54fca854, 0xbbd66dbb, 0x163a2c16];
+    var T4 = [0x6363a5c6, 0x7c7c84f8, 0x777799ee, 0x7b7b8df6, 0xf2f20dff, 0x6b6bbdd6, 0x6f6fb1de, 0xc5c55491, 0x30305060, 0x01010302, 0x6767a9ce, 0x2b2b7d56, 0xfefe19e7, 0xd7d762b5, 0xababe64d, 0x76769aec, 0xcaca458f, 0x82829d1f, 0xc9c94089, 0x7d7d87fa, 0xfafa15ef, 0x5959ebb2, 0x4747c98e, 0xf0f00bfb, 0xadadec41, 0xd4d467b3, 0xa2a2fd5f, 0xafafea45, 0x9c9cbf23, 0xa4a4f753, 0x727296e4, 0xc0c05b9b, 0xb7b7c275, 0xfdfd1ce1, 0x9393ae3d, 0x26266a4c, 0x36365a6c, 0x3f3f417e, 0xf7f702f5, 0xcccc4f83, 0x34345c68, 0xa5a5f451, 0xe5e534d1, 0xf1f108f9, 0x717193e2, 0xd8d873ab, 0x31315362, 0x15153f2a, 0x04040c08, 0xc7c75295, 0x23236546, 0xc3c35e9d, 0x18182830, 0x9696a137, 0x05050f0a, 0x9a9ab52f, 0x0707090e, 0x12123624, 0x80809b1b, 0xe2e23ddf, 0xebeb26cd, 0x2727694e, 0xb2b2cd7f, 0x75759fea, 0x09091b12, 0x83839e1d, 0x2c2c7458, 0x1a1a2e34, 0x1b1b2d36, 0x6e6eb2dc, 0x5a5aeeb4, 0xa0a0fb5b, 0x5252f6a4, 0x3b3b4d76, 0xd6d661b7, 0xb3b3ce7d, 0x29297b52, 0xe3e33edd, 0x2f2f715e, 0x84849713, 0x5353f5a6, 0xd1d168b9, 0x00000000, 0xeded2cc1, 0x20206040, 0xfcfc1fe3, 0xb1b1c879, 0x5b5bedb6, 0x6a6abed4, 0xcbcb468d, 0xbebed967, 0x39394b72, 0x4a4ade94, 0x4c4cd498, 0x5858e8b0, 0xcfcf4a85, 0xd0d06bbb, 0xefef2ac5, 0xaaaae54f, 0xfbfb16ed, 0x4343c586, 0x4d4dd79a, 0x33335566, 0x85859411, 0x4545cf8a, 0xf9f910e9, 0x02020604, 0x7f7f81fe, 0x5050f0a0, 0x3c3c4478, 0x9f9fba25, 0xa8a8e34b, 0x5151f3a2, 0xa3a3fe5d, 0x4040c080, 0x8f8f8a05, 0x9292ad3f, 0x9d9dbc21, 0x38384870, 0xf5f504f1, 0xbcbcdf63, 0xb6b6c177, 0xdada75af, 0x21216342, 0x10103020, 0xffff1ae5, 0xf3f30efd, 0xd2d26dbf, 0xcdcd4c81, 0x0c0c1418, 0x13133526, 0xecec2fc3, 0x5f5fe1be, 0x9797a235, 0x4444cc88, 0x1717392e, 0xc4c45793, 0xa7a7f255, 0x7e7e82fc, 0x3d3d477a, 0x6464acc8, 0x5d5de7ba, 0x19192b32, 0x737395e6, 0x6060a0c0, 0x81819819, 0x4f4fd19e, 0xdcdc7fa3, 0x22226644, 0x2a2a7e54, 0x9090ab3b, 0x8888830b, 0x4646ca8c, 0xeeee29c7, 0xb8b8d36b, 0x14143c28, 0xdede79a7, 0x5e5ee2bc, 0x0b0b1d16, 0xdbdb76ad, 0xe0e03bdb, 0x32325664, 0x3a3a4e74, 0x0a0a1e14, 0x4949db92, 0x06060a0c, 0x24246c48, 0x5c5ce4b8, 0xc2c25d9f, 0xd3d36ebd, 0xacacef43, 0x6262a6c4, 0x9191a839, 0x9595a431, 0xe4e437d3, 0x79798bf2, 0xe7e732d5, 0xc8c8438b, 0x3737596e, 0x6d6db7da, 0x8d8d8c01, 0xd5d564b1, 0x4e4ed29c, 0xa9a9e049, 0x6c6cb4d8, 0x5656faac, 0xf4f407f3, 0xeaea25cf, 0x6565afca, 0x7a7a8ef4, 0xaeaee947, 0x08081810, 0xbabad56f, 0x787888f0, 0x25256f4a, 0x2e2e725c, 0x1c1c2438, 0xa6a6f157, 0xb4b4c773, 0xc6c65197, 0xe8e823cb, 0xdddd7ca1, 0x74749ce8, 0x1f1f213e, 0x4b4bdd96, 0xbdbddc61, 0x8b8b860d, 0x8a8a850f, 0x707090e0, 0x3e3e427c, 0xb5b5c471, 0x6666aacc, 0x4848d890, 0x03030506, 0xf6f601f7, 0x0e0e121c, 0x6161a3c2, 0x35355f6a, 0x5757f9ae, 0xb9b9d069, 0x86869117, 0xc1c15899, 0x1d1d273a, 0x9e9eb927, 0xe1e138d9, 0xf8f813eb, 0x9898b32b, 0x11113322, 0x6969bbd2, 0xd9d970a9, 0x8e8e8907, 0x9494a733, 0x9b9bb62d, 0x1e1e223c, 0x87879215, 0xe9e920c9, 0xcece4987, 0x5555ffaa, 0x28287850, 0xdfdf7aa5, 0x8c8c8f03, 0xa1a1f859, 0x89898009, 0x0d0d171a, 0xbfbfda65, 0xe6e631d7, 0x4242c684, 0x6868b8d0, 0x4141c382, 0x9999b029, 0x2d2d775a, 0x0f0f111e, 0xb0b0cb7b, 0x5454fca8, 0xbbbbd66d, 0x16163a2c];
+
+    // Transformations for decryption
+    var T5 = [0x51f4a750, 0x7e416553, 0x1a17a4c3, 0x3a275e96, 0x3bab6bcb, 0x1f9d45f1, 0xacfa58ab, 0x4be30393, 0x2030fa55, 0xad766df6, 0x88cc7691, 0xf5024c25, 0x4fe5d7fc, 0xc52acbd7, 0x26354480, 0xb562a38f, 0xdeb15a49, 0x25ba1b67, 0x45ea0e98, 0x5dfec0e1, 0xc32f7502, 0x814cf012, 0x8d4697a3, 0x6bd3f9c6, 0x038f5fe7, 0x15929c95, 0xbf6d7aeb, 0x955259da, 0xd4be832d, 0x587421d3, 0x49e06929, 0x8ec9c844, 0x75c2896a, 0xf48e7978, 0x99583e6b, 0x27b971dd, 0xbee14fb6, 0xf088ad17, 0xc920ac66, 0x7dce3ab4, 0x63df4a18, 0xe51a3182, 0x97513360, 0x62537f45, 0xb16477e0, 0xbb6bae84, 0xfe81a01c, 0xf9082b94, 0x70486858, 0x8f45fd19, 0x94de6c87, 0x527bf8b7, 0xab73d323, 0x724b02e2, 0xe31f8f57, 0x6655ab2a, 0xb2eb2807, 0x2fb5c203, 0x86c57b9a, 0xd33708a5, 0x302887f2, 0x23bfa5b2, 0x02036aba, 0xed16825c, 0x8acf1c2b, 0xa779b492, 0xf307f2f0, 0x4e69e2a1, 0x65daf4cd, 0x0605bed5, 0xd134621f, 0xc4a6fe8a, 0x342e539d, 0xa2f355a0, 0x058ae132, 0xa4f6eb75, 0x0b83ec39, 0x4060efaa, 0x5e719f06, 0xbd6e1051, 0x3e218af9, 0x96dd063d, 0xdd3e05ae, 0x4de6bd46, 0x91548db5, 0x71c45d05, 0x0406d46f, 0x605015ff, 0x1998fb24, 0xd6bde997, 0x894043cc, 0x67d99e77, 0xb0e842bd, 0x07898b88, 0xe7195b38, 0x79c8eedb, 0xa17c0a47, 0x7c420fe9, 0xf8841ec9, 0x00000000, 0x09808683, 0x322bed48, 0x1e1170ac, 0x6c5a724e, 0xfd0efffb, 0x0f853856, 0x3daed51e, 0x362d3927, 0x0a0fd964, 0x685ca621, 0x9b5b54d1, 0x24362e3a, 0x0c0a67b1, 0x9357e70f, 0xb4ee96d2, 0x1b9b919e, 0x80c0c54f, 0x61dc20a2, 0x5a774b69, 0x1c121a16, 0xe293ba0a, 0xc0a02ae5, 0x3c22e043, 0x121b171d, 0x0e090d0b, 0xf28bc7ad, 0x2db6a8b9, 0x141ea9c8, 0x57f11985, 0xaf75074c, 0xee99ddbb, 0xa37f60fd, 0xf701269f, 0x5c72f5bc, 0x44663bc5, 0x5bfb7e34, 0x8b432976, 0xcb23c6dc, 0xb6edfc68, 0xb8e4f163, 0xd731dcca, 0x42638510, 0x13972240, 0x84c61120, 0x854a247d, 0xd2bb3df8, 0xaef93211, 0xc729a16d, 0x1d9e2f4b, 0xdcb230f3, 0x0d8652ec, 0x77c1e3d0, 0x2bb3166c, 0xa970b999, 0x119448fa, 0x47e96422, 0xa8fc8cc4, 0xa0f03f1a, 0x567d2cd8, 0x223390ef, 0x87494ec7, 0xd938d1c1, 0x8ccaa2fe, 0x98d40b36, 0xa6f581cf, 0xa57ade28, 0xdab78e26, 0x3fadbfa4, 0x2c3a9de4, 0x5078920d, 0x6a5fcc9b, 0x547e4662, 0xf68d13c2, 0x90d8b8e8, 0x2e39f75e, 0x82c3aff5, 0x9f5d80be, 0x69d0937c, 0x6fd52da9, 0xcf2512b3, 0xc8ac993b, 0x10187da7, 0xe89c636e, 0xdb3bbb7b, 0xcd267809, 0x6e5918f4, 0xec9ab701, 0x834f9aa8, 0xe6956e65, 0xaaffe67e, 0x21bccf08, 0xef15e8e6, 0xbae79bd9, 0x4a6f36ce, 0xea9f09d4, 0x29b07cd6, 0x31a4b2af, 0x2a3f2331, 0xc6a59430, 0x35a266c0, 0x744ebc37, 0xfc82caa6, 0xe090d0b0, 0x33a7d815, 0xf104984a, 0x41ecdaf7, 0x7fcd500e, 0x1791f62f, 0x764dd68d, 0x43efb04d, 0xccaa4d54, 0xe49604df, 0x9ed1b5e3, 0x4c6a881b, 0xc12c1fb8, 0x4665517f, 0x9d5eea04, 0x018c355d, 0xfa877473, 0xfb0b412e, 0xb3671d5a, 0x92dbd252, 0xe9105633, 0x6dd64713, 0x9ad7618c, 0x37a10c7a, 0x59f8148e, 0xeb133c89, 0xcea927ee, 0xb761c935, 0xe11ce5ed, 0x7a47b13c, 0x9cd2df59, 0x55f2733f, 0x1814ce79, 0x73c737bf, 0x53f7cdea, 0x5ffdaa5b, 0xdf3d6f14, 0x7844db86, 0xcaaff381, 0xb968c43e, 0x3824342c, 0xc2a3405f, 0x161dc372, 0xbce2250c, 0x283c498b, 0xff0d9541, 0x39a80171, 0x080cb3de, 0xd8b4e49c, 0x6456c190, 0x7bcb8461, 0xd532b670, 0x486c5c74, 0xd0b85742];
+    var T6 = [0x5051f4a7, 0x537e4165, 0xc31a17a4, 0x963a275e, 0xcb3bab6b, 0xf11f9d45, 0xabacfa58, 0x934be303, 0x552030fa, 0xf6ad766d, 0x9188cc76, 0x25f5024c, 0xfc4fe5d7, 0xd7c52acb, 0x80263544, 0x8fb562a3, 0x49deb15a, 0x6725ba1b, 0x9845ea0e, 0xe15dfec0, 0x02c32f75, 0x12814cf0, 0xa38d4697, 0xc66bd3f9, 0xe7038f5f, 0x9515929c, 0xebbf6d7a, 0xda955259, 0x2dd4be83, 0xd3587421, 0x2949e069, 0x448ec9c8, 0x6a75c289, 0x78f48e79, 0x6b99583e, 0xdd27b971, 0xb6bee14f, 0x17f088ad, 0x66c920ac, 0xb47dce3a, 0x1863df4a, 0x82e51a31, 0x60975133, 0x4562537f, 0xe0b16477, 0x84bb6bae, 0x1cfe81a0, 0x94f9082b, 0x58704868, 0x198f45fd, 0x8794de6c, 0xb7527bf8, 0x23ab73d3, 0xe2724b02, 0x57e31f8f, 0x2a6655ab, 0x07b2eb28, 0x032fb5c2, 0x9a86c57b, 0xa5d33708, 0xf2302887, 0xb223bfa5, 0xba02036a, 0x5ced1682, 0x2b8acf1c, 0x92a779b4, 0xf0f307f2, 0xa14e69e2, 0xcd65daf4, 0xd50605be, 0x1fd13462, 0x8ac4a6fe, 0x9d342e53, 0xa0a2f355, 0x32058ae1, 0x75a4f6eb, 0x390b83ec, 0xaa4060ef, 0x065e719f, 0x51bd6e10, 0xf93e218a, 0x3d96dd06, 0xaedd3e05, 0x464de6bd, 0xb591548d, 0x0571c45d, 0x6f0406d4, 0xff605015, 0x241998fb, 0x97d6bde9, 0xcc894043, 0x7767d99e, 0xbdb0e842, 0x8807898b, 0x38e7195b, 0xdb79c8ee, 0x47a17c0a, 0xe97c420f, 0xc9f8841e, 0x00000000, 0x83098086, 0x48322bed, 0xac1e1170, 0x4e6c5a72, 0xfbfd0eff, 0x560f8538, 0x1e3daed5, 0x27362d39, 0x640a0fd9, 0x21685ca6, 0xd19b5b54, 0x3a24362e, 0xb10c0a67, 0x0f9357e7, 0xd2b4ee96, 0x9e1b9b91, 0x4f80c0c5, 0xa261dc20, 0x695a774b, 0x161c121a, 0x0ae293ba, 0xe5c0a02a, 0x433c22e0, 0x1d121b17, 0x0b0e090d, 0xadf28bc7, 0xb92db6a8, 0xc8141ea9, 0x8557f119, 0x4caf7507, 0xbbee99dd, 0xfda37f60, 0x9ff70126, 0xbc5c72f5, 0xc544663b, 0x345bfb7e, 0x768b4329, 0xdccb23c6, 0x68b6edfc, 0x63b8e4f1, 0xcad731dc, 0x10426385, 0x40139722, 0x2084c611, 0x7d854a24, 0xf8d2bb3d, 0x11aef932, 0x6dc729a1, 0x4b1d9e2f, 0xf3dcb230, 0xec0d8652, 0xd077c1e3, 0x6c2bb316, 0x99a970b9, 0xfa119448, 0x2247e964, 0xc4a8fc8c, 0x1aa0f03f, 0xd8567d2c, 0xef223390, 0xc787494e, 0xc1d938d1, 0xfe8ccaa2, 0x3698d40b, 0xcfa6f581, 0x28a57ade, 0x26dab78e, 0xa43fadbf, 0xe42c3a9d, 0x0d507892, 0x9b6a5fcc, 0x62547e46, 0xc2f68d13, 0xe890d8b8, 0x5e2e39f7, 0xf582c3af, 0xbe9f5d80, 0x7c69d093, 0xa96fd52d, 0xb3cf2512, 0x3bc8ac99, 0xa710187d, 0x6ee89c63, 0x7bdb3bbb, 0x09cd2678, 0xf46e5918, 0x01ec9ab7, 0xa8834f9a, 0x65e6956e, 0x7eaaffe6, 0x0821bccf, 0xe6ef15e8, 0xd9bae79b, 0xce4a6f36, 0xd4ea9f09, 0xd629b07c, 0xaf31a4b2, 0x312a3f23, 0x30c6a594, 0xc035a266, 0x37744ebc, 0xa6fc82ca, 0xb0e090d0, 0x1533a7d8, 0x4af10498, 0xf741ecda, 0x0e7fcd50, 0x2f1791f6, 0x8d764dd6, 0x4d43efb0, 0x54ccaa4d, 0xdfe49604, 0xe39ed1b5, 0x1b4c6a88, 0xb8c12c1f, 0x7f466551, 0x049d5eea, 0x5d018c35, 0x73fa8774, 0x2efb0b41, 0x5ab3671d, 0x5292dbd2, 0x33e91056, 0x136dd647, 0x8c9ad761, 0x7a37a10c, 0x8e59f814, 0x89eb133c, 0xeecea927, 0x35b761c9, 0xede11ce5, 0x3c7a47b1, 0x599cd2df, 0x3f55f273, 0x791814ce, 0xbf73c737, 0xea53f7cd, 0x5b5ffdaa, 0x14df3d6f, 0x867844db, 0x81caaff3, 0x3eb968c4, 0x2c382434, 0x5fc2a340, 0x72161dc3, 0x0cbce225, 0x8b283c49, 0x41ff0d95, 0x7139a801, 0xde080cb3, 0x9cd8b4e4, 0x906456c1, 0x617bcb84, 0x70d532b6, 0x74486c5c, 0x42d0b857];
+    var T7 = [0xa75051f4, 0x65537e41, 0xa4c31a17, 0x5e963a27, 0x6bcb3bab, 0x45f11f9d, 0x58abacfa, 0x03934be3, 0xfa552030, 0x6df6ad76, 0x769188cc, 0x4c25f502, 0xd7fc4fe5, 0xcbd7c52a, 0x44802635, 0xa38fb562, 0x5a49deb1, 0x1b6725ba, 0x0e9845ea, 0xc0e15dfe, 0x7502c32f, 0xf012814c, 0x97a38d46, 0xf9c66bd3, 0x5fe7038f, 0x9c951592, 0x7aebbf6d, 0x59da9552, 0x832dd4be, 0x21d35874, 0x692949e0, 0xc8448ec9, 0x896a75c2, 0x7978f48e, 0x3e6b9958, 0x71dd27b9, 0x4fb6bee1, 0xad17f088, 0xac66c920, 0x3ab47dce, 0x4a1863df, 0x3182e51a, 0x33609751, 0x7f456253, 0x77e0b164, 0xae84bb6b, 0xa01cfe81, 0x2b94f908, 0x68587048, 0xfd198f45, 0x6c8794de, 0xf8b7527b, 0xd323ab73, 0x02e2724b, 0x8f57e31f, 0xab2a6655, 0x2807b2eb, 0xc2032fb5, 0x7b9a86c5, 0x08a5d337, 0x87f23028, 0xa5b223bf, 0x6aba0203, 0x825ced16, 0x1c2b8acf, 0xb492a779, 0xf2f0f307, 0xe2a14e69, 0xf4cd65da, 0xbed50605, 0x621fd134, 0xfe8ac4a6, 0x539d342e, 0x55a0a2f3, 0xe132058a, 0xeb75a4f6, 0xec390b83, 0xefaa4060, 0x9f065e71, 0x1051bd6e, 0x8af93e21, 0x063d96dd, 0x05aedd3e, 0xbd464de6, 0x8db59154, 0x5d0571c4, 0xd46f0406, 0x15ff6050, 0xfb241998, 0xe997d6bd, 0x43cc8940, 0x9e7767d9, 0x42bdb0e8, 0x8b880789, 0x5b38e719, 0xeedb79c8, 0x0a47a17c, 0x0fe97c42, 0x1ec9f884, 0x00000000, 0x86830980, 0xed48322b, 0x70ac1e11, 0x724e6c5a, 0xfffbfd0e, 0x38560f85, 0xd51e3dae, 0x3927362d, 0xd9640a0f, 0xa621685c, 0x54d19b5b, 0x2e3a2436, 0x67b10c0a, 0xe70f9357, 0x96d2b4ee, 0x919e1b9b, 0xc54f80c0, 0x20a261dc, 0x4b695a77, 0x1a161c12, 0xba0ae293, 0x2ae5c0a0, 0xe0433c22, 0x171d121b, 0x0d0b0e09, 0xc7adf28b, 0xa8b92db6, 0xa9c8141e, 0x198557f1, 0x074caf75, 0xddbbee99, 0x60fda37f, 0x269ff701, 0xf5bc5c72, 0x3bc54466, 0x7e345bfb, 0x29768b43, 0xc6dccb23, 0xfc68b6ed, 0xf163b8e4, 0xdccad731, 0x85104263, 0x22401397, 0x112084c6, 0x247d854a, 0x3df8d2bb, 0x3211aef9, 0xa16dc729, 0x2f4b1d9e, 0x30f3dcb2, 0x52ec0d86, 0xe3d077c1, 0x166c2bb3, 0xb999a970, 0x48fa1194, 0x642247e9, 0x8cc4a8fc, 0x3f1aa0f0, 0x2cd8567d, 0x90ef2233, 0x4ec78749, 0xd1c1d938, 0xa2fe8cca, 0x0b3698d4, 0x81cfa6f5, 0xde28a57a, 0x8e26dab7, 0xbfa43fad, 0x9de42c3a, 0x920d5078, 0xcc9b6a5f, 0x4662547e, 0x13c2f68d, 0xb8e890d8, 0xf75e2e39, 0xaff582c3, 0x80be9f5d, 0x937c69d0, 0x2da96fd5, 0x12b3cf25, 0x993bc8ac, 0x7da71018, 0x636ee89c, 0xbb7bdb3b, 0x7809cd26, 0x18f46e59, 0xb701ec9a, 0x9aa8834f, 0x6e65e695, 0xe67eaaff, 0xcf0821bc, 0xe8e6ef15, 0x9bd9bae7, 0x36ce4a6f, 0x09d4ea9f, 0x7cd629b0, 0xb2af31a4, 0x23312a3f, 0x9430c6a5, 0x66c035a2, 0xbc37744e, 0xcaa6fc82, 0xd0b0e090, 0xd81533a7, 0x984af104, 0xdaf741ec, 0x500e7fcd, 0xf62f1791, 0xd68d764d, 0xb04d43ef, 0x4d54ccaa, 0x04dfe496, 0xb5e39ed1, 0x881b4c6a, 0x1fb8c12c, 0x517f4665, 0xea049d5e, 0x355d018c, 0x7473fa87, 0x412efb0b, 0x1d5ab367, 0xd25292db, 0x5633e910, 0x47136dd6, 0x618c9ad7, 0x0c7a37a1, 0x148e59f8, 0x3c89eb13, 0x27eecea9, 0xc935b761, 0xe5ede11c, 0xb13c7a47, 0xdf599cd2, 0x733f55f2, 0xce791814, 0x37bf73c7, 0xcdea53f7, 0xaa5b5ffd, 0x6f14df3d, 0xdb867844, 0xf381caaf, 0xc43eb968, 0x342c3824, 0x405fc2a3, 0xc372161d, 0x250cbce2, 0x498b283c, 0x9541ff0d, 0x017139a8, 0xb3de080c, 0xe49cd8b4, 0xc1906456, 0x84617bcb, 0xb670d532, 0x5c74486c, 0x5742d0b8];
+    var T8 = [0xf4a75051, 0x4165537e, 0x17a4c31a, 0x275e963a, 0xab6bcb3b, 0x9d45f11f, 0xfa58abac, 0xe303934b, 0x30fa5520, 0x766df6ad, 0xcc769188, 0x024c25f5, 0xe5d7fc4f, 0x2acbd7c5, 0x35448026, 0x62a38fb5, 0xb15a49de, 0xba1b6725, 0xea0e9845, 0xfec0e15d, 0x2f7502c3, 0x4cf01281, 0x4697a38d, 0xd3f9c66b, 0x8f5fe703, 0x929c9515, 0x6d7aebbf, 0x5259da95, 0xbe832dd4, 0x7421d358, 0xe0692949, 0xc9c8448e, 0xc2896a75, 0x8e7978f4, 0x583e6b99, 0xb971dd27, 0xe14fb6be, 0x88ad17f0, 0x20ac66c9, 0xce3ab47d, 0xdf4a1863, 0x1a3182e5, 0x51336097, 0x537f4562, 0x6477e0b1, 0x6bae84bb, 0x81a01cfe, 0x082b94f9, 0x48685870, 0x45fd198f, 0xde6c8794, 0x7bf8b752, 0x73d323ab, 0x4b02e272, 0x1f8f57e3, 0x55ab2a66, 0xeb2807b2, 0xb5c2032f, 0xc57b9a86, 0x3708a5d3, 0x2887f230, 0xbfa5b223, 0x036aba02, 0x16825ced, 0xcf1c2b8a, 0x79b492a7, 0x07f2f0f3, 0x69e2a14e, 0xdaf4cd65, 0x05bed506, 0x34621fd1, 0xa6fe8ac4, 0x2e539d34, 0xf355a0a2, 0x8ae13205, 0xf6eb75a4, 0x83ec390b, 0x60efaa40, 0x719f065e, 0x6e1051bd, 0x218af93e, 0xdd063d96, 0x3e05aedd, 0xe6bd464d, 0x548db591, 0xc45d0571, 0x06d46f04, 0x5015ff60, 0x98fb2419, 0xbde997d6, 0x4043cc89, 0xd99e7767, 0xe842bdb0, 0x898b8807, 0x195b38e7, 0xc8eedb79, 0x7c0a47a1, 0x420fe97c, 0x841ec9f8, 0x00000000, 0x80868309, 0x2bed4832, 0x1170ac1e, 0x5a724e6c, 0x0efffbfd, 0x8538560f, 0xaed51e3d, 0x2d392736, 0x0fd9640a, 0x5ca62168, 0x5b54d19b, 0x362e3a24, 0x0a67b10c, 0x57e70f93, 0xee96d2b4, 0x9b919e1b, 0xc0c54f80, 0xdc20a261, 0x774b695a, 0x121a161c, 0x93ba0ae2, 0xa02ae5c0, 0x22e0433c, 0x1b171d12, 0x090d0b0e, 0x8bc7adf2, 0xb6a8b92d, 0x1ea9c814, 0xf1198557, 0x75074caf, 0x99ddbbee, 0x7f60fda3, 0x01269ff7, 0x72f5bc5c, 0x663bc544, 0xfb7e345b, 0x4329768b, 0x23c6dccb, 0xedfc68b6, 0xe4f163b8, 0x31dccad7, 0x63851042, 0x97224013, 0xc6112084, 0x4a247d85, 0xbb3df8d2, 0xf93211ae, 0x29a16dc7, 0x9e2f4b1d, 0xb230f3dc, 0x8652ec0d, 0xc1e3d077, 0xb3166c2b, 0x70b999a9, 0x9448fa11, 0xe9642247, 0xfc8cc4a8, 0xf03f1aa0, 0x7d2cd856, 0x3390ef22, 0x494ec787, 0x38d1c1d9, 0xcaa2fe8c, 0xd40b3698, 0xf581cfa6, 0x7ade28a5, 0xb78e26da, 0xadbfa43f, 0x3a9de42c, 0x78920d50, 0x5fcc9b6a, 0x7e466254, 0x8d13c2f6, 0xd8b8e890, 0x39f75e2e, 0xc3aff582, 0x5d80be9f, 0xd0937c69, 0xd52da96f, 0x2512b3cf, 0xac993bc8, 0x187da710, 0x9c636ee8, 0x3bbb7bdb, 0x267809cd, 0x5918f46e, 0x9ab701ec, 0x4f9aa883, 0x956e65e6, 0xffe67eaa, 0xbccf0821, 0x15e8e6ef, 0xe79bd9ba, 0x6f36ce4a, 0x9f09d4ea, 0xb07cd629, 0xa4b2af31, 0x3f23312a, 0xa59430c6, 0xa266c035, 0x4ebc3774, 0x82caa6fc, 0x90d0b0e0, 0xa7d81533, 0x04984af1, 0xecdaf741, 0xcd500e7f, 0x91f62f17, 0x4dd68d76, 0xefb04d43, 0xaa4d54cc, 0x9604dfe4, 0xd1b5e39e, 0x6a881b4c, 0x2c1fb8c1, 0x65517f46, 0x5eea049d, 0x8c355d01, 0x877473fa, 0x0b412efb, 0x671d5ab3, 0xdbd25292, 0x105633e9, 0xd647136d, 0xd7618c9a, 0xa10c7a37, 0xf8148e59, 0x133c89eb, 0xa927eece, 0x61c935b7, 0x1ce5ede1, 0x47b13c7a, 0xd2df599c, 0xf2733f55, 0x14ce7918, 0xc737bf73, 0xf7cdea53, 0xfdaa5b5f, 0x3d6f14df, 0x44db8678, 0xaff381ca, 0x68c43eb9, 0x24342c38, 0xa3405fc2, 0x1dc37216, 0xe2250cbc, 0x3c498b28, 0x0d9541ff, 0xa8017139, 0x0cb3de08, 0xb4e49cd8, 0x56c19064, 0xcb84617b, 0x32b670d5, 0x6c5c7448, 0xb85742d0];
+
+    // Transformations for decryption key expansion
+    var U1 = [0x00000000, 0x0e090d0b, 0x1c121a16, 0x121b171d, 0x3824342c, 0x362d3927, 0x24362e3a, 0x2a3f2331, 0x70486858, 0x7e416553, 0x6c5a724e, 0x62537f45, 0x486c5c74, 0x4665517f, 0x547e4662, 0x5a774b69, 0xe090d0b0, 0xee99ddbb, 0xfc82caa6, 0xf28bc7ad, 0xd8b4e49c, 0xd6bde997, 0xc4a6fe8a, 0xcaaff381, 0x90d8b8e8, 0x9ed1b5e3, 0x8ccaa2fe, 0x82c3aff5, 0xa8fc8cc4, 0xa6f581cf, 0xb4ee96d2, 0xbae79bd9, 0xdb3bbb7b, 0xd532b670, 0xc729a16d, 0xc920ac66, 0xe31f8f57, 0xed16825c, 0xff0d9541, 0xf104984a, 0xab73d323, 0xa57ade28, 0xb761c935, 0xb968c43e, 0x9357e70f, 0x9d5eea04, 0x8f45fd19, 0x814cf012, 0x3bab6bcb, 0x35a266c0, 0x27b971dd, 0x29b07cd6, 0x038f5fe7, 0x0d8652ec, 0x1f9d45f1, 0x119448fa, 0x4be30393, 0x45ea0e98, 0x57f11985, 0x59f8148e, 0x73c737bf, 0x7dce3ab4, 0x6fd52da9, 0x61dc20a2, 0xad766df6, 0xa37f60fd, 0xb16477e0, 0xbf6d7aeb, 0x955259da, 0x9b5b54d1, 0x894043cc, 0x87494ec7, 0xdd3e05ae, 0xd33708a5, 0xc12c1fb8, 0xcf2512b3, 0xe51a3182, 0xeb133c89, 0xf9082b94, 0xf701269f, 0x4de6bd46, 0x43efb04d, 0x51f4a750, 0x5ffdaa5b, 0x75c2896a, 0x7bcb8461, 0x69d0937c, 0x67d99e77, 0x3daed51e, 0x33a7d815, 0x21bccf08, 0x2fb5c203, 0x058ae132, 0x0b83ec39, 0x1998fb24, 0x1791f62f, 0x764dd68d, 0x7844db86, 0x6a5fcc9b, 0x6456c190, 0x4e69e2a1, 0x4060efaa, 0x527bf8b7, 0x5c72f5bc, 0x0605bed5, 0x080cb3de, 0x1a17a4c3, 0x141ea9c8, 0x3e218af9, 0x302887f2, 0x223390ef, 0x2c3a9de4, 0x96dd063d, 0x98d40b36, 0x8acf1c2b, 0x84c61120, 0xaef93211, 0xa0f03f1a, 0xb2eb2807, 0xbce2250c, 0xe6956e65, 0xe89c636e, 0xfa877473, 0xf48e7978, 0xdeb15a49, 0xd0b85742, 0xc2a3405f, 0xccaa4d54, 0x41ecdaf7, 0x4fe5d7fc, 0x5dfec0e1, 0x53f7cdea, 0x79c8eedb, 0x77c1e3d0, 0x65daf4cd, 0x6bd3f9c6, 0x31a4b2af, 0x3fadbfa4, 0x2db6a8b9, 0x23bfa5b2, 0x09808683, 0x07898b88, 0x15929c95, 0x1b9b919e, 0xa17c0a47, 0xaf75074c, 0xbd6e1051, 0xb3671d5a, 0x99583e6b, 0x97513360, 0x854a247d, 0x8b432976, 0xd134621f, 0xdf3d6f14, 0xcd267809, 0xc32f7502, 0xe9105633, 0xe7195b38, 0xf5024c25, 0xfb0b412e, 0x9ad7618c, 0x94de6c87, 0x86c57b9a, 0x88cc7691, 0xa2f355a0, 0xacfa58ab, 0xbee14fb6, 0xb0e842bd, 0xea9f09d4, 0xe49604df, 0xf68d13c2, 0xf8841ec9, 0xd2bb3df8, 0xdcb230f3, 0xcea927ee, 0xc0a02ae5, 0x7a47b13c, 0x744ebc37, 0x6655ab2a, 0x685ca621, 0x42638510, 0x4c6a881b, 0x5e719f06, 0x5078920d, 0x0a0fd964, 0x0406d46f, 0x161dc372, 0x1814ce79, 0x322bed48, 0x3c22e043, 0x2e39f75e, 0x2030fa55, 0xec9ab701, 0xe293ba0a, 0xf088ad17, 0xfe81a01c, 0xd4be832d, 0xdab78e26, 0xc8ac993b, 0xc6a59430, 0x9cd2df59, 0x92dbd252, 0x80c0c54f, 0x8ec9c844, 0xa4f6eb75, 0xaaffe67e, 0xb8e4f163, 0xb6edfc68, 0x0c0a67b1, 0x02036aba, 0x10187da7, 0x1e1170ac, 0x342e539d, 0x3a275e96, 0x283c498b, 0x26354480, 0x7c420fe9, 0x724b02e2, 0x605015ff, 0x6e5918f4, 0x44663bc5, 0x4a6f36ce, 0x587421d3, 0x567d2cd8, 0x37a10c7a, 0x39a80171, 0x2bb3166c, 0x25ba1b67, 0x0f853856, 0x018c355d, 0x13972240, 0x1d9e2f4b, 0x47e96422, 0x49e06929, 0x5bfb7e34, 0x55f2733f, 0x7fcd500e, 0x71c45d05, 0x63df4a18, 0x6dd64713, 0xd731dcca, 0xd938d1c1, 0xcb23c6dc, 0xc52acbd7, 0xef15e8e6, 0xe11ce5ed, 0xf307f2f0, 0xfd0efffb, 0xa779b492, 0xa970b999, 0xbb6bae84, 0xb562a38f, 0x9f5d80be, 0x91548db5, 0x834f9aa8, 0x8d4697a3];
+    var U2 = [0x00000000, 0x0b0e090d, 0x161c121a, 0x1d121b17, 0x2c382434, 0x27362d39, 0x3a24362e, 0x312a3f23, 0x58704868, 0x537e4165, 0x4e6c5a72, 0x4562537f, 0x74486c5c, 0x7f466551, 0x62547e46, 0x695a774b, 0xb0e090d0, 0xbbee99dd, 0xa6fc82ca, 0xadf28bc7, 0x9cd8b4e4, 0x97d6bde9, 0x8ac4a6fe, 0x81caaff3, 0xe890d8b8, 0xe39ed1b5, 0xfe8ccaa2, 0xf582c3af, 0xc4a8fc8c, 0xcfa6f581, 0xd2b4ee96, 0xd9bae79b, 0x7bdb3bbb, 0x70d532b6, 0x6dc729a1, 0x66c920ac, 0x57e31f8f, 0x5ced1682, 0x41ff0d95, 0x4af10498, 0x23ab73d3, 0x28a57ade, 0x35b761c9, 0x3eb968c4, 0x0f9357e7, 0x049d5eea, 0x198f45fd, 0x12814cf0, 0xcb3bab6b, 0xc035a266, 0xdd27b971, 0xd629b07c, 0xe7038f5f, 0xec0d8652, 0xf11f9d45, 0xfa119448, 0x934be303, 0x9845ea0e, 0x8557f119, 0x8e59f814, 0xbf73c737, 0xb47dce3a, 0xa96fd52d, 0xa261dc20, 0xf6ad766d, 0xfda37f60, 0xe0b16477, 0xebbf6d7a, 0xda955259, 0xd19b5b54, 0xcc894043, 0xc787494e, 0xaedd3e05, 0xa5d33708, 0xb8c12c1f, 0xb3cf2512, 0x82e51a31, 0x89eb133c, 0x94f9082b, 0x9ff70126, 0x464de6bd, 0x4d43efb0, 0x5051f4a7, 0x5b5ffdaa, 0x6a75c289, 0x617bcb84, 0x7c69d093, 0x7767d99e, 0x1e3daed5, 0x1533a7d8, 0x0821bccf, 0x032fb5c2, 0x32058ae1, 0x390b83ec, 0x241998fb, 0x2f1791f6, 0x8d764dd6, 0x867844db, 0x9b6a5fcc, 0x906456c1, 0xa14e69e2, 0xaa4060ef, 0xb7527bf8, 0xbc5c72f5, 0xd50605be, 0xde080cb3, 0xc31a17a4, 0xc8141ea9, 0xf93e218a, 0xf2302887, 0xef223390, 0xe42c3a9d, 0x3d96dd06, 0x3698d40b, 0x2b8acf1c, 0x2084c611, 0x11aef932, 0x1aa0f03f, 0x07b2eb28, 0x0cbce225, 0x65e6956e, 0x6ee89c63, 0x73fa8774, 0x78f48e79, 0x49deb15a, 0x42d0b857, 0x5fc2a340, 0x54ccaa4d, 0xf741ecda, 0xfc4fe5d7, 0xe15dfec0, 0xea53f7cd, 0xdb79c8ee, 0xd077c1e3, 0xcd65daf4, 0xc66bd3f9, 0xaf31a4b2, 0xa43fadbf, 0xb92db6a8, 0xb223bfa5, 0x83098086, 0x8807898b, 0x9515929c, 0x9e1b9b91, 0x47a17c0a, 0x4caf7507, 0x51bd6e10, 0x5ab3671d, 0x6b99583e, 0x60975133, 0x7d854a24, 0x768b4329, 0x1fd13462, 0x14df3d6f, 0x09cd2678, 0x02c32f75, 0x33e91056, 0x38e7195b, 0x25f5024c, 0x2efb0b41, 0x8c9ad761, 0x8794de6c, 0x9a86c57b, 0x9188cc76, 0xa0a2f355, 0xabacfa58, 0xb6bee14f, 0xbdb0e842, 0xd4ea9f09, 0xdfe49604, 0xc2f68d13, 0xc9f8841e, 0xf8d2bb3d, 0xf3dcb230, 0xeecea927, 0xe5c0a02a, 0x3c7a47b1, 0x37744ebc, 0x2a6655ab, 0x21685ca6, 0x10426385, 0x1b4c6a88, 0x065e719f, 0x0d507892, 0x640a0fd9, 0x6f0406d4, 0x72161dc3, 0x791814ce, 0x48322bed, 0x433c22e0, 0x5e2e39f7, 0x552030fa, 0x01ec9ab7, 0x0ae293ba, 0x17f088ad, 0x1cfe81a0, 0x2dd4be83, 0x26dab78e, 0x3bc8ac99, 0x30c6a594, 0x599cd2df, 0x5292dbd2, 0x4f80c0c5, 0x448ec9c8, 0x75a4f6eb, 0x7eaaffe6, 0x63b8e4f1, 0x68b6edfc, 0xb10c0a67, 0xba02036a, 0xa710187d, 0xac1e1170, 0x9d342e53, 0x963a275e, 0x8b283c49, 0x80263544, 0xe97c420f, 0xe2724b02, 0xff605015, 0xf46e5918, 0xc544663b, 0xce4a6f36, 0xd3587421, 0xd8567d2c, 0x7a37a10c, 0x7139a801, 0x6c2bb316, 0x6725ba1b, 0x560f8538, 0x5d018c35, 0x40139722, 0x4b1d9e2f, 0x2247e964, 0x2949e069, 0x345bfb7e, 0x3f55f273, 0x0e7fcd50, 0x0571c45d, 0x1863df4a, 0x136dd647, 0xcad731dc, 0xc1d938d1, 0xdccb23c6, 0xd7c52acb, 0xe6ef15e8, 0xede11ce5, 0xf0f307f2, 0xfbfd0eff, 0x92a779b4, 0x99a970b9, 0x84bb6bae, 0x8fb562a3, 0xbe9f5d80, 0xb591548d, 0xa8834f9a, 0xa38d4697];
+    var U3 = [0x00000000, 0x0d0b0e09, 0x1a161c12, 0x171d121b, 0x342c3824, 0x3927362d, 0x2e3a2436, 0x23312a3f, 0x68587048, 0x65537e41, 0x724e6c5a, 0x7f456253, 0x5c74486c, 0x517f4665, 0x4662547e, 0x4b695a77, 0xd0b0e090, 0xddbbee99, 0xcaa6fc82, 0xc7adf28b, 0xe49cd8b4, 0xe997d6bd, 0xfe8ac4a6, 0xf381caaf, 0xb8e890d8, 0xb5e39ed1, 0xa2fe8cca, 0xaff582c3, 0x8cc4a8fc, 0x81cfa6f5, 0x96d2b4ee, 0x9bd9bae7, 0xbb7bdb3b, 0xb670d532, 0xa16dc729, 0xac66c920, 0x8f57e31f, 0x825ced16, 0x9541ff0d, 0x984af104, 0xd323ab73, 0xde28a57a, 0xc935b761, 0xc43eb968, 0xe70f9357, 0xea049d5e, 0xfd198f45, 0xf012814c, 0x6bcb3bab, 0x66c035a2, 0x71dd27b9, 0x7cd629b0, 0x5fe7038f, 0x52ec0d86, 0x45f11f9d, 0x48fa1194, 0x03934be3, 0x0e9845ea, 0x198557f1, 0x148e59f8, 0x37bf73c7, 0x3ab47dce, 0x2da96fd5, 0x20a261dc, 0x6df6ad76, 0x60fda37f, 0x77e0b164, 0x7aebbf6d, 0x59da9552, 0x54d19b5b, 0x43cc8940, 0x4ec78749, 0x05aedd3e, 0x08a5d337, 0x1fb8c12c, 0x12b3cf25, 0x3182e51a, 0x3c89eb13, 0x2b94f908, 0x269ff701, 0xbd464de6, 0xb04d43ef, 0xa75051f4, 0xaa5b5ffd, 0x896a75c2, 0x84617bcb, 0x937c69d0, 0x9e7767d9, 0xd51e3dae, 0xd81533a7, 0xcf0821bc, 0xc2032fb5, 0xe132058a, 0xec390b83, 0xfb241998, 0xf62f1791, 0xd68d764d, 0xdb867844, 0xcc9b6a5f, 0xc1906456, 0xe2a14e69, 0xefaa4060, 0xf8b7527b, 0xf5bc5c72, 0xbed50605, 0xb3de080c, 0xa4c31a17, 0xa9c8141e, 0x8af93e21, 0x87f23028, 0x90ef2233, 0x9de42c3a, 0x063d96dd, 0x0b3698d4, 0x1c2b8acf, 0x112084c6, 0x3211aef9, 0x3f1aa0f0, 0x2807b2eb, 0x250cbce2, 0x6e65e695, 0x636ee89c, 0x7473fa87, 0x7978f48e, 0x5a49deb1, 0x5742d0b8, 0x405fc2a3, 0x4d54ccaa, 0xdaf741ec, 0xd7fc4fe5, 0xc0e15dfe, 0xcdea53f7, 0xeedb79c8, 0xe3d077c1, 0xf4cd65da, 0xf9c66bd3, 0xb2af31a4, 0xbfa43fad, 0xa8b92db6, 0xa5b223bf, 0x86830980, 0x8b880789, 0x9c951592, 0x919e1b9b, 0x0a47a17c, 0x074caf75, 0x1051bd6e, 0x1d5ab367, 0x3e6b9958, 0x33609751, 0x247d854a, 0x29768b43, 0x621fd134, 0x6f14df3d, 0x7809cd26, 0x7502c32f, 0x5633e910, 0x5b38e719, 0x4c25f502, 0x412efb0b, 0x618c9ad7, 0x6c8794de, 0x7b9a86c5, 0x769188cc, 0x55a0a2f3, 0x58abacfa, 0x4fb6bee1, 0x42bdb0e8, 0x09d4ea9f, 0x04dfe496, 0x13c2f68d, 0x1ec9f884, 0x3df8d2bb, 0x30f3dcb2, 0x27eecea9, 0x2ae5c0a0, 0xb13c7a47, 0xbc37744e, 0xab2a6655, 0xa621685c, 0x85104263, 0x881b4c6a, 0x9f065e71, 0x920d5078, 0xd9640a0f, 0xd46f0406, 0xc372161d, 0xce791814, 0xed48322b, 0xe0433c22, 0xf75e2e39, 0xfa552030, 0xb701ec9a, 0xba0ae293, 0xad17f088, 0xa01cfe81, 0x832dd4be, 0x8e26dab7, 0x993bc8ac, 0x9430c6a5, 0xdf599cd2, 0xd25292db, 0xc54f80c0, 0xc8448ec9, 0xeb75a4f6, 0xe67eaaff, 0xf163b8e4, 0xfc68b6ed, 0x67b10c0a, 0x6aba0203, 0x7da71018, 0x70ac1e11, 0x539d342e, 0x5e963a27, 0x498b283c, 0x44802635, 0x0fe97c42, 0x02e2724b, 0x15ff6050, 0x18f46e59, 0x3bc54466, 0x36ce4a6f, 0x21d35874, 0x2cd8567d, 0x0c7a37a1, 0x017139a8, 0x166c2bb3, 0x1b6725ba, 0x38560f85, 0x355d018c, 0x22401397, 0x2f4b1d9e, 0x642247e9, 0x692949e0, 0x7e345bfb, 0x733f55f2, 0x500e7fcd, 0x5d0571c4, 0x4a1863df, 0x47136dd6, 0xdccad731, 0xd1c1d938, 0xc6dccb23, 0xcbd7c52a, 0xe8e6ef15, 0xe5ede11c, 0xf2f0f307, 0xfffbfd0e, 0xb492a779, 0xb999a970, 0xae84bb6b, 0xa38fb562, 0x80be9f5d, 0x8db59154, 0x9aa8834f, 0x97a38d46];
+    var U4 = [0x00000000, 0x090d0b0e, 0x121a161c, 0x1b171d12, 0x24342c38, 0x2d392736, 0x362e3a24, 0x3f23312a, 0x48685870, 0x4165537e, 0x5a724e6c, 0x537f4562, 0x6c5c7448, 0x65517f46, 0x7e466254, 0x774b695a, 0x90d0b0e0, 0x99ddbbee, 0x82caa6fc, 0x8bc7adf2, 0xb4e49cd8, 0xbde997d6, 0xa6fe8ac4, 0xaff381ca, 0xd8b8e890, 0xd1b5e39e, 0xcaa2fe8c, 0xc3aff582, 0xfc8cc4a8, 0xf581cfa6, 0xee96d2b4, 0xe79bd9ba, 0x3bbb7bdb, 0x32b670d5, 0x29a16dc7, 0x20ac66c9, 0x1f8f57e3, 0x16825ced, 0x0d9541ff, 0x04984af1, 0x73d323ab, 0x7ade28a5, 0x61c935b7, 0x68c43eb9, 0x57e70f93, 0x5eea049d, 0x45fd198f, 0x4cf01281, 0xab6bcb3b, 0xa266c035, 0xb971dd27, 0xb07cd629, 0x8f5fe703, 0x8652ec0d, 0x9d45f11f, 0x9448fa11, 0xe303934b, 0xea0e9845, 0xf1198557, 0xf8148e59, 0xc737bf73, 0xce3ab47d, 0xd52da96f, 0xdc20a261, 0x766df6ad, 0x7f60fda3, 0x6477e0b1, 0x6d7aebbf, 0x5259da95, 0x5b54d19b, 0x4043cc89, 0x494ec787, 0x3e05aedd, 0x3708a5d3, 0x2c1fb8c1, 0x2512b3cf, 0x1a3182e5, 0x133c89eb, 0x082b94f9, 0x01269ff7, 0xe6bd464d, 0xefb04d43, 0xf4a75051, 0xfdaa5b5f, 0xc2896a75, 0xcb84617b, 0xd0937c69, 0xd99e7767, 0xaed51e3d, 0xa7d81533, 0xbccf0821, 0xb5c2032f, 0x8ae13205, 0x83ec390b, 0x98fb2419, 0x91f62f17, 0x4dd68d76, 0x44db8678, 0x5fcc9b6a, 0x56c19064, 0x69e2a14e, 0x60efaa40, 0x7bf8b752, 0x72f5bc5c, 0x05bed506, 0x0cb3de08, 0x17a4c31a, 0x1ea9c814, 0x218af93e, 0x2887f230, 0x3390ef22, 0x3a9de42c, 0xdd063d96, 0xd40b3698, 0xcf1c2b8a, 0xc6112084, 0xf93211ae, 0xf03f1aa0, 0xeb2807b2, 0xe2250cbc, 0x956e65e6, 0x9c636ee8, 0x877473fa, 0x8e7978f4, 0xb15a49de, 0xb85742d0, 0xa3405fc2, 0xaa4d54cc, 0xecdaf741, 0xe5d7fc4f, 0xfec0e15d, 0xf7cdea53, 0xc8eedb79, 0xc1e3d077, 0xdaf4cd65, 0xd3f9c66b, 0xa4b2af31, 0xadbfa43f, 0xb6a8b92d, 0xbfa5b223, 0x80868309, 0x898b8807, 0x929c9515, 0x9b919e1b, 0x7c0a47a1, 0x75074caf, 0x6e1051bd, 0x671d5ab3, 0x583e6b99, 0x51336097, 0x4a247d85, 0x4329768b, 0x34621fd1, 0x3d6f14df, 0x267809cd, 0x2f7502c3, 0x105633e9, 0x195b38e7, 0x024c25f5, 0x0b412efb, 0xd7618c9a, 0xde6c8794, 0xc57b9a86, 0xcc769188, 0xf355a0a2, 0xfa58abac, 0xe14fb6be, 0xe842bdb0, 0x9f09d4ea, 0x9604dfe4, 0x8d13c2f6, 0x841ec9f8, 0xbb3df8d2, 0xb230f3dc, 0xa927eece, 0xa02ae5c0, 0x47b13c7a, 0x4ebc3774, 0x55ab2a66, 0x5ca62168, 0x63851042, 0x6a881b4c, 0x719f065e, 0x78920d50, 0x0fd9640a, 0x06d46f04, 0x1dc37216, 0x14ce7918, 0x2bed4832, 0x22e0433c, 0x39f75e2e, 0x30fa5520, 0x9ab701ec, 0x93ba0ae2, 0x88ad17f0, 0x81a01cfe, 0xbe832dd4, 0xb78e26da, 0xac993bc8, 0xa59430c6, 0xd2df599c, 0xdbd25292, 0xc0c54f80, 0xc9c8448e, 0xf6eb75a4, 0xffe67eaa, 0xe4f163b8, 0xedfc68b6, 0x0a67b10c, 0x036aba02, 0x187da710, 0x1170ac1e, 0x2e539d34, 0x275e963a, 0x3c498b28, 0x35448026, 0x420fe97c, 0x4b02e272, 0x5015ff60, 0x5918f46e, 0x663bc544, 0x6f36ce4a, 0x7421d358, 0x7d2cd856, 0xa10c7a37, 0xa8017139, 0xb3166c2b, 0xba1b6725, 0x8538560f, 0x8c355d01, 0x97224013, 0x9e2f4b1d, 0xe9642247, 0xe0692949, 0xfb7e345b, 0xf2733f55, 0xcd500e7f, 0xc45d0571, 0xdf4a1863, 0xd647136d, 0x31dccad7, 0x38d1c1d9, 0x23c6dccb, 0x2acbd7c5, 0x15e8e6ef, 0x1ce5ede1, 0x07f2f0f3, 0x0efffbfd, 0x79b492a7, 0x70b999a9, 0x6bae84bb, 0x62a38fb5, 0x5d80be9f, 0x548db591, 0x4f9aa883, 0x4697a38d];
+
+    function convertToInt32(bytes) {
+        var result = [];
+        for (var i = 0; i < bytes.length; i += 4) {
+            result.push(
+                (bytes[i    ] << 24) |
+                (bytes[i + 1] << 16) |
+                (bytes[i + 2] <<  8) |
+                 bytes[i + 3]
+            );
+        }
+        return result;
+    }
+
+    var AES = function(key) {
+        if (!(this instanceof AES)) {
+            throw Error('AES must be instanitated with `new`');
+        }
+
+        Object.defineProperty(this, 'key', {
+            value: coerceArray(key, true)
+        });
+
+        this._prepare();
+    };
+
+
+    AES.prototype._prepare = function() {
+
+        var rounds = numberOfRounds[this.key.length];
+        if (rounds == null) {
+            throw new Error('invalid key size (must be 16, 24 or 32 bytes)');
+        }
+
+        // encryption round keys
+        this._Ke = [];
+
+        // decryption round keys
+        this._Kd = [];
+
+        for (var i = 0; i <= rounds; i++) {
+            this._Ke.push([0, 0, 0, 0]);
+            this._Kd.push([0, 0, 0, 0]);
+        }
+
+        var roundKeyCount = (rounds + 1) * 4;
+        var KC = this.key.length / 4;
+
+        // convert the key into ints
+        var tk = convertToInt32(this.key);
+
+        // copy values into round key arrays
+        var index;
+        for (var i = 0; i < KC; i++) {
+            index = i >> 2;
+            this._Ke[index][i % 4] = tk[i];
+            this._Kd[rounds - index][i % 4] = tk[i];
+        }
+
+        // key expansion (fips-197 section 5.2)
+        var rconpointer = 0;
+        var t = KC, tt;
+        while (t < roundKeyCount) {
+            tt = tk[KC - 1];
+            tk[0] ^= ((S[(tt >> 16) & 0xFF] << 24) ^
+                      (S[(tt >>  8) & 0xFF] << 16) ^
+                      (S[ tt        & 0xFF] <<  8) ^
+                       S[(tt >> 24) & 0xFF]        ^
+                      (rcon[rconpointer] << 24));
+            rconpointer += 1;
+
+            // key expansion (for non-256 bit)
+            if (KC != 8) {
+                for (var i = 1; i < KC; i++) {
+                    tk[i] ^= tk[i - 1];
+                }
+
+            // key expansion for 256-bit keys is "slightly different" (fips-197)
+            } else {
+                for (var i = 1; i < (KC / 2); i++) {
+                    tk[i] ^= tk[i - 1];
+                }
+                tt = tk[(KC / 2) - 1];
+
+                tk[KC / 2] ^= (S[ tt        & 0xFF]        ^
+                              (S[(tt >>  8) & 0xFF] <<  8) ^
+                              (S[(tt >> 16) & 0xFF] << 16) ^
+                              (S[(tt >> 24) & 0xFF] << 24));
+
+                for (var i = (KC / 2) + 1; i < KC; i++) {
+                    tk[i] ^= tk[i - 1];
+                }
+            }
+
+            // copy values into round key arrays
+            var i = 0, r, c;
+            while (i < KC && t < roundKeyCount) {
+                r = t >> 2;
+                c = t % 4;
+                this._Ke[r][c] = tk[i];
+                this._Kd[rounds - r][c] = tk[i++];
+                t++;
+            }
+        }
+
+        // inverse-cipher-ify the decryption round key (fips-197 section 5.3)
+        for (var r = 1; r < rounds; r++) {
+            for (var c = 0; c < 4; c++) {
+                tt = this._Kd[r][c];
+                this._Kd[r][c] = (U1[(tt >> 24) & 0xFF] ^
+                                  U2[(tt >> 16) & 0xFF] ^
+                                  U3[(tt >>  8) & 0xFF] ^
+                                  U4[ tt        & 0xFF]);
+            }
+        }
+    };
+
+    AES.prototype.encrypt = function(plaintext) {
+        if (plaintext.length != 16) {
+            throw new Error('invalid plaintext size (must be 16 bytes)');
+        }
+
+        var rounds = this._Ke.length - 1;
+        var a = [0, 0, 0, 0];
+
+        // convert plaintext to (ints ^ key)
+        var t = convertToInt32(plaintext);
+        for (var i = 0; i < 4; i++) {
+            t[i] ^= this._Ke[0][i];
+        }
+
+        // apply round transforms
+        for (var r = 1; r < rounds; r++) {
+            for (var i = 0; i < 4; i++) {
+                a[i] = (T1[(t[ i         ] >> 24) & 0xff] ^
+                        T2[(t[(i + 1) % 4] >> 16) & 0xff] ^
+                        T3[(t[(i + 2) % 4] >>  8) & 0xff] ^
+                        T4[ t[(i + 3) % 4]        & 0xff] ^
+                        this._Ke[r][i]);
+            }
+            t = a.slice();
+        }
+
+        // the last round is special
+        var result = createArray(16), tt;
+        for (var i = 0; i < 4; i++) {
+            tt = this._Ke[rounds][i];
+            result[4 * i    ] = (S[(t[ i         ] >> 24) & 0xff] ^ (tt >> 24)) & 0xff;
+            result[4 * i + 1] = (S[(t[(i + 1) % 4] >> 16) & 0xff] ^ (tt >> 16)) & 0xff;
+            result[4 * i + 2] = (S[(t[(i + 2) % 4] >>  8) & 0xff] ^ (tt >>  8)) & 0xff;
+            result[4 * i + 3] = (S[ t[(i + 3) % 4]        & 0xff] ^  tt       ) & 0xff;
+        }
+
+        return result;
+    };
+
+    AES.prototype.decrypt = function(ciphertext) {
+        if (ciphertext.length != 16) {
+            throw new Error('invalid ciphertext size (must be 16 bytes)');
+        }
+
+        var rounds = this._Kd.length - 1;
+        var a = [0, 0, 0, 0];
+
+        // convert plaintext to (ints ^ key)
+        var t = convertToInt32(ciphertext);
+        for (var i = 0; i < 4; i++) {
+            t[i] ^= this._Kd[0][i];
+        }
+
+        // apply round transforms
+        for (var r = 1; r < rounds; r++) {
+            for (var i = 0; i < 4; i++) {
+                a[i] = (T5[(t[ i          ] >> 24) & 0xff] ^
+                        T6[(t[(i + 3) % 4] >> 16) & 0xff] ^
+                        T7[(t[(i + 2) % 4] >>  8) & 0xff] ^
+                        T8[ t[(i + 1) % 4]        & 0xff] ^
+                        this._Kd[r][i]);
+            }
+            t = a.slice();
+        }
+
+        // the last round is special
+        var result = createArray(16), tt;
+        for (var i = 0; i < 4; i++) {
+            tt = this._Kd[rounds][i];
+            result[4 * i    ] = (Si[(t[ i         ] >> 24) & 0xff] ^ (tt >> 24)) & 0xff;
+            result[4 * i + 1] = (Si[(t[(i + 3) % 4] >> 16) & 0xff] ^ (tt >> 16)) & 0xff;
+            result[4 * i + 2] = (Si[(t[(i + 2) % 4] >>  8) & 0xff] ^ (tt >>  8)) & 0xff;
+            result[4 * i + 3] = (Si[ t[(i + 1) % 4]        & 0xff] ^  tt       ) & 0xff;
+        }
+
+        return result;
+    };
+
+
+    /**
+     *  Mode Of Operation - Electonic Codebook (ECB)
+     */
+    var ModeOfOperationECB = function(key) {
+        if (!(this instanceof ModeOfOperationECB)) {
+            throw Error('AES must be instanitated with `new`');
+        }
+
+        this.description = "Electronic Code Block";
+        this.name = "ecb";
+
+        this._aes = new AES(key);
+    };
+
+    ModeOfOperationECB.prototype.encrypt = function(plaintext) {
+        plaintext = coerceArray(plaintext);
+
+        if ((plaintext.length % 16) !== 0) {
+            throw new Error('invalid plaintext size (must be multiple of 16 bytes)');
+        }
+
+        var ciphertext = createArray(plaintext.length);
+        var block = createArray(16);
+
+        for (var i = 0; i < plaintext.length; i += 16) {
+            copyArray(plaintext, block, 0, i, i + 16);
+            block = this._aes.encrypt(block);
+            copyArray(block, ciphertext, i);
+        }
+
+        return ciphertext;
+    };
+
+    ModeOfOperationECB.prototype.decrypt = function(ciphertext) {
+        ciphertext = coerceArray(ciphertext);
+
+        if ((ciphertext.length % 16) !== 0) {
+            throw new Error('invalid ciphertext size (must be multiple of 16 bytes)');
+        }
+
+        var plaintext = createArray(ciphertext.length);
+        var block = createArray(16);
+
+        for (var i = 0; i < ciphertext.length; i += 16) {
+            copyArray(ciphertext, block, 0, i, i + 16);
+            block = this._aes.decrypt(block);
+            copyArray(block, plaintext, i);
+        }
+
+        return plaintext;
+    };
+
+
+    /**
+     *  Mode Of Operation - Cipher Block Chaining (CBC)
+     */
+    var ModeOfOperationCBC = function(key, iv) {
+        if (!(this instanceof ModeOfOperationCBC)) {
+            throw Error('AES must be instanitated with `new`');
+        }
+
+        this.description = "Cipher Block Chaining";
+        this.name = "cbc";
+
+        if (!iv) {
+            iv = createArray(16);
+
+        } else if (iv.length != 16) {
+            throw new Error('invalid initialation vector size (must be 16 bytes)');
+        }
+
+        this._lastCipherblock = coerceArray(iv, true);
+
+        this._aes = new AES(key);
+    };
+
+    ModeOfOperationCBC.prototype.encrypt = function(plaintext) {
+        plaintext = coerceArray(plaintext);
+
+        if ((plaintext.length % 16) !== 0) {
+            throw new Error('invalid plaintext size (must be multiple of 16 bytes)');
+        }
+
+        var ciphertext = createArray(plaintext.length);
+        var block = createArray(16);
+
+        for (var i = 0; i < plaintext.length; i += 16) {
+            copyArray(plaintext, block, 0, i, i + 16);
+
+            for (var j = 0; j < 16; j++) {
+                block[j] ^= this._lastCipherblock[j];
+            }
+
+            this._lastCipherblock = this._aes.encrypt(block);
+            copyArray(this._lastCipherblock, ciphertext, i);
+        }
+
+        return ciphertext;
+    };
+
+    ModeOfOperationCBC.prototype.decrypt = function(ciphertext) {
+        ciphertext = coerceArray(ciphertext);
+
+        if ((ciphertext.length % 16) !== 0) {
+            throw new Error('invalid ciphertext size (must be multiple of 16 bytes)');
+        }
+
+        var plaintext = createArray(ciphertext.length);
+        var block = createArray(16);
+
+        for (var i = 0; i < ciphertext.length; i += 16) {
+            copyArray(ciphertext, block, 0, i, i + 16);
+            block = this._aes.decrypt(block);
+
+            for (var j = 0; j < 16; j++) {
+                plaintext[i + j] = block[j] ^ this._lastCipherblock[j];
+            }
+
+            copyArray(ciphertext, this._lastCipherblock, 0, i, i + 16);
+        }
+
+        return plaintext;
+    };
+
+
+    /**
+     *  Mode Of Operation - Cipher Feedback (CFB)
+     */
+    var ModeOfOperationCFB = function(key, iv, segmentSize) {
+        if (!(this instanceof ModeOfOperationCFB)) {
+            throw Error('AES must be instanitated with `new`');
+        }
+
+        this.description = "Cipher Feedback";
+        this.name = "cfb";
+
+        if (!iv) {
+            iv = createArray(16);
+
+        } else if (iv.length != 16) {
+            throw new Error('invalid initialation vector size (must be 16 size)');
+        }
+
+        if (!segmentSize) { segmentSize = 1; }
+
+        this.segmentSize = segmentSize;
+
+        this._shiftRegister = coerceArray(iv, true);
+
+        this._aes = new AES(key);
+    };
+
+    ModeOfOperationCFB.prototype.encrypt = function(plaintext) {
+        if ((plaintext.length % this.segmentSize) != 0) {
+            throw new Error('invalid plaintext size (must be segmentSize bytes)');
+        }
+
+        var encrypted = coerceArray(plaintext, true);
+
+        var xorSegment;
+        for (var i = 0; i < encrypted.length; i += this.segmentSize) {
+            xorSegment = this._aes.encrypt(this._shiftRegister);
+            for (var j = 0; j < this.segmentSize; j++) {
+                encrypted[i + j] ^= xorSegment[j];
+            }
+
+            // Shift the register
+            copyArray(this._shiftRegister, this._shiftRegister, 0, this.segmentSize);
+            copyArray(encrypted, this._shiftRegister, 16 - this.segmentSize, i, i + this.segmentSize);
+        }
+
+        return encrypted;
+    };
+
+    ModeOfOperationCFB.prototype.decrypt = function(ciphertext) {
+        if ((ciphertext.length % this.segmentSize) != 0) {
+            throw new Error('invalid ciphertext size (must be segmentSize bytes)');
+        }
+
+        var plaintext = coerceArray(ciphertext, true);
+
+        var xorSegment;
+        for (var i = 0; i < plaintext.length; i += this.segmentSize) {
+            xorSegment = this._aes.encrypt(this._shiftRegister);
+
+            for (var j = 0; j < this.segmentSize; j++) {
+                plaintext[i + j] ^= xorSegment[j];
+            }
+
+            // Shift the register
+            copyArray(this._shiftRegister, this._shiftRegister, 0, this.segmentSize);
+            copyArray(ciphertext, this._shiftRegister, 16 - this.segmentSize, i, i + this.segmentSize);
+        }
+
+        return plaintext;
+    };
+
+    /**
+     *  Mode Of Operation - Output Feedback (OFB)
+     */
+    var ModeOfOperationOFB = function(key, iv) {
+        if (!(this instanceof ModeOfOperationOFB)) {
+            throw Error('AES must be instanitated with `new`');
+        }
+
+        this.description = "Output Feedback";
+        this.name = "ofb";
+
+        if (!iv) {
+            iv = createArray(16);
+
+        } else if (iv.length != 16) {
+            throw new Error('invalid initialation vector size (must be 16 bytes)');
+        }
+
+        this._lastPrecipher = coerceArray(iv, true);
+        this._lastPrecipherIndex = 16;
+
+        this._aes = new AES(key);
+    };
+
+    ModeOfOperationOFB.prototype.encrypt = function(plaintext) {
+        var encrypted = coerceArray(plaintext, true);
+
+        for (var i = 0; i < encrypted.length; i++) {
+            if (this._lastPrecipherIndex === 16) {
+                this._lastPrecipher = this._aes.encrypt(this._lastPrecipher);
+                this._lastPrecipherIndex = 0;
+            }
+            encrypted[i] ^= this._lastPrecipher[this._lastPrecipherIndex++];
+        }
+
+        return encrypted;
+    };
+
+    // Decryption is symetric
+    ModeOfOperationOFB.prototype.decrypt = ModeOfOperationOFB.prototype.encrypt;
+
+
+    /**
+     *  Counter object for CTR common mode of operation
+     */
+    var Counter = function(initialValue) {
+        if (!(this instanceof Counter)) {
+            throw Error('Counter must be instanitated with `new`');
+        }
+
+        // We allow 0, but anything false-ish uses the default 1
+        if (initialValue !== 0 && !initialValue) { initialValue = 1; }
+
+        if (typeof(initialValue) === 'number') {
+            this._counter = createArray(16);
+            this.setValue(initialValue);
+
+        } else {
+            this.setBytes(initialValue);
+        }
+    };
+
+    Counter.prototype.setValue = function(value) {
+        if (typeof(value) !== 'number' || parseInt(value) != value) {
+            throw new Error('invalid counter value (must be an integer)');
+        }
+
+        for (var index = 15; index >= 0; --index) {
+            this._counter[index] = value % 256;
+            value = value >> 8;
+        }
+    };
+
+    Counter.prototype.setBytes = function(bytes) {
+        bytes = coerceArray(bytes, true);
+
+        if (bytes.length != 16) {
+            throw new Error('invalid counter bytes size (must be 16 bytes)');
+        }
+
+        this._counter = bytes;
+    };
+
+    Counter.prototype.increment = function() {
+        for (var i = 15; i >= 0; i--) {
+            if (this._counter[i] === 255) {
+                this._counter[i] = 0;
+            } else {
+                this._counter[i]++;
+                break;
+            }
+        }
+    };
+
+
+    /**
+     *  Mode Of Operation - Counter (CTR)
+     */
+    var ModeOfOperationCTR = function(key, counter) {
+        if (!(this instanceof ModeOfOperationCTR)) {
+            throw Error('AES must be instanitated with `new`');
+        }
+
+        this.description = "Counter";
+        this.name = "ctr";
+
+        if (!(counter instanceof Counter)) {
+            counter = new Counter(counter);
+        }
+
+        this._counter = counter;
+
+        this._remainingCounter = null;
+        this._remainingCounterIndex = 16;
+
+        this._aes = new AES(key);
+    };
+
+    ModeOfOperationCTR.prototype.encrypt = function(plaintext) {
+        var encrypted = coerceArray(plaintext, true);
+
+        for (var i = 0; i < encrypted.length; i++) {
+            if (this._remainingCounterIndex === 16) {
+                this._remainingCounter = this._aes.encrypt(this._counter._counter);
+                this._remainingCounterIndex = 0;
+                this._counter.increment();
+            }
+            encrypted[i] ^= this._remainingCounter[this._remainingCounterIndex++];
+        }
+
+        return encrypted;
+    };
+
+    // Decryption is symetric
+    ModeOfOperationCTR.prototype.decrypt = ModeOfOperationCTR.prototype.encrypt;
+
+
+    ///////////////////////
+    // Padding
+
+    // See:https://tools.ietf.org/html/rfc2315
+    function pkcs7pad(data) {
+        data = coerceArray(data, true);
+        var padder = 16 - (data.length % 16);
+        var result = createArray(data.length + padder);
+        copyArray(data, result);
+        for (var i = data.length; i < result.length; i++) {
+            result[i] = padder;
+        }
+        return result;
+    }
+
+    function pkcs7strip(data) {
+        data = coerceArray(data, true);
+        if (data.length < 16) { throw new Error('PKCS#7 invalid length'); }
+
+        var padder = data[data.length - 1];
+        if (padder > 16) { throw new Error('PKCS#7 padding byte out of range'); }
+
+        var length = data.length - padder;
+        for (var i = 0; i < padder; i++) {
+            if (data[length + i] !== padder) {
+                throw new Error('PKCS#7 invalid padding byte');
+            }
+        }
+
+        var result = createArray(length);
+        copyArray(data, result, 0, 0, length);
+        return result;
+    }
+
+    ///////////////////////
+    // Exporting
+
+
+    // The block cipher
+    var aesjs = {
+        AES: AES,
+        Counter: Counter,
+
+        ModeOfOperation: {
+            ecb: ModeOfOperationECB,
+            cbc: ModeOfOperationCBC,
+            cfb: ModeOfOperationCFB,
+            ofb: ModeOfOperationOFB,
+            ctr: ModeOfOperationCTR
+        },
+
+        utils: {
+            hex: convertHex,
+            utf8: convertUtf8
+        },
+
+        padding: {
+            pkcs7: {
+                pad: pkcs7pad,
+                strip: pkcs7strip
+            }
+        },
+
+        _arrayTest: {
+            coerceArray: coerceArray,
+            createArray: createArray,
+            copyArray: copyArray,
+        }
+    };
+
+
+    // node.js
+    if ('object' !== 'undefined') {
+        module.exports = aesjs;
+
+    // RequireJS/AMD
+    // http://www.requirejs.org/docs/api.html
+    // https://github.com/amdjs/amdjs-api/wiki/AMD
+    } else if (typeof(undefined) === 'function' && undefined.amd) {
+        undefined(aesjs);
+
+    // Web Browsers
+    } else {
+
+        // If there was an existing library at "aesjs" make sure it's still available
+        if (root.aesjs) {
+            aesjs._aesjs = root.aesjs;
+        }
+
+        root.aesjs = aesjs;
+    }
+
+
+})(commonjsGlobal);
+});
+
+const version$h = "json-wallets/5.5.0";
+
+"use strict";
+function looseArrayify(hexString) {
+    if (typeof (hexString) === 'string' && hexString.substring(0, 2) !== '0x') {
+        hexString = '0x' + hexString;
+    }
+    return arrayify(hexString);
+}
+function zpad(value, length) {
+    value = String(value);
+    while (value.length < length) {
+        value = '0' + value;
+    }
+    return value;
+}
+function getPassword(password) {
+    if (typeof (password) === 'string') {
+        return toUtf8Bytes(password, UnicodeNormalizationForm.NFKC);
+    }
+    return arrayify(password);
+}
+function searchPath(object, path) {
+    let currentChild = object;
+    const comps = path.toLowerCase().split('/');
+    for (let i = 0; i < comps.length; i++) {
+        // Search for a child object with a case-insensitive matching key
+        let matchingChild = null;
+        for (const key in currentChild) {
+            if (key.toLowerCase() === comps[i]) {
+                matchingChild = currentChild[key];
+                break;
+            }
+        }
+        // Didn't find one. :'(
+        if (matchingChild === null) {
+            return null;
+        }
+        // Now check this child...
+        currentChild = matchingChild;
+    }
+    return currentChild;
+}
+// See: https://www.ietf.org/rfc/rfc4122.txt (Section 4.4)
+function uuidV4(randomBytes) {
+    const bytes = arrayify(randomBytes);
+    // Section: 4.1.3:
+    // - time_hi_and_version[12:16] = 0b0100
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    // Section 4.4
+    // - clock_seq_hi_and_reserved[6] = 0b0
+    // - clock_seq_hi_and_reserved[7] = 0b1
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const value = hexlify(bytes);
+    return [
+        value.substring(2, 10),
+        value.substring(10, 14),
+        value.substring(14, 18),
+        value.substring(18, 22),
+        value.substring(22, 34),
+    ].join("-");
+}
+
+"use strict";
+const logger$j = new Logger(version$h);
+class CrowdsaleAccount extends Description {
+    isCrowdsaleAccount(value) {
+        return !!(value && value._isCrowdsaleAccount);
+    }
+}
+// See: https://github.com/ethereum/pyethsaletool
+function decrypt(json, password) {
+    const data = JSON.parse(json);
+    password = getPassword(password);
+    // Ethereum Address
+    const ethaddr = getAddress(searchPath(data, "ethaddr"));
+    // Encrypted Seed
+    const encseed = looseArrayify(searchPath(data, "encseed"));
+    if (!encseed || (encseed.length % 16) !== 0) {
+        logger$j.throwArgumentError("invalid encseed", "json", json);
+    }
+    const key = arrayify(pbkdf2(password, password, 2000, 32, "sha256")).slice(0, 16);
+    const iv = encseed.slice(0, 16);
+    const encryptedSeed = encseed.slice(16);
+    // Decrypt the seed
+    const aesCbc = new aesJs.ModeOfOperation.cbc(key, iv);
+    const seed = aesJs.padding.pkcs7.strip(arrayify(aesCbc.decrypt(encryptedSeed)));
+    // This wallet format is weird... Convert the binary encoded hex to a string.
+    let seedHex = "";
+    for (let i = 0; i < seed.length; i++) {
+        seedHex += String.fromCharCode(seed[i]);
+    }
+    const seedHexBytes = toUtf8Bytes(seedHex);
+    const privateKey = keccak256(seedHexBytes);
+    return new CrowdsaleAccount({
+        _isCrowdsaleAccount: true,
+        address: ethaddr,
+        privateKey: privateKey
+    });
+}
+
+"use strict";
+function isCrowdsaleWallet(json) {
+    let data = null;
+    try {
+        data = JSON.parse(json);
+    }
+    catch (error) {
+        return false;
+    }
+    return (data.encseed && data.ethaddr);
+}
+function isKeystoreWallet(json) {
+    let data = null;
+    try {
+        data = JSON.parse(json);
+    }
+    catch (error) {
+        return false;
+    }
+    if (!data.version || parseInt(data.version) !== data.version || parseInt(data.version) !== 3) {
+        return false;
+    }
+    // @TODO: Put more checks to make sure it has kdf, iv and all that good stuff
+    return true;
+}
+//export function isJsonWallet(json: string): boolean {
+//    return (isSecretStorageWallet(json) || isCrowdsaleWallet(json));
+//}
+function getJsonWalletAddress(json) {
+    if (isCrowdsaleWallet(json)) {
+        try {
+            return getAddress(JSON.parse(json).ethaddr);
+        }
+        catch (error) {
+            return null;
+        }
+    }
+    if (isKeystoreWallet(json)) {
+        try {
+            return getAddress(JSON.parse(json).address);
+        }
+        catch (error) {
+            return null;
+        }
+    }
+    return null;
+}
+
+var scrypt = createCommonjsModule(function (module, exports) {
+"use strict";
+
+(function(root) {
+    const MAX_VALUE = 0x7fffffff;
+
+    // The SHA256 and PBKDF2 implementation are from scrypt-async-js:
+    // See: https://github.com/dchest/scrypt-async-js
+    function SHA256(m) {
+        const K = new Uint32Array([
+           0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b,
+           0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01,
+           0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7,
+           0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
+           0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152,
+           0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
+           0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
+           0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
+           0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819,
+           0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08,
+           0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f,
+           0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
+           0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
+       ]);
+
+        let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
+        let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
+        const w = new Uint32Array(64);
+
+        function blocks(p) {
+            let off = 0, len = p.length;
+            while (len >= 64) {
+                let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7, u, i, j, t1, t2;
+
+                for (i = 0; i < 16; i++) {
+                    j = off + i*4;
+                    w[i] = ((p[j] & 0xff)<<24) | ((p[j+1] & 0xff)<<16) |
+                    ((p[j+2] & 0xff)<<8) | (p[j+3] & 0xff);
+                }
+
+                for (i = 16; i < 64; i++) {
+                    u = w[i-2];
+                    t1 = ((u>>>17) | (u<<(32-17))) ^ ((u>>>19) | (u<<(32-19))) ^ (u>>>10);
+
+                    u = w[i-15];
+                    t2 = ((u>>>7) | (u<<(32-7))) ^ ((u>>>18) | (u<<(32-18))) ^ (u>>>3);
+
+                    w[i] = (((t1 + w[i-7]) | 0) + ((t2 + w[i-16]) | 0)) | 0;
+                }
+
+                for (i = 0; i < 64; i++) {
+                    t1 = ((((((e>>>6) | (e<<(32-6))) ^ ((e>>>11) | (e<<(32-11))) ^
+                             ((e>>>25) | (e<<(32-25)))) + ((e & f) ^ (~e & g))) | 0) +
+                          ((h + ((K[i] + w[i]) | 0)) | 0)) | 0;
+
+                    t2 = ((((a>>>2) | (a<<(32-2))) ^ ((a>>>13) | (a<<(32-13))) ^
+                           ((a>>>22) | (a<<(32-22)))) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
+
+                    h = g;
+                    g = f;
+                    f = e;
+                    e = (d + t1) | 0;
+                    d = c;
+                    c = b;
+                    b = a;
+                    a = (t1 + t2) | 0;
+                }
+
+                h0 = (h0 + a) | 0;
+                h1 = (h1 + b) | 0;
+                h2 = (h2 + c) | 0;
+                h3 = (h3 + d) | 0;
+                h4 = (h4 + e) | 0;
+                h5 = (h5 + f) | 0;
+                h6 = (h6 + g) | 0;
+                h7 = (h7 + h) | 0;
+
+                off += 64;
+                len -= 64;
+            }
+        }
+
+        blocks(m);
+
+        let i, bytesLeft = m.length % 64,
+        bitLenHi = (m.length / 0x20000000) | 0,
+        bitLenLo = m.length << 3,
+        numZeros = (bytesLeft < 56) ? 56 : 120,
+        p = m.slice(m.length - bytesLeft, m.length);
+
+        p.push(0x80);
+        for (i = bytesLeft + 1; i < numZeros; i++) { p.push(0); }
+        p.push((bitLenHi >>> 24) & 0xff);
+        p.push((bitLenHi >>> 16) & 0xff);
+        p.push((bitLenHi >>> 8)  & 0xff);
+        p.push((bitLenHi >>> 0)  & 0xff);
+        p.push((bitLenLo >>> 24) & 0xff);
+        p.push((bitLenLo >>> 16) & 0xff);
+        p.push((bitLenLo >>> 8)  & 0xff);
+        p.push((bitLenLo >>> 0)  & 0xff);
+
+        blocks(p);
+
+        return [
+            (h0 >>> 24) & 0xff, (h0 >>> 16) & 0xff, (h0 >>> 8) & 0xff, (h0 >>> 0) & 0xff,
+            (h1 >>> 24) & 0xff, (h1 >>> 16) & 0xff, (h1 >>> 8) & 0xff, (h1 >>> 0) & 0xff,
+            (h2 >>> 24) & 0xff, (h2 >>> 16) & 0xff, (h2 >>> 8) & 0xff, (h2 >>> 0) & 0xff,
+            (h3 >>> 24) & 0xff, (h3 >>> 16) & 0xff, (h3 >>> 8) & 0xff, (h3 >>> 0) & 0xff,
+            (h4 >>> 24) & 0xff, (h4 >>> 16) & 0xff, (h4 >>> 8) & 0xff, (h4 >>> 0) & 0xff,
+            (h5 >>> 24) & 0xff, (h5 >>> 16) & 0xff, (h5 >>> 8) & 0xff, (h5 >>> 0) & 0xff,
+            (h6 >>> 24) & 0xff, (h6 >>> 16) & 0xff, (h6 >>> 8) & 0xff, (h6 >>> 0) & 0xff,
+            (h7 >>> 24) & 0xff, (h7 >>> 16) & 0xff, (h7 >>> 8) & 0xff, (h7 >>> 0) & 0xff
+        ];
+    }
+
+    function PBKDF2_HMAC_SHA256_OneIter(password, salt, dkLen) {
+        // compress password if it's longer than hash block length
+        password = (password.length <= 64) ? password : SHA256(password);
+
+        const innerLen = 64 + salt.length + 4;
+        const inner = new Array(innerLen);
+        const outerKey = new Array(64);
+
+        let i;
+        let dk = [];
+
+        // inner = (password ^ ipad) || salt || counter
+        for (i = 0; i < 64; i++) { inner[i] = 0x36; }
+        for (i = 0; i < password.length; i++) { inner[i] ^= password[i]; }
+        for (i = 0; i < salt.length; i++) { inner[64 + i] = salt[i]; }
+        for (i = innerLen - 4; i < innerLen; i++) { inner[i] = 0; }
+
+        // outerKey = password ^ opad
+        for (i = 0; i < 64; i++) outerKey[i] = 0x5c;
+        for (i = 0; i < password.length; i++) outerKey[i] ^= password[i];
+
+        // increments counter inside inner
+        function incrementCounter() {
+            for (let i = innerLen - 1; i >= innerLen - 4; i--) {
+                inner[i]++;
+                if (inner[i] <= 0xff) return;
+                inner[i] = 0;
+            }
+        }
+
+        // output blocks = SHA256(outerKey || SHA256(inner)) ...
+        while (dkLen >= 32) {
+            incrementCounter();
+            dk = dk.concat(SHA256(outerKey.concat(SHA256(inner))));
+            dkLen -= 32;
+        }
+        if (dkLen > 0) {
+            incrementCounter();
+            dk = dk.concat(SHA256(outerKey.concat(SHA256(inner))).slice(0, dkLen));
+        }
+
+        return dk;
+    }
+
+    // The following is an adaptation of scryptsy
+    // See: https://www.npmjs.com/package/scryptsy
+    function blockmix_salsa8(BY, Yi, r, x, _X) {
+        let i;
+
+        arraycopy(BY, (2 * r - 1) * 16, _X, 0, 16);
+        for (i = 0; i < 2 * r; i++) {
+            blockxor(BY, i * 16, _X, 16);
+            salsa20_8(_X, x);
+            arraycopy(_X, 0, BY, Yi + (i * 16), 16);
+        }
+
+        for (i = 0; i < r; i++) {
+            arraycopy(BY, Yi + (i * 2) * 16, BY, (i * 16), 16);
+        }
+
+        for (i = 0; i < r; i++) {
+            arraycopy(BY, Yi + (i * 2 + 1) * 16, BY, (i + r) * 16, 16);
+        }
+    }
+
+    function R(a, b) {
+        return (a << b) | (a >>> (32 - b));
+    }
+
+    function salsa20_8(B, x) {
+        arraycopy(B, 0, x, 0, 16);
+
+        for (let i = 8; i > 0; i -= 2) {
+            x[ 4] ^= R(x[ 0] + x[12], 7);
+            x[ 8] ^= R(x[ 4] + x[ 0], 9);
+            x[12] ^= R(x[ 8] + x[ 4], 13);
+            x[ 0] ^= R(x[12] + x[ 8], 18);
+            x[ 9] ^= R(x[ 5] + x[ 1], 7);
+            x[13] ^= R(x[ 9] + x[ 5], 9);
+            x[ 1] ^= R(x[13] + x[ 9], 13);
+            x[ 5] ^= R(x[ 1] + x[13], 18);
+            x[14] ^= R(x[10] + x[ 6], 7);
+            x[ 2] ^= R(x[14] + x[10], 9);
+            x[ 6] ^= R(x[ 2] + x[14], 13);
+            x[10] ^= R(x[ 6] + x[ 2], 18);
+            x[ 3] ^= R(x[15] + x[11], 7);
+            x[ 7] ^= R(x[ 3] + x[15], 9);
+            x[11] ^= R(x[ 7] + x[ 3], 13);
+            x[15] ^= R(x[11] + x[ 7], 18);
+            x[ 1] ^= R(x[ 0] + x[ 3], 7);
+            x[ 2] ^= R(x[ 1] + x[ 0], 9);
+            x[ 3] ^= R(x[ 2] + x[ 1], 13);
+            x[ 0] ^= R(x[ 3] + x[ 2], 18);
+            x[ 6] ^= R(x[ 5] + x[ 4], 7);
+            x[ 7] ^= R(x[ 6] + x[ 5], 9);
+            x[ 4] ^= R(x[ 7] + x[ 6], 13);
+            x[ 5] ^= R(x[ 4] + x[ 7], 18);
+            x[11] ^= R(x[10] + x[ 9], 7);
+            x[ 8] ^= R(x[11] + x[10], 9);
+            x[ 9] ^= R(x[ 8] + x[11], 13);
+            x[10] ^= R(x[ 9] + x[ 8], 18);
+            x[12] ^= R(x[15] + x[14], 7);
+            x[13] ^= R(x[12] + x[15], 9);
+            x[14] ^= R(x[13] + x[12], 13);
+            x[15] ^= R(x[14] + x[13], 18);
+        }
+
+        for (let i = 0; i < 16; ++i) {
+            B[i] += x[i];
+        }
+    }
+
+    // naive approach... going back to loop unrolling may yield additional performance
+    function blockxor(S, Si, D, len) {
+        for (let i = 0; i < len; i++) {
+            D[i] ^= S[Si + i];
+        }
+    }
+
+    function arraycopy(src, srcPos, dest, destPos, length) {
+        while (length--) {
+            dest[destPos++] = src[srcPos++];
+        }
+    }
+
+    function checkBufferish(o) {
+        if (!o || typeof(o.length) !== 'number') { return false; }
+
+        for (let i = 0; i < o.length; i++) {
+            const v = o[i];
+            if (typeof(v) !== 'number' || v % 1 || v < 0 || v >= 256) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    function ensureInteger(value, name) {
+        if (typeof(value) !== "number" || (value % 1)) { throw new Error('invalid ' + name); }
+        return value;
+    }
+
+    // N = Cpu cost, r = Memory cost, p = parallelization cost
+    // callback(error, progress, key)
+    function _scrypt(password, salt, N, r, p, dkLen, callback) {
+
+        N = ensureInteger(N, 'N');
+        r = ensureInteger(r, 'r');
+        p = ensureInteger(p, 'p');
+
+        dkLen = ensureInteger(dkLen, 'dkLen');
+
+        if (N === 0 || (N & (N - 1)) !== 0) { throw new Error('N must be power of 2'); }
+
+        if (N > MAX_VALUE / 128 / r) { throw new Error('N too large'); }
+        if (r > MAX_VALUE / 128 / p) { throw new Error('r too large'); }
+
+        if (!checkBufferish(password)) {
+            throw new Error('password must be an array or buffer');
+        }
+        password = Array.prototype.slice.call(password);
+
+        if (!checkBufferish(salt)) {
+            throw new Error('salt must be an array or buffer');
+        }
+        salt = Array.prototype.slice.call(salt);
+
+        let b = PBKDF2_HMAC_SHA256_OneIter(password, salt, p * 128 * r);
+        const B = new Uint32Array(p * 32 * r);
+        for (let i = 0; i < B.length; i++) {
+            const j = i * 4;
+            B[i] = ((b[j + 3] & 0xff) << 24) |
+                   ((b[j + 2] & 0xff) << 16) |
+                   ((b[j + 1] & 0xff) << 8) |
+                   ((b[j + 0] & 0xff) << 0);
+        }
+
+        const XY = new Uint32Array(64 * r);
+        const V = new Uint32Array(32 * r * N);
+
+        const Yi = 32 * r;
+
+        // scratch space
+        const x = new Uint32Array(16);       // salsa20_8
+        const _X = new Uint32Array(16);      // blockmix_salsa8
+
+        const totalOps = p * N * 2;
+        let currentOp = 0;
+        let lastPercent10 = null;
+
+        // Set this to true to abandon the scrypt on the next step
+        let stop = false;
+
+        // State information
+        let state = 0;
+        let i0 = 0, i1;
+        let Bi;
+
+        // How many blockmix_salsa8 can we do per step?
+        const limit = callback ? parseInt(1000 / r): 0xffffffff;
+
+        // Trick from scrypt-async; if there is a setImmediate shim in place, use it
+        const nextTick = (typeof(setImmediate) !== 'undefined') ? setImmediate : setTimeout;
+
+        // This is really all I changed; making scryptsy a state machine so we occasionally
+        // stop and give other evnts on the evnt loop a chance to run. ~RicMoo
+        const incrementalSMix = function() {
+            if (stop) {
+                return callback(new Error('cancelled'), currentOp / totalOps);
+            }
+
+            let steps;
+
+            switch (state) {
+                case 0:
+                    // for (var i = 0; i < p; i++)...
+                    Bi = i0 * 32 * r;
+
+                    arraycopy(B, Bi, XY, 0, Yi);                       // ROMix - 1
+
+                    state = 1;                                         // Move to ROMix 2
+                    i1 = 0;
+
+                    // Fall through
+
+                case 1:
+
+                    // Run up to 1000 steps of the first inner smix loop
+                    steps = N - i1;
+                    if (steps > limit) { steps = limit; }
+                    for (let i = 0; i < steps; i++) {                  // ROMix - 2
+                        arraycopy(XY, 0, V, (i1 + i) * Yi, Yi);         // ROMix - 3
+                        blockmix_salsa8(XY, Yi, r, x, _X);             // ROMix - 4
+                    }
+
+                    // for (var i = 0; i < N; i++)
+                    i1 += steps;
+                    currentOp += steps;
+
+                    if (callback) {
+                        // Call the callback with the progress (optionally stopping us)
+                        const percent10 = parseInt(1000 * currentOp / totalOps);
+                        if (percent10 !== lastPercent10) {
+                            stop = callback(null, currentOp / totalOps);
+                            if (stop) { break; }
+                            lastPercent10 = percent10;
+                        }
+                    }
+
+                    if (i1 < N) { break; }
+
+                    i1 = 0;                                          // Move to ROMix 6
+                    state = 2;
+
+                    // Fall through
+
+                case 2:
+
+                    // Run up to 1000 steps of the second inner smix loop
+                    steps = N - i1;
+                    if (steps > limit) { steps = limit; }
+                    for (let i = 0; i < steps; i++) {                // ROMix - 6
+                        const offset = (2 * r - 1) * 16;             // ROMix - 7
+                        const j = XY[offset] & (N - 1);
+                        blockxor(V, j * Yi, XY, Yi);                 // ROMix - 8 (inner)
+                        blockmix_salsa8(XY, Yi, r, x, _X);           // ROMix - 9 (outer)
+                    }
+
+                    // for (var i = 0; i < N; i++)...
+                    i1 += steps;
+                    currentOp += steps;
+
+                    // Call the callback with the progress (optionally stopping us)
+                    if (callback) {
+                        const percent10 = parseInt(1000 * currentOp / totalOps);
+                        if (percent10 !== lastPercent10) {
+                            stop = callback(null, currentOp / totalOps);
+                            if (stop) { break; }
+                            lastPercent10 = percent10;
+                        }
+                    }
+
+                    if (i1 < N) { break; }
+
+                    arraycopy(XY, 0, B, Bi, Yi);                     // ROMix - 10
+
+                    // for (var i = 0; i < p; i++)...
+                    i0++;
+                    if (i0 < p) {
+                        state = 0;
+                        break;
+                    }
+
+                    b = [];
+                    for (let i = 0; i < B.length; i++) {
+                        b.push((B[i] >>  0) & 0xff);
+                        b.push((B[i] >>  8) & 0xff);
+                        b.push((B[i] >> 16) & 0xff);
+                        b.push((B[i] >> 24) & 0xff);
+                    }
+
+                    const derivedKey = PBKDF2_HMAC_SHA256_OneIter(password, b, dkLen);
+
+                    // Send the result to the callback
+                    if (callback) { callback(null, 1.0, derivedKey); }
+
+                    // Done; don't break (which would reschedule)
+                    return derivedKey;
+            }
+
+            // Schedule the next steps
+            if (callback) { nextTick(incrementalSMix); }
+        };
+
+        // Run the smix state machine until completion
+        if (!callback) {
+            while (true) {
+                const derivedKey = incrementalSMix();
+                if (derivedKey != undefined) { return derivedKey; }
+            }
+        }
+
+        // Bootstrap the async incremental smix
+        incrementalSMix();
+    }
+
+    const lib = {
+        scrypt: function(password, salt, N, r, p, dkLen, progressCallback) {
+            return new Promise(function(resolve, reject) {
+                let lastProgress = 0;
+                if (progressCallback) { progressCallback(0); }
+                _scrypt(password, salt, N, r, p, dkLen, function(error, progress, key) {
+                    if (error) {
+                        reject(error);
+                    } else if (key) {
+                        if (progressCallback && lastProgress !== 1) {
+                            progressCallback(1);
+                        }
+                        resolve(new Uint8Array(key));
+                    } else if (progressCallback && progress !== lastProgress) {
+                        lastProgress = progress;
+                        return progressCallback(progress);
+                    }
+                });
+            });
+        },
+        syncScrypt: function(password, salt, N, r, p, dkLen) {
+            return new Uint8Array(_scrypt(password, salt, N, r, p, dkLen));
+        }
+    };
+
+    // node.js
+    if ('object' !== 'undefined') {
+       module.exports = lib;
+
+    // RequireJS/AMD
+    // http://www.requirejs.org/docs/api.html
+    // https://github.com/amdjs/amdjs-api/wiki/AMD
+    } else if (typeof(undefined) === 'function' && undefined.amd) {
+        undefined(lib);
+
+    // Web Browsers
+    } else if (root) {
+
+        // If there was an existing library "scrypt", make sure it is still available
+        if (root.scrypt) {
+            root._scrypt = root.scrypt;
+        }
+
+        root.scrypt = lib;
+    }
+
+})(commonjsGlobal);
+});
+
+const version$i = "random/5.5.0";
+
+"use strict";
+const logger$k = new Logger(version$i);
+// Debugging line for testing browser lib in node
+//const window = { crypto: { getRandomValues: () => { } } };
+let anyGlobal = null;
+try {
+    anyGlobal = window;
+    if (anyGlobal == null) {
+        throw new Error("try next");
+    }
+}
+catch (error) {
+    try {
+        anyGlobal = global;
+        if (anyGlobal == null) {
+            throw new Error("try next");
+        }
+    }
+    catch (error) {
+        anyGlobal = {};
+    }
+}
+let crypto$1 = anyGlobal.crypto || anyGlobal.msCrypto;
+if (!crypto$1 || !crypto$1.getRandomValues) {
+    logger$k.warn("WARNING: Missing strong random number source");
+    crypto$1 = {
+        getRandomValues: function (buffer) {
+            return logger$k.throwError("no secure random source avaialble", Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: "crypto.getRandomValues"
+            });
+        }
+    };
+}
+function randomBytes(length) {
+    if (length <= 0 || length > 1024 || (length % 1) || length != length) {
+        logger$k.throwArgumentError("invalid length", "length", length);
+    }
+    const result = new Uint8Array(length);
+    crypto$1.getRandomValues(result);
+    return arrayify(result);
+}
+;
+
+"use strict";
+function shuffled(array) {
+    array = array.slice();
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const tmp = array[i];
+        array[i] = array[j];
+        array[j] = tmp;
+    }
+    return array;
+}
+
+"use strict";
+
+var lib_esm$e = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	randomBytes: randomBytes,
+	shuffled: shuffled
+});
+
+"use strict";
+var __awaiter$1 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+const logger$l = new Logger(version$h);
+// Exported Types
+function hasMnemonic(value) {
+    return (value != null && value.mnemonic && value.mnemonic.phrase);
+}
+class KeystoreAccount extends Description {
+    isKeystoreAccount(value) {
+        return !!(value && value._isKeystoreAccount);
+    }
+}
+function _decrypt(data, key, ciphertext) {
+    const cipher = searchPath(data, "crypto/cipher");
+    if (cipher === "aes-128-ctr") {
+        const iv = looseArrayify(searchPath(data, "crypto/cipherparams/iv"));
+        const counter = new aesJs.Counter(iv);
+        const aesCtr = new aesJs.ModeOfOperation.ctr(key, counter);
+        return arrayify(aesCtr.decrypt(ciphertext));
+    }
+    return null;
+}
+function _getAccount(data, key) {
+    const ciphertext = looseArrayify(searchPath(data, "crypto/ciphertext"));
+    const computedMAC = hexlify(keccak256(concat([key.slice(16, 32), ciphertext]))).substring(2);
+    if (computedMAC !== searchPath(data, "crypto/mac").toLowerCase()) {
+        throw new Error("invalid password");
+    }
+    const privateKey = _decrypt(data, key.slice(0, 16), ciphertext);
+    if (!privateKey) {
+        logger$l.throwError("unsupported cipher", Logger.errors.UNSUPPORTED_OPERATION, {
+            operation: "decrypt"
+        });
+    }
+    const mnemonicKey = key.slice(32, 64);
+    let address;
+    if (data.address) {
+        address = data.address.toLowerCase();
+        if (address.substring(0, 2) !== "0x") {
+            address = "0x" + address;
+        }
+    }
+    const account = {
+        _isKeystoreAccount: true,
+        address: address ? getAddress(address) : undefined,
+        privateKey: hexlify(privateKey)
+    };
+    // Version 0.1 x-ethers metadata must contain an encrypted mnemonic phrase
+    if (searchPath(data, "x-ethers/version") === "0.1") {
+        const mnemonicCiphertext = looseArrayify(searchPath(data, "x-ethers/mnemonicCiphertext"));
+        const mnemonicIv = looseArrayify(searchPath(data, "x-ethers/mnemonicCounter"));
+        const mnemonicCounter = new aesJs.Counter(mnemonicIv);
+        const mnemonicAesCtr = new aesJs.ModeOfOperation.ctr(mnemonicKey, mnemonicCounter);
+        const path = searchPath(data, "x-ethers/path") || defaultPath;
+        const locale = searchPath(data, "x-ethers/locale") || "en";
+        const entropy = arrayify(mnemonicAesCtr.decrypt(mnemonicCiphertext));
+        try {
+            const mnemonic = entropyToMnemonic(entropy, locale);
+            const node = HDNode.fromMnemonic(mnemonic, null, locale).derivePath(path);
+            if (node.privateKey != account.privateKey) {
+                throw new Error("mnemonic mismatch");
+            }
+            account.mnemonic = node.mnemonic;
+        }
+        catch (error) {
+            // If we don't have the locale wordlist installed to
+            // read this mnemonic, just bail and don't set the
+            // mnemonic
+            if (error.code !== Logger.errors.INVALID_ARGUMENT || error.argument !== "wordlist") {
+                throw error;
+            }
+        }
+    }
+    return new KeystoreAccount(account);
+}
+function pbkdf2Sync(passwordBytes, salt, count, dkLen, prfFunc) {
+    return arrayify(pbkdf2(passwordBytes, salt, count, dkLen, prfFunc));
+}
+function pbkdf2$1(passwordBytes, salt, count, dkLen, prfFunc) {
+    return Promise.resolve(pbkdf2Sync(passwordBytes, salt, count, dkLen, prfFunc));
+}
+function _computeKdfKey(data, password, pbkdf2Func, scryptFunc, progressCallback) {
+    const passwordBytes = getPassword(password);
+    const kdf = searchPath(data, "crypto/kdf");
+    if (kdf && typeof (kdf) === "string") {
+        const throwError = function (name, value) {
+            return logger$l.throwArgumentError("invalid key-derivation function parameters", name, value);
+        };
+        if (kdf.toLowerCase() === "scrypt") {
+            const salt = looseArrayify(searchPath(data, "crypto/kdfparams/salt"));
+            const N = parseInt(searchPath(data, "crypto/kdfparams/n"));
+            const r = parseInt(searchPath(data, "crypto/kdfparams/r"));
+            const p = parseInt(searchPath(data, "crypto/kdfparams/p"));
+            // Check for all required parameters
+            if (!N || !r || !p) {
+                throwError("kdf", kdf);
+            }
+            // Make sure N is a power of 2
+            if ((N & (N - 1)) !== 0) {
+                throwError("N", N);
+            }
+            const dkLen = parseInt(searchPath(data, "crypto/kdfparams/dklen"));
+            if (dkLen !== 32) {
+                throwError("dklen", dkLen);
+            }
+            return scryptFunc(passwordBytes, salt, N, r, p, 64, progressCallback);
+        }
+        else if (kdf.toLowerCase() === "pbkdf2") {
+            const salt = looseArrayify(searchPath(data, "crypto/kdfparams/salt"));
+            let prfFunc = null;
+            const prf = searchPath(data, "crypto/kdfparams/prf");
+            if (prf === "hmac-sha256") {
+                prfFunc = "sha256";
+            }
+            else if (prf === "hmac-sha512") {
+                prfFunc = "sha512";
+            }
+            else {
+                throwError("prf", prf);
+            }
+            const count = parseInt(searchPath(data, "crypto/kdfparams/c"));
+            const dkLen = parseInt(searchPath(data, "crypto/kdfparams/dklen"));
+            if (dkLen !== 32) {
+                throwError("dklen", dkLen);
+            }
+            return pbkdf2Func(passwordBytes, salt, count, dkLen, prfFunc);
+        }
+    }
+    return logger$l.throwArgumentError("unsupported key-derivation function", "kdf", kdf);
+}
+function decryptSync(json, password) {
+    const data = JSON.parse(json);
+    const key = _computeKdfKey(data, password, pbkdf2Sync, scrypt.syncScrypt);
+    return _getAccount(data, key);
+}
+function decrypt$1(json, password, progressCallback) {
+    return __awaiter$1(this, void 0, void 0, function* () {
+        const data = JSON.parse(json);
+        const key = yield _computeKdfKey(data, password, pbkdf2$1, scrypt.scrypt, progressCallback);
+        return _getAccount(data, key);
+    });
+}
+function encrypt(account, password, options, progressCallback) {
+    try {
+        // Check the mnemonic (if any) matches the private key
+        if (hasMnemonic(account)) {
+            const mnemonic = account.mnemonic;
+            const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path || defaultPath);
+            if (node.privateKey != account.privateKey) {
+                throw new Error("mnemonic mismatch");
+            }
+        }
+    }
+    catch (e) {
+        return Promise.reject(e);
+    }
+    // The options are optional, so adjust the call as needed
+    if (typeof (options) === "function" && !progressCallback) {
+        progressCallback = options;
+        options = {};
+    }
+    if (!options) {
+        options = {};
+    }
+    const privateKey = arrayify(account.privateKey);
+    const passwordBytes = getPassword(password);
+    let entropy = null;
+    let path = null;
+    let locale = null;
+    if (hasMnemonic(account)) {
+        const srcMnemonic = account.mnemonic;
+        entropy = arrayify(mnemonicToEntropy(srcMnemonic.phrase, srcMnemonic.locale || "en"));
+        path = srcMnemonic.path || defaultPath;
+        locale = srcMnemonic.locale || "en";
+    }
+    let client = options.client;
+    if (!client) {
+        client = "ethers.js";
+    }
+    // Check/generate the salt
+    let salt = null;
+    if (options.salt) {
+        salt = arrayify(options.salt);
+    }
+    else {
+        salt = randomBytes(32);
+        ;
+    }
+    // Override initialization vector
+    let iv = null;
+    if (options.iv) {
+        iv = arrayify(options.iv);
+        if (iv.length !== 16) {
+            throw new Error("invalid iv");
+        }
+    }
+    else {
+        iv = randomBytes(16);
+    }
+    // Override the uuid
+    let uuidRandom = null;
+    if (options.uuid) {
+        uuidRandom = arrayify(options.uuid);
+        if (uuidRandom.length !== 16) {
+            throw new Error("invalid uuid");
+        }
+    }
+    else {
+        uuidRandom = randomBytes(16);
+    }
+    // Override the scrypt password-based key derivation function parameters
+    let N = (1 << 17), r = 8, p = 1;
+    if (options.scrypt) {
+        if (options.scrypt.N) {
+            N = options.scrypt.N;
+        }
+        if (options.scrypt.r) {
+            r = options.scrypt.r;
+        }
+        if (options.scrypt.p) {
+            p = options.scrypt.p;
+        }
+    }
+    // We take 64 bytes:
+    //   - 32 bytes   As normal for the Web3 secret storage (derivedKey, macPrefix)
+    //   - 32 bytes   AES key to encrypt mnemonic with (required here to be Ethers Wallet)
+    return scrypt.scrypt(passwordBytes, salt, N, r, p, 64, progressCallback).then((key) => {
+        key = arrayify(key);
+        // This will be used to encrypt the wallet (as per Web3 secret storage)
+        const derivedKey = key.slice(0, 16);
+        const macPrefix = key.slice(16, 32);
+        // This will be used to encrypt the mnemonic phrase (if any)
+        const mnemonicKey = key.slice(32, 64);
+        // Encrypt the private key
+        const counter = new aesJs.Counter(iv);
+        const aesCtr = new aesJs.ModeOfOperation.ctr(derivedKey, counter);
+        const ciphertext = arrayify(aesCtr.encrypt(privateKey));
+        // Compute the message authentication code, used to check the password
+        const mac = keccak256(concat([macPrefix, ciphertext]));
+        // See: https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition
+        // As per Version 3, the address field is OPTIONAL
+        const data = {
+            address: account.address ? account.address.substring(2).toLowerCase() : undefined,
+            id: uuidV4(uuidRandom),
+            version: 3,
+            Crypto: {
+                cipher: "aes-128-ctr",
+                cipherparams: {
+                    iv: hexlify(iv).substring(2),
+                },
+                ciphertext: hexlify(ciphertext).substring(2),
+                kdf: "scrypt",
+                kdfparams: {
+                    salt: hexlify(salt).substring(2),
+                    n: N,
+                    dklen: 32,
+                    p: p,
+                    r: r
+                },
+                mac: mac.substring(2)
+            }
+        };
+        // If we have a mnemonic, encrypt it into the JSON wallet
+        if (entropy) {
+            const mnemonicIv = randomBytes(16);
+            const mnemonicCounter = new aesJs.Counter(mnemonicIv);
+            const mnemonicAesCtr = new aesJs.ModeOfOperation.ctr(mnemonicKey, mnemonicCounter);
+            const mnemonicCiphertext = arrayify(mnemonicAesCtr.encrypt(entropy));
+            const now = new Date();
+            const timestamp = (now.getUTCFullYear() + "-" +
+                zpad(now.getUTCMonth() + 1, 2) + "-" +
+                zpad(now.getUTCDate(), 2) + "T" +
+                zpad(now.getUTCHours(), 2) + "-" +
+                zpad(now.getUTCMinutes(), 2) + "-" +
+                zpad(now.getUTCSeconds(), 2) + ".0Z");
+            data["x-ethers"] = {
+                client: client,
+                gethFilename: ("UTC--" + timestamp + "--" + data.address),
+                mnemonicCounter: hexlify(mnemonicIv).substring(2),
+                mnemonicCiphertext: hexlify(mnemonicCiphertext).substring(2),
+                path: path,
+                locale: locale,
+                version: "0.1"
+            };
+        }
+        return JSON.stringify(data);
+    });
+}
+
+"use strict";
+function decryptJsonWallet(json, password, progressCallback) {
+    if (isKeystoreWallet(json)) {
+        return decrypt$1(json, password, progressCallback);
+    }
+    return Promise.reject(new Error("invalid JSON wallet"));
+}
+function decryptJsonWalletSync(json, password) {
+    if (isKeystoreWallet(json)) {
+        return decryptSync(json, password);
+    }
+    throw new Error("invalid JSON wallet");
+}
+
+var lib_esm$f = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	decryptCrowdsale: decrypt,
+	decryptKeystore: decrypt$1,
+	decryptKeystoreSync: decryptSync,
+	encryptKeystore: encrypt,
+	isCrowdsaleWallet: isCrowdsaleWallet,
+	isKeystoreWallet: isKeystoreWallet,
+	getJsonWalletAddress: getJsonWalletAddress,
+	decryptJsonWallet: decryptJsonWallet,
+	decryptJsonWalletSync: decryptJsonWalletSync
+});
+
+const version$j = "solidity/5.5.0";
+
+"use strict";
+const regexBytes = new RegExp("^bytes([0-9]+)$");
+const regexNumber = new RegExp("^(u?int)([0-9]*)$");
+const regexArray = new RegExp("^(.*)\\[([0-9]*)\\]$");
+const Zeros = "0000000000000000000000000000000000000000000000000000000000000000";
+const logger$m = new Logger(version$j);
+function _pack(type, value, isArray) {
+    switch (type) {
+        case "address":
+            if (isArray) {
+                return zeroPad(value, 32);
+            }
+            return arrayify(value);
+        case "string":
+            return toUtf8Bytes(value);
+        case "bytes":
+            return arrayify(value);
+        case "bool":
+            value = (value ? "0x01" : "0x00");
+            if (isArray) {
+                return zeroPad(value, 32);
+            }
+            return arrayify(value);
+    }
+    let match = type.match(regexNumber);
+    if (match) {
+        //let signed = (match[1] === "int")
+        let size = parseInt(match[2] || "256");
+        if ((match[2] && String(size) !== match[2]) || (size % 8 !== 0) || size === 0 || size > 256) {
+            logger$m.throwArgumentError("invalid number type", "type", type);
+        }
+        if (isArray) {
+            size = 256;
+        }
+        value = BigNumber.from(value).toTwos(size);
+        return zeroPad(value, size / 8);
+    }
+    match = type.match(regexBytes);
+    if (match) {
+        const size = parseInt(match[1]);
+        if (String(size) !== match[1] || size === 0 || size > 32) {
+            logger$m.throwArgumentError("invalid bytes type", "type", type);
+        }
+        if (arrayify(value).byteLength !== size) {
+            logger$m.throwArgumentError(`invalid value for ${type}`, "value", value);
+        }
+        if (isArray) {
+            return arrayify((value + Zeros).substring(0, 66));
+        }
+        return value;
+    }
+    match = type.match(regexArray);
+    if (match && Array.isArray(value)) {
+        const baseType = match[1];
+        const count = parseInt(match[2] || String(value.length));
+        if (count != value.length) {
+            logger$m.throwArgumentError(`invalid array length for ${type}`, "value", value);
+        }
+        const result = [];
+        value.forEach(function (value) {
+            result.push(_pack(baseType, value, true));
+        });
+        return concat(result);
+    }
+    return logger$m.throwArgumentError("invalid type", "type", type);
+}
+// @TODO: Array Enum
+function pack$1(types, values) {
+    if (types.length != values.length) {
+        logger$m.throwArgumentError("wrong number of values; expected ${ types.length }", "values", values);
+    }
+    const tight = [];
+    types.forEach(function (type, index) {
+        tight.push(_pack(type, values[index]));
+    });
+    return hexlify(concat(tight));
+}
+function keccak256$1(types, values) {
+    return keccak256(pack$1(types, values));
+}
+function sha256$2(types, values) {
+    return sha256$1(pack$1(types, values));
+}
+
+var lib_esm$g = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	pack: pack$1,
+	keccak256: keccak256$1,
+	sha256: sha256$2
+});
+
+const version$k = "units/5.5.0";
+
+"use strict";
+const logger$n = new Logger(version$k);
+const names = [
+    "wei",
+    "kwei",
+    "mwei",
+    "gwei",
+    "szabo",
+    "finney",
+    "ether",
+];
+// Some environments have issues with RegEx that contain back-tracking, so we cannot
+// use them.
+function commify(value) {
+    const comps = String(value).split(".");
+    if (comps.length > 2 || !comps[0].match(/^-?[0-9]*$/) || (comps[1] && !comps[1].match(/^[0-9]*$/)) || value === "." || value === "-.") {
+        logger$n.throwArgumentError("invalid value", "value", value);
+    }
+    // Make sure we have at least one whole digit (0 if none)
+    let whole = comps[0];
+    let negative = "";
+    if (whole.substring(0, 1) === "-") {
+        negative = "-";
+        whole = whole.substring(1);
+    }
+    // Make sure we have at least 1 whole digit with no leading zeros
+    while (whole.substring(0, 1) === "0") {
+        whole = whole.substring(1);
+    }
+    if (whole === "") {
+        whole = "0";
+    }
+    let suffix = "";
+    if (comps.length === 2) {
+        suffix = "." + (comps[1] || "0");
+    }
+    while (suffix.length > 2 && suffix[suffix.length - 1] === "0") {
+        suffix = suffix.substring(0, suffix.length - 1);
+    }
+    const formatted = [];
+    while (whole.length) {
+        if (whole.length <= 3) {
+            formatted.unshift(whole);
+            break;
+        }
+        else {
+            const index = whole.length - 3;
+            formatted.unshift(whole.substring(index));
+            whole = whole.substring(0, index);
+        }
+    }
+    return negative + formatted.join(",") + suffix;
+}
+function formatUnits(value, unitName) {
+    if (typeof (unitName) === "string") {
+        const index = names.indexOf(unitName);
+        if (index !== -1) {
+            unitName = 3 * index;
+        }
+    }
+    return formatFixed(value, (unitName != null) ? unitName : 18);
+}
+function parseUnits(value, unitName) {
+    if (typeof (value) !== "string") {
+        logger$n.throwArgumentError("value must be a string", "value", value);
+    }
+    if (typeof (unitName) === "string") {
+        const index = names.indexOf(unitName);
+        if (index !== -1) {
+            unitName = 3 * index;
+        }
+    }
+    return parseFixed(value, (unitName != null) ? unitName : 18);
+}
+function formatEther(wei) {
+    return formatUnits(wei, 18);
+}
+function parseEther(ether) {
+    return parseUnits(ether, 18);
+}
+
+var lib_esm$h = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	commify: commify,
+	formatUnits: formatUnits,
+	parseUnits: parseUnits,
+	formatEther: formatEther,
+	parseEther: parseEther
+});
+
+const version$l = "abstract-signer/5.5.0";
 
 class Key {}
 
@@ -11741,7 +18412,7 @@ function arrayStartsWith(array, arrayPrefix) {
  * @param {Uint8Array} data
  * @returns {string}
  */
-function encode$1(data) {
+function encode$2(data) {
     return Buffer.from(data).toString("hex");
 }
 
@@ -11749,13 +18420,13 @@ function encode$1(data) {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function decode$1(text) {
+function decode$2(text) {
     const str = text.startsWith("0x") ? text.substring(2) : text;
     return Buffer.from(str, "hex");
 }
 
 const derPrefix = "302a300506032b6570032100";
-const derPrefixBytes = decode$1(derPrefix);
+const derPrefixBytes = decode$2(derPrefix);
 
 /**
  * An public key on the Hedera™ network.
@@ -11839,7 +18510,7 @@ class Ed25519PublicKey extends Key {
      * @returns {Ed25519PublicKey}
      */
     static fromString(text) {
-        return Ed25519PublicKey.fromBytes(decode$1(text));
+        return Ed25519PublicKey.fromBytes(decode$2(text));
     }
 
     /**
@@ -11898,7 +18569,7 @@ function bytesAsync(count) {
 }
 
 const derPrefix$1 = "302e020100300506032b657004220420";
-const derPrefixBytes$1 = decode$1(derPrefix$1);
+const derPrefixBytes$1 = decode$2(derPrefix$1);
 
 class Ed25519PrivateKey {
     /**
@@ -12034,7 +18705,7 @@ class Ed25519PrivateKey {
      * @returns {Ed25519PrivateKey}
      */
     static fromString(text) {
-        return Ed25519PrivateKey.fromBytes(decode$1(text));
+        return Ed25519PrivateKey.fromBytes(decode$2(text));
     }
 
     /**
@@ -12044,7 +18715,7 @@ class Ed25519PrivateKey {
      * @returns {Ed25519PrivateKey}
      */
     static fromStringDer(text) {
-        return Ed25519PrivateKey.fromBytesDer(decode$1(text));
+        return Ed25519PrivateKey.fromBytesDer(decode$2(text));
     }
 
     /**
@@ -12054,7 +18725,7 @@ class Ed25519PrivateKey {
      * @returns {Ed25519PrivateKey}
      */
     static fromStringRaw(text) {
-        return Ed25519PrivateKey.fromBytesRaw(decode$1(text));
+        return Ed25519PrivateKey.fromBytesRaw(decode$2(text));
     }
 
     /**
@@ -18353,7 +25024,7 @@ async function digest(data) {
  * @param {Uint8Array} data
  * @returns {string}
  */
-function decode$2(data) {
+function decode$3(data) {
     return Buffer.from(data).toString("utf8");
 }
 
@@ -18361,7 +25032,7 @@ function decode$2(data) {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function encode$2(text) {
+function encode$3(text) {
     return Buffer.from(text, "utf8");
 }
 
@@ -18382,8 +25053,8 @@ const HashAlgorithm = {
  */
 function hash(algorithm, secretKey, data) {
     const key =
-        typeof secretKey === "string" ? encode$2(secretKey) : secretKey;
-    const value = typeof data === "string" ? encode$2(data) : data;
+        typeof secretKey === "string" ? encode$3(secretKey) : secretKey;
+    const value = typeof data === "string" ? encode$3(data) : data;
 
     switch (algorithm) {
         case HashAlgorithm.Sha256:
@@ -18418,10 +25089,10 @@ async function deriveKey(algorithm, password, salt, iterations, length) {
         typeof password === "string"
             ? // Valid ASCII is also valid UTF-8 so encoding the password as UTF-8
               // should be fine if only valid ASCII characters are used in the password
-              encode$2(password)
+              encode$3(password)
             : password;
 
-    const nacl = typeof salt === "string" ? encode$2(salt) : salt;
+    const nacl = typeof salt === "string" ? encode$3(salt) : salt;
 
     const pbkdf2 = util$2.promisify(crypto$3.pbkdf2);
 
@@ -21935,7 +28606,7 @@ const update = (state, /** @type {string | number[]} */ message) => {
             for (i = 0; i < blockCount; ++i) {
                 s[i] ^= blocks[i];
             }
-            f(s);
+            f$1(s);
             state.reset = true;
         } else {
             state.start = i;
@@ -21956,7 +28627,7 @@ const update = (state, /** @type {string | number[]} */ message) => {
     for (i = 0; i < blockCount; ++i) {
         s[i] ^= blocks[i];
     }
-    f(s);
+    f$1(s);
 
     // toString
     var hex = "";
@@ -21977,7 +28648,7 @@ const update = (state, /** @type {string | number[]} */ message) => {
                 HEX_CHARS[(block >> 24) & 0x0f];
         }
         if (j % blockCount === 0) {
-            f(s);
+            f$1(s);
             i = 0;
         }
     }
@@ -21986,7 +28657,7 @@ const update = (state, /** @type {string | number[]} */ message) => {
 };
 
 /** @type {(s: number[]) => void} */
-const f = (s) => {
+const f$1 = (s) => {
     var h,
         l,
         n,
@@ -22247,14 +28918,8 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
 /**
  * @type {(message: string) => string}
  */
-const keccak256$1 = keccak(256);
+const keccak256$2 = keccak(256);
 
-var _args = [
-	[
-		"elliptic@6.5.4",
-		"/home/nikolay/Desktop/hethers.js"
-	]
-];
 var _from = "elliptic@6.5.4";
 var _id = "elliptic@6.5.4";
 var _inBundle = false;
@@ -22277,8 +28942,9 @@ var _requiredBy = [
 	"/@hashgraph/cryptography"
 ];
 var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
-var _spec = "6.5.4";
-var _where = "/home/nikolay/Desktop/hethers.js";
+var _shasum = "da37cebd31e79a1367e941b592ed1fbebd58abbb";
+var _spec = "elliptic@6.5.4";
+var _where = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js";
 var author = {
 	name: "Fedor Indutny",
 	email: "fedor@indutny.com"
@@ -22286,6 +28952,7 @@ var author = {
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
+var bundleDependencies = false;
 var dependencies = {
 	"bn.js": "^4.11.9",
 	brorand: "^1.1.0",
@@ -22295,6 +28962,7 @@ var dependencies = {
 	"minimalistic-assert": "^1.0.1",
 	"minimalistic-crypto-utils": "^1.0.1"
 };
+var deprecated = false;
 var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
@@ -22335,9 +29003,8 @@ var scripts = {
 	unit: "istanbul test _mocha --reporter=spec test/index.js",
 	version: "grunt dist && git add dist/"
 };
-var version$b = "6.5.4";
+var version$m = "6.5.4";
 var require$$0 = {
-	_args: _args,
 	_from: _from,
 	_id: _id,
 	_inBundle: _inBundle,
@@ -22347,11 +29014,14 @@ var require$$0 = {
 	_requested: _requested,
 	_requiredBy: _requiredBy,
 	_resolved: _resolved,
+	_shasum: _shasum,
 	_spec: _spec,
 	_where: _where,
 	author: author,
 	bugs: bugs,
+	bundleDependencies: bundleDependencies,
 	dependencies: dependencies,
+	deprecated: deprecated,
 	description: description,
 	devDependencies: devDependencies,
 	files: files,
@@ -22362,22 +29032,10 @@ var require$$0 = {
 	name: name,
 	repository: repository,
 	scripts: scripts,
-	version: version$b
+	version: version$m
 };
 
-var minimalisticAssert = assert;
-
-function assert(val, msg) {
-  if (!val)
-    throw new Error(msg || 'Assertion failed');
-}
-
-assert.equal = function assertEqual(l, r, msg) {
-  if (l != r)
-    throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
-};
-
-var utils_1 = createCommonjsModule(function (module, exports) {
+var utils_1$2 = createCommonjsModule(function (module, exports) {
 'use strict';
 
 var utils = exports;
@@ -22438,7 +29096,7 @@ utils.encode = function encode(arr, enc) {
 };
 });
 
-var utils_1$1 = createCommonjsModule(function (module, exports) {
+var utils_1$3 = createCommonjsModule(function (module, exports) {
 'use strict';
 
 var utils = exports;
@@ -22447,10 +29105,10 @@ var utils = exports;
 
 
 utils.assert = minimalisticAssert;
-utils.toArray = utils_1.toArray;
-utils.zero2 = utils_1.zero2;
-utils.toHex = utils_1.toHex;
-utils.encode = utils_1.encode;
+utils.toArray = utils_1$2.toArray;
+utils.zero2 = utils_1$2.zero2;
+utils.toHex = utils_1$2.toHex;
+utils.encode = utils_1$2.encode;
 
 // Represent num in a w-NAF form
 function getNAF(num, w, bits) {
@@ -22559,13 +29217,13 @@ function intFromLE(bytes) {
 utils.intFromLE = intFromLE;
 });
 
-var r;
+var r$1;
 
 var brorand = function rand(len) {
-  if (!r)
-    r = new Rand(null);
+  if (!r$1)
+    r$1 = new Rand(null);
 
-  return r.generate(len);
+  return r$1.generate(len);
 };
 
 function Rand(rand) {
@@ -22614,12 +29272,12 @@ if (typeof self === 'object') {
 } else {
   // Node.js or Web worker with no crypto support
   try {
-    var crypto$1 = crypto$3;
-    if (typeof crypto$1.randomBytes !== 'function')
+    var crypto$2 = crypto$3;
+    if (typeof crypto$2.randomBytes !== 'function')
       throw new Error('Not supported');
 
     Rand.prototype._rand = function _rand(n) {
-      return crypto$1.randomBytes(n);
+      return crypto$2.randomBytes(n);
     };
   } catch (e) {
   }
@@ -22630,11 +29288,11 @@ brorand.Rand = Rand_1;
 
 
 
-var getNAF = utils_1$1.getNAF;
-var getJSF = utils_1$1.getJSF;
-var assert$1 = utils_1$1.assert;
+var getNAF$1 = utils_1$3.getNAF;
+var getJSF$1 = utils_1$3.getJSF;
+var assert$6 = utils_1$3.assert;
 
-function BaseCurve(type, conf) {
+function BaseCurve$1(type, conf) {
   this.type = type;
   this.p = new bn(conf.p, 16);
 
@@ -22667,21 +29325,21 @@ function BaseCurve(type, conf) {
     this.redN = this.n.toRed(this.red);
   }
 }
-var base = BaseCurve;
+var base$1 = BaseCurve$1;
 
-BaseCurve.prototype.point = function point() {
+BaseCurve$1.prototype.point = function point() {
   throw new Error('Not implemented');
 };
 
-BaseCurve.prototype.validate = function validate() {
+BaseCurve$1.prototype.validate = function validate() {
   throw new Error('Not implemented');
 };
 
-BaseCurve.prototype._fixedNafMul = function _fixedNafMul(p, k) {
-  assert$1(p.precomputed);
+BaseCurve$1.prototype._fixedNafMul = function _fixedNafMul(p, k) {
+  assert$6(p.precomputed);
   var doubles = p._getDoubles();
 
-  var naf = getNAF(k, 1, this._bitLength);
+  var naf = getNAF$1(k, 1, this._bitLength);
   var I = (1 << (doubles.step + 1)) - (doubles.step % 2 === 0 ? 2 : 1);
   I /= 3;
 
@@ -22711,7 +29369,7 @@ BaseCurve.prototype._fixedNafMul = function _fixedNafMul(p, k) {
   return a.toP();
 };
 
-BaseCurve.prototype._wnafMul = function _wnafMul(p, k) {
+BaseCurve$1.prototype._wnafMul = function _wnafMul(p, k) {
   var w = 4;
 
   // Precompute window
@@ -22720,7 +29378,7 @@ BaseCurve.prototype._wnafMul = function _wnafMul(p, k) {
   var wnd = nafPoints.points;
 
   // Get NAF form
-  var naf = getNAF(k, w, this._bitLength);
+  var naf = getNAF$1(k, w, this._bitLength);
 
   // Add `this`*(N+1) for every w-NAF index
   var acc = this.jpoint(null, null, null);
@@ -22735,7 +29393,7 @@ BaseCurve.prototype._wnafMul = function _wnafMul(p, k) {
     if (i < 0)
       break;
     var z = naf[i];
-    assert$1(z !== 0);
+    assert$6(z !== 0);
     if (p.type === 'affine') {
       // J +- P
       if (z > 0)
@@ -22753,7 +29411,7 @@ BaseCurve.prototype._wnafMul = function _wnafMul(p, k) {
   return p.type === 'affine' ? acc.toP() : acc;
 };
 
-BaseCurve.prototype._wnafMulAdd = function _wnafMulAdd(defW,
+BaseCurve$1.prototype._wnafMulAdd = function _wnafMulAdd(defW,
   points,
   coeffs,
   len,
@@ -22779,8 +29437,8 @@ BaseCurve.prototype._wnafMulAdd = function _wnafMulAdd(defW,
     var a = i - 1;
     var b = i;
     if (wndWidth[a] !== 1 || wndWidth[b] !== 1) {
-      naf[a] = getNAF(coeffs[a], wndWidth[a], this._bitLength);
-      naf[b] = getNAF(coeffs[b], wndWidth[b], this._bitLength);
+      naf[a] = getNAF$1(coeffs[a], wndWidth[a], this._bitLength);
+      naf[b] = getNAF$1(coeffs[b], wndWidth[b], this._bitLength);
       max = Math.max(naf[a].length, max);
       max = Math.max(naf[b].length, max);
       continue;
@@ -22817,7 +29475,7 @@ BaseCurve.prototype._wnafMulAdd = function _wnafMulAdd(defW,
       3,  /* 1 1 */
     ];
 
-    var jsf = getJSF(coeffs[a], coeffs[b]);
+    var jsf = getJSF$1(coeffs[a], coeffs[b]);
     max = Math.max(jsf[0].length, max);
     naf[a] = new Array(max);
     naf[b] = new Array(max);
@@ -22880,23 +29538,23 @@ BaseCurve.prototype._wnafMulAdd = function _wnafMulAdd(defW,
     return acc.toP();
 };
 
-function BasePoint(curve, type) {
+function BasePoint$1(curve, type) {
   this.curve = curve;
   this.type = type;
   this.precomputed = null;
 }
-BaseCurve.BasePoint = BasePoint;
+BaseCurve$1.BasePoint = BasePoint$1;
 
-BasePoint.prototype.eq = function eq(/*other*/) {
+BasePoint$1.prototype.eq = function eq(/*other*/) {
   throw new Error('Not implemented');
 };
 
-BasePoint.prototype.validate = function validate() {
+BasePoint$1.prototype.validate = function validate() {
   return this.curve.validate(this);
 };
 
-BaseCurve.prototype.decodePoint = function decodePoint(bytes, enc) {
-  bytes = utils_1$1.toArray(bytes, enc);
+BaseCurve$1.prototype.decodePoint = function decodePoint(bytes, enc) {
+  bytes = utils_1$3.toArray(bytes, enc);
 
   var len = this.p.byteLength();
 
@@ -22904,9 +29562,9 @@ BaseCurve.prototype.decodePoint = function decodePoint(bytes, enc) {
   if ((bytes[0] === 0x04 || bytes[0] === 0x06 || bytes[0] === 0x07) &&
       bytes.length - 1 === 2 * len) {
     if (bytes[0] === 0x06)
-      assert$1(bytes[bytes.length - 1] % 2 === 0);
+      assert$6(bytes[bytes.length - 1] % 2 === 0);
     else if (bytes[0] === 0x07)
-      assert$1(bytes[bytes.length - 1] % 2 === 1);
+      assert$6(bytes[bytes.length - 1] % 2 === 1);
 
     var res =  this.point(bytes.slice(1, 1 + len),
       bytes.slice(1 + len, 1 + 2 * len));
@@ -22919,11 +29577,11 @@ BaseCurve.prototype.decodePoint = function decodePoint(bytes, enc) {
   throw new Error('Unknown point format');
 };
 
-BasePoint.prototype.encodeCompressed = function encodeCompressed(enc) {
+BasePoint$1.prototype.encodeCompressed = function encodeCompressed(enc) {
   return this.encode(enc, true);
 };
 
-BasePoint.prototype._encode = function _encode(compact) {
+BasePoint$1.prototype._encode = function _encode(compact) {
   var len = this.curve.p.byteLength();
   var x = this.getX().toArray('be', len);
 
@@ -22933,11 +29591,11 @@ BasePoint.prototype._encode = function _encode(compact) {
   return [ 0x04 ].concat(x, this.getY().toArray('be', len));
 };
 
-BasePoint.prototype.encode = function encode(enc, compact) {
-  return utils_1$1.encode(this._encode(compact), enc);
+BasePoint$1.prototype.encode = function encode(enc, compact) {
+  return utils_1$3.encode(this._encode(compact), enc);
 };
 
-BasePoint.prototype.precompute = function precompute(power) {
+BasePoint$1.prototype.precompute = function precompute(power) {
   if (this.precomputed)
     return this;
 
@@ -22954,7 +29612,7 @@ BasePoint.prototype.precompute = function precompute(power) {
   return this;
 };
 
-BasePoint.prototype._hasDoubles = function _hasDoubles(k) {
+BasePoint$1.prototype._hasDoubles = function _hasDoubles(k) {
   if (!this.precomputed)
     return false;
 
@@ -22965,7 +29623,7 @@ BasePoint.prototype._hasDoubles = function _hasDoubles(k) {
   return doubles.points.length >= Math.ceil((k.bitLength() + 1) / doubles.step);
 };
 
-BasePoint.prototype._getDoubles = function _getDoubles(step, power) {
+BasePoint$1.prototype._getDoubles = function _getDoubles(step, power) {
   if (this.precomputed && this.precomputed.doubles)
     return this.precomputed.doubles;
 
@@ -22982,7 +29640,7 @@ BasePoint.prototype._getDoubles = function _getDoubles(step, power) {
   };
 };
 
-BasePoint.prototype._getNAFPoints = function _getNAFPoints(wnd) {
+BasePoint$1.prototype._getNAFPoints = function _getNAFPoints(wnd) {
   if (this.precomputed && this.precomputed.naf)
     return this.precomputed.naf;
 
@@ -22997,58 +29655,16 @@ BasePoint.prototype._getNAFPoints = function _getNAFPoints(wnd) {
   };
 };
 
-BasePoint.prototype._getBeta = function _getBeta() {
+BasePoint$1.prototype._getBeta = function _getBeta() {
   return null;
 };
 
-BasePoint.prototype.dblp = function dblp(k) {
+BasePoint$1.prototype.dblp = function dblp(k) {
   var r = this;
   for (var i = 0; i < k; i++)
     r = r.dbl();
   return r;
 };
-
-var inherits_browser = createCommonjsModule(function (module) {
-if (typeof Object.create === 'function') {
-  // implementation from standard node.js 'util' module
-  module.exports = function inherits(ctor, superCtor) {
-    if (superCtor) {
-      ctor.super_ = superCtor;
-      ctor.prototype = Object.create(superCtor.prototype, {
-        constructor: {
-          value: ctor,
-          enumerable: false,
-          writable: true,
-          configurable: true
-        }
-      });
-    }
-  };
-} else {
-  // old school shim for old browsers
-  module.exports = function inherits(ctor, superCtor) {
-    if (superCtor) {
-      ctor.super_ = superCtor;
-      var TempCtor = function () {};
-      TempCtor.prototype = superCtor.prototype;
-      ctor.prototype = new TempCtor();
-      ctor.prototype.constructor = ctor;
-    }
-  };
-}
-});
-
-var inherits = createCommonjsModule(function (module) {
-try {
-  var util = /*RicMoo:ethers:require(util)*/(null);
-  /* istanbul ignore next */
-  if (typeof util.inherits !== 'function') throw '';
-  module.exports = util.inherits;
-} catch (e) {
-  /* istanbul ignore next */
-  module.exports = inherits_browser;
-}
-});
 
 'use strict';
 
@@ -23057,10 +29673,10 @@ try {
 
 
 
-var assert$2 = utils_1$1.assert;
+var assert$7 = utils_1$3.assert;
 
-function ShortCurve(conf) {
-  base.call(this, 'short', conf);
+function ShortCurve$1(conf) {
+  base$1.call(this, 'short', conf);
 
   this.a = new bn(conf.a, 16).toRed(this.red);
   this.b = new bn(conf.b, 16).toRed(this.red);
@@ -23074,10 +29690,10 @@ function ShortCurve(conf) {
   this._endoWnafT1 = new Array(4);
   this._endoWnafT2 = new Array(4);
 }
-inherits(ShortCurve, base);
-var short_1 = ShortCurve;
+inherits(ShortCurve$1, base$1);
+var short_1$1 = ShortCurve$1;
 
-ShortCurve.prototype._getEndomorphism = function _getEndomorphism(conf) {
+ShortCurve$1.prototype._getEndomorphism = function _getEndomorphism(conf) {
   // No efficient endomorphism
   if (!this.zeroA || !this.g || !this.n || this.p.modn(3) !== 1)
     return;
@@ -23102,7 +29718,7 @@ ShortCurve.prototype._getEndomorphism = function _getEndomorphism(conf) {
       lambda = lambdas[0];
     } else {
       lambda = lambdas[1];
-      assert$2(this.g.mul(lambda).x.cmp(this.g.x.redMul(beta)) === 0);
+      assert$7(this.g.mul(lambda).x.cmp(this.g.x.redMul(beta)) === 0);
     }
   }
 
@@ -23126,7 +29742,7 @@ ShortCurve.prototype._getEndomorphism = function _getEndomorphism(conf) {
   };
 };
 
-ShortCurve.prototype._getEndoRoots = function _getEndoRoots(num) {
+ShortCurve$1.prototype._getEndoRoots = function _getEndoRoots(num) {
   // Find roots of for x^2 + x + 1 in F
   // Root = (-1 +- Sqrt(-3)) / 2
   //
@@ -23141,7 +29757,7 @@ ShortCurve.prototype._getEndoRoots = function _getEndoRoots(num) {
   return [ l1, l2 ];
 };
 
-ShortCurve.prototype._getEndoBasis = function _getEndoBasis(lambda) {
+ShortCurve$1.prototype._getEndoBasis = function _getEndoBasis(lambda) {
   // aprxSqrt >= sqrt(this.n)
   var aprxSqrt = this.n.ushrn(Math.floor(this.n.bitLength() / 2));
 
@@ -23217,7 +29833,7 @@ ShortCurve.prototype._getEndoBasis = function _getEndoBasis(lambda) {
   ];
 };
 
-ShortCurve.prototype._endoSplit = function _endoSplit(k) {
+ShortCurve$1.prototype._endoSplit = function _endoSplit(k) {
   var basis = this.endo.basis;
   var v1 = basis[0];
   var v2 = basis[1];
@@ -23236,7 +29852,7 @@ ShortCurve.prototype._endoSplit = function _endoSplit(k) {
   return { k1: k1, k2: k2 };
 };
 
-ShortCurve.prototype.pointFromX = function pointFromX(x, odd) {
+ShortCurve$1.prototype.pointFromX = function pointFromX(x, odd) {
   x = new bn(x, 16);
   if (!x.red)
     x = x.toRed(this.red);
@@ -23255,7 +29871,7 @@ ShortCurve.prototype.pointFromX = function pointFromX(x, odd) {
   return this.point(x, y);
 };
 
-ShortCurve.prototype.validate = function validate(point) {
+ShortCurve$1.prototype.validate = function validate(point) {
   if (point.inf)
     return true;
 
@@ -23267,7 +29883,7 @@ ShortCurve.prototype.validate = function validate(point) {
   return y.redSqr().redISub(rhs).cmpn(0) === 0;
 };
 
-ShortCurve.prototype._endoWnafMulAdd =
+ShortCurve$1.prototype._endoWnafMulAdd =
     function _endoWnafMulAdd(points, coeffs, jacobianResult) {
       var npoints = this._endoWnafT1;
       var ncoeffs = this._endoWnafT2;
@@ -23300,8 +29916,8 @@ ShortCurve.prototype._endoWnafMulAdd =
       return res;
     };
 
-function Point(curve, x, y, isRed) {
-  base.BasePoint.call(this, curve, 'affine');
+function Point$1(curve, x, y, isRed) {
+  base$1.BasePoint.call(this, curve, 'affine');
   if (x === null && y === null) {
     this.x = null;
     this.y = null;
@@ -23321,17 +29937,17 @@ function Point(curve, x, y, isRed) {
     this.inf = false;
   }
 }
-inherits(Point, base.BasePoint);
+inherits(Point$1, base$1.BasePoint);
 
-ShortCurve.prototype.point = function point(x, y, isRed) {
-  return new Point(this, x, y, isRed);
+ShortCurve$1.prototype.point = function point(x, y, isRed) {
+  return new Point$1(this, x, y, isRed);
 };
 
-ShortCurve.prototype.pointFromJSON = function pointFromJSON(obj, red) {
-  return Point.fromJSON(this, obj, red);
+ShortCurve$1.prototype.pointFromJSON = function pointFromJSON(obj, red) {
+  return Point$1.fromJSON(this, obj, red);
 };
 
-Point.prototype._getBeta = function _getBeta() {
+Point$1.prototype._getBeta = function _getBeta() {
   if (!this.curve.endo)
     return;
 
@@ -23361,7 +29977,7 @@ Point.prototype._getBeta = function _getBeta() {
   return beta;
 };
 
-Point.prototype.toJSON = function toJSON() {
+Point$1.prototype.toJSON = function toJSON() {
   if (!this.precomputed)
     return [ this.x, this.y ];
 
@@ -23377,7 +29993,7 @@ Point.prototype.toJSON = function toJSON() {
   } ];
 };
 
-Point.fromJSON = function fromJSON(curve, obj, red) {
+Point$1.fromJSON = function fromJSON(curve, obj, red) {
   if (typeof obj === 'string')
     obj = JSON.parse(obj);
   var res = curve.point(obj[0], obj[1], red);
@@ -23403,18 +30019,18 @@ Point.fromJSON = function fromJSON(curve, obj, red) {
   return res;
 };
 
-Point.prototype.inspect = function inspect() {
+Point$1.prototype.inspect = function inspect() {
   if (this.isInfinity())
     return '<EC Point Infinity>';
   return '<EC Point x: ' + this.x.fromRed().toString(16, 2) +
       ' y: ' + this.y.fromRed().toString(16, 2) + '>';
 };
 
-Point.prototype.isInfinity = function isInfinity() {
+Point$1.prototype.isInfinity = function isInfinity() {
   return this.inf;
 };
 
-Point.prototype.add = function add(p) {
+Point$1.prototype.add = function add(p) {
   // O + P = P
   if (this.inf)
     return p;
@@ -23443,7 +30059,7 @@ Point.prototype.add = function add(p) {
   return this.curve.point(nx, ny);
 };
 
-Point.prototype.dbl = function dbl() {
+Point$1.prototype.dbl = function dbl() {
   if (this.inf)
     return this;
 
@@ -23463,15 +30079,15 @@ Point.prototype.dbl = function dbl() {
   return this.curve.point(nx, ny);
 };
 
-Point.prototype.getX = function getX() {
+Point$1.prototype.getX = function getX() {
   return this.x.fromRed();
 };
 
-Point.prototype.getY = function getY() {
+Point$1.prototype.getY = function getY() {
   return this.y.fromRed();
 };
 
-Point.prototype.mul = function mul(k) {
+Point$1.prototype.mul = function mul(k) {
   k = new bn(k, 16);
   if (this.isInfinity())
     return this;
@@ -23483,7 +30099,7 @@ Point.prototype.mul = function mul(k) {
     return this.curve._wnafMul(this, k);
 };
 
-Point.prototype.mulAdd = function mulAdd(k1, p2, k2) {
+Point$1.prototype.mulAdd = function mulAdd(k1, p2, k2) {
   var points = [ this, p2 ];
   var coeffs = [ k1, k2 ];
   if (this.curve.endo)
@@ -23492,7 +30108,7 @@ Point.prototype.mulAdd = function mulAdd(k1, p2, k2) {
     return this.curve._wnafMulAdd(1, points, coeffs, 2);
 };
 
-Point.prototype.jmulAdd = function jmulAdd(k1, p2, k2) {
+Point$1.prototype.jmulAdd = function jmulAdd(k1, p2, k2) {
   var points = [ this, p2 ];
   var coeffs = [ k1, k2 ];
   if (this.curve.endo)
@@ -23501,13 +30117,13 @@ Point.prototype.jmulAdd = function jmulAdd(k1, p2, k2) {
     return this.curve._wnafMulAdd(1, points, coeffs, 2, true);
 };
 
-Point.prototype.eq = function eq(p) {
+Point$1.prototype.eq = function eq(p) {
   return this === p ||
          this.inf === p.inf &&
              (this.inf || this.x.cmp(p.x) === 0 && this.y.cmp(p.y) === 0);
 };
 
-Point.prototype.neg = function neg(_precompute) {
+Point$1.prototype.neg = function neg(_precompute) {
   if (this.inf)
     return this;
 
@@ -23531,7 +30147,7 @@ Point.prototype.neg = function neg(_precompute) {
   return res;
 };
 
-Point.prototype.toJ = function toJ() {
+Point$1.prototype.toJ = function toJ() {
   if (this.inf)
     return this.curve.jpoint(null, null, null);
 
@@ -23539,8 +30155,8 @@ Point.prototype.toJ = function toJ() {
   return res;
 };
 
-function JPoint(curve, x, y, z) {
-  base.BasePoint.call(this, curve, 'jacobian');
+function JPoint$1(curve, x, y, z) {
+  base$1.BasePoint.call(this, curve, 'jacobian');
   if (x === null && y === null && z === null) {
     this.x = this.curve.one;
     this.y = this.curve.one;
@@ -23559,13 +30175,13 @@ function JPoint(curve, x, y, z) {
 
   this.zOne = this.z === this.curve.one;
 }
-inherits(JPoint, base.BasePoint);
+inherits(JPoint$1, base$1.BasePoint);
 
-ShortCurve.prototype.jpoint = function jpoint(x, y, z) {
-  return new JPoint(this, x, y, z);
+ShortCurve$1.prototype.jpoint = function jpoint(x, y, z) {
+  return new JPoint$1(this, x, y, z);
 };
 
-JPoint.prototype.toP = function toP() {
+JPoint$1.prototype.toP = function toP() {
   if (this.isInfinity())
     return this.curve.point(null, null);
 
@@ -23577,11 +30193,11 @@ JPoint.prototype.toP = function toP() {
   return this.curve.point(ax, ay);
 };
 
-JPoint.prototype.neg = function neg() {
+JPoint$1.prototype.neg = function neg() {
   return this.curve.jpoint(this.x, this.y.redNeg(), this.z);
 };
 
-JPoint.prototype.add = function add(p) {
+JPoint$1.prototype.add = function add(p) {
   // O + P = P
   if (this.isInfinity())
     return p;
@@ -23618,7 +30234,7 @@ JPoint.prototype.add = function add(p) {
   return this.curve.jpoint(nx, ny, nz);
 };
 
-JPoint.prototype.mixedAdd = function mixedAdd(p) {
+JPoint$1.prototype.mixedAdd = function mixedAdd(p) {
   // O + P = P
   if (this.isInfinity())
     return p.toJ();
@@ -23654,7 +30270,7 @@ JPoint.prototype.mixedAdd = function mixedAdd(p) {
   return this.curve.jpoint(nx, ny, nz);
 };
 
-JPoint.prototype.dblp = function dblp(pow) {
+JPoint$1.prototype.dblp = function dblp(pow) {
   if (pow === 0)
     return this;
   if (this.isInfinity())
@@ -23705,7 +30321,7 @@ JPoint.prototype.dblp = function dblp(pow) {
   return this.curve.jpoint(jx, jyd.redMul(tinv), jz);
 };
 
-JPoint.prototype.dbl = function dbl() {
+JPoint$1.prototype.dbl = function dbl() {
   if (this.isInfinity())
     return this;
 
@@ -23717,7 +30333,7 @@ JPoint.prototype.dbl = function dbl() {
     return this._dbl();
 };
 
-JPoint.prototype._zeroDbl = function _zeroDbl() {
+JPoint$1.prototype._zeroDbl = function _zeroDbl() {
   var nx;
   var ny;
   var nz;
@@ -23788,7 +30404,7 @@ JPoint.prototype._zeroDbl = function _zeroDbl() {
   return this.curve.jpoint(nx, ny, nz);
 };
 
-JPoint.prototype._threeDbl = function _threeDbl() {
+JPoint$1.prototype._threeDbl = function _threeDbl() {
   var nx;
   var ny;
   var nz;
@@ -23851,7 +30467,7 @@ JPoint.prototype._threeDbl = function _threeDbl() {
   return this.curve.jpoint(nx, ny, nz);
 };
 
-JPoint.prototype._dbl = function _dbl() {
+JPoint$1.prototype._dbl = function _dbl() {
   var a = this.curve.a;
 
   // 4M + 6S + 10A
@@ -23881,7 +30497,7 @@ JPoint.prototype._dbl = function _dbl() {
   return this.curve.jpoint(nx, ny, nz);
 };
 
-JPoint.prototype.trpl = function trpl() {
+JPoint$1.prototype.trpl = function trpl() {
   if (!this.curve.zeroA)
     return this.dbl().add(this);
 
@@ -23932,13 +30548,13 @@ JPoint.prototype.trpl = function trpl() {
   return this.curve.jpoint(nx, ny, nz);
 };
 
-JPoint.prototype.mul = function mul(k, kbase) {
+JPoint$1.prototype.mul = function mul(k, kbase) {
   k = new bn(k, kbase);
 
   return this.curve._wnafMul(this, k);
 };
 
-JPoint.prototype.eq = function eq(p) {
+JPoint$1.prototype.eq = function eq(p) {
   if (p.type === 'affine')
     return this.eq(p.toJ());
 
@@ -23957,7 +30573,7 @@ JPoint.prototype.eq = function eq(p) {
   return this.y.redMul(pz3).redISub(p.y.redMul(z3)).cmpn(0) === 0;
 };
 
-JPoint.prototype.eqXToP = function eqXToP(x) {
+JPoint$1.prototype.eqXToP = function eqXToP(x) {
   var zs = this.z.redSqr();
   var rx = x.toRed(this.curve.red).redMul(zs);
   if (this.x.cmp(rx) === 0)
@@ -23976,7 +30592,7 @@ JPoint.prototype.eqXToP = function eqXToP(x) {
   }
 };
 
-JPoint.prototype.inspect = function inspect() {
+JPoint$1.prototype.inspect = function inspect() {
   if (this.isInfinity())
     return '<EC JPoint Infinity>';
   return '<EC JPoint x: ' + this.x.toString(16, 2) +
@@ -23984,7 +30600,7 @@ JPoint.prototype.inspect = function inspect() {
       ' z: ' + this.z.toString(16, 2) + '>';
 };
 
-JPoint.prototype.isInfinity = function isInfinity() {
+JPoint$1.prototype.isInfinity = function isInfinity() {
   // XXX This code assumes that zero is always zero in red
   return this.z.cmpn(0) === 0;
 };
@@ -23998,7 +30614,7 @@ JPoint.prototype.isInfinity = function isInfinity() {
 
 
 function MontCurve(conf) {
-  base.call(this, 'mont', conf);
+  base$1.call(this, 'mont', conf);
 
   this.a = new bn(conf.a, 16).toRed(this.red);
   this.b = new bn(conf.b, 16).toRed(this.red);
@@ -24006,7 +30622,7 @@ function MontCurve(conf) {
   this.two = new bn(2).toRed(this.red);
   this.a24 = this.i4.redMul(this.a.redAdd(this.two));
 }
-inherits(MontCurve, base);
+inherits(MontCurve, base$1);
 var mont = MontCurve;
 
 MontCurve.prototype.validate = function validate(point) {
@@ -24018,8 +30634,8 @@ MontCurve.prototype.validate = function validate(point) {
   return y.redSqr().cmp(rhs) === 0;
 };
 
-function Point$1(curve, x, z) {
-  base.BasePoint.call(this, curve, 'projective');
+function Point$2(curve, x, z) {
+  base$1.BasePoint.call(this, curve, 'projective');
   if (x === null && z === null) {
     this.x = this.curve.one;
     this.z = this.curve.zero;
@@ -24032,45 +30648,45 @@ function Point$1(curve, x, z) {
       this.z = this.z.toRed(this.curve.red);
   }
 }
-inherits(Point$1, base.BasePoint);
+inherits(Point$2, base$1.BasePoint);
 
 MontCurve.prototype.decodePoint = function decodePoint(bytes, enc) {
-  return this.point(utils_1$1.toArray(bytes, enc), 1);
+  return this.point(utils_1$3.toArray(bytes, enc), 1);
 };
 
 MontCurve.prototype.point = function point(x, z) {
-  return new Point$1(this, x, z);
+  return new Point$2(this, x, z);
 };
 
 MontCurve.prototype.pointFromJSON = function pointFromJSON(obj) {
-  return Point$1.fromJSON(this, obj);
+  return Point$2.fromJSON(this, obj);
 };
 
-Point$1.prototype.precompute = function precompute() {
+Point$2.prototype.precompute = function precompute() {
   // No-op
 };
 
-Point$1.prototype._encode = function _encode() {
+Point$2.prototype._encode = function _encode() {
   return this.getX().toArray('be', this.curve.p.byteLength());
 };
 
-Point$1.fromJSON = function fromJSON(curve, obj) {
-  return new Point$1(curve, obj[0], obj[1] || curve.one);
+Point$2.fromJSON = function fromJSON(curve, obj) {
+  return new Point$2(curve, obj[0], obj[1] || curve.one);
 };
 
-Point$1.prototype.inspect = function inspect() {
+Point$2.prototype.inspect = function inspect() {
   if (this.isInfinity())
     return '<EC Point Infinity>';
   return '<EC Point x: ' + this.x.fromRed().toString(16, 2) +
       ' z: ' + this.z.fromRed().toString(16, 2) + '>';
 };
 
-Point$1.prototype.isInfinity = function isInfinity() {
+Point$2.prototype.isInfinity = function isInfinity() {
   // XXX This code assumes that zero is always zero in red
   return this.z.cmpn(0) === 0;
 };
 
-Point$1.prototype.dbl = function dbl() {
+Point$2.prototype.dbl = function dbl() {
   // http://hyperelliptic.org/EFD/g1p/auto-montgom-xz.html#doubling-dbl-1987-m-3
   // 2M + 2S + 4A
 
@@ -24091,11 +30707,11 @@ Point$1.prototype.dbl = function dbl() {
   return this.curve.point(nx, nz);
 };
 
-Point$1.prototype.add = function add() {
+Point$2.prototype.add = function add() {
   throw new Error('Not supported on Montgomery curve');
 };
 
-Point$1.prototype.diffAdd = function diffAdd(p, diff) {
+Point$2.prototype.diffAdd = function diffAdd(p, diff) {
   // http://hyperelliptic.org/EFD/g1p/auto-montgom-xz.html#diffadd-dadd-1987-m-3
   // 4M + 2S + 6A
 
@@ -24118,7 +30734,7 @@ Point$1.prototype.diffAdd = function diffAdd(p, diff) {
   return this.curve.point(nx, nz);
 };
 
-Point$1.prototype.mul = function mul(k) {
+Point$2.prototype.mul = function mul(k) {
   var t = k.clone();
   var a = this; // (N / 2) * Q + Q
   var b = this.curve.point(null, null); // (N / 2) * Q
@@ -24143,25 +30759,25 @@ Point$1.prototype.mul = function mul(k) {
   return b;
 };
 
-Point$1.prototype.mulAdd = function mulAdd() {
+Point$2.prototype.mulAdd = function mulAdd() {
   throw new Error('Not supported on Montgomery curve');
 };
 
-Point$1.prototype.jumlAdd = function jumlAdd() {
+Point$2.prototype.jumlAdd = function jumlAdd() {
   throw new Error('Not supported on Montgomery curve');
 };
 
-Point$1.prototype.eq = function eq(other) {
+Point$2.prototype.eq = function eq(other) {
   return this.getX().cmp(other.getX()) === 0;
 };
 
-Point$1.prototype.normalize = function normalize() {
+Point$2.prototype.normalize = function normalize() {
   this.x = this.x.redMul(this.z.redInvm());
   this.z = this.curve.one;
   return this;
 };
 
-Point$1.prototype.getX = function getX() {
+Point$2.prototype.getX = function getX() {
   // Normalize coordinates
   this.normalize();
 
@@ -24175,7 +30791,7 @@ Point$1.prototype.getX = function getX() {
 
 
 
-var assert$3 = utils_1$1.assert;
+var assert$8 = utils_1$3.assert;
 
 function EdwardsCurve(conf) {
   // NOTE: Important as we are creating point in Base.call()
@@ -24183,7 +30799,7 @@ function EdwardsCurve(conf) {
   this.mOneA = this.twisted && (conf.a | 0) === -1;
   this.extended = this.mOneA;
 
-  base.call(this, 'edwards', conf);
+  base$1.call(this, 'edwards', conf);
 
   this.a = new bn(conf.a, 16).umod(this.red.m);
   this.a = this.a.toRed(this.red);
@@ -24192,10 +30808,10 @@ function EdwardsCurve(conf) {
   this.d = new bn(conf.d, 16).toRed(this.red);
   this.dd = this.d.redAdd(this.d);
 
-  assert$3(!this.twisted || this.c.fromRed().cmpn(1) === 0);
+  assert$8(!this.twisted || this.c.fromRed().cmpn(1) === 0);
   this.oneC = (conf.c | 0) === 1;
 }
-inherits(EdwardsCurve, base);
+inherits(EdwardsCurve, base$1);
 var edwards = EdwardsCurve;
 
 EdwardsCurve.prototype._mulA = function _mulA(num) {
@@ -24281,8 +30897,8 @@ EdwardsCurve.prototype.validate = function validate(point) {
   return lhs.cmp(rhs) === 0;
 };
 
-function Point$2(curve, x, y, z, t) {
-  base.BasePoint.call(this, curve, 'projective');
+function Point$3(curve, x, y, z, t) {
+  base$1.BasePoint.call(this, curve, 'projective');
   if (x === null && y === null && z === null) {
     this.x = this.curve.zero;
     this.y = this.curve.one;
@@ -24312,21 +30928,21 @@ function Point$2(curve, x, y, z, t) {
     }
   }
 }
-inherits(Point$2, base.BasePoint);
+inherits(Point$3, base$1.BasePoint);
 
 EdwardsCurve.prototype.pointFromJSON = function pointFromJSON(obj) {
-  return Point$2.fromJSON(this, obj);
+  return Point$3.fromJSON(this, obj);
 };
 
 EdwardsCurve.prototype.point = function point(x, y, z, t) {
-  return new Point$2(this, x, y, z, t);
+  return new Point$3(this, x, y, z, t);
 };
 
-Point$2.fromJSON = function fromJSON(curve, obj) {
-  return new Point$2(curve, obj[0], obj[1], obj[2]);
+Point$3.fromJSON = function fromJSON(curve, obj) {
+  return new Point$3(curve, obj[0], obj[1], obj[2]);
 };
 
-Point$2.prototype.inspect = function inspect() {
+Point$3.prototype.inspect = function inspect() {
   if (this.isInfinity())
     return '<EC Point Infinity>';
   return '<EC Point x: ' + this.x.fromRed().toString(16, 2) +
@@ -24334,14 +30950,14 @@ Point$2.prototype.inspect = function inspect() {
       ' z: ' + this.z.fromRed().toString(16, 2) + '>';
 };
 
-Point$2.prototype.isInfinity = function isInfinity() {
+Point$3.prototype.isInfinity = function isInfinity() {
   // XXX This code assumes that zero is always zero in red
   return this.x.cmpn(0) === 0 &&
     (this.y.cmp(this.z) === 0 ||
     (this.zOne && this.y.cmp(this.curve.c) === 0));
 };
 
-Point$2.prototype._extDbl = function _extDbl() {
+Point$3.prototype._extDbl = function _extDbl() {
   // hyperelliptic.org/EFD/g1p/auto-twisted-extended-1.html
   //     #doubling-dbl-2008-hwcd
   // 4M + 4S
@@ -24374,7 +30990,7 @@ Point$2.prototype._extDbl = function _extDbl() {
   return this.curve.point(nx, ny, nz, nt);
 };
 
-Point$2.prototype._projDbl = function _projDbl() {
+Point$3.prototype._projDbl = function _projDbl() {
   // hyperelliptic.org/EFD/g1p/auto-twisted-projective.html
   //     #doubling-dbl-2008-bbjlp
   //     #doubling-dbl-2007-bl
@@ -24435,7 +31051,7 @@ Point$2.prototype._projDbl = function _projDbl() {
   return this.curve.point(nx, ny, nz);
 };
 
-Point$2.prototype.dbl = function dbl() {
+Point$3.prototype.dbl = function dbl() {
   if (this.isInfinity())
     return this;
 
@@ -24446,7 +31062,7 @@ Point$2.prototype.dbl = function dbl() {
     return this._projDbl();
 };
 
-Point$2.prototype._extAdd = function _extAdd(p) {
+Point$3.prototype._extAdd = function _extAdd(p) {
   // hyperelliptic.org/EFD/g1p/auto-twisted-extended-1.html
   //     #addition-add-2008-hwcd-3
   // 8M
@@ -24478,7 +31094,7 @@ Point$2.prototype._extAdd = function _extAdd(p) {
   return this.curve.point(nx, ny, nz, nt);
 };
 
-Point$2.prototype._projAdd = function _projAdd(p) {
+Point$3.prototype._projAdd = function _projAdd(p) {
   // hyperelliptic.org/EFD/g1p/auto-twisted-projective.html
   //     #addition-add-2008-bbjlp
   //     #addition-add-2007-bl
@@ -24517,7 +31133,7 @@ Point$2.prototype._projAdd = function _projAdd(p) {
   return this.curve.point(nx, ny, nz);
 };
 
-Point$2.prototype.add = function add(p) {
+Point$3.prototype.add = function add(p) {
   if (this.isInfinity())
     return p;
   if (p.isInfinity())
@@ -24529,22 +31145,22 @@ Point$2.prototype.add = function add(p) {
     return this._projAdd(p);
 };
 
-Point$2.prototype.mul = function mul(k) {
+Point$3.prototype.mul = function mul(k) {
   if (this._hasDoubles(k))
     return this.curve._fixedNafMul(this, k);
   else
     return this.curve._wnafMul(this, k);
 };
 
-Point$2.prototype.mulAdd = function mulAdd(k1, p, k2) {
+Point$3.prototype.mulAdd = function mulAdd(k1, p, k2) {
   return this.curve._wnafMulAdd(1, [ this, p ], [ k1, k2 ], 2, false);
 };
 
-Point$2.prototype.jmulAdd = function jmulAdd(k1, p, k2) {
+Point$3.prototype.jmulAdd = function jmulAdd(k1, p, k2) {
   return this.curve._wnafMulAdd(1, [ this, p ], [ k1, k2 ], 2, true);
 };
 
-Point$2.prototype.normalize = function normalize() {
+Point$3.prototype.normalize = function normalize() {
   if (this.zOne)
     return this;
 
@@ -24559,30 +31175,30 @@ Point$2.prototype.normalize = function normalize() {
   return this;
 };
 
-Point$2.prototype.neg = function neg() {
+Point$3.prototype.neg = function neg() {
   return this.curve.point(this.x.redNeg(),
     this.y,
     this.z,
     this.t && this.t.redNeg());
 };
 
-Point$2.prototype.getX = function getX() {
+Point$3.prototype.getX = function getX() {
   this.normalize();
   return this.x.fromRed();
 };
 
-Point$2.prototype.getY = function getY() {
+Point$3.prototype.getY = function getY() {
   this.normalize();
   return this.y.fromRed();
 };
 
-Point$2.prototype.eq = function eq(other) {
+Point$3.prototype.eq = function eq(other) {
   return this === other ||
          this.getX().cmp(other.getX()) === 0 &&
          this.getY().cmp(other.getY()) === 0;
 };
 
-Point$2.prototype.eqXToP = function eqXToP(x) {
+Point$3.prototype.eqXToP = function eqXToP(x) {
   var rx = x.toRed(this.curve.red).redMul(this.z);
   if (this.x.cmp(rx) === 0)
     return true;
@@ -24601,1295 +31217,18 @@ Point$2.prototype.eqXToP = function eqXToP(x) {
 };
 
 // Compatibility with BaseCurve
-Point$2.prototype.toP = Point$2.prototype.normalize;
-Point$2.prototype.mixedAdd = Point$2.prototype.add;
+Point$3.prototype.toP = Point$3.prototype.normalize;
+Point$3.prototype.mixedAdd = Point$3.prototype.add;
 
-var curve_1 = createCommonjsModule(function (module, exports) {
+var curve_1$1 = createCommonjsModule(function (module, exports) {
 'use strict';
 
 var curve = exports;
 
-curve.base = base;
-curve.short = short_1;
+curve.base = base$1;
+curve.short = short_1$1;
 curve.mont = mont;
 curve.edwards = edwards;
-});
-
-'use strict';
-
-
-
-
-var inherits_1 = inherits;
-
-function isSurrogatePair(msg, i) {
-  if ((msg.charCodeAt(i) & 0xFC00) !== 0xD800) {
-    return false;
-  }
-  if (i < 0 || i + 1 >= msg.length) {
-    return false;
-  }
-  return (msg.charCodeAt(i + 1) & 0xFC00) === 0xDC00;
-}
-
-function toArray(msg, enc) {
-  if (Array.isArray(msg))
-    return msg.slice();
-  if (!msg)
-    return [];
-  var res = [];
-  if (typeof msg === 'string') {
-    if (!enc) {
-      // Inspired by stringToUtf8ByteArray() in closure-library by Google
-      // https://github.com/google/closure-library/blob/8598d87242af59aac233270742c8984e2b2bdbe0/closure/goog/crypt/crypt.js#L117-L143
-      // Apache License 2.0
-      // https://github.com/google/closure-library/blob/master/LICENSE
-      var p = 0;
-      for (var i = 0; i < msg.length; i++) {
-        var c = msg.charCodeAt(i);
-        if (c < 128) {
-          res[p++] = c;
-        } else if (c < 2048) {
-          res[p++] = (c >> 6) | 192;
-          res[p++] = (c & 63) | 128;
-        } else if (isSurrogatePair(msg, i)) {
-          c = 0x10000 + ((c & 0x03FF) << 10) + (msg.charCodeAt(++i) & 0x03FF);
-          res[p++] = (c >> 18) | 240;
-          res[p++] = ((c >> 12) & 63) | 128;
-          res[p++] = ((c >> 6) & 63) | 128;
-          res[p++] = (c & 63) | 128;
-        } else {
-          res[p++] = (c >> 12) | 224;
-          res[p++] = ((c >> 6) & 63) | 128;
-          res[p++] = (c & 63) | 128;
-        }
-      }
-    } else if (enc === 'hex') {
-      msg = msg.replace(/[^a-z0-9]+/ig, '');
-      if (msg.length % 2 !== 0)
-        msg = '0' + msg;
-      for (i = 0; i < msg.length; i += 2)
-        res.push(parseInt(msg[i] + msg[i + 1], 16));
-    }
-  } else {
-    for (i = 0; i < msg.length; i++)
-      res[i] = msg[i] | 0;
-  }
-  return res;
-}
-var toArray_1 = toArray;
-
-function toHex$1(msg) {
-  var res = '';
-  for (var i = 0; i < msg.length; i++)
-    res += zero2(msg[i].toString(16));
-  return res;
-}
-var toHex_1 = toHex$1;
-
-function htonl(w) {
-  var res = (w >>> 24) |
-            ((w >>> 8) & 0xff00) |
-            ((w << 8) & 0xff0000) |
-            ((w & 0xff) << 24);
-  return res >>> 0;
-}
-var htonl_1 = htonl;
-
-function toHex32(msg, endian) {
-  var res = '';
-  for (var i = 0; i < msg.length; i++) {
-    var w = msg[i];
-    if (endian === 'little')
-      w = htonl(w);
-    res += zero8(w.toString(16));
-  }
-  return res;
-}
-var toHex32_1 = toHex32;
-
-function zero2(word) {
-  if (word.length === 1)
-    return '0' + word;
-  else
-    return word;
-}
-var zero2_1 = zero2;
-
-function zero8(word) {
-  if (word.length === 7)
-    return '0' + word;
-  else if (word.length === 6)
-    return '00' + word;
-  else if (word.length === 5)
-    return '000' + word;
-  else if (word.length === 4)
-    return '0000' + word;
-  else if (word.length === 3)
-    return '00000' + word;
-  else if (word.length === 2)
-    return '000000' + word;
-  else if (word.length === 1)
-    return '0000000' + word;
-  else
-    return word;
-}
-var zero8_1 = zero8;
-
-function join32(msg, start, end, endian) {
-  var len = end - start;
-  minimalisticAssert(len % 4 === 0);
-  var res = new Array(len / 4);
-  for (var i = 0, k = start; i < res.length; i++, k += 4) {
-    var w;
-    if (endian === 'big')
-      w = (msg[k] << 24) | (msg[k + 1] << 16) | (msg[k + 2] << 8) | msg[k + 3];
-    else
-      w = (msg[k + 3] << 24) | (msg[k + 2] << 16) | (msg[k + 1] << 8) | msg[k];
-    res[i] = w >>> 0;
-  }
-  return res;
-}
-var join32_1 = join32;
-
-function split32(msg, endian) {
-  var res = new Array(msg.length * 4);
-  for (var i = 0, k = 0; i < msg.length; i++, k += 4) {
-    var m = msg[i];
-    if (endian === 'big') {
-      res[k] = m >>> 24;
-      res[k + 1] = (m >>> 16) & 0xff;
-      res[k + 2] = (m >>> 8) & 0xff;
-      res[k + 3] = m & 0xff;
-    } else {
-      res[k + 3] = m >>> 24;
-      res[k + 2] = (m >>> 16) & 0xff;
-      res[k + 1] = (m >>> 8) & 0xff;
-      res[k] = m & 0xff;
-    }
-  }
-  return res;
-}
-var split32_1 = split32;
-
-function rotr32(w, b) {
-  return (w >>> b) | (w << (32 - b));
-}
-var rotr32_1 = rotr32;
-
-function rotl32(w, b) {
-  return (w << b) | (w >>> (32 - b));
-}
-var rotl32_1 = rotl32;
-
-function sum32(a, b) {
-  return (a + b) >>> 0;
-}
-var sum32_1 = sum32;
-
-function sum32_3(a, b, c) {
-  return (a + b + c) >>> 0;
-}
-var sum32_3_1 = sum32_3;
-
-function sum32_4(a, b, c, d) {
-  return (a + b + c + d) >>> 0;
-}
-var sum32_4_1 = sum32_4;
-
-function sum32_5(a, b, c, d, e) {
-  return (a + b + c + d + e) >>> 0;
-}
-var sum32_5_1 = sum32_5;
-
-function sum64(buf, pos, ah, al) {
-  var bh = buf[pos];
-  var bl = buf[pos + 1];
-
-  var lo = (al + bl) >>> 0;
-  var hi = (lo < al ? 1 : 0) + ah + bh;
-  buf[pos] = hi >>> 0;
-  buf[pos + 1] = lo;
-}
-var sum64_1 = sum64;
-
-function sum64_hi(ah, al, bh, bl) {
-  var lo = (al + bl) >>> 0;
-  var hi = (lo < al ? 1 : 0) + ah + bh;
-  return hi >>> 0;
-}
-var sum64_hi_1 = sum64_hi;
-
-function sum64_lo(ah, al, bh, bl) {
-  var lo = al + bl;
-  return lo >>> 0;
-}
-var sum64_lo_1 = sum64_lo;
-
-function sum64_4_hi(ah, al, bh, bl, ch, cl, dh, dl) {
-  var carry = 0;
-  var lo = al;
-  lo = (lo + bl) >>> 0;
-  carry += lo < al ? 1 : 0;
-  lo = (lo + cl) >>> 0;
-  carry += lo < cl ? 1 : 0;
-  lo = (lo + dl) >>> 0;
-  carry += lo < dl ? 1 : 0;
-
-  var hi = ah + bh + ch + dh + carry;
-  return hi >>> 0;
-}
-var sum64_4_hi_1 = sum64_4_hi;
-
-function sum64_4_lo(ah, al, bh, bl, ch, cl, dh, dl) {
-  var lo = al + bl + cl + dl;
-  return lo >>> 0;
-}
-var sum64_4_lo_1 = sum64_4_lo;
-
-function sum64_5_hi(ah, al, bh, bl, ch, cl, dh, dl, eh, el) {
-  var carry = 0;
-  var lo = al;
-  lo = (lo + bl) >>> 0;
-  carry += lo < al ? 1 : 0;
-  lo = (lo + cl) >>> 0;
-  carry += lo < cl ? 1 : 0;
-  lo = (lo + dl) >>> 0;
-  carry += lo < dl ? 1 : 0;
-  lo = (lo + el) >>> 0;
-  carry += lo < el ? 1 : 0;
-
-  var hi = ah + bh + ch + dh + eh + carry;
-  return hi >>> 0;
-}
-var sum64_5_hi_1 = sum64_5_hi;
-
-function sum64_5_lo(ah, al, bh, bl, ch, cl, dh, dl, eh, el) {
-  var lo = al + bl + cl + dl + el;
-
-  return lo >>> 0;
-}
-var sum64_5_lo_1 = sum64_5_lo;
-
-function rotr64_hi(ah, al, num) {
-  var r = (al << (32 - num)) | (ah >>> num);
-  return r >>> 0;
-}
-var rotr64_hi_1 = rotr64_hi;
-
-function rotr64_lo(ah, al, num) {
-  var r = (ah << (32 - num)) | (al >>> num);
-  return r >>> 0;
-}
-var rotr64_lo_1 = rotr64_lo;
-
-function shr64_hi(ah, al, num) {
-  return ah >>> num;
-}
-var shr64_hi_1 = shr64_hi;
-
-function shr64_lo(ah, al, num) {
-  var r = (ah << (32 - num)) | (al >>> num);
-  return r >>> 0;
-}
-var shr64_lo_1 = shr64_lo;
-
-var utils = {
-	inherits: inherits_1,
-	toArray: toArray_1,
-	toHex: toHex_1,
-	htonl: htonl_1,
-	toHex32: toHex32_1,
-	zero2: zero2_1,
-	zero8: zero8_1,
-	join32: join32_1,
-	split32: split32_1,
-	rotr32: rotr32_1,
-	rotl32: rotl32_1,
-	sum32: sum32_1,
-	sum32_3: sum32_3_1,
-	sum32_4: sum32_4_1,
-	sum32_5: sum32_5_1,
-	sum64: sum64_1,
-	sum64_hi: sum64_hi_1,
-	sum64_lo: sum64_lo_1,
-	sum64_4_hi: sum64_4_hi_1,
-	sum64_4_lo: sum64_4_lo_1,
-	sum64_5_hi: sum64_5_hi_1,
-	sum64_5_lo: sum64_5_lo_1,
-	rotr64_hi: rotr64_hi_1,
-	rotr64_lo: rotr64_lo_1,
-	shr64_hi: shr64_hi_1,
-	shr64_lo: shr64_lo_1
-};
-
-'use strict';
-
-
-
-
-function BlockHash() {
-  this.pending = null;
-  this.pendingTotal = 0;
-  this.blockSize = this.constructor.blockSize;
-  this.outSize = this.constructor.outSize;
-  this.hmacStrength = this.constructor.hmacStrength;
-  this.padLength = this.constructor.padLength / 8;
-  this.endian = 'big';
-
-  this._delta8 = this.blockSize / 8;
-  this._delta32 = this.blockSize / 32;
-}
-var BlockHash_1 = BlockHash;
-
-BlockHash.prototype.update = function update(msg, enc) {
-  // Convert message to array, pad it, and join into 32bit blocks
-  msg = utils.toArray(msg, enc);
-  if (!this.pending)
-    this.pending = msg;
-  else
-    this.pending = this.pending.concat(msg);
-  this.pendingTotal += msg.length;
-
-  // Enough data, try updating
-  if (this.pending.length >= this._delta8) {
-    msg = this.pending;
-
-    // Process pending data in blocks
-    var r = msg.length % this._delta8;
-    this.pending = msg.slice(msg.length - r, msg.length);
-    if (this.pending.length === 0)
-      this.pending = null;
-
-    msg = utils.join32(msg, 0, msg.length - r, this.endian);
-    for (var i = 0; i < msg.length; i += this._delta32)
-      this._update(msg, i, i + this._delta32);
-  }
-
-  return this;
-};
-
-BlockHash.prototype.digest = function digest(enc) {
-  this.update(this._pad());
-  minimalisticAssert(this.pending === null);
-
-  return this._digest(enc);
-};
-
-BlockHash.prototype._pad = function pad() {
-  var len = this.pendingTotal;
-  var bytes = this._delta8;
-  var k = bytes - ((len + this.padLength) % bytes);
-  var res = new Array(k + this.padLength);
-  res[0] = 0x80;
-  for (var i = 1; i < k; i++)
-    res[i] = 0;
-
-  // Append length
-  len <<= 3;
-  if (this.endian === 'big') {
-    for (var t = 8; t < this.padLength; t++)
-      res[i++] = 0;
-
-    res[i++] = 0;
-    res[i++] = 0;
-    res[i++] = 0;
-    res[i++] = 0;
-    res[i++] = (len >>> 24) & 0xff;
-    res[i++] = (len >>> 16) & 0xff;
-    res[i++] = (len >>> 8) & 0xff;
-    res[i++] = len & 0xff;
-  } else {
-    res[i++] = len & 0xff;
-    res[i++] = (len >>> 8) & 0xff;
-    res[i++] = (len >>> 16) & 0xff;
-    res[i++] = (len >>> 24) & 0xff;
-    res[i++] = 0;
-    res[i++] = 0;
-    res[i++] = 0;
-    res[i++] = 0;
-
-    for (t = 8; t < this.padLength; t++)
-      res[i++] = 0;
-  }
-
-  return res;
-};
-
-var common = {
-	BlockHash: BlockHash_1
-};
-
-'use strict';
-
-
-var rotr32$1 = utils.rotr32;
-
-function ft_1(s, x, y, z) {
-  if (s === 0)
-    return ch32(x, y, z);
-  if (s === 1 || s === 3)
-    return p32(x, y, z);
-  if (s === 2)
-    return maj32(x, y, z);
-}
-var ft_1_1 = ft_1;
-
-function ch32(x, y, z) {
-  return (x & y) ^ ((~x) & z);
-}
-var ch32_1 = ch32;
-
-function maj32(x, y, z) {
-  return (x & y) ^ (x & z) ^ (y & z);
-}
-var maj32_1 = maj32;
-
-function p32(x, y, z) {
-  return x ^ y ^ z;
-}
-var p32_1 = p32;
-
-function s0_256(x) {
-  return rotr32$1(x, 2) ^ rotr32$1(x, 13) ^ rotr32$1(x, 22);
-}
-var s0_256_1 = s0_256;
-
-function s1_256(x) {
-  return rotr32$1(x, 6) ^ rotr32$1(x, 11) ^ rotr32$1(x, 25);
-}
-var s1_256_1 = s1_256;
-
-function g0_256(x) {
-  return rotr32$1(x, 7) ^ rotr32$1(x, 18) ^ (x >>> 3);
-}
-var g0_256_1 = g0_256;
-
-function g1_256(x) {
-  return rotr32$1(x, 17) ^ rotr32$1(x, 19) ^ (x >>> 10);
-}
-var g1_256_1 = g1_256;
-
-var common$1 = {
-	ft_1: ft_1_1,
-	ch32: ch32_1,
-	maj32: maj32_1,
-	p32: p32_1,
-	s0_256: s0_256_1,
-	s1_256: s1_256_1,
-	g0_256: g0_256_1,
-	g1_256: g1_256_1
-};
-
-'use strict';
-
-
-
-
-
-var rotl32$1 = utils.rotl32;
-var sum32$1 = utils.sum32;
-var sum32_5$1 = utils.sum32_5;
-var ft_1$1 = common$1.ft_1;
-var BlockHash$1 = common.BlockHash;
-
-var sha1_K = [
-  0x5A827999, 0x6ED9EBA1,
-  0x8F1BBCDC, 0xCA62C1D6
-];
-
-function SHA1() {
-  if (!(this instanceof SHA1))
-    return new SHA1();
-
-  BlockHash$1.call(this);
-  this.h = [
-    0x67452301, 0xefcdab89, 0x98badcfe,
-    0x10325476, 0xc3d2e1f0 ];
-  this.W = new Array(80);
-}
-
-utils.inherits(SHA1, BlockHash$1);
-var _1 = SHA1;
-
-SHA1.blockSize = 512;
-SHA1.outSize = 160;
-SHA1.hmacStrength = 80;
-SHA1.padLength = 64;
-
-SHA1.prototype._update = function _update(msg, start) {
-  var W = this.W;
-
-  for (var i = 0; i < 16; i++)
-    W[i] = msg[start + i];
-
-  for(; i < W.length; i++)
-    W[i] = rotl32$1(W[i - 3] ^ W[i - 8] ^ W[i - 14] ^ W[i - 16], 1);
-
-  var a = this.h[0];
-  var b = this.h[1];
-  var c = this.h[2];
-  var d = this.h[3];
-  var e = this.h[4];
-
-  for (i = 0; i < W.length; i++) {
-    var s = ~~(i / 20);
-    var t = sum32_5$1(rotl32$1(a, 5), ft_1$1(s, b, c, d), e, W[i], sha1_K[s]);
-    e = d;
-    d = c;
-    c = rotl32$1(b, 30);
-    b = a;
-    a = t;
-  }
-
-  this.h[0] = sum32$1(this.h[0], a);
-  this.h[1] = sum32$1(this.h[1], b);
-  this.h[2] = sum32$1(this.h[2], c);
-  this.h[3] = sum32$1(this.h[3], d);
-  this.h[4] = sum32$1(this.h[4], e);
-};
-
-SHA1.prototype._digest = function digest(enc) {
-  if (enc === 'hex')
-    return utils.toHex32(this.h, 'big');
-  else
-    return utils.split32(this.h, 'big');
-};
-
-'use strict';
-
-
-
-
-
-
-var sum32$2 = utils.sum32;
-var sum32_4$1 = utils.sum32_4;
-var sum32_5$2 = utils.sum32_5;
-var ch32$1 = common$1.ch32;
-var maj32$1 = common$1.maj32;
-var s0_256$1 = common$1.s0_256;
-var s1_256$1 = common$1.s1_256;
-var g0_256$1 = common$1.g0_256;
-var g1_256$1 = common$1.g1_256;
-
-var BlockHash$2 = common.BlockHash;
-
-var sha256_K = [
-  0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
-  0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
-  0xd807aa98, 0x12835b01, 0x243185be, 0x550c7dc3,
-  0x72be5d74, 0x80deb1fe, 0x9bdc06a7, 0xc19bf174,
-  0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
-  0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da,
-  0x983e5152, 0xa831c66d, 0xb00327c8, 0xbf597fc7,
-  0xc6e00bf3, 0xd5a79147, 0x06ca6351, 0x14292967,
-  0x27b70a85, 0x2e1b2138, 0x4d2c6dfc, 0x53380d13,
-  0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-  0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3,
-  0xd192e819, 0xd6990624, 0xf40e3585, 0x106aa070,
-  0x19a4c116, 0x1e376c08, 0x2748774c, 0x34b0bcb5,
-  0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f, 0x682e6ff3,
-  0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-  0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-];
-
-function SHA256() {
-  if (!(this instanceof SHA256))
-    return new SHA256();
-
-  BlockHash$2.call(this);
-  this.h = [
-    0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
-    0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
-  ];
-  this.k = sha256_K;
-  this.W = new Array(64);
-}
-utils.inherits(SHA256, BlockHash$2);
-var _256 = SHA256;
-
-SHA256.blockSize = 512;
-SHA256.outSize = 256;
-SHA256.hmacStrength = 192;
-SHA256.padLength = 64;
-
-SHA256.prototype._update = function _update(msg, start) {
-  var W = this.W;
-
-  for (var i = 0; i < 16; i++)
-    W[i] = msg[start + i];
-  for (; i < W.length; i++)
-    W[i] = sum32_4$1(g1_256$1(W[i - 2]), W[i - 7], g0_256$1(W[i - 15]), W[i - 16]);
-
-  var a = this.h[0];
-  var b = this.h[1];
-  var c = this.h[2];
-  var d = this.h[3];
-  var e = this.h[4];
-  var f = this.h[5];
-  var g = this.h[6];
-  var h = this.h[7];
-
-  minimalisticAssert(this.k.length === W.length);
-  for (i = 0; i < W.length; i++) {
-    var T1 = sum32_5$2(h, s1_256$1(e), ch32$1(e, f, g), this.k[i], W[i]);
-    var T2 = sum32$2(s0_256$1(a), maj32$1(a, b, c));
-    h = g;
-    g = f;
-    f = e;
-    e = sum32$2(d, T1);
-    d = c;
-    c = b;
-    b = a;
-    a = sum32$2(T1, T2);
-  }
-
-  this.h[0] = sum32$2(this.h[0], a);
-  this.h[1] = sum32$2(this.h[1], b);
-  this.h[2] = sum32$2(this.h[2], c);
-  this.h[3] = sum32$2(this.h[3], d);
-  this.h[4] = sum32$2(this.h[4], e);
-  this.h[5] = sum32$2(this.h[5], f);
-  this.h[6] = sum32$2(this.h[6], g);
-  this.h[7] = sum32$2(this.h[7], h);
-};
-
-SHA256.prototype._digest = function digest(enc) {
-  if (enc === 'hex')
-    return utils.toHex32(this.h, 'big');
-  else
-    return utils.split32(this.h, 'big');
-};
-
-'use strict';
-
-
-
-
-function SHA224() {
-  if (!(this instanceof SHA224))
-    return new SHA224();
-
-  _256.call(this);
-  this.h = [
-    0xc1059ed8, 0x367cd507, 0x3070dd17, 0xf70e5939,
-    0xffc00b31, 0x68581511, 0x64f98fa7, 0xbefa4fa4 ];
-}
-utils.inherits(SHA224, _256);
-var _224 = SHA224;
-
-SHA224.blockSize = 512;
-SHA224.outSize = 224;
-SHA224.hmacStrength = 192;
-SHA224.padLength = 64;
-
-SHA224.prototype._digest = function digest(enc) {
-  // Just truncate output
-  if (enc === 'hex')
-    return utils.toHex32(this.h.slice(0, 7), 'big');
-  else
-    return utils.split32(this.h.slice(0, 7), 'big');
-};
-
-'use strict';
-
-
-
-
-
-var rotr64_hi$1 = utils.rotr64_hi;
-var rotr64_lo$1 = utils.rotr64_lo;
-var shr64_hi$1 = utils.shr64_hi;
-var shr64_lo$1 = utils.shr64_lo;
-var sum64$1 = utils.sum64;
-var sum64_hi$1 = utils.sum64_hi;
-var sum64_lo$1 = utils.sum64_lo;
-var sum64_4_hi$1 = utils.sum64_4_hi;
-var sum64_4_lo$1 = utils.sum64_4_lo;
-var sum64_5_hi$1 = utils.sum64_5_hi;
-var sum64_5_lo$1 = utils.sum64_5_lo;
-
-var BlockHash$3 = common.BlockHash;
-
-var sha512_K = [
-  0x428a2f98, 0xd728ae22, 0x71374491, 0x23ef65cd,
-  0xb5c0fbcf, 0xec4d3b2f, 0xe9b5dba5, 0x8189dbbc,
-  0x3956c25b, 0xf348b538, 0x59f111f1, 0xb605d019,
-  0x923f82a4, 0xaf194f9b, 0xab1c5ed5, 0xda6d8118,
-  0xd807aa98, 0xa3030242, 0x12835b01, 0x45706fbe,
-  0x243185be, 0x4ee4b28c, 0x550c7dc3, 0xd5ffb4e2,
-  0x72be5d74, 0xf27b896f, 0x80deb1fe, 0x3b1696b1,
-  0x9bdc06a7, 0x25c71235, 0xc19bf174, 0xcf692694,
-  0xe49b69c1, 0x9ef14ad2, 0xefbe4786, 0x384f25e3,
-  0x0fc19dc6, 0x8b8cd5b5, 0x240ca1cc, 0x77ac9c65,
-  0x2de92c6f, 0x592b0275, 0x4a7484aa, 0x6ea6e483,
-  0x5cb0a9dc, 0xbd41fbd4, 0x76f988da, 0x831153b5,
-  0x983e5152, 0xee66dfab, 0xa831c66d, 0x2db43210,
-  0xb00327c8, 0x98fb213f, 0xbf597fc7, 0xbeef0ee4,
-  0xc6e00bf3, 0x3da88fc2, 0xd5a79147, 0x930aa725,
-  0x06ca6351, 0xe003826f, 0x14292967, 0x0a0e6e70,
-  0x27b70a85, 0x46d22ffc, 0x2e1b2138, 0x5c26c926,
-  0x4d2c6dfc, 0x5ac42aed, 0x53380d13, 0x9d95b3df,
-  0x650a7354, 0x8baf63de, 0x766a0abb, 0x3c77b2a8,
-  0x81c2c92e, 0x47edaee6, 0x92722c85, 0x1482353b,
-  0xa2bfe8a1, 0x4cf10364, 0xa81a664b, 0xbc423001,
-  0xc24b8b70, 0xd0f89791, 0xc76c51a3, 0x0654be30,
-  0xd192e819, 0xd6ef5218, 0xd6990624, 0x5565a910,
-  0xf40e3585, 0x5771202a, 0x106aa070, 0x32bbd1b8,
-  0x19a4c116, 0xb8d2d0c8, 0x1e376c08, 0x5141ab53,
-  0x2748774c, 0xdf8eeb99, 0x34b0bcb5, 0xe19b48a8,
-  0x391c0cb3, 0xc5c95a63, 0x4ed8aa4a, 0xe3418acb,
-  0x5b9cca4f, 0x7763e373, 0x682e6ff3, 0xd6b2b8a3,
-  0x748f82ee, 0x5defb2fc, 0x78a5636f, 0x43172f60,
-  0x84c87814, 0xa1f0ab72, 0x8cc70208, 0x1a6439ec,
-  0x90befffa, 0x23631e28, 0xa4506ceb, 0xde82bde9,
-  0xbef9a3f7, 0xb2c67915, 0xc67178f2, 0xe372532b,
-  0xca273ece, 0xea26619c, 0xd186b8c7, 0x21c0c207,
-  0xeada7dd6, 0xcde0eb1e, 0xf57d4f7f, 0xee6ed178,
-  0x06f067aa, 0x72176fba, 0x0a637dc5, 0xa2c898a6,
-  0x113f9804, 0xbef90dae, 0x1b710b35, 0x131c471b,
-  0x28db77f5, 0x23047d84, 0x32caab7b, 0x40c72493,
-  0x3c9ebe0a, 0x15c9bebc, 0x431d67c4, 0x9c100d4c,
-  0x4cc5d4be, 0xcb3e42b6, 0x597f299c, 0xfc657e2a,
-  0x5fcb6fab, 0x3ad6faec, 0x6c44198c, 0x4a475817
-];
-
-function SHA512() {
-  if (!(this instanceof SHA512))
-    return new SHA512();
-
-  BlockHash$3.call(this);
-  this.h = [
-    0x6a09e667, 0xf3bcc908,
-    0xbb67ae85, 0x84caa73b,
-    0x3c6ef372, 0xfe94f82b,
-    0xa54ff53a, 0x5f1d36f1,
-    0x510e527f, 0xade682d1,
-    0x9b05688c, 0x2b3e6c1f,
-    0x1f83d9ab, 0xfb41bd6b,
-    0x5be0cd19, 0x137e2179 ];
-  this.k = sha512_K;
-  this.W = new Array(160);
-}
-utils.inherits(SHA512, BlockHash$3);
-var _512 = SHA512;
-
-SHA512.blockSize = 1024;
-SHA512.outSize = 512;
-SHA512.hmacStrength = 192;
-SHA512.padLength = 128;
-
-SHA512.prototype._prepareBlock = function _prepareBlock(msg, start) {
-  var W = this.W;
-
-  // 32 x 32bit words
-  for (var i = 0; i < 32; i++)
-    W[i] = msg[start + i];
-  for (; i < W.length; i += 2) {
-    var c0_hi = g1_512_hi(W[i - 4], W[i - 3]);  // i - 2
-    var c0_lo = g1_512_lo(W[i - 4], W[i - 3]);
-    var c1_hi = W[i - 14];  // i - 7
-    var c1_lo = W[i - 13];
-    var c2_hi = g0_512_hi(W[i - 30], W[i - 29]);  // i - 15
-    var c2_lo = g0_512_lo(W[i - 30], W[i - 29]);
-    var c3_hi = W[i - 32];  // i - 16
-    var c3_lo = W[i - 31];
-
-    W[i] = sum64_4_hi$1(
-      c0_hi, c0_lo,
-      c1_hi, c1_lo,
-      c2_hi, c2_lo,
-      c3_hi, c3_lo);
-    W[i + 1] = sum64_4_lo$1(
-      c0_hi, c0_lo,
-      c1_hi, c1_lo,
-      c2_hi, c2_lo,
-      c3_hi, c3_lo);
-  }
-};
-
-SHA512.prototype._update = function _update(msg, start) {
-  this._prepareBlock(msg, start);
-
-  var W = this.W;
-
-  var ah = this.h[0];
-  var al = this.h[1];
-  var bh = this.h[2];
-  var bl = this.h[3];
-  var ch = this.h[4];
-  var cl = this.h[5];
-  var dh = this.h[6];
-  var dl = this.h[7];
-  var eh = this.h[8];
-  var el = this.h[9];
-  var fh = this.h[10];
-  var fl = this.h[11];
-  var gh = this.h[12];
-  var gl = this.h[13];
-  var hh = this.h[14];
-  var hl = this.h[15];
-
-  minimalisticAssert(this.k.length === W.length);
-  for (var i = 0; i < W.length; i += 2) {
-    var c0_hi = hh;
-    var c0_lo = hl;
-    var c1_hi = s1_512_hi(eh, el);
-    var c1_lo = s1_512_lo(eh, el);
-    var c2_hi = ch64_hi(eh, el, fh, fl, gh, gl);
-    var c2_lo = ch64_lo(eh, el, fh, fl, gh, gl);
-    var c3_hi = this.k[i];
-    var c3_lo = this.k[i + 1];
-    var c4_hi = W[i];
-    var c4_lo = W[i + 1];
-
-    var T1_hi = sum64_5_hi$1(
-      c0_hi, c0_lo,
-      c1_hi, c1_lo,
-      c2_hi, c2_lo,
-      c3_hi, c3_lo,
-      c4_hi, c4_lo);
-    var T1_lo = sum64_5_lo$1(
-      c0_hi, c0_lo,
-      c1_hi, c1_lo,
-      c2_hi, c2_lo,
-      c3_hi, c3_lo,
-      c4_hi, c4_lo);
-
-    c0_hi = s0_512_hi(ah, al);
-    c0_lo = s0_512_lo(ah, al);
-    c1_hi = maj64_hi(ah, al, bh, bl, ch, cl);
-    c1_lo = maj64_lo(ah, al, bh, bl, ch, cl);
-
-    var T2_hi = sum64_hi$1(c0_hi, c0_lo, c1_hi, c1_lo);
-    var T2_lo = sum64_lo$1(c0_hi, c0_lo, c1_hi, c1_lo);
-
-    hh = gh;
-    hl = gl;
-
-    gh = fh;
-    gl = fl;
-
-    fh = eh;
-    fl = el;
-
-    eh = sum64_hi$1(dh, dl, T1_hi, T1_lo);
-    el = sum64_lo$1(dl, dl, T1_hi, T1_lo);
-
-    dh = ch;
-    dl = cl;
-
-    ch = bh;
-    cl = bl;
-
-    bh = ah;
-    bl = al;
-
-    ah = sum64_hi$1(T1_hi, T1_lo, T2_hi, T2_lo);
-    al = sum64_lo$1(T1_hi, T1_lo, T2_hi, T2_lo);
-  }
-
-  sum64$1(this.h, 0, ah, al);
-  sum64$1(this.h, 2, bh, bl);
-  sum64$1(this.h, 4, ch, cl);
-  sum64$1(this.h, 6, dh, dl);
-  sum64$1(this.h, 8, eh, el);
-  sum64$1(this.h, 10, fh, fl);
-  sum64$1(this.h, 12, gh, gl);
-  sum64$1(this.h, 14, hh, hl);
-};
-
-SHA512.prototype._digest = function digest(enc) {
-  if (enc === 'hex')
-    return utils.toHex32(this.h, 'big');
-  else
-    return utils.split32(this.h, 'big');
-};
-
-function ch64_hi(xh, xl, yh, yl, zh) {
-  var r = (xh & yh) ^ ((~xh) & zh);
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function ch64_lo(xh, xl, yh, yl, zh, zl) {
-  var r = (xl & yl) ^ ((~xl) & zl);
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function maj64_hi(xh, xl, yh, yl, zh) {
-  var r = (xh & yh) ^ (xh & zh) ^ (yh & zh);
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function maj64_lo(xh, xl, yh, yl, zh, zl) {
-  var r = (xl & yl) ^ (xl & zl) ^ (yl & zl);
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function s0_512_hi(xh, xl) {
-  var c0_hi = rotr64_hi$1(xh, xl, 28);
-  var c1_hi = rotr64_hi$1(xl, xh, 2);  // 34
-  var c2_hi = rotr64_hi$1(xl, xh, 7);  // 39
-
-  var r = c0_hi ^ c1_hi ^ c2_hi;
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function s0_512_lo(xh, xl) {
-  var c0_lo = rotr64_lo$1(xh, xl, 28);
-  var c1_lo = rotr64_lo$1(xl, xh, 2);  // 34
-  var c2_lo = rotr64_lo$1(xl, xh, 7);  // 39
-
-  var r = c0_lo ^ c1_lo ^ c2_lo;
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function s1_512_hi(xh, xl) {
-  var c0_hi = rotr64_hi$1(xh, xl, 14);
-  var c1_hi = rotr64_hi$1(xh, xl, 18);
-  var c2_hi = rotr64_hi$1(xl, xh, 9);  // 41
-
-  var r = c0_hi ^ c1_hi ^ c2_hi;
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function s1_512_lo(xh, xl) {
-  var c0_lo = rotr64_lo$1(xh, xl, 14);
-  var c1_lo = rotr64_lo$1(xh, xl, 18);
-  var c2_lo = rotr64_lo$1(xl, xh, 9);  // 41
-
-  var r = c0_lo ^ c1_lo ^ c2_lo;
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function g0_512_hi(xh, xl) {
-  var c0_hi = rotr64_hi$1(xh, xl, 1);
-  var c1_hi = rotr64_hi$1(xh, xl, 8);
-  var c2_hi = shr64_hi$1(xh, xl, 7);
-
-  var r = c0_hi ^ c1_hi ^ c2_hi;
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function g0_512_lo(xh, xl) {
-  var c0_lo = rotr64_lo$1(xh, xl, 1);
-  var c1_lo = rotr64_lo$1(xh, xl, 8);
-  var c2_lo = shr64_lo$1(xh, xl, 7);
-
-  var r = c0_lo ^ c1_lo ^ c2_lo;
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function g1_512_hi(xh, xl) {
-  var c0_hi = rotr64_hi$1(xh, xl, 19);
-  var c1_hi = rotr64_hi$1(xl, xh, 29);  // 61
-  var c2_hi = shr64_hi$1(xh, xl, 6);
-
-  var r = c0_hi ^ c1_hi ^ c2_hi;
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-function g1_512_lo(xh, xl) {
-  var c0_lo = rotr64_lo$1(xh, xl, 19);
-  var c1_lo = rotr64_lo$1(xl, xh, 29);  // 61
-  var c2_lo = shr64_lo$1(xh, xl, 6);
-
-  var r = c0_lo ^ c1_lo ^ c2_lo;
-  if (r < 0)
-    r += 0x100000000;
-  return r;
-}
-
-'use strict';
-
-
-
-
-
-function SHA384() {
-  if (!(this instanceof SHA384))
-    return new SHA384();
-
-  _512.call(this);
-  this.h = [
-    0xcbbb9d5d, 0xc1059ed8,
-    0x629a292a, 0x367cd507,
-    0x9159015a, 0x3070dd17,
-    0x152fecd8, 0xf70e5939,
-    0x67332667, 0xffc00b31,
-    0x8eb44a87, 0x68581511,
-    0xdb0c2e0d, 0x64f98fa7,
-    0x47b5481d, 0xbefa4fa4 ];
-}
-utils.inherits(SHA384, _512);
-var _384 = SHA384;
-
-SHA384.blockSize = 1024;
-SHA384.outSize = 384;
-SHA384.hmacStrength = 192;
-SHA384.padLength = 128;
-
-SHA384.prototype._digest = function digest(enc) {
-  if (enc === 'hex')
-    return utils.toHex32(this.h.slice(0, 12), 'big');
-  else
-    return utils.split32(this.h.slice(0, 12), 'big');
-};
-
-'use strict';
-
-var sha1 = _1;
-var sha224 = _224;
-var sha256 = _256;
-var sha384 = _384;
-var sha512 = _512;
-
-var sha = {
-	sha1: sha1,
-	sha224: sha224,
-	sha256: sha256,
-	sha384: sha384,
-	sha512: sha512
-};
-
-'use strict';
-
-
-
-
-var rotl32$2 = utils.rotl32;
-var sum32$3 = utils.sum32;
-var sum32_3$1 = utils.sum32_3;
-var sum32_4$2 = utils.sum32_4;
-var BlockHash$4 = common.BlockHash;
-
-function RIPEMD160() {
-  if (!(this instanceof RIPEMD160))
-    return new RIPEMD160();
-
-  BlockHash$4.call(this);
-
-  this.h = [ 0x67452301, 0xefcdab89, 0x98badcfe, 0x10325476, 0xc3d2e1f0 ];
-  this.endian = 'little';
-}
-utils.inherits(RIPEMD160, BlockHash$4);
-var ripemd160 = RIPEMD160;
-
-RIPEMD160.blockSize = 512;
-RIPEMD160.outSize = 160;
-RIPEMD160.hmacStrength = 192;
-RIPEMD160.padLength = 64;
-
-RIPEMD160.prototype._update = function update(msg, start) {
-  var A = this.h[0];
-  var B = this.h[1];
-  var C = this.h[2];
-  var D = this.h[3];
-  var E = this.h[4];
-  var Ah = A;
-  var Bh = B;
-  var Ch = C;
-  var Dh = D;
-  var Eh = E;
-  for (var j = 0; j < 80; j++) {
-    var T = sum32$3(
-      rotl32$2(
-        sum32_4$2(A, f$1(j, B, C, D), msg[r$1[j] + start], K(j)),
-        s[j]),
-      E);
-    A = E;
-    E = D;
-    D = rotl32$2(C, 10);
-    C = B;
-    B = T;
-    T = sum32$3(
-      rotl32$2(
-        sum32_4$2(Ah, f$1(79 - j, Bh, Ch, Dh), msg[rh[j] + start], Kh(j)),
-        sh[j]),
-      Eh);
-    Ah = Eh;
-    Eh = Dh;
-    Dh = rotl32$2(Ch, 10);
-    Ch = Bh;
-    Bh = T;
-  }
-  T = sum32_3$1(this.h[1], C, Dh);
-  this.h[1] = sum32_3$1(this.h[2], D, Eh);
-  this.h[2] = sum32_3$1(this.h[3], E, Ah);
-  this.h[3] = sum32_3$1(this.h[4], A, Bh);
-  this.h[4] = sum32_3$1(this.h[0], B, Ch);
-  this.h[0] = T;
-};
-
-RIPEMD160.prototype._digest = function digest(enc) {
-  if (enc === 'hex')
-    return utils.toHex32(this.h, 'little');
-  else
-    return utils.split32(this.h, 'little');
-};
-
-function f$1(j, x, y, z) {
-  if (j <= 15)
-    return x ^ y ^ z;
-  else if (j <= 31)
-    return (x & y) | ((~x) & z);
-  else if (j <= 47)
-    return (x | (~y)) ^ z;
-  else if (j <= 63)
-    return (x & z) | (y & (~z));
-  else
-    return x ^ (y | (~z));
-}
-
-function K(j) {
-  if (j <= 15)
-    return 0x00000000;
-  else if (j <= 31)
-    return 0x5a827999;
-  else if (j <= 47)
-    return 0x6ed9eba1;
-  else if (j <= 63)
-    return 0x8f1bbcdc;
-  else
-    return 0xa953fd4e;
-}
-
-function Kh(j) {
-  if (j <= 15)
-    return 0x50a28be6;
-  else if (j <= 31)
-    return 0x5c4dd124;
-  else if (j <= 47)
-    return 0x6d703ef3;
-  else if (j <= 63)
-    return 0x7a6d76e9;
-  else
-    return 0x00000000;
-}
-
-var r$1 = [
-  0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-  7, 4, 13, 1, 10, 6, 15, 3, 12, 0, 9, 5, 2, 14, 11, 8,
-  3, 10, 14, 4, 9, 15, 8, 1, 2, 7, 0, 6, 13, 11, 5, 12,
-  1, 9, 11, 10, 0, 8, 12, 4, 13, 3, 7, 15, 14, 5, 6, 2,
-  4, 0, 5, 9, 7, 12, 2, 10, 14, 1, 3, 8, 11, 6, 15, 13
-];
-
-var rh = [
-  5, 14, 7, 0, 9, 2, 11, 4, 13, 6, 15, 8, 1, 10, 3, 12,
-  6, 11, 3, 7, 0, 13, 5, 10, 14, 15, 8, 12, 4, 9, 1, 2,
-  15, 5, 1, 3, 7, 14, 6, 9, 11, 8, 12, 2, 10, 0, 4, 13,
-  8, 6, 4, 1, 3, 11, 15, 0, 5, 12, 2, 13, 9, 7, 10, 14,
-  12, 15, 10, 4, 1, 5, 8, 7, 6, 2, 13, 14, 0, 3, 9, 11
-];
-
-var s = [
-  11, 14, 15, 12, 5, 8, 7, 9, 11, 13, 14, 15, 6, 7, 9, 8,
-  7, 6, 8, 13, 11, 9, 7, 15, 7, 12, 15, 9, 11, 7, 13, 12,
-  11, 13, 6, 7, 14, 9, 13, 15, 14, 8, 13, 6, 5, 12, 7, 5,
-  11, 12, 14, 15, 14, 15, 9, 8, 9, 14, 5, 6, 8, 6, 5, 12,
-  9, 15, 5, 11, 6, 8, 13, 12, 5, 12, 13, 14, 11, 8, 5, 6
-];
-
-var sh = [
-  8, 9, 9, 11, 13, 15, 15, 5, 7, 7, 8, 11, 14, 14, 12, 6,
-  9, 13, 15, 7, 12, 8, 9, 11, 7, 7, 12, 7, 6, 15, 13, 11,
-  9, 7, 15, 11, 8, 6, 6, 14, 12, 13, 5, 14, 13, 13, 7, 5,
-  15, 5, 8, 11, 14, 14, 6, 14, 6, 9, 12, 9, 12, 5, 15, 8,
-  8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
-];
-
-var ripemd = {
-	ripemd160: ripemd160
-};
-
-'use strict';
-
-
-
-
-function Hmac(hash, key, enc) {
-  if (!(this instanceof Hmac))
-    return new Hmac(hash, key, enc);
-  this.Hash = hash;
-  this.blockSize = hash.blockSize / 8;
-  this.outSize = hash.outSize / 8;
-  this.inner = null;
-  this.outer = null;
-
-  this._init(utils.toArray(key, enc));
-}
-var hmac = Hmac;
-
-Hmac.prototype._init = function init(key) {
-  // Shorten key, if needed
-  if (key.length > this.blockSize)
-    key = new this.Hash().update(key).digest();
-  minimalisticAssert(key.length <= this.blockSize);
-
-  // Add padding to key
-  for (var i = key.length; i < this.blockSize; i++)
-    key.push(0);
-
-  for (i = 0; i < key.length; i++)
-    key[i] ^= 0x36;
-  this.inner = new this.Hash().update(key);
-
-  // 0x36 ^ 0x5c = 0x6a
-  for (i = 0; i < key.length; i++)
-    key[i] ^= 0x6a;
-  this.outer = new this.Hash().update(key);
-};
-
-Hmac.prototype.update = function update(msg, enc) {
-  this.inner.update(msg, enc);
-  return this;
-};
-
-Hmac.prototype.digest = function digest(enc) {
-  this.outer.update(this.inner.digest());
-  return this.outer.digest(enc);
-};
-
-var hash_1 = createCommonjsModule(function (module, exports) {
-var hash = exports;
-
-hash.utils = utils;
-hash.common = common;
-hash.sha = sha;
-hash.ripemd = ripemd;
-hash.hmac = hmac;
-
-// Proxy hash functions to the main object
-hash.sha1 = hash.sha.sha1;
-hash.sha256 = hash.sha.sha256;
-hash.sha224 = hash.sha.sha224;
-hash.sha384 = hash.sha.sha384;
-hash.sha512 = hash.sha.sha512;
-hash.ripemd160 = hash.ripemd.ripemd160;
 });
 
 var secp256k1 = {
@@ -26673,7 +32012,7 @@ var secp256k1 = {
   },
 };
 
-var curves_1 = createCommonjsModule(function (module, exports) {
+var curves_1$1 = createCommonjsModule(function (module, exports) {
 'use strict';
 
 var curves = exports;
@@ -26682,15 +32021,15 @@ var curves = exports;
 
 
 
-var assert = utils_1$1.assert;
+var assert = utils_1$3.assert;
 
 function PresetCurve(options) {
   if (options.type === 'short')
-    this.curve = new curve_1.short(options);
+    this.curve = new curve_1$1.short(options);
   else if (options.type === 'edwards')
-    this.curve = new curve_1.edwards(options);
+    this.curve = new curve_1$1.edwards(options);
   else
-    this.curve = new curve_1.mont(options);
+    this.curve = new curve_1$1.mont(options);
   this.g = this.curve.g;
   this.n = this.curve.n;
   this.hash = options.hash;
@@ -26888,9 +32227,9 @@ defineCurve('secp256k1', {
 
 
 
-function HmacDRBG(options) {
-  if (!(this instanceof HmacDRBG))
-    return new HmacDRBG(options);
+function HmacDRBG$1(options) {
+  if (!(this instanceof HmacDRBG$1))
+    return new HmacDRBG$1(options);
   this.hash = options.hash;
   this.predResist = !!options.predResist;
 
@@ -26902,16 +32241,16 @@ function HmacDRBG(options) {
   this.K = null;
   this.V = null;
 
-  var entropy = utils_1.toArray(options.entropy, options.entropyEnc || 'hex');
-  var nonce = utils_1.toArray(options.nonce, options.nonceEnc || 'hex');
-  var pers = utils_1.toArray(options.pers, options.persEnc || 'hex');
+  var entropy = utils_1$2.toArray(options.entropy, options.entropyEnc || 'hex');
+  var nonce = utils_1$2.toArray(options.nonce, options.nonceEnc || 'hex');
+  var pers = utils_1$2.toArray(options.pers, options.persEnc || 'hex');
   minimalisticAssert(entropy.length >= (this.minEntropy / 8),
          'Not enough entropy. Minimum is: ' + this.minEntropy + ' bits');
   this._init(entropy, nonce, pers);
 }
-var hmacDrbg = HmacDRBG;
+var hmacDrbg$1 = HmacDRBG$1;
 
-HmacDRBG.prototype._init = function init(entropy, nonce, pers) {
+HmacDRBG$1.prototype._init = function init(entropy, nonce, pers) {
   var seed = entropy.concat(nonce).concat(pers);
 
   this.K = new Array(this.outLen / 8);
@@ -26926,11 +32265,11 @@ HmacDRBG.prototype._init = function init(entropy, nonce, pers) {
   this.reseedInterval = 0x1000000000000;  // 2^48
 };
 
-HmacDRBG.prototype._hmac = function hmac() {
+HmacDRBG$1.prototype._hmac = function hmac() {
   return new hash_1.hmac(this.hash, this.K);
 };
 
-HmacDRBG.prototype._update = function update(seed) {
+HmacDRBG$1.prototype._update = function update(seed) {
   var kmac = this._hmac()
                  .update(this.V)
                  .update([ 0x00 ]);
@@ -26949,7 +32288,7 @@ HmacDRBG.prototype._update = function update(seed) {
   this.V = this._hmac().update(this.V).digest();
 };
 
-HmacDRBG.prototype.reseed = function reseed(entropy, entropyEnc, add, addEnc) {
+HmacDRBG$1.prototype.reseed = function reseed(entropy, entropyEnc, add, addEnc) {
   // Optional entropy enc
   if (typeof entropyEnc !== 'string') {
     addEnc = add;
@@ -26957,8 +32296,8 @@ HmacDRBG.prototype.reseed = function reseed(entropy, entropyEnc, add, addEnc) {
     entropyEnc = null;
   }
 
-  entropy = utils_1.toArray(entropy, entropyEnc);
-  add = utils_1.toArray(add, addEnc);
+  entropy = utils_1$2.toArray(entropy, entropyEnc);
+  add = utils_1$2.toArray(add, addEnc);
 
   minimalisticAssert(entropy.length >= (this.minEntropy / 8),
          'Not enough entropy. Minimum is: ' + this.minEntropy + ' bits');
@@ -26967,7 +32306,7 @@ HmacDRBG.prototype.reseed = function reseed(entropy, entropyEnc, add, addEnc) {
   this._reseed = 1;
 };
 
-HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
+HmacDRBG$1.prototype.generate = function generate(len, enc, add, addEnc) {
   if (this._reseed > this.reseedInterval)
     throw new Error('Reseed is required');
 
@@ -26980,7 +32319,7 @@ HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
 
   // Optional additional data
   if (add) {
-    add = utils_1.toArray(add, addEnc || 'hex');
+    add = utils_1$2.toArray(add, addEnc || 'hex');
     this._update(add);
   }
 
@@ -26993,16 +32332,16 @@ HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
   var res = temp.slice(0, len);
   this._update(add);
   this._reseed++;
-  return utils_1.encode(res, enc);
+  return utils_1$2.encode(res, enc);
 };
 
 'use strict';
 
 
 
-var assert$4 = utils_1$1.assert;
+var assert$9 = utils_1$3.assert;
 
-function KeyPair(ec, options) {
+function KeyPair$1(ec, options) {
   this.ec = ec;
   this.priv = null;
   this.pub = null;
@@ -27013,29 +32352,29 @@ function KeyPair(ec, options) {
   if (options.pub)
     this._importPublic(options.pub, options.pubEnc);
 }
-var key = KeyPair;
+var key$1 = KeyPair$1;
 
-KeyPair.fromPublic = function fromPublic(ec, pub, enc) {
-  if (pub instanceof KeyPair)
+KeyPair$1.fromPublic = function fromPublic(ec, pub, enc) {
+  if (pub instanceof KeyPair$1)
     return pub;
 
-  return new KeyPair(ec, {
+  return new KeyPair$1(ec, {
     pub: pub,
     pubEnc: enc,
   });
 };
 
-KeyPair.fromPrivate = function fromPrivate(ec, priv, enc) {
-  if (priv instanceof KeyPair)
+KeyPair$1.fromPrivate = function fromPrivate(ec, priv, enc) {
+  if (priv instanceof KeyPair$1)
     return priv;
 
-  return new KeyPair(ec, {
+  return new KeyPair$1(ec, {
     priv: priv,
     privEnc: enc,
   });
 };
 
-KeyPair.prototype.validate = function validate() {
+KeyPair$1.prototype.validate = function validate() {
   var pub = this.getPublic();
 
   if (pub.isInfinity())
@@ -27048,7 +32387,7 @@ KeyPair.prototype.validate = function validate() {
   return { result: true, reason: null };
 };
 
-KeyPair.prototype.getPublic = function getPublic(compact, enc) {
+KeyPair$1.prototype.getPublic = function getPublic(compact, enc) {
   // compact is optional argument
   if (typeof compact === 'string') {
     enc = compact;
@@ -27064,14 +32403,14 @@ KeyPair.prototype.getPublic = function getPublic(compact, enc) {
   return this.pub.encode(enc, compact);
 };
 
-KeyPair.prototype.getPrivate = function getPrivate(enc) {
+KeyPair$1.prototype.getPrivate = function getPrivate(enc) {
   if (enc === 'hex')
     return this.priv.toString(16, 2);
   else
     return this.priv;
 };
 
-KeyPair.prototype._importPrivate = function _importPrivate(key, enc) {
+KeyPair$1.prototype._importPrivate = function _importPrivate(key, enc) {
   this.priv = new bn(key, enc || 16);
 
   // Ensure that the priv won't be bigger than n, otherwise we may fail
@@ -27079,16 +32418,16 @@ KeyPair.prototype._importPrivate = function _importPrivate(key, enc) {
   this.priv = this.priv.umod(this.ec.curve.n);
 };
 
-KeyPair.prototype._importPublic = function _importPublic(key, enc) {
+KeyPair$1.prototype._importPublic = function _importPublic(key, enc) {
   if (key.x || key.y) {
     // Montgomery points only have an `x` coordinate.
     // Weierstrass/Edwards points on the other hand have both `x` and
     // `y` coordinates.
     if (this.ec.curve.type === 'mont') {
-      assert$4(key.x, 'Need x coordinate');
+      assert$9(key.x, 'Need x coordinate');
     } else if (this.ec.curve.type === 'short' ||
                this.ec.curve.type === 'edwards') {
-      assert$4(key.x && key.y, 'Need both x and y coordinate');
+      assert$9(key.x && key.y, 'Need both x and y coordinate');
     }
     this.pub = this.ec.curve.point(key.x, key.y);
     return;
@@ -27097,23 +32436,23 @@ KeyPair.prototype._importPublic = function _importPublic(key, enc) {
 };
 
 // ECDH
-KeyPair.prototype.derive = function derive(pub) {
+KeyPair$1.prototype.derive = function derive(pub) {
   if(!pub.validate()) {
-    assert$4(pub.validate(), 'public point not validated');
+    assert$9(pub.validate(), 'public point not validated');
   }
   return pub.mul(this.priv).getX();
 };
 
 // ECDSA
-KeyPair.prototype.sign = function sign(msg, enc, options) {
+KeyPair$1.prototype.sign = function sign(msg, enc, options) {
   return this.ec.sign(msg, this, enc, options);
 };
 
-KeyPair.prototype.verify = function verify(msg, signature) {
+KeyPair$1.prototype.verify = function verify(msg, signature) {
   return this.ec.verify(msg, signature, this);
 };
 
-KeyPair.prototype.inspect = function inspect() {
+KeyPair$1.prototype.inspect = function inspect() {
   return '<Key priv: ' + (this.priv && this.priv.toString(16, 2)) +
          ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
 };
@@ -27123,16 +32462,16 @@ KeyPair.prototype.inspect = function inspect() {
 
 
 
-var assert$5 = utils_1$1.assert;
+var assert$a = utils_1$3.assert;
 
-function Signature(options, enc) {
-  if (options instanceof Signature)
+function Signature$1(options, enc) {
+  if (options instanceof Signature$1)
     return options;
 
   if (this._importDER(options, enc))
     return;
 
-  assert$5(options.r && options.s, 'Signature without r or s');
+  assert$a(options.r && options.s, 'Signature without r or s');
   this.r = new bn(options.r, 16);
   this.s = new bn(options.s, 16);
   if (options.recoveryParam === undefined)
@@ -27140,13 +32479,13 @@ function Signature(options, enc) {
   else
     this.recoveryParam = options.recoveryParam;
 }
-var signature = Signature;
+var signature$1 = Signature$1;
 
-function Position() {
+function Position$1() {
   this.place = 0;
 }
 
-function getLength(buf, p) {
+function getLength$1(buf, p) {
   var initial = buf[p.place++];
   if (!(initial & 0x80)) {
     return initial;
@@ -27174,7 +32513,7 @@ function getLength(buf, p) {
   return val;
 }
 
-function rmPadding(buf) {
+function rmPadding$1(buf) {
   var i = 0;
   var len = buf.length - 1;
   while (!buf[i] && !(buf[i + 1] & 0x80) && i < len) {
@@ -27186,13 +32525,13 @@ function rmPadding(buf) {
   return buf.slice(i);
 }
 
-Signature.prototype._importDER = function _importDER(data, enc) {
-  data = utils_1$1.toArray(data, enc);
-  var p = new Position();
+Signature$1.prototype._importDER = function _importDER(data, enc) {
+  data = utils_1$3.toArray(data, enc);
+  var p = new Position$1();
   if (data[p.place++] !== 0x30) {
     return false;
   }
-  var len = getLength(data, p);
+  var len = getLength$1(data, p);
   if (len === false) {
     return false;
   }
@@ -27202,7 +32541,7 @@ Signature.prototype._importDER = function _importDER(data, enc) {
   if (data[p.place++] !== 0x02) {
     return false;
   }
-  var rlen = getLength(data, p);
+  var rlen = getLength$1(data, p);
   if (rlen === false) {
     return false;
   }
@@ -27211,7 +32550,7 @@ Signature.prototype._importDER = function _importDER(data, enc) {
   if (data[p.place++] !== 0x02) {
     return false;
   }
-  var slen = getLength(data, p);
+  var slen = getLength$1(data, p);
   if (slen === false) {
     return false;
   }
@@ -27243,7 +32582,7 @@ Signature.prototype._importDER = function _importDER(data, enc) {
   return true;
 };
 
-function constructLength(arr, len) {
+function constructLength$1(arr, len) {
   if (len < 0x80) {
     arr.push(len);
     return;
@@ -27256,7 +32595,7 @@ function constructLength(arr, len) {
   arr.push(len);
 }
 
-Signature.prototype.toDER = function toDER(enc) {
+Signature$1.prototype.toDER = function toDER(enc) {
   var r = this.r.toArray();
   var s = this.s.toArray();
 
@@ -27267,22 +32606,22 @@ Signature.prototype.toDER = function toDER(enc) {
   if (s[0] & 0x80)
     s = [ 0 ].concat(s);
 
-  r = rmPadding(r);
-  s = rmPadding(s);
+  r = rmPadding$1(r);
+  s = rmPadding$1(s);
 
   while (!s[0] && !(s[1] & 0x80)) {
     s = s.slice(1);
   }
   var arr = [ 0x02 ];
-  constructLength(arr, r.length);
+  constructLength$1(arr, r.length);
   arr = arr.concat(r);
   arr.push(0x02);
-  constructLength(arr, s.length);
+  constructLength$1(arr, s.length);
   var backHalf = arr.concat(s);
   var res = [ 0x30 ];
-  constructLength(res, backHalf.length);
+  constructLength$1(res, backHalf.length);
   res = res.concat(backHalf);
-  return utils_1$1.encode(res, enc);
+  return utils_1$3.encode(res, enc);
 };
 
 'use strict';
@@ -27292,25 +32631,25 @@ Signature.prototype.toDER = function toDER(enc) {
 
 
 
-var assert$6 = utils_1$1.assert;
+var assert$b = utils_1$3.assert;
 
 
 
 
-function EC(options) {
-  if (!(this instanceof EC))
-    return new EC(options);
+function EC$2(options) {
+  if (!(this instanceof EC$2))
+    return new EC$2(options);
 
   // Shortcut `elliptic.ec(curve-name)`
   if (typeof options === 'string') {
-    assert$6(Object.prototype.hasOwnProperty.call(curves_1, options),
+    assert$b(Object.prototype.hasOwnProperty.call(curves_1$1, options),
       'Unknown curve ' + options);
 
-    options = curves_1[options];
+    options = curves_1$1[options];
   }
 
   // Shortcut for `elliptic.ec(elliptic.curves.curveName)`
-  if (options instanceof curves_1.PresetCurve)
+  if (options instanceof curves_1$1.PresetCurve)
     options = { curve: options };
 
   this.curve = options.curve.curve;
@@ -27325,26 +32664,26 @@ function EC(options) {
   // Hash for function for DRBG
   this.hash = options.hash || options.curve.hash;
 }
-var ec = EC;
+var ec$1 = EC$2;
 
-EC.prototype.keyPair = function keyPair(options) {
-  return new key(this, options);
+EC$2.prototype.keyPair = function keyPair(options) {
+  return new key$1(this, options);
 };
 
-EC.prototype.keyFromPrivate = function keyFromPrivate(priv, enc) {
-  return key.fromPrivate(this, priv, enc);
+EC$2.prototype.keyFromPrivate = function keyFromPrivate(priv, enc) {
+  return key$1.fromPrivate(this, priv, enc);
 };
 
-EC.prototype.keyFromPublic = function keyFromPublic(pub, enc) {
-  return key.fromPublic(this, pub, enc);
+EC$2.prototype.keyFromPublic = function keyFromPublic(pub, enc) {
+  return key$1.fromPublic(this, pub, enc);
 };
 
-EC.prototype.genKeyPair = function genKeyPair(options) {
+EC$2.prototype.genKeyPair = function genKeyPair(options) {
   if (!options)
     options = {};
 
   // Instantiate Hmac_DRBG
-  var drbg = new hmacDrbg({
+  var drbg = new hmacDrbg$1({
     hash: this.hash,
     pers: options.pers,
     persEnc: options.persEnc || 'utf8',
@@ -27365,7 +32704,7 @@ EC.prototype.genKeyPair = function genKeyPair(options) {
   }
 };
 
-EC.prototype._truncateToN = function _truncateToN(msg, truncOnly) {
+EC$2.prototype._truncateToN = function _truncateToN(msg, truncOnly) {
   var delta = msg.byteLength() * 8 - this.n.bitLength();
   if (delta > 0)
     msg = msg.ushrn(delta);
@@ -27375,7 +32714,7 @@ EC.prototype._truncateToN = function _truncateToN(msg, truncOnly) {
     return msg;
 };
 
-EC.prototype.sign = function sign(msg, key, enc, options) {
+EC$2.prototype.sign = function sign(msg, key, enc, options) {
   if (typeof enc === 'object') {
     options = enc;
     enc = null;
@@ -27394,7 +32733,7 @@ EC.prototype.sign = function sign(msg, key, enc, options) {
   var nonce = msg.toArray('be', bytes);
 
   // Instantiate Hmac_DRBG
-  var drbg = new hmacDrbg({
+  var drbg = new hmacDrbg$1({
     hash: this.hash,
     entropy: bkey,
     nonce: nonce,
@@ -27436,18 +32775,18 @@ EC.prototype.sign = function sign(msg, key, enc, options) {
       recoveryParam ^= 1;
     }
 
-    return new signature({ r: r, s: s, recoveryParam: recoveryParam });
+    return new signature$1({ r: r, s: s, recoveryParam: recoveryParam });
   }
 };
 
-EC.prototype.verify = function verify(msg, signature$1, key, enc) {
+EC$2.prototype.verify = function verify(msg, signature, key, enc) {
   msg = this._truncateToN(new bn(msg, 16));
   key = this.keyFromPublic(key, enc);
-  signature$1 = new signature(signature$1, 'hex');
+  signature = new signature$1(signature, 'hex');
 
   // Perform primitive values validation
-  var r = signature$1.r;
-  var s = signature$1.s;
+  var r = signature.r;
+  var s = signature.s;
   if (r.cmpn(1) < 0 || r.cmp(this.n) >= 0)
     return false;
   if (s.cmpn(1) < 0 || s.cmp(this.n) >= 0)
@@ -27480,14 +32819,14 @@ EC.prototype.verify = function verify(msg, signature$1, key, enc) {
   return p.eqXToP(r);
 };
 
-EC.prototype.recoverPubKey = function(msg, signature$1, j, enc) {
-  assert$6((3 & j) === j, 'The recovery param is more than two bits');
-  signature$1 = new signature(signature$1, enc);
+EC$2.prototype.recoverPubKey = function(msg, signature, j, enc) {
+  assert$b((3 & j) === j, 'The recovery param is more than two bits');
+  signature = new signature$1(signature, enc);
 
   var n = this.n;
   var e = new bn(msg);
-  var r = signature$1.r;
-  var s = signature$1.s;
+  var r = signature.r;
+  var s = signature.s;
 
   // A set LSB signifies that the y-coordinate is odd
   var isYOdd = j & 1;
@@ -27501,7 +32840,7 @@ EC.prototype.recoverPubKey = function(msg, signature$1, j, enc) {
   else
     r = this.curve.pointFromX(r, isYOdd);
 
-  var rInv = signature$1.r.invm(n);
+  var rInv = signature.r.invm(n);
   var s1 = n.sub(e).mul(rInv).umod(n);
   var s2 = s.mul(rInv).umod(n);
 
@@ -27510,15 +32849,15 @@ EC.prototype.recoverPubKey = function(msg, signature$1, j, enc) {
   return this.g.mulAdd(s1, r, s2);
 };
 
-EC.prototype.getKeyRecoveryParam = function(e, signature$1, Q, enc) {
-  signature$1 = new signature(signature$1, enc);
-  if (signature$1.recoveryParam !== null)
-    return signature$1.recoveryParam;
+EC$2.prototype.getKeyRecoveryParam = function(e, signature, Q, enc) {
+  signature = new signature$1(signature, enc);
+  if (signature.recoveryParam !== null)
+    return signature.recoveryParam;
 
   for (var i = 0; i < 4; i++) {
     var Qprime;
     try {
-      Qprime = this.recoverPubKey(e, signature$1, i);
+      Qprime = this.recoverPubKey(e, signature, i);
     } catch (e) {
       continue;
     }
@@ -27532,9 +32871,9 @@ EC.prototype.getKeyRecoveryParam = function(e, signature$1, Q, enc) {
 'use strict';
 
 
-var assert$7 = utils_1$1.assert;
-var parseBytes = utils_1$1.parseBytes;
-var cachedProperty = utils_1$1.cachedProperty;
+var assert$c = utils_1$3.assert;
+var parseBytes = utils_1$3.parseBytes;
+var cachedProperty = utils_1$3.cachedProperty;
 
 /**
 * @param {EDDSA} eddsa - instance
@@ -27545,7 +32884,7 @@ var cachedProperty = utils_1$1.cachedProperty;
 * @param {Array<Byte>} [params.pub] - public key point encoded as bytes
 *
 */
-function KeyPair$1(eddsa, params) {
+function KeyPair$2(eddsa, params) {
   this.eddsa = eddsa;
   this._secret = parseBytes(params.secret);
   if (eddsa.isPoint(params.pub))
@@ -27554,33 +32893,33 @@ function KeyPair$1(eddsa, params) {
     this._pubBytes = parseBytes(params.pub);
 }
 
-KeyPair$1.fromPublic = function fromPublic(eddsa, pub) {
-  if (pub instanceof KeyPair$1)
+KeyPair$2.fromPublic = function fromPublic(eddsa, pub) {
+  if (pub instanceof KeyPair$2)
     return pub;
-  return new KeyPair$1(eddsa, { pub: pub });
+  return new KeyPair$2(eddsa, { pub: pub });
 };
 
-KeyPair$1.fromSecret = function fromSecret(eddsa, secret) {
-  if (secret instanceof KeyPair$1)
+KeyPair$2.fromSecret = function fromSecret(eddsa, secret) {
+  if (secret instanceof KeyPair$2)
     return secret;
-  return new KeyPair$1(eddsa, { secret: secret });
+  return new KeyPair$2(eddsa, { secret: secret });
 };
 
-KeyPair$1.prototype.secret = function secret() {
+KeyPair$2.prototype.secret = function secret() {
   return this._secret;
 };
 
-cachedProperty(KeyPair$1, 'pubBytes', function pubBytes() {
+cachedProperty(KeyPair$2, 'pubBytes', function pubBytes() {
   return this.eddsa.encodePoint(this.pub());
 });
 
-cachedProperty(KeyPair$1, 'pub', function pub() {
+cachedProperty(KeyPair$2, 'pub', function pub() {
   if (this._pubBytes)
     return this.eddsa.decodePoint(this._pubBytes);
   return this.eddsa.g.mul(this.priv());
 });
 
-cachedProperty(KeyPair$1, 'privBytes', function privBytes() {
+cachedProperty(KeyPair$2, 'privBytes', function privBytes() {
   var eddsa = this.eddsa;
   var hash = this.hash();
   var lastIx = eddsa.encodingLength - 1;
@@ -27593,45 +32932,45 @@ cachedProperty(KeyPair$1, 'privBytes', function privBytes() {
   return a;
 });
 
-cachedProperty(KeyPair$1, 'priv', function priv() {
+cachedProperty(KeyPair$2, 'priv', function priv() {
   return this.eddsa.decodeInt(this.privBytes());
 });
 
-cachedProperty(KeyPair$1, 'hash', function hash() {
+cachedProperty(KeyPair$2, 'hash', function hash() {
   return this.eddsa.hash().update(this.secret()).digest();
 });
 
-cachedProperty(KeyPair$1, 'messagePrefix', function messagePrefix() {
+cachedProperty(KeyPair$2, 'messagePrefix', function messagePrefix() {
   return this.hash().slice(this.eddsa.encodingLength);
 });
 
-KeyPair$1.prototype.sign = function sign(message) {
-  assert$7(this._secret, 'KeyPair can only verify');
+KeyPair$2.prototype.sign = function sign(message) {
+  assert$c(this._secret, 'KeyPair can only verify');
   return this.eddsa.sign(message, this);
 };
 
-KeyPair$1.prototype.verify = function verify(message, sig) {
+KeyPair$2.prototype.verify = function verify(message, sig) {
   return this.eddsa.verify(message, sig, this);
 };
 
-KeyPair$1.prototype.getSecret = function getSecret(enc) {
-  assert$7(this._secret, 'KeyPair is public only');
-  return utils_1$1.encode(this.secret(), enc);
+KeyPair$2.prototype.getSecret = function getSecret(enc) {
+  assert$c(this._secret, 'KeyPair is public only');
+  return utils_1$3.encode(this.secret(), enc);
 };
 
-KeyPair$1.prototype.getPublic = function getPublic(enc) {
-  return utils_1$1.encode(this.pubBytes(), enc);
+KeyPair$2.prototype.getPublic = function getPublic(enc) {
+  return utils_1$3.encode(this.pubBytes(), enc);
 };
 
-var key$1 = KeyPair$1;
+var key$2 = KeyPair$2;
 
 'use strict';
 
 
 
-var assert$8 = utils_1$1.assert;
-var cachedProperty$1 = utils_1$1.cachedProperty;
-var parseBytes$1 = utils_1$1.parseBytes;
+var assert$d = utils_1$3.assert;
+var cachedProperty$1 = utils_1$3.cachedProperty;
+var parseBytes$1 = utils_1$3.parseBytes;
 
 /**
 * @param {EDDSA} eddsa - eddsa instance
@@ -27641,7 +32980,7 @@ var parseBytes$1 = utils_1$1.parseBytes;
 * @param {Array<Bytes>} [sig.Rencoded] - R point encoded
 * @param {Array<Bytes>} [sig.Sencoded] - S scalar encoded
 */
-function Signature$1(eddsa, sig) {
+function Signature$2(eddsa, sig) {
   this.eddsa = eddsa;
 
   if (typeof sig !== 'object')
@@ -27654,7 +32993,7 @@ function Signature$1(eddsa, sig) {
     };
   }
 
-  assert$8(sig.R && sig.S, 'Signature without R or S');
+  assert$d(sig.R && sig.S, 'Signature without R or S');
 
   if (eddsa.isPoint(sig.R))
     this._R = sig.R;
@@ -27665,49 +33004,49 @@ function Signature$1(eddsa, sig) {
   this._Sencoded = Array.isArray(sig.S) ? sig.S : sig.Sencoded;
 }
 
-cachedProperty$1(Signature$1, 'S', function S() {
+cachedProperty$1(Signature$2, 'S', function S() {
   return this.eddsa.decodeInt(this.Sencoded());
 });
 
-cachedProperty$1(Signature$1, 'R', function R() {
+cachedProperty$1(Signature$2, 'R', function R() {
   return this.eddsa.decodePoint(this.Rencoded());
 });
 
-cachedProperty$1(Signature$1, 'Rencoded', function Rencoded() {
+cachedProperty$1(Signature$2, 'Rencoded', function Rencoded() {
   return this.eddsa.encodePoint(this.R());
 });
 
-cachedProperty$1(Signature$1, 'Sencoded', function Sencoded() {
+cachedProperty$1(Signature$2, 'Sencoded', function Sencoded() {
   return this.eddsa.encodeInt(this.S());
 });
 
-Signature$1.prototype.toBytes = function toBytes() {
+Signature$2.prototype.toBytes = function toBytes() {
   return this.Rencoded().concat(this.Sencoded());
 };
 
-Signature$1.prototype.toHex = function toHex() {
-  return utils_1$1.encode(this.toBytes(), 'hex').toUpperCase();
+Signature$2.prototype.toHex = function toHex() {
+  return utils_1$3.encode(this.toBytes(), 'hex').toUpperCase();
 };
 
-var signature$1 = Signature$1;
+var signature$2 = Signature$2;
 
 'use strict';
 
 
 
 
-var assert$9 = utils_1$1.assert;
-var parseBytes$2 = utils_1$1.parseBytes;
+var assert$e = utils_1$3.assert;
+var parseBytes$2 = utils_1$3.parseBytes;
 
 
 
 function EDDSA(curve) {
-  assert$9(curve === 'ed25519', 'only tested with ed25519 so far');
+  assert$e(curve === 'ed25519', 'only tested with ed25519 so far');
 
   if (!(this instanceof EDDSA))
     return new EDDSA(curve);
 
-  curve = curves_1[curve].curve;
+  curve = curves_1$1[curve].curve;
   this.curve = curve;
   this.g = curve.g;
   this.g.precompute(curve.n.bitLength() + 1);
@@ -27756,21 +33095,21 @@ EDDSA.prototype.hashInt = function hashInt() {
   var hash = this.hash();
   for (var i = 0; i < arguments.length; i++)
     hash.update(arguments[i]);
-  return utils_1$1.intFromLE(hash.digest()).umod(this.curve.n);
+  return utils_1$3.intFromLE(hash.digest()).umod(this.curve.n);
 };
 
 EDDSA.prototype.keyFromPublic = function keyFromPublic(pub) {
-  return key$1.fromPublic(this, pub);
+  return key$2.fromPublic(this, pub);
 };
 
 EDDSA.prototype.keyFromSecret = function keyFromSecret(secret) {
-  return key$1.fromSecret(this, secret);
+  return key$2.fromSecret(this, secret);
 };
 
 EDDSA.prototype.makeSignature = function makeSignature(sig) {
-  if (sig instanceof signature$1)
+  if (sig instanceof signature$2)
     return sig;
-  return new signature$1(this, sig);
+  return new signature$2(this, sig);
 };
 
 /**
@@ -27788,13 +33127,13 @@ EDDSA.prototype.encodePoint = function encodePoint(point) {
 };
 
 EDDSA.prototype.decodePoint = function decodePoint(bytes) {
-  bytes = utils_1$1.parseBytes(bytes);
+  bytes = utils_1$3.parseBytes(bytes);
 
   var lastIx = bytes.length - 1;
   var normed = bytes.slice(0, lastIx).concat(bytes[lastIx] & ~0x80);
   var xIsOdd = (bytes[lastIx] & 0x80) !== 0;
 
-  var y = utils_1$1.intFromLE(normed);
+  var y = utils_1$3.intFromLE(normed);
   return this.curve.pointFromY(y, xIsOdd);
 };
 
@@ -27803,30 +33142,30 @@ EDDSA.prototype.encodeInt = function encodeInt(num) {
 };
 
 EDDSA.prototype.decodeInt = function decodeInt(bytes) {
-  return utils_1$1.intFromLE(bytes);
+  return utils_1$3.intFromLE(bytes);
 };
 
 EDDSA.prototype.isPoint = function isPoint(val) {
   return val instanceof this.pointClass;
 };
 
-var elliptic_1 = createCommonjsModule(function (module, exports) {
+var elliptic_1$1 = createCommonjsModule(function (module, exports) {
 'use strict';
 
 var elliptic = exports;
 
 elliptic.version = require$$0.version;
-elliptic.utils = utils_1$1;
+elliptic.utils = utils_1$3;
 elliptic.rand = brorand;
-elliptic.curve = curve_1;
-elliptic.curves = curves_1;
+elliptic.curve = curve_1$1;
+elliptic.curves = curves_1$1;
 
 // Protocols
-elliptic.ec = ec;
+elliptic.ec = ec$1;
 elliptic.eddsa = eddsa;
 });
 
-const secp256k1$1 = new elliptic_1.ec("secp256k1");
+const secp256k1$1 = new elliptic_1$1.ec("secp256k1");
 
 /**
  * @typedef {import("../EcdsaPrivateKey.js").KeyPair} KeyPair
@@ -27839,8 +33178,8 @@ function generate() {
     const keypair = secp256k1$1.genKeyPair();
 
     return {
-        privateKey: decode$1(keypair.getPrivate("hex")),
-        publicKey: decode$1(keypair.getPublic(true, "hex")),
+        privateKey: decode$2(keypair.getPrivate("hex")),
+        publicKey: decode$2(keypair.getPublic(true, "hex")),
     };
 }
 
@@ -27861,8 +33200,8 @@ function fromBytes(data) {
     const keypair = secp256k1$1.keyFromPrivate(data);
 
     return {
-        privateKey: decode$1(keypair.getPrivate("hex")),
-        publicKey: decode$1(keypair.getPublic(true, "hex")),
+        privateKey: decode$2(keypair.getPrivate("hex")),
+        publicKey: decode$2(keypair.getPublic(true, "hex")),
     };
 }
 
@@ -27873,8 +33212,8 @@ function fromBytes(data) {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function sign(keydata, message) {
-    const msg = encode$1(message);
-    const data = decode$1(keccak256$1(`0x${msg}`));
+    const msg = encode$2(message);
+    const data = decode$2(keccak256$2(`0x${msg}`));
     const keypair = secp256k1$1.keyFromPrivate(keydata);
     const signature = keypair.sign(data);
 
@@ -27895,8 +33234,8 @@ function sign(keydata, message) {
  */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function verify(keydata, message, signature) {
-    const msg = encode$1(message);
-    const data = decode$1(keccak256$1(`0x${msg}`));
+    const msg = encode$2(message);
+    const data = decode$2(keccak256$2(`0x${msg}`));
     const keypair = secp256k1$1.keyFromPublic(keydata);
 
     return keypair.verify(data, {
@@ -27906,7 +33245,7 @@ function verify(keydata, message, signature) {
 }
 
 const derPrefix$2 = "302f300706052b8104000a0324000421";
-const derPrefixBytes$2 = decode$1(derPrefix$2);
+const derPrefixBytes$2 = decode$2(derPrefix$2);
 
 /**
  * An public key on the Hedera™ network.
@@ -27990,7 +33329,7 @@ class EcdsaPublicKey extends Key {
      * @returns {EcdsaPublicKey}
      */
     static fromString(text) {
-        return EcdsaPublicKey.fromBytes(decode$1(text));
+        return EcdsaPublicKey.fromBytes(decode$2(text));
     }
 
     /**
@@ -28035,7 +33374,7 @@ class EcdsaPublicKey extends Key {
 }
 
 const derPrefix$3 = "3030020100300706052b8104000a04220420";
-const derPrefixBytes$3 = decode$1(derPrefix$3);
+const derPrefixBytes$3 = decode$2(derPrefix$3);
 
 /**
  * @typedef {object} KeyPair
@@ -28142,7 +33481,7 @@ class EcdsaPrivateKey {
      * @returns {EcdsaPrivateKey}
      */
     static fromString(text) {
-        return EcdsaPrivateKey.fromBytes(decode$1(text));
+        return EcdsaPrivateKey.fromBytes(decode$2(text));
     }
 
     /**
@@ -28152,7 +33491,7 @@ class EcdsaPrivateKey {
      * @returns {EcdsaPrivateKey}
      */
     static fromStringDer(text) {
-        return EcdsaPrivateKey.fromBytesDer(decode$1(text));
+        return EcdsaPrivateKey.fromBytesDer(decode$2(text));
     }
 
     /**
@@ -28162,7 +33501,7 @@ class EcdsaPrivateKey {
      * @returns {EcdsaPrivateKey}
      */
     static fromStringRaw(text) {
-        return EcdsaPrivateKey.fromBytesRaw(decode$1(text));
+        return EcdsaPrivateKey.fromBytesRaw(decode$2(text));
     }
 
     /**
@@ -28289,7 +33628,7 @@ class PublicKey extends Key {
      * @returns {PublicKey}
      */
     static fromString(text) {
-        return PublicKey.fromBytes(decode$1(text));
+        return PublicKey.fromBytes(decode$2(text));
     }
 
     /**
@@ -28297,7 +33636,7 @@ class PublicKey extends Key {
      * @returns {PublicKey}
      */
     static fromStringED25519(text) {
-        return PublicKey.fromBytesED25519(decode$1(text));
+        return PublicKey.fromBytesED25519(decode$2(text));
     }
 
     /**
@@ -28305,7 +33644,7 @@ class PublicKey extends Key {
      * @returns {PublicKey}
      */
     static fromStringECDSA(text) {
-        return PublicKey.fromBytesECDSA(decode$1(text));
+        return PublicKey.fromBytesECDSA(decode$2(text));
     }
 
     /**
@@ -28405,14 +33744,14 @@ class PublicKey extends Key {
      * @returns {string}
      */
     toStringDer() {
-        return encode$1(this.toBytesDer());
+        return encode$2(this.toBytesDer());
     }
 
     /**
      * @returns {string}
      */
     toStringRaw() {
-        return encode$1(this.toBytesRaw());
+        return encode$2(this.toBytesRaw());
     }
 
     /**
@@ -28544,21 +33883,21 @@ async function createKeystore(privateKey, passphrase) {
     const keystore = {
         version: 1,
         crypto: {
-            ciphertext: encode$1(cipherText),
-            cipherparams: { iv: encode$1(iv) },
+            ciphertext: encode$2(cipherText),
+            cipherparams: { iv: encode$2(iv) },
             cipher: CipherAlgorithm.Aes128Ctr,
             kdf: "pbkdf2",
             kdfparams: {
                 dkLen,
-                salt: encode$1(salt),
+                salt: encode$2(salt),
                 c,
                 prf: HMAC_SHA256,
             },
-            mac: encode$1(mac),
+            mac: encode$2(mac),
         },
     };
 
-    return encode$2(JSON.stringify(keystore));
+    return encode$3(JSON.stringify(keystore));
 }
 
 /**
@@ -28571,7 +33910,7 @@ async function loadKeystore(keystoreBytes, passphrase) {
      * @type {Keystore}
      */
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const keystore = JSON.parse(decode$2(keystoreBytes));
+    const keystore = JSON.parse(decode$3(keystoreBytes));
 
     if (keystore.version !== 1) {
         throw new BadKeyError(
@@ -28598,9 +33937,9 @@ async function loadKeystore(keystoreBytes, passphrase) {
         );
     }
 
-    const saltBytes = decode$1(salt);
-    const ivBytes = decode$1(iv);
-    const cipherBytes = decode$1(ciphertext);
+    const saltBytes = decode$2(salt);
+    const ivBytes = decode$2(iv);
+    const cipherBytes = decode$2(ciphertext);
 
     const key = await deriveKey(
         HashAlgorithm.Sha256,
@@ -28610,7 +33949,7 @@ async function loadKeystore(keystoreBytes, passphrase) {
         dkLen
     );
 
-    const macHex = decode$1(mac);
+    const macHex = decode$2(mac);
     const verifyHmac = await hash(
         HashAlgorithm.Sha384,
         key.slice(16),
@@ -28664,7 +34003,7 @@ async function loadKeystore(keystoreBytes, passphrase) {
  *@param {Uint8Array} data
  *@returns {AsnType}
  */
-function decode$3(data) {
+function decode$4(data) {
     return decodeIncremental(data)[0];
 }
 
@@ -28945,7 +34284,7 @@ class PrivateKeyInfo {
      * @returns {PrivateKeyInfo}
      */
     static parse(encoded) {
-        return new PrivateKeyInfo(decode$3(encoded));
+        return new PrivateKeyInfo(decode$4(encoded));
     }
 }
 
@@ -28977,7 +34316,7 @@ class EncryptedPrivateKeyInfo {
      * @returns {EncryptedPrivateKeyInfo}
      */
     static parse(encoded) {
-        return new EncryptedPrivateKeyInfo(decode$3(encoded));
+        return new EncryptedPrivateKeyInfo(decode$4(encoded));
     }
 
     /**
@@ -29059,7 +34398,7 @@ class EncryptedPrivateKeyInfo {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function decode$4(text) {
+function decode$5(text) {
     return Buffer.from(text, "base64");
 }
 
@@ -29067,7 +34406,7 @@ function decode$4(text) {
  * @param {Uint8Array} data
  * @returns {string};
  */
-function encode$3(data) {
+function encode$4(data) {
     return Buffer.from(data).toString("base64");
 }
 
@@ -29096,7 +34435,7 @@ async function read(pem, passphrase) {
 
     const keyEncoded = pem.slice(beginIndex + beginTag.length, endIndex);
 
-    const key = decode$4(keyEncoded);
+    const key = decode$5(keyEncoded);
 
     if (passphrase) {
         let encrypted;
@@ -29130,7 +34469,7 @@ async function read(pem, passphrase) {
             );
         }
 
-        const keyData = decode$3(decrypted.privateKey);
+        const keyData = decode$4(decrypted.privateKey);
 
         if (!("bytes" in keyData)) {
             throw new BadKeyError(
@@ -29339,7 +34678,7 @@ class PrivateKey extends Key {
      * @returns {PrivateKey}
      */
     static fromString(text) {
-        return PrivateKey.fromBytes(decode$1(text));
+        return PrivateKey.fromBytes(decode$2(text));
     }
 
     /**
@@ -29349,7 +34688,7 @@ class PrivateKey extends Key {
      * @returns {PrivateKey}
      */
     static fromStringECDSA(text) {
-        return PrivateKey.fromBytesECDSA(decode$1(text));
+        return PrivateKey.fromBytesECDSA(decode$2(text));
     }
 
     /**
@@ -29359,7 +34698,7 @@ class PrivateKey extends Key {
      * @returns {PrivateKey}
      */
     static fromStringED25519(text) {
-        return PrivateKey.fromBytesED25519(decode$1(text));
+        return PrivateKey.fromBytesED25519(decode$2(text));
     }
 
     /**
@@ -29509,7 +34848,7 @@ class PrivateKey extends Key {
             transaction._signedTransactions[0]
         );
 
-        const publicKeyHex = encode$1(this.publicKey.toBytesRaw());
+        const publicKeyHex = encode$2(this.publicKey.toBytesRaw());
 
         if (tx.sigMap == null) {
             tx.sigMap = {};
@@ -29522,7 +34861,7 @@ class PrivateKey extends Key {
         for (const sigPair of tx.sigMap.sigPair) {
             if (
                 sigPair.pubKeyPrefix != null &&
-                encode$1(sigPair.pubKeyPrefix) === publicKeyHex
+                encode$2(sigPair.pubKeyPrefix) === publicKeyHex
             ) {
                 switch (this._type) {
                     case "ED25519":
@@ -29606,14 +34945,14 @@ class PrivateKey extends Key {
      * @returns {string}
      */
     toStringDer() {
-        return encode$1(this.toBytesDer());
+        return encode$2(this.toBytesDer());
     }
 
     /**
      * @returns {string}
      */
     toStringRaw() {
-        return encode$1(this.toBytesRaw());
+        return encode$2(this.toBytesRaw());
     }
 
     /**
@@ -34288,7 +39627,7 @@ Long.fromBytesBE = function fromBytesBE(bytes, unsigned) {
  * @param {Uint8Array} data
  * @returns {string}
  */
-function encode$4(data) {
+function encode$5(data) {
     return Buffer.from(data).toString("hex");
 }
 
@@ -34296,7 +39635,7 @@ function encode$4(data) {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function decode$5(text) {
+function decode$6(text) {
     const str = text.startsWith("0x") ? text.substring(2) : text;
     return Buffer.from(str, "hex");
 }
@@ -34803,8 +40142,8 @@ function fromString$1(text) {
  */
 function fromSolidityAddress(address) {
     const addr = address.startsWith("0x")
-        ? decode$5(address.slice(2))
-        : decode$5(address);
+        ? decode$6(address.slice(2))
+        : decode$6(address);
 
     if (addr.length !== 20) {
         throw new Error(`Invalid hex encoded solidity address length:
@@ -34831,7 +40170,7 @@ function toSolidityAddress(address) {
     view.setUint32(8, convertToNumber(realm));
     view.setUint32(16, convertToNumber(num));
 
-    return encode$4(buffer);
+    return encode$5(buffer);
 }
 
 /**
@@ -41771,7 +47110,7 @@ class ContractLogInfo {
  * @param {Uint8Array} data
  * @returns {string}
  */
-function decode$6(data) {
+function decode$7(data) {
     return Buffer.from(data).toString("utf8");
 }
 
@@ -41779,7 +47118,7 @@ function decode$6(data) {
  * @param {string} text
  * @returns {Uint8Array}
  */
-function encode$5(text) {
+function encode$6(text) {
     return Buffer.from(text, "utf8");
 }
 
@@ -41880,7 +47219,7 @@ class ContractFunctionResult {
      * @returns {string}
      */
     getString(index) {
-        return decode$6(this.getBytes(index));
+        return decode$7(this.getBytes(index));
     }
 
     /**
@@ -41945,7 +47284,7 @@ class ContractFunctionResult {
      */
     getInt64(index) {
         return new BigNumber$1(
-            encode$4(
+            encode$5(
                 this._getBytes32(index != null ? index : 0).subarray(24, 32)
             ),
             16
@@ -41958,7 +47297,7 @@ class ContractFunctionResult {
      */
     getInt256(index) {
         return new BigNumber$1(
-            encode$4(this._getBytes32(index != null ? index : 0)),
+            encode$5(this._getBytes32(index != null ? index : 0)),
             16
         );
     }
@@ -41989,7 +47328,7 @@ class ContractFunctionResult {
      */
     getUint64(index) {
         return new BigNumber$1(
-            encode$4(this._getBytes32(index).subarray(24, 32)),
+            encode$5(this._getBytes32(index).subarray(24, 32)),
             16
         );
     }
@@ -41999,7 +47338,7 @@ class ContractFunctionResult {
      * @returns {BigNumber}
      */
     getUint256(index) {
-        return new BigNumber$1(encode$4(this._getBytes32(index)), 16);
+        return new BigNumber$1(encode$5(this._getBytes32(index)), 16);
     }
 
     /**
@@ -42007,7 +47346,7 @@ class ContractFunctionResult {
      * @returns {string}
      */
     getAddress(index) {
-        return encode$4(
+        return encode$5(
             this.bytes.subarray(
                 (index != null ? index : 0) * 32 + 12,
                 (index != null ? index : 0) * 32 + 32
@@ -43731,7 +49070,7 @@ class Transaction extends Executable {
             ) {
                 for (const sigPair of signedTransaction.sigMap.sigPair) {
                     transaction._signerPublicKeys.add(
-                        encode$4(
+                        encode$5(
                             /** @type {Uint8Array} */ (sigPair.pubKeyPrefix)
                         )
                     );
@@ -43884,7 +49223,7 @@ class Transaction extends Executable {
         // support that in the protobuf. this means that we would fail
         // to re-inflate [this._signerPublicKeys] during [fromBytes] if we used DER
         // prefixes here
-        const publicKeyHex = encode$4(publicKeyData);
+        const publicKeyHex = encode$5(publicKeyData);
 
         if (this._signerPublicKeys.has(publicKeyHex)) {
             // this public key has already signed this transaction
@@ -43965,7 +49304,7 @@ class Transaction extends Executable {
         }
 
         const publicKeyData = publicKey.toBytesRaw();
-        const publicKeyHex = encode$4(publicKeyData);
+        const publicKeyHex = encode$5(publicKeyData);
 
         if (this._signerPublicKeys.has(publicKeyHex)) {
             // this public key has already signed this transaction
@@ -47291,7 +52630,7 @@ const keccak$1 = (/** @type {number} */ bits) => (/** @type {string} */ str) => 
 /**
  * @type {(message: string) => string}
  */
-const keccak256$2 = keccak$1(256);
+const keccak256$3 = keccak$1(256);
 
 /**
  * @enum {number}
@@ -47560,8 +52899,8 @@ class ContractFunctionSelector {
             throw new Error("`name` required for ContractFunctionSelector");
         }
 
-        const func = encode$4(encode$5(this.toString()));
-        return decode$5(keccak256$2(`0x${func}`)).slice(0, 4);
+        const func = encode$5(encode$6(this.toString()));
+        return decode$6(keccak256$3(`0x${func}`)).slice(0, 4);
     }
 
     /**
@@ -47912,8 +53251,8 @@ class ContractFunctionParameters {
 
         const par =
             value.length === 40
-                ? decode$5(value)
-                : decode$5(value.substring(2));
+                ? decode$6(value)
+                : decode$6(value.substring(2));
 
         this._selector.addAddress();
 
@@ -47940,8 +53279,8 @@ class ContractFunctionParameters {
 
             const buf =
                 entry.length === 40
-                    ? decode$5(entry)
-                    : decode$5(entry.substring(2));
+                    ? decode$6(entry)
+                    : decode$6(entry.substring(2));
 
             par.push(buf);
         }
@@ -47957,7 +53296,7 @@ class ContractFunctionParameters {
      * @returns {ContractFunctionParameters}
      */
     addFunction(address, selector) {
-        const addressParam = decode$5(address);
+        const addressParam = decode$6(address);
         const functionSelector = selector._build();
 
         if (addressParam.length !== 20) {
@@ -48200,7 +53539,7 @@ function argumentToBytes(param, ty) {
                 }
 
                 // eslint-disable-next-line no-case-declarations
-                const buf = decode$5(par);
+                const buf = decode$6(par);
                 value.set(buf, 32 - buf.length);
             }
             return value;
@@ -48212,7 +53551,7 @@ function argumentToBytes(param, ty) {
                     par = `0${par}`;
                 }
 
-                const buf = decode$5(par);
+                const buf = decode$6(par);
                 value.set(buf, 32 - buf.length);
             }
             return value;
@@ -48239,7 +53578,7 @@ function argumentToBytes(param, ty) {
             par =
                 param instanceof Uint8Array
                     ? param
-                    : encode$5(/** @type {string} */ (param));
+                    : encode$6(/** @type {string} */ (param));
 
             // Resize value to a 32 byte boundary if needed
             if (
@@ -50484,7 +55823,7 @@ class FileAppendTransaction extends Transaction {
     setContents(contents) {
         this._requireNotFrozen();
         this._contents =
-            contents instanceof Uint8Array ? contents : encode$5(contents);
+            contents instanceof Uint8Array ? contents : encode$6(contents);
 
         return this;
     }
@@ -51043,7 +56382,7 @@ class FileCreateTransaction extends Transaction {
     setContents(contents) {
         this._requireNotFrozen();
         this._contents =
-            contents instanceof Uint8Array ? contents : encode$5(contents);
+            contents instanceof Uint8Array ? contents : encode$6(contents);
 
         return this;
     }
@@ -51800,7 +57139,7 @@ class FileUpdateTransaction extends Transaction {
     setContents(contents) {
         this._requireNotFrozen();
         this._contents =
-            contents instanceof Uint8Array ? contents : encode$5(contents);
+            contents instanceof Uint8Array ? contents : encode$6(contents);
 
         return this;
     }
@@ -52302,7 +57641,7 @@ class FreezeTransaction extends Transaction {
     setFileHash(fileHash) {
         this._requireNotFrozen();
         this._fileHash =
-            typeof fileHash === "string" ? decode$5(fileHash) : fileHash;
+            typeof fileHash === "string" ? decode$6(fileHash) : fileHash;
 
         return this;
     }
@@ -58512,7 +63851,7 @@ class TokenMintTransaction extends Transaction {
         }
 
         this._metadata.push(
-            typeof metadata === "string" ? decode$5(metadata) : metadata
+            typeof metadata === "string" ? decode$6(metadata) : metadata
         );
 
         return this;
@@ -58535,7 +63874,7 @@ class TokenMintTransaction extends Transaction {
         }
 
         this._metadata = metadata.map((data) =>
-            typeof data === "string" ? decode$5(data) : data
+            typeof data === "string" ? decode$6(data) : data
         );
 
         return this;
@@ -58675,7 +64014,7 @@ class TokenNftInfo {
             nftId: this.nftId.toString(),
             accountId: this.accountId.toString(),
             creationTime: this.creationTime.toString(),
-            metadata: this.metadata != null ? encode$4(this.metadata) : null,
+            metadata: this.metadata != null ? encode$5(this.metadata) : null,
         };
     }
 
@@ -62111,7 +67450,7 @@ class TopicMessageSubmitTransaction extends Transaction {
         this._requireNotFrozen();
         message = requireStringOrUint8Array(message);
         this._message =
-            typeof message === "string" ? encode$5(message) : message;
+            typeof message === "string" ? encode$6(message) : message;
         return this;
     }
 
@@ -65048,7 +70387,7 @@ class NodeAddress {
             accountId:
                 this._accountId != null ? this._accountId.toString() : null,
             certHash:
-                this._certHash != null ? decode$6(this._certHash) : null,
+                this._certHash != null ? decode$7(this._certHash) : null,
             addresses: this._addresses.map((address) => address.toJSON()),
             description: this._description,
             stake: this._stake != null ? this._stake.toString() : null,
@@ -65150,21 +70489,21 @@ class NodeAddressBook {
 
 const PREVIEWNET_ADDRESS_BOOK = NodeAddressBook._fromProtobuf(
     lib.NodeAddressBook.decode(
-        decode$5(
+        decode$6(
             "0ad0070a0e33352e3233312e3230382e31343810a388031a05302e302e3322cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039663166386131323163326664366337366664353038643365343239663063363462636234346338326137303537333535326161646361643037313536396537323139353866356135643039663935383766666166636662653533343161326630313134616361653334366566336339303231336433343336656262323766343335306339393063356338633366386531653336373037626330386434323536303832336533663234653039613033616430393535613530393830313936323964643034623237623235316463653035356633646463623061343164363666303934316230623837636466653334393864343630333861623564663036663632613561646530383539383537336138386338663538363064633134393261366531383634383561396231333235306536643137623830636433396335633831393130396537336361373332646232336566386261613737366563383563653030393162656362326564656662616135656433653564626662643166383835613466613838316166336631343461386135363538353335333364383933393335393230383662326431643336326534356266653166623435363833616261366336343039373961643662343638373731383437323663366562643538623265616538356337636665336662616265663566366363656438353030333462333834373230366332643637386333363138373630323662386433353165303032616635653066666536663562316632393566646332663436396361613264323338316561306234386361393837636332633865363335653862313963653565313732613933373631613864343930613961343531386437323535383830613134643737623762613737343839326239326134306262383133363265333466633664353137386439623330313132393334323035636237376662396132383234323733393435363461383535346561343732383661343766383632333965373563393437383963653938633939383434373832343632393434663631333136376437623530323033303130303031320218033a606666643661646137346133613334613930346265613437363033303836663862656633623662653138616265643434633464343065313266623133306239376264366238353561656335643062393062306238633733353464356633623065340acf070a0d332e3231312e3234382e31373210a388031a05302e302e3322cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039663166386131323163326664366337366664353038643365343239663063363462636234346338326137303537333535326161646361643037313536396537323139353866356135643039663935383766666166636662653533343161326630313134616361653334366566336339303231336433343336656262323766343335306339393063356338633366386531653336373037626330386434323536303832336533663234653039613033616430393535613530393830313936323964643034623237623235316463653035356633646463623061343164363666303934316230623837636466653334393864343630333861623564663036663632613561646530383539383537336138386338663538363064633134393261366531383634383561396231333235306536643137623830636433396335633831393130396537336361373332646232336566386261613737366563383563653030393162656362326564656662616135656433653564626662643166383835613466613838316166336631343461386135363538353335333364383933393335393230383662326431643336326534356266653166623435363833616261366336343039373961643662343638373731383437323663366562643538623265616538356337636665336662616265663566366363656438353030333462333834373230366332643637386333363138373630323662386433353165303032616635653066666536663562316632393566646332663436396361613264323338316561306234386361393837636332633865363335653862313963653565313732613933373631613864343930613961343531386437323535383830613134643737623762613737343839326239326134306262383133363265333466633664353137386439623330313132393334323035636237376662396132383234323733393435363461383535346561343732383661343766383632333965373563393437383963653938633939383434373832343632393434663631333136376437623530323033303130303031320218033a606666643661646137346133613334613930346265613437363033303836663862656633623662653138616265643434633464343065313266623133306239376264366238353561656335643062393062306238633733353464356633623065340ace070a0c34302e3132312e36342e343810a388031a05302e302e3322cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039663166386131323163326664366337366664353038643365343239663063363462636234346338326137303537333535326161646361643037313536396537323139353866356135643039663935383766666166636662653533343161326630313134616361653334366566336339303231336433343336656262323766343335306339393063356338633366386531653336373037626330386434323536303832336533663234653039613033616430393535613530393830313936323964643034623237623235316463653035356633646463623061343164363666303934316230623837636466653334393864343630333861623564663036663632613561646530383539383537336138386338663538363064633134393261366531383634383561396231333235306536643137623830636433396335633831393130396537336361373332646232336566386261613737366563383563653030393162656362326564656662616135656433653564626662643166383835613466613838316166336631343461386135363538353335333364383933393335393230383662326431643336326534356266653166623435363833616261366336343039373961643662343638373731383437323663366562643538623265616538356337636665336662616265663566366363656438353030333462333834373230366332643637386333363138373630323662386433353165303032616635653066666536663562316632393566646332663436396361613264323338316561306234386361393837636332633865363335653862313963653565313732613933373631613864343930613961343531386437323535383830613134643737623762613737343839326239326134306262383133363265333466633664353137386439623330313132393334323035636237376662396132383234323733393435363461383535346561343732383661343766383632333965373563393437383963653938633939383434373832343632393434663631333136376437623530323033303130303031320218033a606666643661646137346133613334613930346265613437363033303836663862656633623662653138616265643434633464343065313266623133306239376264366238353561656335643062393062306238633733353464356633623065340ad1070a0d33352e3139392e31352e31373710a388031a05302e302e3422cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633535376166353739666138333530316265383939623238393037373635626664666364353261623433326230313935613166316563643836666330306162366335353039623066646439376564643363623563656135366132393566333132616262353530383331646266393633663435303131386234666363366532326366343637363230306365396363386564666262663535386463363966303234323634616437643364616232336265643231333363323734653639333434383931353564623130383766393033373039303563363431383561363231316463373432666239613639303964383231383639343762323737343633646662336666306163643437656666313265616431663639373265663263313230333739336334356537373537356265346661313130633765343066613864623963363138376431313366343730343031343137393037316162663539626537643262306465383264653432313564633235353036623163396332366534393137343031633939373530366533373765366266303362363838373237653739343066616436396335653064613363643563626432626537373733353061656132643064343765393761343438633834626536636531333464363462656530393835633239313632663463316535363763636139336430366133633162653861626365333562353537666237376634666536373161363664656337393037353664306538383138313635663262616361613839316161653761633734333766633731373562366562366465623734373233373837353162623662663962306531343833663936363865396664626435363034633339623134643965326265646565633834366139383064373034643137316537626134623766636431613330643934356361313266343761333235643933393861613138663937303636303534643464313566633839393465326465626537336539323731643534383638336636316561343466623235303731653335313861373865643365623337653731613036393166323637303230333031303030312801320218043a606630643934616363663664666633373238373463396462643864373939326562333137616635303031636134313936616261323635383039636233643230306261393631613534333863336135656430356338336264663963643131356432320ad1070a0d332e3133332e3231332e31343610a388031a05302e302e3422cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633535376166353739666138333530316265383939623238393037373635626664666364353261623433326230313935613166316563643836666330306162366335353039623066646439376564643363623563656135366132393566333132616262353530383331646266393633663435303131386234666363366532326366343637363230306365396363386564666262663535386463363966303234323634616437643364616232336265643231333363323734653639333434383931353564623130383766393033373039303563363431383561363231316463373432666239613639303964383231383639343762323737343633646662336666306163643437656666313265616431663639373265663263313230333739336334356537373537356265346661313130633765343066613864623963363138376431313366343730343031343137393037316162663539626537643262306465383264653432313564633235353036623163396332366534393137343031633939373530366533373765366266303362363838373237653739343066616436396335653064613363643563626432626537373733353061656132643064343765393761343438633834626536636531333464363462656530393835633239313632663463316535363763636139336430366133633162653861626365333562353537666237376634666536373161363664656337393037353664306538383138313635663262616361613839316161653761633734333766633731373562366562366465623734373233373837353162623662663962306531343833663936363865396664626435363034633339623134643965326265646565633834366139383064373034643137316537626134623766636431613330643934356361313266343761333235643933393861613138663937303636303534643464313566633839393465326465626537336539323731643534383638336636316561343466623235303731653335313861373865643365623337653731613036393166323637303230333031303030312801320218043a606630643934616363663664666633373238373463396462643864373939326562333137616635303031636134313936616261323635383039636233643230306261393631613534333863336135656430356338336264663963643131356432320ad0070a0c34302e37302e31312e32303210a388031a05302e302e3422cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633535376166353739666138333530316265383939623238393037373635626664666364353261623433326230313935613166316563643836666330306162366335353039623066646439376564643363623563656135366132393566333132616262353530383331646266393633663435303131386234666363366532326366343637363230306365396363386564666262663535386463363966303234323634616437643364616232336265643231333363323734653639333434383931353564623130383766393033373039303563363431383561363231316463373432666239613639303964383231383639343762323737343633646662336666306163643437656666313265616431663639373265663263313230333739336334356537373537356265346661313130633765343066613864623963363138376431313366343730343031343137393037316162663539626537643262306465383264653432313564633235353036623163396332366534393137343031633939373530366533373765366266303362363838373237653739343066616436396335653064613363643563626432626537373733353061656132643064343765393761343438633834626536636531333464363462656530393835633239313632663463316535363763636139336430366133633162653861626365333562353537666237376634666536373161363664656337393037353664306538383138313635663262616361613839316161653761633734333766633731373562366562366465623734373233373837353162623662663962306531343833663936363865396664626435363034633339623134643965326265646565633834366139383064373034643137316537626134623766636431613330643934356361313266343761333235643933393861613138663937303636303534643464313566633839393465326465626537336539323731643534383638336636316561343466623235303731653335313861373865643365623337653731613036393166323637303230333031303030312801320218043a606630643934616363663664666633373238373463396462643864373939326562333137616635303031636134313936616261323635383039636233643230306261393631613534333863336135656430356338336264663963643131356432320ad2070a0e33352e3232352e3230312e31393510a388031a05302e302e3522cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030396261343537623733333035663034613931636334366231623936356334653834313735316162633862313431356130626164666431663332633234383233383661323237323565623765633734646561323165353036313764363438656135616333393337343161623031623865666233323132333962386434666462316466626562396533663339616134363538306464303435643138636134346430303263333764646235323763636534646463333262666337333431393637316634636134343634613366326138346663383563373161636630653561383936323664663639613831343734656431363532396638303161386166613937653433356334653034613936346133353735323732383838343365353866306130356366353135336565343530376232633638623364376662353461653661393561393539633837613132663633306539356337623162336333363935653835383636323431373932366437366331363938336661663631323235303338373435393037653963663133643637633261636435303363613435316338353933336163343131386163633237393830316362393638333439393033313435636564323736323964643038393136333137303933353837613737633232303563666135323534336235336333623665613135623834653364326333306331656437353261343633336333366232356239383933656130326164353632656239623738363862336234663437663461323565333536303634393632616337623235653538323934346630306433303739386132363266393231346438633565373464306138333736636332643662613634653138663565346134306166616336323530363264326361323363643238303037303833323164333833343331346630653538343438353932333236373361333265373061653064373131653331303538316263646231346538373133343639346336653039333066343662333762393664343961363435373339343733333165376535303764396535366465356536313436663266303230333031303030312802320218053a606361363738656263626433646338363438663765643033666235396630653231616636373531336561656535313331386536623534396265356163653930366564633166666132366439336135376163656339626537376634306561656564370ad1070a0d35322e31352e3130352e31333010a388031a05302e302e3522cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030396261343537623733333035663034613931636334366231623936356334653834313735316162633862313431356130626164666431663332633234383233383661323237323565623765633734646561323165353036313764363438656135616333393337343161623031623865666233323132333962386434666462316466626562396533663339616134363538306464303435643138636134346430303263333764646235323763636534646463333262666337333431393637316634636134343634613366326138346663383563373161636630653561383936323664663639613831343734656431363532396638303161386166613937653433356334653034613936346133353735323732383838343365353866306130356366353135336565343530376232633638623364376662353461653661393561393539633837613132663633306539356337623162336333363935653835383636323431373932366437366331363938336661663631323235303338373435393037653963663133643637633261636435303363613435316338353933336163343131386163633237393830316362393638333439393033313435636564323736323964643038393136333137303933353837613737633232303563666135323534336235336333623665613135623834653364326333306331656437353261343633336333366232356239383933656130326164353632656239623738363862336234663437663461323565333536303634393632616337623235653538323934346630306433303739386132363266393231346438633565373464306138333736636332643662613634653138663565346134306166616336323530363264326361323363643238303037303833323164333833343331346630653538343438353932333236373361333265373061653064373131653331303538316263646231346538373133343639346336653039333066343662333762393664343961363435373339343733333165376535303764396535366465356536313436663266303230333031303030312802320218053a606361363738656263626433646338363438663765643033666235396630653231616636373531336561656535313331386536623534396265356163653930366564633166666132366439336135376163656339626537376634306561656564370ad1070a0d3130342e34332e3234382e363310a388031a05302e302e3522cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030396261343537623733333035663034613931636334366231623936356334653834313735316162633862313431356130626164666431663332633234383233383661323237323565623765633734646561323165353036313764363438656135616333393337343161623031623865666233323132333962386434666462316466626562396533663339616134363538306464303435643138636134346430303263333764646235323763636534646463333262666337333431393637316634636134343634613366326138346663383563373161636630653561383936323664663639613831343734656431363532396638303161386166613937653433356334653034613936346133353735323732383838343365353866306130356366353135336565343530376232633638623364376662353461653661393561393539633837613132663633306539356337623162336333363935653835383636323431373932366437366331363938336661663631323235303338373435393037653963663133643637633261636435303363613435316338353933336163343131386163633237393830316362393638333439393033313435636564323736323964643038393136333137303933353837613737633232303563666135323534336235336333623665613135623834653364326333306331656437353261343633336333366232356239383933656130326164353632656239623738363862336234663437663461323565333536303634393632616337623235653538323934346630306433303739386132363266393231346438633565373464306138333736636332643662613634653138663565346134306166616336323530363264326361323363643238303037303833323164333833343331346630653538343438353932333236373361333265373061653064373131653331303538316263646231346538373133343639346336653039333066343662333762393664343961363435373339343733333165376535303764396535366465356536313436663266303230333031303030312802320218053a606361363738656263626433646338363438663765643033666235396630653231616636373531336561656535313331386536623534396265356163653930366564633166666132366439336135376163656339626537376634306561656564370ad2070a0e33352e3234372e3130392e31333510a388031a05302e302e3622cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633432636361633566626336393166626265626461383766666431653735626463643839323234393463663434666462636365653439373838353231633337386266373764623039333465633064323138336437633531646236366638363463313161623764653161633363346366646331663039336132643666333765326233346362653463383133316639363833616434323837386338336433353534633634356161313637626366623036346138336463343563356231313538343939663964393235383766666637616263643566323231636438313530353438343133303030666136653536353930383962316466643635373636656137386561656466636136623435343535666438616235393834646265333565353739356432633633356561373937346434336538656165346665626666653439326537303762343862316230666336343831616539653039643339313333303039623764323634303265366535326535653931623262333830643838663062653766623462333033653730323139373835303537616139346365393234633439323665393136353639323836653836623362613635316361326130613633646634663639303766656665333438336439336234636531643464303363373134323131313337356232633263353164346562383339653337616635333062326362643666353064346362333665323739333731373064396364646163306163653263633234623830346230613237333531636638333062373635323565323664666239646266343961303536363234613736383632343934653732363364306437306365626165393532393433653535383432663563616431336663663630613265366463663761316435333366336135626235346563323139313863373665353235626132393134363637353833316531376533366336316665383534393838323864303962373632303135343132623265353237383439626165633163666663373764653463323934633535303831316535393866663234646131356133343536396464303230333031303030312803320218063a603234373166336665383134303638316665393139313364326363303633663036356534343930616536326666356435343861356162653133316432616639366362653361633235626265323433363663613466386630653736636639343566330acf070a0b35342e3234312e33382e3110a388031a05302e302e3622cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633432636361633566626336393166626265626461383766666431653735626463643839323234393463663434666462636365653439373838353231633337386266373764623039333465633064323138336437633531646236366638363463313161623764653161633363346366646331663039336132643666333765326233346362653463383133316639363833616434323837386338336433353534633634356161313637626366623036346138336463343563356231313538343939663964393235383766666637616263643566323231636438313530353438343133303030666136653536353930383962316466643635373636656137386561656466636136623435343535666438616235393834646265333565353739356432633633356561373937346434336538656165346665626666653439326537303762343862316230666336343831616539653039643339313333303039623764323634303265366535326535653931623262333830643838663062653766623462333033653730323139373835303537616139346365393234633439323665393136353639323836653836623362613635316361326130613633646634663639303766656665333438336439336234636531643464303363373134323131313337356232633263353164346562383339653337616635333062326362643666353064346362333665323739333731373064396364646163306163653263633234623830346230613237333531636638333062373635323565323664666239646266343961303536363234613736383632343934653732363364306437306365626165393532393433653535383432663563616431336663663630613265366463663761316435333366336135626235346563323139313863373665353235626132393134363637353833316531376533366336316665383534393838323864303962373632303135343132623265353237383439626165633163666663373764653463323934633535303831316535393866663234646131356133343536396464303230333031303030312803320218063a603234373166336665383134303638316665393139313364326363303633663036356534343930616536326666356435343861356162653133316432616639366362653361633235626265323433363663613466386630653736636639343566330acf070a0b31332e38382e32322e343710a388031a05302e302e3622cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633432636361633566626336393166626265626461383766666431653735626463643839323234393463663434666462636365653439373838353231633337386266373764623039333465633064323138336437633531646236366638363463313161623764653161633363346366646331663039336132643666333765326233346362653463383133316639363833616434323837386338336433353534633634356161313637626366623036346138336463343563356231313538343939663964393235383766666637616263643566323231636438313530353438343133303030666136653536353930383962316466643635373636656137386561656466636136623435343535666438616235393834646265333565353739356432633633356561373937346434336538656165346665626666653439326537303762343862316230666336343831616539653039643339313333303039623764323634303265366535326535653931623262333830643838663062653766623462333033653730323139373835303537616139346365393234633439323665393136353639323836653836623362613635316361326130613633646634663639303766656665333438336439336234636531643464303363373134323131313337356232633263353164346562383339653337616635333062326362643666353064346362333665323739333731373064396364646163306163653263633234623830346230613237333531636638333062373635323565323664666239646266343961303536363234613736383632343934653732363364306437306365626165393532393433653535383432663563616431336663663630613265366463663761316435333366336135626235346563323139313863373665353235626132393134363637353833316531376533366336316665383534393838323864303962373632303135343132623265353237383439626165633163666663373764653463323934633535303831316535393866663234646131356133343536396464303230333031303030312803320218063a603234373166336665383134303638316665393139313364326363303633663036356534343930616536326666356435343861356162653133316432616639366362653361633235626265323433363663613466386630653736636639343566330ad0070a0c33352e3233352e36352e353110a388031a05302e302e3722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393032663034393061396237663564326364316330643936633661363939306635373362356630656235626462626133393636316566303233303932343139333434363639393639613638613463373037316433323939393066623137393265393030316362353539386561373163326436363736383234333230656534636162663164643335376165376632616462656463316231623061396439353632333737396234633463376234376334373837613136656537313838633732313731373736323461393236346162333963343166376666306234356138396264613430633461643037633464353936643566303964373035366263623561333566343466393561353963323636653039383932646362653436616435316632643262336539393161386636363538653166326362393463373733656234346334346538393264316535356331303736663136303833313965653635376534306631393239363735343361623432616232323233383664313735383665323533373438646162643032356535306235306165363035303732306532333964363465653666623435303763303631346464346265376166646231333330383930666633613665313736353237633331313661663132396139616335653333366439663630316537313237613664376438323061643266393032646163396232343836363861316261623038643130333432656136396137303937313332666637313230636336346663646537383430633635366261313733326261393565396333363735313137356534656333643834613765306432383834326234316262626264366632386534366333613636333365313832373936356335353832306435306461653262303436356363306434326531393562396431353332653632323565623939386436613439303739613861316364346430313735646533633837663937363134383437623363626231376161333462653832306237623361643938616333666165663939336136373738393734373832633063346165336661626263633433303230333031303030312804320218073a606633353738373364343131346131616566303361646336626136396566616632363930653232376162633136613666633665353034396136336662643936383830303462313465343633633230653338343336613361323464333138326464380ad1070a0d35342e3137372e35312e31323710a388031a05302e302e3722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393032663034393061396237663564326364316330643936633661363939306635373362356630656235626462626133393636316566303233303932343139333434363639393639613638613463373037316433323939393066623137393265393030316362353539386561373163326436363736383234333230656534636162663164643335376165376632616462656463316231623061396439353632333737396234633463376234376334373837613136656537313838633732313731373736323461393236346162333963343166376666306234356138396264613430633461643037633464353936643566303964373035366263623561333566343466393561353963323636653039383932646362653436616435316632643262336539393161386636363538653166326362393463373733656234346334346538393264316535356331303736663136303833313965653635376534306631393239363735343361623432616232323233383664313735383665323533373438646162643032356535306235306165363035303732306532333964363465653666623435303763303631346464346265376166646231333330383930666633613665313736353237633331313661663132396139616335653333366439663630316537313237613664376438323061643266393032646163396232343836363861316261623038643130333432656136396137303937313332666637313230636336346663646537383430633635366261313733326261393565396333363735313137356534656333643834613765306432383834326234316262626264366632386534366333613636333365313832373936356335353832306435306461653262303436356363306434326531393562396431353332653632323565623939386436613439303739613861316364346430313735646533633837663937363134383437623363626231376161333462653832306237623361643938616333666165663939336136373738393734373832633063346165336661626263633433303230333031303030312804320218073a606633353738373364343131346131616566303361646336626136396566616632363930653232376162633136613666633665353034396136336662643936383830303462313465343633633230653338343336613361323464333138326464380ad0070a0c31332e36342e3137302e343010a388031a05302e302e3722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393032663034393061396237663564326364316330643936633661363939306635373362356630656235626462626133393636316566303233303932343139333434363639393639613638613463373037316433323939393066623137393265393030316362353539386561373163326436363736383234333230656534636162663164643335376165376632616462656463316231623061396439353632333737396234633463376234376334373837613136656537313838633732313731373736323461393236346162333963343166376666306234356138396264613430633461643037633464353936643566303964373035366263623561333566343466393561353963323636653039383932646362653436616435316632643262336539393161386636363538653166326362393463373733656234346334346538393264316535356331303736663136303833313965653635376534306631393239363735343361623432616232323233383664313735383665323533373438646162643032356535306235306165363035303732306532333964363465653666623435303763303631346464346265376166646231333330383930666633613665313736353237633331313661663132396139616335653333366439663630316537313237613664376438323061643266393032646163396232343836363861316261623038643130333432656136396137303937313332666637313230636336346663646537383430633635366261313733326261393565396333363735313137356534656333643834613765306432383834326234316262626264366632386534366333613636333365313832373936356335353832306435306461653262303436356363306434326531393562396431353332653632323565623939386436613439303739613861316364346430313735646533633837663937363134383437623363626231376161333462653832306237623361643938616333666165663939336136373738393734373832633063346165336661626263633433303230333031303030312804320218073a606633353738373364343131346131616566303361646336626136396566616632363930653232376162633136613666633665353034396136336662643936383830303462313465343633633230653338343336613361323464333138326464380ad1070a0d33342e3130362e3234372e363510a388031a05302e302e3822cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393164376466666637386634656662653538393034353063356263396533353334626666616461643933666237616662313562633762636636376433643362343133626439393934306464383235363461646130346162326534656466306131633062386662376531613830393265393133386539363062653263633638623562393766353764323831633538373265393761343739666338343833363331363065333836336235376233336534383639623138356163653565333662643433616535666136373863396562363666316634303134373836383236623266386661376530303630663434303563306138663964613732303566663436383361323433666130663331356631616662623461346431343064303232333465343437336662393266636233386633656232386336306366376362666236346530363963313830383665346464363139333839323061653066643763313933653665313034653635623831376564393339386532333232333766646630383332326339636563303964343039393237326137633031356432326234646363393639663665613166353138393032313035646636303039326235356134316234663332623935376235376438346535623232333930356538363938393531373333656139663265323436316563306436353232656538313664353835306661636665623431326366663962393939343361383764633064303436343437636539336239376531366437336239366234323633393632663831666366393435386535373537376337383061366631363135616137613132333236373338653236396262373331663839653839313632326535373765613534343230626630636134366265366663346637316366323638316163303235326161383835653133626536373263643238343539303432376463643133376366333131363235653862656533623038666463616166343635623338376365376362333338313666326331346136623939616337643733343331386366633539623765643933396261666566383739303230333031303030312805320218083a603439333161373832303264353566313062333135373537383563336634333964623638313962643131303033646637626332636539326532396135313762376332313838306465623463303137393537343462353736636434336238343938640ad0070a0c33352e38332e38392e31373110a388031a05302e302e3822cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393164376466666637386634656662653538393034353063356263396533353334626666616461643933666237616662313562633762636636376433643362343133626439393934306464383235363461646130346162326534656466306131633062386662376531613830393265393133386539363062653263633638623562393766353764323831633538373265393761343739666338343833363331363065333836336235376233336534383639623138356163653565333662643433616535666136373863396562363666316634303134373836383236623266386661376530303630663434303563306138663964613732303566663436383361323433666130663331356631616662623461346431343064303232333465343437336662393266636233386633656232386336306366376362666236346530363963313830383665346464363139333839323061653066643763313933653665313034653635623831376564393339386532333232333766646630383332326339636563303964343039393237326137633031356432326234646363393639663665613166353138393032313035646636303039326235356134316234663332623935376235376438346535623232333930356538363938393531373333656139663265323436316563306436353232656538313664353835306661636665623431326366663962393939343361383764633064303436343437636539336239376531366437336239366234323633393632663831666366393435386535373537376337383061366631363135616137613132333236373338653236396262373331663839653839313632326535373765613534343230626630636134366265366663346637316366323638316163303235326161383835653133626536373263643238343539303432376463643133376366333131363235653862656533623038666463616166343635623338376365376362333338313666326331346136623939616337643733343331386366633539623765643933396261666566383739303230333031303030312805320218083a603439333161373832303264353566313062333135373537383563336634333964623638313962643131303033646637626332636539326532396135313762376332313838306465623463303137393537343462353736636434336238343938640ad1070a0d31332e37382e3233322e31393210a388031a05302e302e3822cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393164376466666637386634656662653538393034353063356263396533353334626666616461643933666237616662313562633762636636376433643362343133626439393934306464383235363461646130346162326534656466306131633062386662376531613830393265393133386539363062653263633638623562393766353764323831633538373265393761343739666338343833363331363065333836336235376233336534383639623138356163653565333662643433616535666136373863396562363666316634303134373836383236623266386661376530303630663434303563306138663964613732303566663436383361323433666130663331356631616662623461346431343064303232333465343437336662393266636233386633656232386336306366376362666236346530363963313830383665346464363139333839323061653066643763313933653665313034653635623831376564393339386532333232333766646630383332326339636563303964343039393237326137633031356432326234646363393639663665613166353138393032313035646636303039326235356134316234663332623935376235376438346535623232333930356538363938393531373333656139663265323436316563306436353232656538313664353835306661636665623431326366663962393939343361383764633064303436343437636539336239376531366437336239366234323633393632663831666366393435386535373537376337383061366631363135616137613132333236373338653236396262373331663839653839313632326535373765613534343230626630636134366265366663346637316366323638316163303235326161383835653133626536373263643238343539303432376463643133376366333131363235653862656533623038666463616166343635623338376365376362333338313666326331346136623939616337643733343331386366633539623765643933396261666566383739303230333031303030312805320218083a603439333161373832303264353566313062333135373537383563336634333964623638313962643131303033646637626332636539326532396135313762376332313838306465623463303137393537343462353736636434336238343938640ad0070a0c33342e3132352e32332e343910a388031a05302e302e3922cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633665313863386662663463643465623130343534326362323061616161323532643935663035326631303836643538316334346164373337626636363736633063336637383961663532363562386166623739623530393132646138346530616663663735343763623166666630386430353237303137656236646335636466383362353139363964343433333661363338376364373062393462663463396261663230323938343065356634663836336437303831663066613831653038363361646564623862383961356461633262623535326436653762396662613232326163323863353730373535333866633935373939323934326433343166613238373665366235303765396365376564353732653863666461356465666133363466646638643865323338323961346363626234373866313165656533623332616238356530373239353163356439343230313135666261333237303733343934663433623566366265626638343135326533353665376231366261373634623761336235326362323733343634303136336265313436356536643166613463366536663636363834613633356339613535366161373130306462653634356466386634633432336165343561303863623335623462633138373838366532323939623563303231306135666261336239343439663438336566393465643932326531653938633131336265313636623839633733353832323433313335643434323330366162653561373162373730313866663333356436646437393534323639376231363832333862393637323766643133333962356638326133623661353937643937363033376165323530363435366338623334653966626633626333323431303434316334626663386562613538353937323534656665626661613738383039613563383835343732396135626137386563653139666338343037646438383934613662633738343430333764383738636163653663313532633265383965386136346230363861366332333765303939393362653830363839303230333031303030312806320218093a603634653039383631356266343035663765643561343031333434366238396334383863666364366262323561346136373664633737656561313164333364373032363832663061363961383033306538633537373764306534323230333739390acf070a0b35302e31382e31372e393310a388031a05302e302e3922cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633665313863386662663463643465623130343534326362323061616161323532643935663035326631303836643538316334346164373337626636363736633063336637383961663532363562386166623739623530393132646138346530616663663735343763623166666630386430353237303137656236646335636466383362353139363964343433333661363338376364373062393462663463396261663230323938343065356634663836336437303831663066613831653038363361646564623862383961356461633262623535326436653762396662613232326163323863353730373535333866633935373939323934326433343166613238373665366235303765396365376564353732653863666461356465666133363466646638643865323338323961346363626234373866313165656533623332616238356530373239353163356439343230313135666261333237303733343934663433623566366265626638343135326533353665376231366261373634623761336235326362323733343634303136336265313436356536643166613463366536663636363834613633356339613535366161373130306462653634356466386634633432336165343561303863623335623462633138373838366532323939623563303231306135666261336239343439663438336566393465643932326531653938633131336265313636623839633733353832323433313335643434323330366162653561373162373730313866663333356436646437393534323639376231363832333862393637323766643133333962356638326133623661353937643937363033376165323530363435366338623334653966626633626333323431303434316334626663386562613538353937323534656665626661613738383039613563383835343732396135626137386563653139666338343037646438383934613662633738343430333764383738636163653663313532633265383965386136346230363861366332333765303939393362653830363839303230333031303030312806320218093a603634653039383631356266343035663765643561343031333434366238396334383863666364366262323561346136373664633737656561313164333364373032363832663061363961383033306538633537373764306534323230333739390ad1070a0d32302e3135302e3133362e383910a388031a05302e302e3922cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633665313863386662663463643465623130343534326362323061616161323532643935663035326631303836643538316334346164373337626636363736633063336637383961663532363562386166623739623530393132646138346530616663663735343763623166666630386430353237303137656236646335636466383362353139363964343433333661363338376364373062393462663463396261663230323938343065356634663836336437303831663066613831653038363361646564623862383961356461633262623535326436653762396662613232326163323863353730373535333866633935373939323934326433343166613238373665366235303765396365376564353732653863666461356465666133363466646638643865323338323961346363626234373866313165656533623332616238356530373239353163356439343230313135666261333237303733343934663433623566366265626638343135326533353665376231366261373634623761336235326362323733343634303136336265313436356536643166613463366536663636363834613633356339613535366161373130306462653634356466386634633432336165343561303863623335623462633138373838366532323939623563303231306135666261336239343439663438336566393465643932326531653938633131336265313636623839633733353832323433313335643434323330366162653561373162373730313866663333356436646437393534323639376231363832333862393637323766643133333962356638326133623661353937643937363033376165323530363435366338623334653966626633626333323431303434316334626663386562613538353937323534656665626661613738383039613563383835343732396135626137386563653139666338343037646438383934613662633738343430333764383738636163653663313532633265383965386136346230363861366332333765303939393362653830363839303230333031303030312806320218093a60363465303938363135626634303566376564356134303133343436623839633438386366636436626232356134613637366463373765656131316433336437303236383266306136396138303330653863353737376430653432323033373939"
         )
     )
 );
 const TESTNET_ADDRESS_BOOK = NodeAddressBook._fromProtobuf(
     lib.NodeAddressBook.decode(
-        decode$5(
+        decode$6(
             "0a7f0a0c33342e39342e3130362e363110a388031a05302e302e33320218033a606131373165336261383334373637343761656232653261633464306531313563616161623931383230336230646665316364656162343433343338666332383961626338626138613661666638336462356631623333343034366461383863380a80010a0d35302e31382e3133322e32313110a388031a05302e302e33320218033a606131373165336261383334373637343761656232653261633464306531313563616161623931383230336230646665316364656162343433343338666332383961626338626138613661666638336462356631623333343034366461383863380a81010a0e3133382e39312e3134322e32313910a388031a05302e302e33320218033a606131373165336261383334373637343761656232653261633464306531313563616161623931383230336230646665316364656162343433343338666332383961626338626138613661666638336462356631623333343034366461383863380a82010a0d33352e3233372e3131392e353510a388031a05302e302e342801320218043a603734303964656332653439346236323765653439633639623239346265316365616562636133666463616633363738396538386663376435623065656635353631663532623832643335313931613339633266626564363032373236373136360a7f0a0a332e3231322e362e313310a388031a05302e302e342801320218043a603734303964656332653439346236323765653439633639623239346265316365616562636133666463616633363738396538386663376435623065656635353631663532623832643335313931613339633266626564363032373236373136360a82010a0d35322e3136382e37362e32343110a388031a05302e302e342801320218043a603734303964656332653439346236323765653439633639623239346265316365616562636133666463616633363738396538386663376435623065656635353631663532623832643335313931613339633266626564363032373236373136360a82010a0d33352e3234352e32372e31393310a388031a05302e302e352802320218053a603962313431363538346134613338306262383661366337643732303764386165646462633362363365613330353939383235356263653833353162613462356463613532633932383261353461366265643630646536336365303361616132340a80010a0b35322e32302e31382e383610a388031a05302e302e352802320218053a603962313431363538346134613338306262383661366337643732303764386165646462633362363365613330353939383235356263653833353162613462356463613532633932383261353461366265643630646536336365303361616132340a81010a0c34302e37392e38332e31323410a388031a05302e302e352802320218053a603962313431363538346134613338306262383661366337643732303764386165646462633362363365613330353939383235356263653833353162613462356463613532633932383261353461366265643630646536336365303361616132340a82010a0d33342e38332e3131322e31313610a388031a05302e302e362803320218063a603634383636383562346536653063623936333437326330316665393939333166643965346334343838376261383334323361653766656564323264363438343834636638613362633563636361366133373338376266393664333836373238300a81010a0c35342e37302e3139322e333310a388031a05302e302e362803320218063a603634383636383562346536653063623936333437326330316665393939333166643965346334343838376261383334323361653766656564323264363438343834636638613362633563636361366133373338376266393664333836373238300a81010a0c35322e3138332e34352e363510a388031a05302e302e362803320218063a603634383636383562346536653063623936333437326330316665393939333166643965346334343838376261383334323361653766656564323264363438343834636638613362633563636361366133373338376266393664333836373238300a80010a0b33342e39342e3136302e3410a388031a05302e302e372804320218073a603339653930393931356138353238303330313534613663373730393530633762343737376261343031333537633065363138373635343231356363323061616363646438653566663239653963346439356366343130316661363862653435630a83010a0e35342e3137362e3139392e31303910a388031a05302e302e372804320218073a603339653930393931356138353238303330313534613663373730393530633762343737376261343031333537633065363138373635343231356363323061616363646438653566663239653963346439356366343130316661363862653435630a82010a0d31332e36342e3138312e31333610a388031a05302e302e372804320218073a603339653930393931356138353238303330313534613663373730393530633762343737376261343031333537633065363138373635343231356363323061616363646438653566663239653963346439356366343130316661363862653435630a83010a0e33342e3130362e3130322e32313810a388031a05302e302e382805320218083a606134343837346137616131623337373431613037316164616165373866623135326236393664316335386438646566626531643832333034353332613063303139656539366363313964373536383635373864333961316536633331613165650a82010a0d33352e3135352e34392e31343710a388031a05302e302e382805320218083a606134343837346137616131623337373431613037316164616165373866623135326236393664316335386438646566626531643832333034353332613063303139656539366363313964373536383635373864333961316536633331613165650a81010a0c31332e37382e3233382e333210a388031a05302e302e382805320218083a606134343837346137616131623337373431613037316164616165373866623135326236393664316335386438646566626531643832333034353332613063303139656539366363313964373536383635373864333961316536633331613165650a83010a0e33342e3133332e3139372e32333010a388031a05302e302e392806320218093a603639383332613733613336303265386431666265356164353864316332363337613162363732643731656538376166313064623634386562393161666232323832353362316634376535376433643461343466663534376233333934616132320a82010a0d35322e31342e3235322e32303710a388031a05302e302e392806320218093a603639383332613733613336303265386431666265356164353864316332363337613162363732643731656538376166313064623634386562393161666232323832353362316634376535376433643461343466663534376233333934616132320a82010a0d35322e3136352e31372e32333110a388031a05302e302e392806320218093a60363938333261373361333630326538643166626535616435386431633236333761316236373264373165653837616631306462363438656239316166623232383235336231663437653537643364346134346666353437623333393461613232"
         )
     )
 );
 const MAINNET_ADDRESS_BOOK = NodeAddressBook._fromProtobuf(
     lib.NodeAddressBook.decode(
-        decode$5(
+        decode$6(
             "0ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030633435363165336332373863643635306538306334313363613434343233633163336331336366313437356636663639373664353937616534333262343961623432303836623739623834313332363035346238623364636635376438666364373962666330353831383363613234636434633163626335373465643131313765326635623762336336336365376230366439623465666366373337353633376234316665366635336338313162396465363134336633613532393537636466393536373735313230623333373033666635373632313430376162393537356263326433356330643434663039383366633165663633613466663532303966303730633932616631303632393536303163393662636564303634656331393031393730313963363831316334633864643830636234663461633731663961643736653761633839343536666266346630313166393061626432643930353336653832333436353166366265663932376533643564386237626634353930353039383362656361336162656632613964393761663334353737326137373430653936393932373562303138656130646632383661646436636539323365663930386662653736326137356632313131363836326462343464336463613164343462346432653864633130363663353030366262356137643935346164323535643462363033323733343735653531316165623438356430363961303637633061623563323435333863393333633036623561366165666139343030356332393135323133653463636461653663393432663632373266396464353238326436623839306631663230656664323339396364363734393234666135373034366163366461333265373339353161373331313365393166633262376666323965343835316238336666333966383362613965633666303863656664626236636262626666616266646661613931643933306637323030646134383133376333393463626431336537303165636463323631366664323162616436383161613466303031303230333031303030312804320218073a603665396138616263646364653665313134396133656265313766643538643839303538333961383664623732623036613365613230616131373666383638623235343838353261653432336437613963366237636666396537313436323961320ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030613163343037373135343330336363373263346662373639326333663934323531626465633132333961316637613839373261626539316133353332336662656361363235613766666165363430366338353564633261663231313039303062306466306536653664623736333634646661316666653835656461353637393336653239383562383536333461333261613532613635393964643663333062653166376136633562386635656563616632363231643861343539363832666364326462616164313536316431316633336663636237663535303061633536386431363564626561616365333238366432383934663634313239643738316436633732666437643539396339653164336166346161343333633233623931306661653463343834313634316636313532366164373837656265613533393837343136376539643361373363633066623135363432396431356563373633613664306630363131356137396239616637383364373762393864383330393661613437343366393734303864396531346263663464646666653435393137363838343762343063623864613763613337353235366432623933356430393566653235326661653831666636653337663834643761393064376535373061346638656633633764373636656564613437326630393230313939303135613839303832353961383733633534353466636262646361643265353238646538353435356234303833633764633461646335613938386530636464666463313539643564373132616264353434616137336563303239303839383134633938613434663236666330363434363539633138336533313834616132373266386431646330626661336530613536303438346362303535626134646262356363333339656338306264313164363432646333613730326538633730336162323139333038346439626436336630646665313261343333633235373665616637383163666164383637656637306264613631373638623262656631346635306336633362386230393666303230333031303030312805320218083a606464336233653763643361323537643832373665343635333533363162303138623730303931663438363635653832303031306538316563303539326236396264346265316662643765636435303964303730313364643034313238343266640ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030623263636163363561643066633736343561383137626661626334383761643765343133313165376133313938623337666238343264383463333935623366363764366264383438663130633666303363323930653866376461613864303031613834343164633335326131393136306133313933653638623832656466313961653637363933613961333364346362383765373839613130373037313535313565613737326361613862383661353639623931633534353038333564396333353466306461636563393766653737303931623435623134373639386237663836303134323264636432323631653932386465346461633963343264636261666466393663303732333362613330323730373666333763393639653865643330623662356438663530333462653764393263353936663862653836316535316663633361323432626639643862653965326139653865306631353565626366663233656666613763643537633130353432383131643830373736633935383535323666646230656161333465653139353564353131313933393066653837336534633034646564643239313635383834623938623436333038373838616537666334643461613461386663396263323637346261333231343933623632343435356164343130633164653731626339356431643931666130663230313431386137393565333039656166323937623639396266323763396661323736336364353963656230323165313662383230306331303630663238313766643833636663373637313833343839343631653335393932393162333830643665393339626161346231393233326136613237326464653635316638303436666463333464623237366137373764366662326265633332353562326363323434623461663536366231303566333063363530366464616530656233646564646366393437626362396336306530303039383466336234613863366334656434626639306263313933326237663934646333616536623336303030386562393032303430663962303230333031303030312802320218053a603561383634313561303861306138323566336232656237353031303135353230326533313234336665343161303333333834653738633138633131653565386632303964343933623062326664343565303662333734663262363964663564370ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030613365333762373663366364356636363232643639323434343464313263363737633339356632623539303266336262393862386138623530353561373037373036636130323863643735303630613264383730326432643862303439343762646366653061386331343161613238343462316530366536363139303031326538623633323661623066613331373937336263376362346432393439663231303861613034633462306339316261613537323866356235363232656337356162663537386131663762343165646532613637656264363963313865353831666466396336303230616330646539636132633331663063363436393030333331316662623563653764623439633738376531613764323761613432356565376238346461376536363933396639633830643065383266636535356530326466633862356337383431386132366161343336353036393837313962616663656366306264343930303061646463666134303537303862646265666262313937343964323264616230303765343464343565613233623130366638383334633135326532353036326434636632346666323533353663376562333732393130353339336662343962616239303461303266306630626234313763643931396433353238393031323865366262666634666163396639306465313138613937346632613664643031653033326137396231373866363066613166636262643032623537303466623436323935633135313930383136333733656464363633356338353639373866316239353033663166373362346230626538616261326564316665656164353939353362663832656664653933613334373161626435356364613362613861363733666262333739393734396662303036643030336630653633663636356333343631643261376232396463386232303462613539613635363638613436616532383738663030643166393439306466396532383066656266343331356561303465616135363861336139666434386336326336336236656364613639303230333031303030312803320218063a606434363430333938303337393230373965636364356134343331316361306463323262353065633839356235366535336431326232396637326463366462613363616665326535623831303466626461303338616635623434376430666231320ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393361323135636334613761373232636165396331336162643633366466393963636565633661663964623436623639666135313637313665663530636532343930613938316530396162303139636132636234363831316235623631396431626431643565653666343661343263373737636264656536343261313438346563646635646464333732393634326333386336643433613838353838373434373566353832343434333636346330346466656439623839303435666230383565323563336566636234383431373333656666376335323963313339653639333530633263643739623263386431393637396137313265346538636166643332363735343162383332623365313061303132353564656636396466316539643362386438656166303331316465363764356531326232366464303164626264396433653432643335643964653237313330326530663166363964383763626337616361396538383637653964343238643363616230363636656234393064356662616233306266663366373835643033663230373261343362623962356535343635366135393263623631656166643561356566323834633763616563363666376634373332356363306434633164323766363631643861373438636135303731633036656631333464666639366634303836363838333636643436386132343738303031376530623536616261376661623433623362376330623737393036666165353438326633323831316332393265366231343435346531346238393438303161383661303363633437373934646430643734353237613732653432346564336166613034383939656362396136336632613961653732626537666139383961646630643635613332633835316439383031666334313034386466333335363466633762333137303765633866623830313430666537623761316661313230626131636236363033323463656666623462636332643962623764653063663534633831396632646433626365616465633963323566356531396463396231303230333031303030312806320218093a603365303261363732306334343636353965383633303564353562666565383230623335653635306665636163633535333039373435356532633465303332636339646564313662316262343464336235393262626163623663326266663165360ab70722cc063330383230316132333030643036303932613836343838366637306430313031303130353030303338323031386630303330383230313861303238323031383130303930323539663465336439663066333934323536353438653963373330386231306237333430336363393039346439376164313531623737303631373062393737326365623634643636326563656639303161386437643135643331396135396338623731303731616363643839356237633933363130646336393736663637633465313732396261383337336162376535326133663363386632363534393164646536396436653039393934373065373434353938313133316264393663333665363836353230336662326562643564353065616461666237323633393664656331643931373438393862346539626530346337346433303466656164643963626433323334633362376633333036633939636230633333396663323539363962343164353861326237636663313833326532323664383163313936333939336532323535613038376431363938633033643432313062643634353830363434643039356361373661613137393465646434306331633837623566383261386533396636303365393731313662613034353738653765383033343634393564373835643465663763663737313462396562366635663965306239613934663462373338383436313962393237346434613935656631353735346138396439376566356331613838623664363933653061383065626435333766633963663063613931643163363264393135646537656438313862393532653634633230303239336565386532383461343136613732613365313266633764343233623135386639623439363630636263323436366662656430666564326532346531303266646539343265623463666439346265633436643364393066633038633339666563626130336530636132343634616536363462393739353135626132396531663730326333666537303262653739333739366438656462313761613438633039323930623032343534396630363131663561653233656437653136343432646637643164616432323836633262623039643535323264643365643639386332663032303330313030303128093202180c3a606339373462623938326338313931336237333236643561336639646363343836313261313566376161643032663230376230663130636432303137613666626666353830336537636139626662343730396162323862366230396435623133660ab70722cc063330383230316132333030643036303932613836343838366637306430313031303130353030303338323031386630303330383230313861303238323031383130303962646438653834666164616133353332666334636530316138613137643463336232333266353061393739306532363236383465646334383233653831356131626435623230656365613762663536653239663662623762383331666233626636656663643134373566306238656435666662306231333835623936643136366236323966303339366138666566356630366534626361323565653461313334306565323633613464396262303230643866343732333036663364383836313338646537613031396530353962643061666339303263636261316132313361653264616136306338613031333735356665306134386530333466356234303233613264616465616138386335343836383335336163376137613364663132623266623634313837373465396231346265366561623863633237623838303132616436313632646137346530656562313631333539303566343337333734646162383538366437353061323662626433616332346165643837386334643533653635313037326338373165393464376163633537356339363733383137333461353366656166346437626136626364643234316363363435386336303837643836333032616132353163303466366435366239633332643764393636323437353065643035353738356430373733663433646330393962323863393232383131343865366338316632393766663964313636653030306163303462333132343138363737356663656637356635656261306331303332626631333064663663643761343632313164306466336530353834643932656136373334396438343930353038656234656638386635346338633364343836646538373139663130666139366665623835636337393630373663613738313331386565326439656439303363613133333630343063353961643931613464326636393865393130386165306564623962316362393561643333623139376666623138626431626138623536636265653261616539353835656365323038613165313462343835363436333032303330313030303128083202180b3a603937303834333033333130373866353638326337663332343464383263336233653238316139313837393537386465656163646363326132656265353431616631383831313561643265383338363565356635643234376234613138633165650ab50722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039303938383635646566326632616233373663376630663733386331643837613237616330316166643030383632306333356362366562666362623063333330303331393361333838633334366433303233313732373031323139336262373666643330303462383634333132633638396566353231336362623930313130313530396465616239346632366137333265363337393239646134633463623332353137653361646262333831316435306163346337376331666365386236353136303632313566333437303766336537323635353435653538633839343630396532383337366264623737373566653330343339653065313539326664636230633365653163333035373733643037326136623839353765616663653161313162653936356564616666333834333336366362366134346563323561383930313036653632343735363766373662353530666461343832626165633633303764363938656338383834316664363666323366323130653437623861396463626136626134653166613731366462333363383065333038313934393664636235653536303966623665376336313533373962646465643432376539323331623932353463326261663934333630386138366436393861653961336338363339646638383764366636623561373133383564323433333864393131613231326266373166316532616363386231383662393665633865363963383662366430353832313737373661303963396336383935336564623539313635373862356132363362326634363965336230633037656164613731613434376565613766386663316262383037343235353536376237663062643165366166623033353837313863393862343239653234623232393835393666633736636636616633393663613934333464373932366563376433376434623932616635366434356665666638313936303935323234613931366331666665366236363765323535666333616338636363656639323064633034346232353030333133326238373830363734326630323033303130303031320218033a603333373339306438666561313434616663313265383132353461323864616336656138323839333833366163303732656666643835653061373734383538306566323830393636343863356137663864626234636538313437363831353133370ab70722cc063330383230316132333030643036303932613836343838366637306430313031303130353030303338323031386630303330383230313861303238323031383130306335376564623966663237366530323362323830323163623164383763646631393636623639386366343865346561616137633639323037376365656538636362323339613463393231353937653865383966376363303564336633313331353738393736633465333134343035643461346530336137323431306335633039636135323761643561383562393938363337653732613332653166626330643535343662323436356539653830366332646435303965623035306162356662323730363366643932383135623164643236383965323131316361656236663534396539346139663030663038323164346361366336613631313766356135333363393236336266303734613330643563626566353064316338633233383762636139373265646564613039383362356430613662353764636230303230303036383238623430653430373662343837306232346261643834303536656535326235663432326538383430303238633235303036333832643865396336363132323566346637366561373265333430363037653966633666336332303433333037366131636138636231356564303361633839363664303530376263646536383165346530323331656539663837643131316537623438616338663934643264383432623532646637336635373363633534313439363437393763363236393638666661653734313866336236313039623561306630396533323233663461346435653335303964643235303133386636626331376266366365636531373539343433306466313830613338653930616466326166666266616430633662386331623837663137386130363164636662666638623932633931363664383734633166663561663466626364626665386539643039393337306464663630626537343736333364333665653465623563643531663665336333333965313531653431626462356135636532633863393761306134336233636434636330383138383463383739663964326633373438343238633835373366313763393066336362643032303330313030303128073202180a3a603734306166366266373339653838336338386633333434633961306638623330316533396463393831633531363365306465326133666634326239396534323665643765353662363766343231383530333834356466363266343963396662300ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030393133316161333638663933343532323966393762363235396363636166666561323365303063643565616430326533663639366331653731346565333933396461643836306533386266393561323937346639656234386539333433663861616334303565613935356430353332336531313762336231633934383133613361663432666538303832633364343362616631626434643833363765393364623030616436393665363237613130333661653533346630313165616435653536663337613666666534346236623965303939343031313932616435363061303334366234316138313030393566356632643766643332643665656236353562613735386336623532366331323933383661663731393763376135336165363033643632323833323235343936316631366430656661383037396137363835363138383862653733333439323231373935366262636166616562623631333563356662623234383464356234613566646630333336616330326532366331363532633162643865616633306461653164366433656230306637623466616238643634373866653864393565623931316466393636613064656134653532326462373662383936363537306563633561663039353136343234663061663566386565363665333836643536353037313339393731363961633337353733626635326664303538646539356162326666363865363831313161623233343035656139363462326262383864303263306631636165643731656364643465346534303835393438373666646238353030626335356337626130323036366530356162393864396637653034363664393730326562353765653337323266386663633835613735353035666633323632313730323838623738383732336164623937653464653536323063633930656164313338326663643735373138383966656662313165363737316263336636663366656231396337616335343238373864303361393032373035323663336565643234393465666635346531353363613966363839303230333031303030312801320218043a603765616236393661623935343336363538626331346666366234626534643932356364353162323230646632613164356336656531363061646166323961353165363934646533656531383463653232656164386437646239333231383266330ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303038326465373330363566333466666332393334306435393439643232323062316534333636656435636637633665626436313663663934313661353365613030313766366262313136626664336633646566636331356237613464646630653434643032666536393536383830353365373961373730653230316263663731393333393030333965653866303836643466613734366337653035363931383330316639623565383465333932363238323830383561373962333232626361306235643835666539373232316132366262646532353863363230663064636561303261623165646431366363343961336632616239323838653364643166333764633462366136663731333366663932653534316337316237306432613266363664353537323561623138626638366430303965633364323466356431326530623565363830326431313531333732643462373634656265636234616638326636343934383565633537623561303164633637393538663561303363636161623763626139333534613137333732633133313662613437633935336161663934393031623366386332346536613361666436373538653766336231343363653264643363623037316232613734633932316365653934396134623561366265383739663163373930613662386436336231393264376565323961393439316664643638396139386330613763336436303332306631623461633264363232396466643934653432663361363034386137366265316562393538633861313837336265386433333861656339666335396162376633373632363738393430326331666435393566313930383735373565306265383237666334633061346662336433393361643734613934396363393836626662363463616264646165353339333566366463353630373464623933643737656133623831366264643662653533343439373237323238393835396666333463653531383630616666623632316431303438376463333834336631663836643534303334613633653438613161306430323033303130303031280a3202180d3a606132656363316232616539386264323862633161303864386633373161306434663734356337363864306337373339363235363265333433623235643833343235656565613765663865613134323935333432623865623738643332656333660ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303039383735356134303862353332316532363330353230303064366437643461326333613535346435653133383461396362356562663437346165383832633633623438366264303864313434646466316139346365396137643632353139363330303661666461616334353838343666313736343031393566653235333961363536393330656661383534663231343865363865633161303863316334396432303063336633303435666537313437663036643533346334626432363231303063623164643339373339643736306438316130626432306638336632353564323530376434636362313130366235333631386336613934343039633838376361653236326434636565396338363233323134376365633134303465306335376262613733313731333065653339363433383838616633643539386564643832623863363165363561653831613465316135366263303664333937313433613938643431636138376433656634333365663061656162363830313139316233653338343830393638663636623665383836363261663435613965323132393934663638623238386562393637626562393834373863323433653231333663316131353931663036316635626330346232316666326261343862323966313834333130383838373362646665393966386135326539343038393731383536653830346465613630326133313137383663393835363532393633633361333737303332396234303966373466646663373436623232613566383431383931323037316334636538343663396234623332306665646636653962363465326362653338346639613832623661616164346232303930373433316466316133336636393230376135363536303062653831303730643038333239303039393538353961343439386435623539333135626365626566656538303765623061336139343266316364663333363764643434343466646232393838366566636464306265346162653961313838383033393533383735656461333364623732393839663736336230323033303130303031280b3202180e3a603139366237623132303739376364623361396430303362393833643537646131303331303662313733306531376636376532633762616161646234333738396166313639366461313031316232353362636263383630333333383566303332380ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303061396462376638626161313236383938666162373839313135613362356438393734346631393765323830343161653039386633653838366336393837313732316531316262306164313166336365393132346161393631643661306463383435663439373635633366616231393935383430323637366635363434363262663238316462613535383837383066303365393035373938653138343236396161613630663761313437323333316532666231646561646438373763383463626362363431636139653563386164366534356263313539636230373966636230643434396364636438643932333963316130343765376234343864613063646361323636313061323566323936643936653734363962363736643461343434353136653761353965383532393361383038366638343063303532383534653032613863623230303264616433353832356265346438336235326661393165386337336666303439373436313438383632373837633131313866393234643331636261633162343466656666323264343336623339373965616466396234336134626661373265313562343735356663616232363065303661323739633362623733626337663136613036306434643532326664343930353830333838616135393564383034343733366535323266363432343931356637383033623735383365303935636466373863333235313936393764653831623839666235303035343735336231613137663961616662303634643834633939326639616231316363626338636231303831346463616635323634616134356632316264656661633832636361636161663335386533313337336565316261346537343032666438613730656130633238636135636337346463343235313063393639636432633435396231656333363838613031656133396139393237313063643232393763393861383462363334386135373738303466646332333464336665313930336532633231653137326461323862353961653665346337653865646438623731633439643730323033303130303031280c3202180f3a603538343661353366343437353239666439636462373830346364333136383865643665656265336236336461326635663231316666626337333731393763663366316366626664613631626537643135313066306539323339383131376637340ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303061386365616333363765623166316465356630643965663365616630646639623938343438666532303830383437363536326130363063353163323839373730623463616366653932636236353536393832336539363263326132633966656435336264333663613361313232646531633532356135383266323561346437643632386331613364356264623839333661656365373531306537353534656537303333303235633039326338323865656235373338626530326564393633646138316135393230353633346365393435343537376162383266343066313366316565353565306165373237653233633330323834623166343462393961636534646463356639616337616438386439666132323535393335623234646362613834303036343265313663663235333263306230643638393239303436303837313563343037366634366438346130653066656433366537366363646339363335356537613236313630393435633262353461653236636330306664303832333236333436656565656137646437356639313931316539396462636239396561346163366261303536633333323238643838316438353833316439636338373935393364613137343664643065653935646332623936666539336261666366663263643764393239353864373864663333663230356437313135656439666163346462366634636336306535366135343431646135623562353566613539393939303265393538613662366334346438313064646335363138313234316238376632326630353961363838306538303231373336643031383937646236353434396365383137613233373564303335353163623064653530376336303961306338303330656366346266646562323133633033646161373634613138323162373234333334663731663736386437616563623237373035326137303333373635663037323138303536633738663261383761663138333836643866363161356366636233663262613464643539393135663133643338363334643136393537353730323033303130303031280d320218103a603030306162636435396133306135333838633530306265363832663663613239343034363239356339323735383831633230643334626230643639306564613762333862366262643037613364643166646662366137303434626230396366660ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303061663062393134323537626637613436353563346135306430636164356530613165343538316564363632336630653837333066373936623866323963353831373862636363363933326331666333316633396566343462383264336334336233393837333733373366656362313239353232386130346664353061313466333634366438346665316634363763616562393864343633653239373565393935623864326531653339663362663661646463323561653335643635643032363038653033343535333739363665326162636534396238313462656164336331623735373137346165333063303062306334336539396238303439366237326433633133316631633665346663646130356632383131376566396532386334333033626534643863376530343264353862383363633132313934356132633635653739363263616139313835393338663337353764663763636139356366303262356533313934346133613631396130616333663165333462396230313364346332323463346631653730666439666433363938336566383661646535313833363263633833323263306637623631613961633735666238326537623836643638626330663039396130396131346361633561316438643338663961386137306363333766663563633362626432373432666664313436323535633137316536613137383038333237316463653066646536383165643439326362353962303739366432373031373538333864633539303831303765336136656133663961343036623364313133306363656333623437393165343962626332333136303362343661623264306639336434336265373561623961346437313065613934306532383561376231353362306361376364646565366439646365306164383335306334316439306332313562393538383531356166613061633333363561653037653831663362626233366264626561633462333162636231616134653832353635623937376639646164383564363236656566396161613965663864376533666230323033303130303031280e320218113a603933653238313031303462326231376230303935326235613431303264333365646230343363623136646533616433643364363832363066353562623065353837333765613539343463333338663763386362383863373833336663383630630ab70722cc0633303832303161323330306430363039326138363438383666373064303130313031303530303033383230313866303033303832303138613032383230313831303038633037626533303561643630623930626132646162333962306565373736306531613232663835373532323534306437306230336233663965343837356133613239616230383038386631343466353765623235326534366261353933383564306536643432373031313764613061626331623362383036393463396135303538623836643631646661303665373136373039633838653866656163376333613065316432356663306165626636613866373666636239396638343566653138313436316361623638353862393763336134303237666233373132623134653663303738396465313764343137363435373765353131343137656231363236393265623037616531653733353532333565396262343339303437623663303136313337383265376464366636303464616134363734363631643533393631663436633366616136623765373637363264333733623562353432623739656139363365666266333361633638313938626232623636316366663637363931366566333732616434633236633231366334626334373837633834656333326431383464373763373531383663303963663364396639313433336361393835333131396261623331666136616432366634353365353936643962646563613638613537363962633866656537613533356438306338633666336566623164666232383861623661393739383534623763653833313234656330643130326166663934633362373466396333373839353863323565623933336464353363316538303561313836353464366439313836393930663635373034323966393630663334653862346637666439393732646362666539323430653037346461326433353561356637656639633161663632656635393832613831373435373862396331356334396563353636626461636233306363666365663039636466653730386164343837343234653963316265363533663965653736363065376439343263316566613564613238366531616464616230366139613333663964653934363739356230323033303130303031280f320218123a603934383235313739643163333934303137306233356432363665346366613830643737386335653966356261653764653833666638636334373431663362653336616336336431653761653439373261656466366263316533636632303638390ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030626531376339393634376365633635613434343037623533353835366233633362616566356235346635363561663538623834353662613863376365353335643561633732633631633434633736623363353763386538363438343136333762653130613833636665333963303932343736643064626534643663646364636437323061333062356266656235316130316131386635383263343566366338363939336663663764663138323933356465316438363930363034346463663335313836393335643962643765656137393532333532626562623465663961653066373636316537306134323337616661393839393636383763613438666366633562303064333830376630353462653066613863336266613432353033386265366566323935313634663232663733623765383863393465613962653861613466336132343563383962396431666435313932663761353062393538623265663831303462333666316266386664326366623238633134323138303063316334376534656639386166313530303730636336643639643137653865623932663138613661613161363532363661343935323338643130336638663639356235376563663337333635306130353230303837343537323162656138313536323739363763383037363336356466386334633761376434646438663263333835306331386662613731656236306536653864666264313936653035333766643730623334346563626363353330646663383364613666656466343964353161393034313935303262613964373063643335663163663363303639346532333534663930363466646266353335656232336332376330613433643062373863316638363763363164393836393564386465663762633261313062623636373463323266363661616230613931383133646466323763646238353263353965663739653162396531613037356661366565323761376533373734646266346232363436353432376536643561623931666537663066336137313738346563613138326235303230333031303030312810320218133a603038393039376465663031623037633764393734613537353532353161366161613061666236623332613534353334336432393138653732626164303433323163313131633234643432373538306633626131653236616139643735653632360ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030613561643262373634336130346330353564326638636432353131623135313339666334353537353632313338386534396331313962326633393861636131313066363133393662306338363664653530363335323262623835343032373365313366366439346365316536303433386636616662303061616136343631326637313435653962636538626331613533623934313931336161373663396633613238333366616437636632383563376163326433376639396633633263646234396465346431353165363136373835363466323831663534313432346234316661376335316232613936303232383363376433326565303065623833386461313563333861666339366530363164393763656465323231363566663161613935396631633432373562326430393863343035383661353537396662623363623930303732373034313230613861363661353237306634666366643130383663393233363930613335653766643434356533336163303366313339633638363835353635373063646334616166323231303761366331613434323435366137633663373965653034303930653765356434663636626361363063613166343762366466623534336461633363626631396137373139613866353562366638336234613362386136366436303235366430613436353531666137303234626430353633316238613535383038373732353463326632663236386364633333643264626263666237333365396662653233336262396362353961623331613031343862323365386334323638306666313061663463373961346430383334366662373961393364393632393534386561663162623132343639386661656661346364643732343432633033613034623733333433326637343839303361333235633238336434353661623961653932316165376564333339316535643137383765666463323335343061376238356336393161653837306130376639306231316331336233326365343365616564313562333639363835636534393137376363393835303230333031303030312811320218143a603939666162633461646534653636326336653238323366346139366562323134343034383465356136643064333132623730633036386432326236323936333830376332333361343964626239383361376562623330653737303637373261340ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030386434356332316330633935656636356130323964353263393537666430663835663230313233646130333465363136373164646565353437356630373338326136366336366362346463353035303464646664333735383130383364663864313735373733306564386436663336346466346333366132363531353931393535646132303161323430376661386162396232333133383131323235613064613233306662653338306530393061613536656661346632303265633962343832336636353031643936616336393865626632366161636633656532643166333261373231633934376531303736636633356233373364613164383761333661313532653030653731303131373932323832653832356666313731633538333362383835373062666336646138343439653666393566386231323635616235353531393430333135353364316435373666393363343263306361363061616261633463386464313632643831313466326232313531313538336337323533396665353663343939613932396465336134306130643435633137633538396332643739383863653236656166633932613364333762376561303034326434336530336166613632373162323632353561366363636661653533373138323164383165306230356332353062353966306139303734316130653065383861303965643536633562393738306430393566303930366630623831643531323633393832616165303131333663303732643834346131316436646134623261363163363434653161623137663136666634386565323366656465383435326631653432653264333061303739306332356434323036306531643434613637316132656232336431313466363863373165333366313736646235386136386234333030353462633164323938336132336133326561366666393566613763346438653338306562323936653938623739363865636638343534643831376337333765656135646439323165623836633136633762323933303461346137656362653561336131303230333031303030312812320218153a606537396165396337313933643164326263393433383436346338616135663632323461653835323936366134336239383235383833663766373432633533393562643330393935383761393638363662393233396431656666336165353037610ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030623035616265326162303066646430366339353565383637313062306530366631613932363234613438616431636263386466633666323231323936326230633330666462643238346133376335613337363538623633633336656138313632353631613865346639343663626535373232633032383830316630663238316337306638643838633763303061326632653239663539376237393938363965643833353664663537633437626539393434613261616666363530663962346262613064626335336463383830666462623639656134353139303564323830323230326638653239633034613736643237616632656237633534383438356266336634363934633930633431383130383838383433373932383438383335663738313637303764336538643736663465363766353738306263663038383133633535656336333961396264363234313738663565623134376435303061663335316539656631623165333432343834636132363064623763636261653438366631336366323635623562316162363838303636303038303533623230633364656463653737316339613038613033323061613963653435316562396439383361376234396361613130393666386164633039383331386463333865306537636566306438653564353537613036373536383561316339653235366132626339646261333232623362623331373263663731343037376263333830663861306134333361386266613766626663353966366230393365633862663665393339376330396231386531383034306331623536363836343733376338666137653239373935663361343538386464613763326261623439353636356363346139623833366532656239306336326133666361663539316662356638313830346337363138306536323666613236343461376465333435313164366334363637643938393337653237373333663464316539313338383333353465353466643733353137323165373666376235366333343833333838663461366238376232386165626562303230333031303030312813320218163a603962343038383566313362366163316337353336393262613366313739303061333838333165363934613061663937343934623834333838323039636235656662646339386136646162623265316337313833393166633133356264616163330ab70722cc06333038323031613233303064303630393261383634383836663730643031303130313035303030333832303138663030333038323031386130323832303138313030396463643863306135336539306333353539353734663636323034313137643362353033653530613336643330393766616338343239653663656364333762623534303731383038663265653938323033356638353161306339626532313736333833613232653338633161626131363866333266393035373063623332333363666536323539383736363661663637623531346361656632316662386466366430666364333363663236303662393264646561353533366236303638643836373832653339626435633338343435393931643431396237643165633038353939343132633039343964316332343062333563313464633535323734646261373166666165393336313235613566383139663534313332653234333964346163353539373939366563653835653133646666333336316639313331663536636561633562396635353262343963663666396139616336653564636532646233363934363266393361663830653562353662366538626566613136326130363162346137363839326264633834363437333036633630303835386664643237303332373663326337303434303139386566643766653335343563663261623538306337346366643634343561616637626437663734356363323532656162643236356561626565383632343137313034653639343861353537353666646332323264663061313031353234646531633363303863636630343330313165633766653936346564643834353161313330313437633037333633613335663131666465656638663261326237363137353762343335386666383962373561343864363762646336303930363933653062623836373965636262393366666462336633656439366265633933656634363536653337313661623837636534366361386531323539633866656464653866326631656130663365623263343865393635353164653132333330333435373235663435656436396338353735623531363833616661343732363231383236646232326262326431633466316533363436346139303230333031303030312814320218173a60346630613033333466393737363738313632663830643936376637323139313431333630633062376637663033316233376336396536323137333933336564616434366263626139373636376565373262666435613933346261313532326330"
         )
     )
@@ -71153,7 +76492,7 @@ function createCaseFirst(methodName) {
  */
 function createCompounder(callback) {
   return function(string) {
-    return arrayReduce(words(deburr(string).replace(reApos, '')), callback, '');
+    return arrayReduce(words$1(deburr(string).replace(reApos, '')), callback, '');
   };
 }
 
@@ -71337,7 +76676,7 @@ var upperFirst = createCaseFirst('toUpperCase');
  * _.words('fred, barney, & pebbles', /[^, ]+/g);
  * // => ['fred', 'barney', '&', 'pebbles']
  */
-function words(string, pattern, guard) {
+function words$1(string, pattern, guard) {
   string = toString(string);
   pattern = guard ? undefined : pattern;
 
@@ -80602,13 +85941,7 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var _args$1 = [
-	[
-		"@grpc/grpc-js@1.5.1",
-		"/home/nikolay/Desktop/hethers.js"
-	]
-];
-var _from$1 = "@grpc/grpc-js@1.5.1";
+var _from$1 = "@grpc/grpc-js@^1.4.4";
 var _id$1 = "@grpc/grpc-js@1.5.1";
 var _inBundle$1 = false;
 var _integrity$1 = "sha512-ItOqQ4ff7JrR9W6KDQm+LdsVjuZtV7Qq64Oy3Hjx8ZPBDDwBx7rD8hOL0Vnde0RbnsqLG86WOgF+tQDzf/nSzQ==";
@@ -80616,25 +85949,27 @@ var _location$1 = "/@grpc/grpc-js";
 var _phantomChildren$1 = {
 };
 var _requested$1 = {
-	type: "version",
+	type: "range",
 	registry: true,
-	raw: "@grpc/grpc-js@1.5.1",
+	raw: "@grpc/grpc-js@^1.4.4",
 	name: "@grpc/grpc-js",
 	escapedName: "@grpc%2fgrpc-js",
 	scope: "@grpc",
-	rawSpec: "1.5.1",
+	rawSpec: "^1.4.4",
 	saveSpec: null,
-	fetchSpec: "1.5.1"
+	fetchSpec: "^1.4.4"
 };
 var _requiredBy$1 = [
 	"/@hashgraph/sdk"
 ];
 var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.1.tgz";
-var _spec$1 = "1.5.1";
-var _where$1 = "/home/nikolay/Desktop/hethers.js";
+var _shasum$1 = "934571ae351e868e61d2bd1d56249b79ce8bd1f5";
+var _spec$1 = "@grpc/grpc-js@^1.4.4";
+var _where$1 = "C:\\Users\\Aleks\\limechain_projects\\hedera\\hethers.js\\node_modules\\@hashgraph\\sdk";
 var author$1 = {
 	name: "Google Inc."
 };
+var bundleDependencies$1 = false;
 var contributors = [
 	{
 		name: "Google Inc."
@@ -80644,6 +85979,7 @@ var dependencies$1 = {
 	"@grpc/proto-loader": "^0.6.4",
 	"@types/node": ">=12.12.47"
 };
+var deprecated$1 = false;
 var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
@@ -80711,9 +86047,8 @@ var scripts$1 = {
 	test: "gulp test"
 };
 var types = "build/src/index.d.ts";
-var version$c = "1.5.1";
+var version$n = "1.5.1";
 var require$$0$2 = {
-	_args: _args$1,
 	_from: _from$1,
 	_id: _id$1,
 	_inBundle: _inBundle$1,
@@ -80723,11 +86058,14 @@ var require$$0$2 = {
 	_requested: _requested$1,
 	_requiredBy: _requiredBy$1,
 	_resolved: _resolved$1,
+	_shasum: _shasum$1,
 	_spec: _spec$1,
 	_where: _where$1,
 	author: author$1,
+	bundleDependencies: bundleDependencies$1,
 	contributors: contributors,
 	dependencies: dependencies$1,
+	deprecated: deprecated$1,
 	description: description$1,
 	devDependencies: devDependencies$1,
 	engines: engines,
@@ -80740,7 +86078,7 @@ var require$$0$2 = {
 	repository: repository$1,
 	scripts: scripts$1,
 	types: types,
-	version: version$c
+	version: version$n
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -85806,7 +91144,7 @@ function decodeUnaryResponse(
 
             unaryResponse = frameData;
         } else if (frameType === 1) {
-            const trailer = decode$6(frameData);
+            const trailer = decode$7(frameData);
             const [trailerName, trailerValue] = trailer.split(":");
 
             if (trailerName === "grpc-status") {
@@ -86339,7 +91677,7 @@ var lib$1 = createCommonjsModule(function (module, exports) {
 var index$4 = /*@__PURE__*/getDefaultExportFromCjs(lib$1);
 
 "use strict";
-var __awaiter$1 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$2 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -86348,7 +91686,7 @@ var __awaiter$1 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$e = new Logger(version$a);
+const logger$o = new Logger(version$l);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
     "nodeId"
@@ -86359,22 +91697,22 @@ function checkError(method, error, txRequest) {
     switch (error.status._code) {
         // insufficient gas
         case 30:
-            return logger$e.throwError("insufficient funds for gas cost", Logger.errors.CALL_EXCEPTION, { tx: txRequest });
+            return logger$o.throwError("insufficient funds for gas cost", Logger.errors.CALL_EXCEPTION, { tx: txRequest });
         // insufficient payer balance
         case 10:
-            return logger$e.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
+            return logger$o.throwError("insufficient funds in payer account", Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
         // insufficient tx fee
         case 9:
-            return logger$e.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
+            return logger$o.throwError("transaction fee too low", Logger.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
         // invalid signature
         case 7:
-            return logger$e.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR, { tx: txRequest });
+            return logger$o.throwError("invalid transaction signature", Logger.errors.UNKNOWN_ERROR, { tx: txRequest });
         // invalid contract id
         case 16:
-            return logger$e.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT, { tx: txRequest });
+            return logger$o.throwError("invalid contract address", Logger.errors.INVALID_ARGUMENT, { tx: txRequest });
         // contract revert
         case 33:
-            return logger$e.throwError("contract execution reverted", Logger.errors.CALL_EXCEPTION, { tx: txRequest });
+            return logger$o.throwError("contract execution reverted", Logger.errors.CALL_EXCEPTION, { tx: txRequest });
     }
     throw error;
 }
@@ -86382,11 +91720,11 @@ class Signer {
     ///////////////////
     // Sub-classes MUST call super
     constructor() {
-        logger$e.checkAbstract(new.target, Signer);
+        logger$o.checkAbstract(new.target, Signer);
         defineReadOnly(this, "_isSigner", true);
     }
     getGasPrice() {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("getGasPrice");
             return yield this.provider.getGasPrice();
         });
@@ -86394,14 +91732,14 @@ class Signer {
     ///////////////////
     // Sub-classes MAY override these
     getBalance() {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("getBalance");
             return yield this.provider.getBalance(this.getAddress());
         });
     }
     // Populates "from" if unspecified, and estimates the gas for the transaction
     estimateGas(transaction) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("estimateGas");
             const tx = yield resolveProperties(this.checkTransaction(transaction));
             // cost-answer query on hedera
@@ -86410,7 +91748,7 @@ class Signer {
     }
     // super classes should override this for now
     call(txRequest) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("call");
             const tx = yield resolveProperties(this.checkTransaction(txRequest));
             const to = asAccountString(tx.to);
@@ -86474,7 +91812,7 @@ class Signer {
      * @param transaction - the actual tx
      */
     sendTransaction(transaction) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(transaction);
             if (tx.to) {
                 const signed = yield this.signTransaction(tx);
@@ -86513,7 +91851,7 @@ class Signer {
         });
     }
     getChainId() {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             this._checkProvider("getChainId");
             const network = yield this.provider.getNetwork();
             return network.chainId;
@@ -86527,7 +91865,7 @@ class Signer {
     checkTransaction(transaction) {
         for (const key in transaction) {
             if (allowedTransactionKeys.indexOf(key) === -1) {
-                logger$e.throwArgumentError("invalid transaction key: " + key, "transaction", transaction);
+                logger$o.throwArgumentError("invalid transaction key: " + key, "transaction", transaction);
             }
         }
         const tx = shallowCopy(transaction);
@@ -86539,7 +91877,7 @@ class Signer {
                 tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length - 1)].toString();
             }
             else {
-                logger$e.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
+                logger$o.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
         }
         if (tx.from == null) {
@@ -86552,7 +91890,7 @@ class Signer {
                 this.getAddress()
             ]).then((result) => {
                 if (result[0].toString().toLowerCase() !== result[1].toLowerCase()) {
-                    logger$e.throwArgumentError("from address mismatch", "transaction", transaction);
+                    logger$o.throwArgumentError("from address mismatch", "transaction", transaction);
                 }
                 return result[0];
             });
@@ -86566,10 +91904,10 @@ class Signer {
      * @param transaction
      */
     populateTransaction(transaction) {
-        return __awaiter$1(this, void 0, void 0, function* () {
+        return __awaiter$2(this, void 0, void 0, function* () {
             const tx = yield resolveProperties(this.checkTransaction(transaction));
             if (tx.to != null) {
-                tx.to = Promise.resolve(tx.to).then((to) => __awaiter$1(this, void 0, void 0, function* () {
+                tx.to = Promise.resolve(tx.to).then((to) => __awaiter$2(this, void 0, void 0, function* () {
                     if (to == null) {
                         return null;
                     }
@@ -86584,7 +91922,7 @@ class Signer {
             // CreateAccount always has a publicKey
             const isCreateAccount = customData && customData.publicKey;
             if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
-                return logger$e.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
+                return logger$o.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
             }
             return yield resolveProperties(tx);
         });
@@ -86593,7 +91931,7 @@ class Signer {
     // Sub-classes SHOULD leave these alone
     _checkProvider(operation) {
         if (!this.provider) {
-            logger$e.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION, {
+            logger$o.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION, {
                 operation: (operation || "_checkProvider")
             });
         }
@@ -86604,7 +91942,7 @@ class Signer {
 }
 class VoidSigner extends Signer {
     constructor(address, provider) {
-        logger$e.checkNew(new.target, VoidSigner);
+        logger$o.checkNew(new.target, VoidSigner);
         super();
         defineReadOnly(this, "address", address);
         defineReadOnly(this, "provider", provider || null);
@@ -86614,7 +91952,7 @@ class VoidSigner extends Signer {
     }
     _fail(message, operation) {
         return Promise.resolve().then(() => {
-            logger$e.throwError(message, Logger.errors.UNSUPPORTED_OPERATION, { operation: operation });
+            logger$o.throwError(message, Logger.errors.UNSUPPORTED_OPERATION, { operation: operation });
         });
     }
     signMessage(message) {
@@ -86644,5230 +91982,7 @@ function randomNumBetween(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-var commonjsGlobal$1 = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
-
-function getDefaultExportFromCjs$1 (x) {
-	return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
-}
-
-function createCommonjsModule$1(fn, basedir, module) {
-	return module = {
-		path: basedir,
-		exports: {},
-		require: function (path, base) {
-			return commonjsRequire$1(path, (base === undefined || base === null) ? module.path : base);
-		}
-	}, fn(module, module.exports), module.exports;
-}
-
-function getDefaultExportFromNamespaceIfPresent$1 (n) {
-	return n && Object.prototype.hasOwnProperty.call(n, 'default') ? n['default'] : n;
-}
-
-function getDefaultExportFromNamespaceIfNotNamed$1 (n) {
-	return n && Object.prototype.hasOwnProperty.call(n, 'default') && Object.keys(n).length === 1 ? n['default'] : n;
-}
-
-function getAugmentedNamespace$1(n) {
-	if (n.__esModule) return n;
-	var a = Object.defineProperty({}, '__esModule', {value: true});
-	Object.keys(n).forEach(function (k) {
-		var d = Object.getOwnPropertyDescriptor(n, k);
-		Object.defineProperty(a, k, d.get ? d : {
-			enumerable: true,
-			get: function () {
-				return n[k];
-			}
-		});
-	});
-	return a;
-}
-
-function commonjsRequire$1 () {
-	throw new Error('Dynamic requires are not currently supported by @rollup/plugin-commonjs');
-}
-
-var minimalisticAssert$1 = assert$a;
-
-function assert$a(val, msg) {
-  if (!val)
-    throw new Error(msg || 'Assertion failed');
-}
-
-assert$a.equal = function assertEqual(l, r, msg) {
-  if (l != r)
-    throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
-};
-
-var utils_1$2 = createCommonjsModule$1(function (module, exports) {
-'use strict';
-
-var utils = exports;
-
-function toArray(msg, enc) {
-  if (Array.isArray(msg))
-    return msg.slice();
-  if (!msg)
-    return [];
-  var res = [];
-  if (typeof msg !== 'string') {
-    for (var i = 0; i < msg.length; i++)
-      res[i] = msg[i] | 0;
-    return res;
-  }
-  if (enc === 'hex') {
-    msg = msg.replace(/[^a-z0-9]+/ig, '');
-    if (msg.length % 2 !== 0)
-      msg = '0' + msg;
-    for (var i = 0; i < msg.length; i += 2)
-      res.push(parseInt(msg[i] + msg[i + 1], 16));
-  } else {
-    for (var i = 0; i < msg.length; i++) {
-      var c = msg.charCodeAt(i);
-      var hi = c >> 8;
-      var lo = c & 0xff;
-      if (hi)
-        res.push(hi, lo);
-      else
-        res.push(lo);
-    }
-  }
-  return res;
-}
-utils.toArray = toArray;
-
-function zero2(word) {
-  if (word.length === 1)
-    return '0' + word;
-  else
-    return word;
-}
-utils.zero2 = zero2;
-
-function toHex(msg) {
-  var res = '';
-  for (var i = 0; i < msg.length; i++)
-    res += zero2(msg[i].toString(16));
-  return res;
-}
-utils.toHex = toHex;
-
-utils.encode = function encode(arr, enc) {
-  if (enc === 'hex')
-    return toHex(arr);
-  else
-    return arr;
-};
-});
-
-var utils_1$1$1 = createCommonjsModule$1(function (module, exports) {
-'use strict';
-
-var utils = exports;
-
-
-
-
-utils.assert = minimalisticAssert$1;
-utils.toArray = utils_1$2.toArray;
-utils.zero2 = utils_1$2.zero2;
-utils.toHex = utils_1$2.toHex;
-utils.encode = utils_1$2.encode;
-
-// Represent num in a w-NAF form
-function getNAF(num, w, bits) {
-  var naf = new Array(Math.max(num.bitLength(), bits) + 1);
-  naf.fill(0);
-
-  var ws = 1 << (w + 1);
-  var k = num.clone();
-
-  for (var i = 0; i < naf.length; i++) {
-    var z;
-    var mod = k.andln(ws - 1);
-    if (k.isOdd()) {
-      if (mod > (ws >> 1) - 1)
-        z = (ws >> 1) - mod;
-      else
-        z = mod;
-      k.isubn(z);
-    } else {
-      z = 0;
-    }
-
-    naf[i] = z;
-    k.iushrn(1);
-  }
-
-  return naf;
-}
-utils.getNAF = getNAF;
-
-// Represent k1, k2 in a Joint Sparse Form
-function getJSF(k1, k2) {
-  var jsf = [
-    [],
-    [],
-  ];
-
-  k1 = k1.clone();
-  k2 = k2.clone();
-  var d1 = 0;
-  var d2 = 0;
-  var m8;
-  while (k1.cmpn(-d1) > 0 || k2.cmpn(-d2) > 0) {
-    // First phase
-    var m14 = (k1.andln(3) + d1) & 3;
-    var m24 = (k2.andln(3) + d2) & 3;
-    if (m14 === 3)
-      m14 = -1;
-    if (m24 === 3)
-      m24 = -1;
-    var u1;
-    if ((m14 & 1) === 0) {
-      u1 = 0;
-    } else {
-      m8 = (k1.andln(7) + d1) & 7;
-      if ((m8 === 3 || m8 === 5) && m24 === 2)
-        u1 = -m14;
-      else
-        u1 = m14;
-    }
-    jsf[0].push(u1);
-
-    var u2;
-    if ((m24 & 1) === 0) {
-      u2 = 0;
-    } else {
-      m8 = (k2.andln(7) + d2) & 7;
-      if ((m8 === 3 || m8 === 5) && m14 === 2)
-        u2 = -m24;
-      else
-        u2 = m24;
-    }
-    jsf[1].push(u2);
-
-    // Second phase
-    if (2 * d1 === u1 + 1)
-      d1 = 1 - d1;
-    if (2 * d2 === u2 + 1)
-      d2 = 1 - d2;
-    k1.iushrn(1);
-    k2.iushrn(1);
-  }
-
-  return jsf;
-}
-utils.getJSF = getJSF;
-
-function cachedProperty(obj, name, computer) {
-  var key = '_' + name;
-  obj.prototype[name] = function cachedProperty() {
-    return this[key] !== undefined ? this[key] :
-      this[key] = computer.call(this);
-  };
-}
-utils.cachedProperty = cachedProperty;
-
-function parseBytes(bytes) {
-  return typeof bytes === 'string' ? utils.toArray(bytes, 'hex') :
-    bytes;
-}
-utils.parseBytes = parseBytes;
-
-function intFromLE(bytes) {
-  return new bn(bytes, 'hex', 'le');
-}
-utils.intFromLE = intFromLE;
-});
-
-'use strict';
-
-
-
-var getNAF$1 = utils_1$1$1.getNAF;
-var getJSF$1 = utils_1$1$1.getJSF;
-var assert$1$1 = utils_1$1$1.assert;
-
-function BaseCurve$1(type, conf) {
-  this.type = type;
-  this.p = new bn(conf.p, 16);
-
-  // Use Montgomery, when there is no fast reduction for the prime
-  this.red = conf.prime ? bn.red(conf.prime) : bn.mont(this.p);
-
-  // Useful for many curves
-  this.zero = new bn(0).toRed(this.red);
-  this.one = new bn(1).toRed(this.red);
-  this.two = new bn(2).toRed(this.red);
-
-  // Curve configuration, optional
-  this.n = conf.n && new bn(conf.n, 16);
-  this.g = conf.g && this.pointFromJSON(conf.g, conf.gRed);
-
-  // Temporary arrays
-  this._wnafT1 = new Array(4);
-  this._wnafT2 = new Array(4);
-  this._wnafT3 = new Array(4);
-  this._wnafT4 = new Array(4);
-
-  this._bitLength = this.n ? this.n.bitLength() : 0;
-
-  // Generalized Greg Maxwell's trick
-  var adjustCount = this.n && this.p.div(this.n);
-  if (!adjustCount || adjustCount.cmpn(100) > 0) {
-    this.redN = null;
-  } else {
-    this._maxwellTrick = true;
-    this.redN = this.n.toRed(this.red);
-  }
-}
-var base$1 = BaseCurve$1;
-
-BaseCurve$1.prototype.point = function point() {
-  throw new Error('Not implemented');
-};
-
-BaseCurve$1.prototype.validate = function validate() {
-  throw new Error('Not implemented');
-};
-
-BaseCurve$1.prototype._fixedNafMul = function _fixedNafMul(p, k) {
-  assert$1$1(p.precomputed);
-  var doubles = p._getDoubles();
-
-  var naf = getNAF$1(k, 1, this._bitLength);
-  var I = (1 << (doubles.step + 1)) - (doubles.step % 2 === 0 ? 2 : 1);
-  I /= 3;
-
-  // Translate into more windowed form
-  var repr = [];
-  var j;
-  var nafW;
-  for (j = 0; j < naf.length; j += doubles.step) {
-    nafW = 0;
-    for (var l = j + doubles.step - 1; l >= j; l--)
-      nafW = (nafW << 1) + naf[l];
-    repr.push(nafW);
-  }
-
-  var a = this.jpoint(null, null, null);
-  var b = this.jpoint(null, null, null);
-  for (var i = I; i > 0; i--) {
-    for (j = 0; j < repr.length; j++) {
-      nafW = repr[j];
-      if (nafW === i)
-        b = b.mixedAdd(doubles.points[j]);
-      else if (nafW === -i)
-        b = b.mixedAdd(doubles.points[j].neg());
-    }
-    a = a.add(b);
-  }
-  return a.toP();
-};
-
-BaseCurve$1.prototype._wnafMul = function _wnafMul(p, k) {
-  var w = 4;
-
-  // Precompute window
-  var nafPoints = p._getNAFPoints(w);
-  w = nafPoints.wnd;
-  var wnd = nafPoints.points;
-
-  // Get NAF form
-  var naf = getNAF$1(k, w, this._bitLength);
-
-  // Add `this`*(N+1) for every w-NAF index
-  var acc = this.jpoint(null, null, null);
-  for (var i = naf.length - 1; i >= 0; i--) {
-    // Count zeroes
-    for (var l = 0; i >= 0 && naf[i] === 0; i--)
-      l++;
-    if (i >= 0)
-      l++;
-    acc = acc.dblp(l);
-
-    if (i < 0)
-      break;
-    var z = naf[i];
-    assert$1$1(z !== 0);
-    if (p.type === 'affine') {
-      // J +- P
-      if (z > 0)
-        acc = acc.mixedAdd(wnd[(z - 1) >> 1]);
-      else
-        acc = acc.mixedAdd(wnd[(-z - 1) >> 1].neg());
-    } else {
-      // J +- J
-      if (z > 0)
-        acc = acc.add(wnd[(z - 1) >> 1]);
-      else
-        acc = acc.add(wnd[(-z - 1) >> 1].neg());
-    }
-  }
-  return p.type === 'affine' ? acc.toP() : acc;
-};
-
-BaseCurve$1.prototype._wnafMulAdd = function _wnafMulAdd(defW,
-  points,
-  coeffs,
-  len,
-  jacobianResult) {
-  var wndWidth = this._wnafT1;
-  var wnd = this._wnafT2;
-  var naf = this._wnafT3;
-
-  // Fill all arrays
-  var max = 0;
-  var i;
-  var j;
-  var p;
-  for (i = 0; i < len; i++) {
-    p = points[i];
-    var nafPoints = p._getNAFPoints(defW);
-    wndWidth[i] = nafPoints.wnd;
-    wnd[i] = nafPoints.points;
-  }
-
-  // Comb small window NAFs
-  for (i = len - 1; i >= 1; i -= 2) {
-    var a = i - 1;
-    var b = i;
-    if (wndWidth[a] !== 1 || wndWidth[b] !== 1) {
-      naf[a] = getNAF$1(coeffs[a], wndWidth[a], this._bitLength);
-      naf[b] = getNAF$1(coeffs[b], wndWidth[b], this._bitLength);
-      max = Math.max(naf[a].length, max);
-      max = Math.max(naf[b].length, max);
-      continue;
-    }
-
-    var comb = [
-      points[a], /* 1 */
-      null, /* 3 */
-      null, /* 5 */
-      points[b], /* 7 */
-    ];
-
-    // Try to avoid Projective points, if possible
-    if (points[a].y.cmp(points[b].y) === 0) {
-      comb[1] = points[a].add(points[b]);
-      comb[2] = points[a].toJ().mixedAdd(points[b].neg());
-    } else if (points[a].y.cmp(points[b].y.redNeg()) === 0) {
-      comb[1] = points[a].toJ().mixedAdd(points[b]);
-      comb[2] = points[a].add(points[b].neg());
-    } else {
-      comb[1] = points[a].toJ().mixedAdd(points[b]);
-      comb[2] = points[a].toJ().mixedAdd(points[b].neg());
-    }
-
-    var index = [
-      -3, /* -1 -1 */
-      -1, /* -1 0 */
-      -5, /* -1 1 */
-      -7, /* 0 -1 */
-      0, /* 0 0 */
-      7, /* 0 1 */
-      5, /* 1 -1 */
-      1, /* 1 0 */
-      3,  /* 1 1 */
-    ];
-
-    var jsf = getJSF$1(coeffs[a], coeffs[b]);
-    max = Math.max(jsf[0].length, max);
-    naf[a] = new Array(max);
-    naf[b] = new Array(max);
-    for (j = 0; j < max; j++) {
-      var ja = jsf[0][j] | 0;
-      var jb = jsf[1][j] | 0;
-
-      naf[a][j] = index[(ja + 1) * 3 + (jb + 1)];
-      naf[b][j] = 0;
-      wnd[a] = comb;
-    }
-  }
-
-  var acc = this.jpoint(null, null, null);
-  var tmp = this._wnafT4;
-  for (i = max; i >= 0; i--) {
-    var k = 0;
-
-    while (i >= 0) {
-      var zero = true;
-      for (j = 0; j < len; j++) {
-        tmp[j] = naf[j][i] | 0;
-        if (tmp[j] !== 0)
-          zero = false;
-      }
-      if (!zero)
-        break;
-      k++;
-      i--;
-    }
-    if (i >= 0)
-      k++;
-    acc = acc.dblp(k);
-    if (i < 0)
-      break;
-
-    for (j = 0; j < len; j++) {
-      var z = tmp[j];
-      p;
-      if (z === 0)
-        continue;
-      else if (z > 0)
-        p = wnd[j][(z - 1) >> 1];
-      else if (z < 0)
-        p = wnd[j][(-z - 1) >> 1].neg();
-
-      if (p.type === 'affine')
-        acc = acc.mixedAdd(p);
-      else
-        acc = acc.add(p);
-    }
-  }
-  // Zeroify references
-  for (i = 0; i < len; i++)
-    wnd[i] = null;
-
-  if (jacobianResult)
-    return acc;
-  else
-    return acc.toP();
-};
-
-function BasePoint$1(curve, type) {
-  this.curve = curve;
-  this.type = type;
-  this.precomputed = null;
-}
-BaseCurve$1.BasePoint = BasePoint$1;
-
-BasePoint$1.prototype.eq = function eq(/*other*/) {
-  throw new Error('Not implemented');
-};
-
-BasePoint$1.prototype.validate = function validate() {
-  return this.curve.validate(this);
-};
-
-BaseCurve$1.prototype.decodePoint = function decodePoint(bytes, enc) {
-  bytes = utils_1$1$1.toArray(bytes, enc);
-
-  var len = this.p.byteLength();
-
-  // uncompressed, hybrid-odd, hybrid-even
-  if ((bytes[0] === 0x04 || bytes[0] === 0x06 || bytes[0] === 0x07) &&
-      bytes.length - 1 === 2 * len) {
-    if (bytes[0] === 0x06)
-      assert$1$1(bytes[bytes.length - 1] % 2 === 0);
-    else if (bytes[0] === 0x07)
-      assert$1$1(bytes[bytes.length - 1] % 2 === 1);
-
-    var res =  this.point(bytes.slice(1, 1 + len),
-      bytes.slice(1 + len, 1 + 2 * len));
-
-    return res;
-  } else if ((bytes[0] === 0x02 || bytes[0] === 0x03) &&
-              bytes.length - 1 === len) {
-    return this.pointFromX(bytes.slice(1, 1 + len), bytes[0] === 0x03);
-  }
-  throw new Error('Unknown point format');
-};
-
-BasePoint$1.prototype.encodeCompressed = function encodeCompressed(enc) {
-  return this.encode(enc, true);
-};
-
-BasePoint$1.prototype._encode = function _encode(compact) {
-  var len = this.curve.p.byteLength();
-  var x = this.getX().toArray('be', len);
-
-  if (compact)
-    return [ this.getY().isEven() ? 0x02 : 0x03 ].concat(x);
-
-  return [ 0x04 ].concat(x, this.getY().toArray('be', len));
-};
-
-BasePoint$1.prototype.encode = function encode(enc, compact) {
-  return utils_1$1$1.encode(this._encode(compact), enc);
-};
-
-BasePoint$1.prototype.precompute = function precompute(power) {
-  if (this.precomputed)
-    return this;
-
-  var precomputed = {
-    doubles: null,
-    naf: null,
-    beta: null,
-  };
-  precomputed.naf = this._getNAFPoints(8);
-  precomputed.doubles = this._getDoubles(4, power);
-  precomputed.beta = this._getBeta();
-  this.precomputed = precomputed;
-
-  return this;
-};
-
-BasePoint$1.prototype._hasDoubles = function _hasDoubles(k) {
-  if (!this.precomputed)
-    return false;
-
-  var doubles = this.precomputed.doubles;
-  if (!doubles)
-    return false;
-
-  return doubles.points.length >= Math.ceil((k.bitLength() + 1) / doubles.step);
-};
-
-BasePoint$1.prototype._getDoubles = function _getDoubles(step, power) {
-  if (this.precomputed && this.precomputed.doubles)
-    return this.precomputed.doubles;
-
-  var doubles = [ this ];
-  var acc = this;
-  for (var i = 0; i < power; i += step) {
-    for (var j = 0; j < step; j++)
-      acc = acc.dbl();
-    doubles.push(acc);
-  }
-  return {
-    step: step,
-    points: doubles,
-  };
-};
-
-BasePoint$1.prototype._getNAFPoints = function _getNAFPoints(wnd) {
-  if (this.precomputed && this.precomputed.naf)
-    return this.precomputed.naf;
-
-  var res = [ this ];
-  var max = (1 << wnd) - 1;
-  var dbl = max === 1 ? null : this.dbl();
-  for (var i = 1; i < max; i++)
-    res[i] = res[i - 1].add(dbl);
-  return {
-    wnd: wnd,
-    points: res,
-  };
-};
-
-BasePoint$1.prototype._getBeta = function _getBeta() {
-  return null;
-};
-
-BasePoint$1.prototype.dblp = function dblp(k) {
-  var r = this;
-  for (var i = 0; i < k; i++)
-    r = r.dbl();
-  return r;
-};
-
-var inherits_browser$1 = createCommonjsModule$1(function (module) {
-if (typeof Object.create === 'function') {
-  // implementation from standard node.js 'util' module
-  module.exports = function inherits(ctor, superCtor) {
-    if (superCtor) {
-      ctor.super_ = superCtor;
-      ctor.prototype = Object.create(superCtor.prototype, {
-        constructor: {
-          value: ctor,
-          enumerable: false,
-          writable: true,
-          configurable: true
-        }
-      });
-    }
-  };
-} else {
-  // old school shim for old browsers
-  module.exports = function inherits(ctor, superCtor) {
-    if (superCtor) {
-      ctor.super_ = superCtor;
-      var TempCtor = function () {};
-      TempCtor.prototype = superCtor.prototype;
-      ctor.prototype = new TempCtor();
-      ctor.prototype.constructor = ctor;
-    }
-  };
-}
-});
-
-'use strict';
-
-
-
-
-
-
-var assert$2$1 = utils_1$1$1.assert;
-
-function ShortCurve$1(conf) {
-  base$1.call(this, 'short', conf);
-
-  this.a = new bn(conf.a, 16).toRed(this.red);
-  this.b = new bn(conf.b, 16).toRed(this.red);
-  this.tinv = this.two.redInvm();
-
-  this.zeroA = this.a.fromRed().cmpn(0) === 0;
-  this.threeA = this.a.fromRed().sub(this.p).cmpn(-3) === 0;
-
-  // If the curve is endomorphic, precalculate beta and lambda
-  this.endo = this._getEndomorphism(conf);
-  this._endoWnafT1 = new Array(4);
-  this._endoWnafT2 = new Array(4);
-}
-inherits_browser$1(ShortCurve$1, base$1);
-var short_1$1 = ShortCurve$1;
-
-ShortCurve$1.prototype._getEndomorphism = function _getEndomorphism(conf) {
-  // No efficient endomorphism
-  if (!this.zeroA || !this.g || !this.n || this.p.modn(3) !== 1)
-    return;
-
-  // Compute beta and lambda, that lambda * P = (beta * Px; Py)
-  var beta;
-  var lambda;
-  if (conf.beta) {
-    beta = new bn(conf.beta, 16).toRed(this.red);
-  } else {
-    var betas = this._getEndoRoots(this.p);
-    // Choose the smallest beta
-    beta = betas[0].cmp(betas[1]) < 0 ? betas[0] : betas[1];
-    beta = beta.toRed(this.red);
-  }
-  if (conf.lambda) {
-    lambda = new bn(conf.lambda, 16);
-  } else {
-    // Choose the lambda that is matching selected beta
-    var lambdas = this._getEndoRoots(this.n);
-    if (this.g.mul(lambdas[0]).x.cmp(this.g.x.redMul(beta)) === 0) {
-      lambda = lambdas[0];
-    } else {
-      lambda = lambdas[1];
-      assert$2$1(this.g.mul(lambda).x.cmp(this.g.x.redMul(beta)) === 0);
-    }
-  }
-
-  // Get basis vectors, used for balanced length-two representation
-  var basis;
-  if (conf.basis) {
-    basis = conf.basis.map(function(vec) {
-      return {
-        a: new bn(vec.a, 16),
-        b: new bn(vec.b, 16),
-      };
-    });
-  } else {
-    basis = this._getEndoBasis(lambda);
-  }
-
-  return {
-    beta: beta,
-    lambda: lambda,
-    basis: basis,
-  };
-};
-
-ShortCurve$1.prototype._getEndoRoots = function _getEndoRoots(num) {
-  // Find roots of for x^2 + x + 1 in F
-  // Root = (-1 +- Sqrt(-3)) / 2
-  //
-  var red = num === this.p ? this.red : bn.mont(num);
-  var tinv = new bn(2).toRed(red).redInvm();
-  var ntinv = tinv.redNeg();
-
-  var s = new bn(3).toRed(red).redNeg().redSqrt().redMul(tinv);
-
-  var l1 = ntinv.redAdd(s).fromRed();
-  var l2 = ntinv.redSub(s).fromRed();
-  return [ l1, l2 ];
-};
-
-ShortCurve$1.prototype._getEndoBasis = function _getEndoBasis(lambda) {
-  // aprxSqrt >= sqrt(this.n)
-  var aprxSqrt = this.n.ushrn(Math.floor(this.n.bitLength() / 2));
-
-  // 3.74
-  // Run EGCD, until r(L + 1) < aprxSqrt
-  var u = lambda;
-  var v = this.n.clone();
-  var x1 = new bn(1);
-  var y1 = new bn(0);
-  var x2 = new bn(0);
-  var y2 = new bn(1);
-
-  // NOTE: all vectors are roots of: a + b * lambda = 0 (mod n)
-  var a0;
-  var b0;
-  // First vector
-  var a1;
-  var b1;
-  // Second vector
-  var a2;
-  var b2;
-
-  var prevR;
-  var i = 0;
-  var r;
-  var x;
-  while (u.cmpn(0) !== 0) {
-    var q = v.div(u);
-    r = v.sub(q.mul(u));
-    x = x2.sub(q.mul(x1));
-    var y = y2.sub(q.mul(y1));
-
-    if (!a1 && r.cmp(aprxSqrt) < 0) {
-      a0 = prevR.neg();
-      b0 = x1;
-      a1 = r.neg();
-      b1 = x;
-    } else if (a1 && ++i === 2) {
-      break;
-    }
-    prevR = r;
-
-    v = u;
-    u = r;
-    x2 = x1;
-    x1 = x;
-    y2 = y1;
-    y1 = y;
-  }
-  a2 = r.neg();
-  b2 = x;
-
-  var len1 = a1.sqr().add(b1.sqr());
-  var len2 = a2.sqr().add(b2.sqr());
-  if (len2.cmp(len1) >= 0) {
-    a2 = a0;
-    b2 = b0;
-  }
-
-  // Normalize signs
-  if (a1.negative) {
-    a1 = a1.neg();
-    b1 = b1.neg();
-  }
-  if (a2.negative) {
-    a2 = a2.neg();
-    b2 = b2.neg();
-  }
-
-  return [
-    { a: a1, b: b1 },
-    { a: a2, b: b2 },
-  ];
-};
-
-ShortCurve$1.prototype._endoSplit = function _endoSplit(k) {
-  var basis = this.endo.basis;
-  var v1 = basis[0];
-  var v2 = basis[1];
-
-  var c1 = v2.b.mul(k).divRound(this.n);
-  var c2 = v1.b.neg().mul(k).divRound(this.n);
-
-  var p1 = c1.mul(v1.a);
-  var p2 = c2.mul(v2.a);
-  var q1 = c1.mul(v1.b);
-  var q2 = c2.mul(v2.b);
-
-  // Calculate answer
-  var k1 = k.sub(p1).sub(p2);
-  var k2 = q1.add(q2).neg();
-  return { k1: k1, k2: k2 };
-};
-
-ShortCurve$1.prototype.pointFromX = function pointFromX(x, odd) {
-  x = new bn(x, 16);
-  if (!x.red)
-    x = x.toRed(this.red);
-
-  var y2 = x.redSqr().redMul(x).redIAdd(x.redMul(this.a)).redIAdd(this.b);
-  var y = y2.redSqrt();
-  if (y.redSqr().redSub(y2).cmp(this.zero) !== 0)
-    throw new Error('invalid point');
-
-  // XXX Is there any way to tell if the number is odd without converting it
-  // to non-red form?
-  var isOdd = y.fromRed().isOdd();
-  if (odd && !isOdd || !odd && isOdd)
-    y = y.redNeg();
-
-  return this.point(x, y);
-};
-
-ShortCurve$1.prototype.validate = function validate(point) {
-  if (point.inf)
-    return true;
-
-  var x = point.x;
-  var y = point.y;
-
-  var ax = this.a.redMul(x);
-  var rhs = x.redSqr().redMul(x).redIAdd(ax).redIAdd(this.b);
-  return y.redSqr().redISub(rhs).cmpn(0) === 0;
-};
-
-ShortCurve$1.prototype._endoWnafMulAdd =
-    function _endoWnafMulAdd(points, coeffs, jacobianResult) {
-      var npoints = this._endoWnafT1;
-      var ncoeffs = this._endoWnafT2;
-      for (var i = 0; i < points.length; i++) {
-        var split = this._endoSplit(coeffs[i]);
-        var p = points[i];
-        var beta = p._getBeta();
-
-        if (split.k1.negative) {
-          split.k1.ineg();
-          p = p.neg(true);
-        }
-        if (split.k2.negative) {
-          split.k2.ineg();
-          beta = beta.neg(true);
-        }
-
-        npoints[i * 2] = p;
-        npoints[i * 2 + 1] = beta;
-        ncoeffs[i * 2] = split.k1;
-        ncoeffs[i * 2 + 1] = split.k2;
-      }
-      var res = this._wnafMulAdd(1, npoints, ncoeffs, i * 2, jacobianResult);
-
-      // Clean-up references to points and coefficients
-      for (var j = 0; j < i * 2; j++) {
-        npoints[j] = null;
-        ncoeffs[j] = null;
-      }
-      return res;
-    };
-
-function Point$3(curve, x, y, isRed) {
-  base$1.BasePoint.call(this, curve, 'affine');
-  if (x === null && y === null) {
-    this.x = null;
-    this.y = null;
-    this.inf = true;
-  } else {
-    this.x = new bn(x, 16);
-    this.y = new bn(y, 16);
-    // Force redgomery representation when loading from JSON
-    if (isRed) {
-      this.x.forceRed(this.curve.red);
-      this.y.forceRed(this.curve.red);
-    }
-    if (!this.x.red)
-      this.x = this.x.toRed(this.curve.red);
-    if (!this.y.red)
-      this.y = this.y.toRed(this.curve.red);
-    this.inf = false;
-  }
-}
-inherits_browser$1(Point$3, base$1.BasePoint);
-
-ShortCurve$1.prototype.point = function point(x, y, isRed) {
-  return new Point$3(this, x, y, isRed);
-};
-
-ShortCurve$1.prototype.pointFromJSON = function pointFromJSON(obj, red) {
-  return Point$3.fromJSON(this, obj, red);
-};
-
-Point$3.prototype._getBeta = function _getBeta() {
-  if (!this.curve.endo)
-    return;
-
-  var pre = this.precomputed;
-  if (pre && pre.beta)
-    return pre.beta;
-
-  var beta = this.curve.point(this.x.redMul(this.curve.endo.beta), this.y);
-  if (pre) {
-    var curve = this.curve;
-    var endoMul = function(p) {
-      return curve.point(p.x.redMul(curve.endo.beta), p.y);
-    };
-    pre.beta = beta;
-    beta.precomputed = {
-      beta: null,
-      naf: pre.naf && {
-        wnd: pre.naf.wnd,
-        points: pre.naf.points.map(endoMul),
-      },
-      doubles: pre.doubles && {
-        step: pre.doubles.step,
-        points: pre.doubles.points.map(endoMul),
-      },
-    };
-  }
-  return beta;
-};
-
-Point$3.prototype.toJSON = function toJSON() {
-  if (!this.precomputed)
-    return [ this.x, this.y ];
-
-  return [ this.x, this.y, this.precomputed && {
-    doubles: this.precomputed.doubles && {
-      step: this.precomputed.doubles.step,
-      points: this.precomputed.doubles.points.slice(1),
-    },
-    naf: this.precomputed.naf && {
-      wnd: this.precomputed.naf.wnd,
-      points: this.precomputed.naf.points.slice(1),
-    },
-  } ];
-};
-
-Point$3.fromJSON = function fromJSON(curve, obj, red) {
-  if (typeof obj === 'string')
-    obj = JSON.parse(obj);
-  var res = curve.point(obj[0], obj[1], red);
-  if (!obj[2])
-    return res;
-
-  function obj2point(obj) {
-    return curve.point(obj[0], obj[1], red);
-  }
-
-  var pre = obj[2];
-  res.precomputed = {
-    beta: null,
-    doubles: pre.doubles && {
-      step: pre.doubles.step,
-      points: [ res ].concat(pre.doubles.points.map(obj2point)),
-    },
-    naf: pre.naf && {
-      wnd: pre.naf.wnd,
-      points: [ res ].concat(pre.naf.points.map(obj2point)),
-    },
-  };
-  return res;
-};
-
-Point$3.prototype.inspect = function inspect() {
-  if (this.isInfinity())
-    return '<EC Point Infinity>';
-  return '<EC Point x: ' + this.x.fromRed().toString(16, 2) +
-      ' y: ' + this.y.fromRed().toString(16, 2) + '>';
-};
-
-Point$3.prototype.isInfinity = function isInfinity() {
-  return this.inf;
-};
-
-Point$3.prototype.add = function add(p) {
-  // O + P = P
-  if (this.inf)
-    return p;
-
-  // P + O = P
-  if (p.inf)
-    return this;
-
-  // P + P = 2P
-  if (this.eq(p))
-    return this.dbl();
-
-  // P + (-P) = O
-  if (this.neg().eq(p))
-    return this.curve.point(null, null);
-
-  // P + Q = O
-  if (this.x.cmp(p.x) === 0)
-    return this.curve.point(null, null);
-
-  var c = this.y.redSub(p.y);
-  if (c.cmpn(0) !== 0)
-    c = c.redMul(this.x.redSub(p.x).redInvm());
-  var nx = c.redSqr().redISub(this.x).redISub(p.x);
-  var ny = c.redMul(this.x.redSub(nx)).redISub(this.y);
-  return this.curve.point(nx, ny);
-};
-
-Point$3.prototype.dbl = function dbl() {
-  if (this.inf)
-    return this;
-
-  // 2P = O
-  var ys1 = this.y.redAdd(this.y);
-  if (ys1.cmpn(0) === 0)
-    return this.curve.point(null, null);
-
-  var a = this.curve.a;
-
-  var x2 = this.x.redSqr();
-  var dyinv = ys1.redInvm();
-  var c = x2.redAdd(x2).redIAdd(x2).redIAdd(a).redMul(dyinv);
-
-  var nx = c.redSqr().redISub(this.x.redAdd(this.x));
-  var ny = c.redMul(this.x.redSub(nx)).redISub(this.y);
-  return this.curve.point(nx, ny);
-};
-
-Point$3.prototype.getX = function getX() {
-  return this.x.fromRed();
-};
-
-Point$3.prototype.getY = function getY() {
-  return this.y.fromRed();
-};
-
-Point$3.prototype.mul = function mul(k) {
-  k = new bn(k, 16);
-  if (this.isInfinity())
-    return this;
-  else if (this._hasDoubles(k))
-    return this.curve._fixedNafMul(this, k);
-  else if (this.curve.endo)
-    return this.curve._endoWnafMulAdd([ this ], [ k ]);
-  else
-    return this.curve._wnafMul(this, k);
-};
-
-Point$3.prototype.mulAdd = function mulAdd(k1, p2, k2) {
-  var points = [ this, p2 ];
-  var coeffs = [ k1, k2 ];
-  if (this.curve.endo)
-    return this.curve._endoWnafMulAdd(points, coeffs);
-  else
-    return this.curve._wnafMulAdd(1, points, coeffs, 2);
-};
-
-Point$3.prototype.jmulAdd = function jmulAdd(k1, p2, k2) {
-  var points = [ this, p2 ];
-  var coeffs = [ k1, k2 ];
-  if (this.curve.endo)
-    return this.curve._endoWnafMulAdd(points, coeffs, true);
-  else
-    return this.curve._wnafMulAdd(1, points, coeffs, 2, true);
-};
-
-Point$3.prototype.eq = function eq(p) {
-  return this === p ||
-         this.inf === p.inf &&
-             (this.inf || this.x.cmp(p.x) === 0 && this.y.cmp(p.y) === 0);
-};
-
-Point$3.prototype.neg = function neg(_precompute) {
-  if (this.inf)
-    return this;
-
-  var res = this.curve.point(this.x, this.y.redNeg());
-  if (_precompute && this.precomputed) {
-    var pre = this.precomputed;
-    var negate = function(p) {
-      return p.neg();
-    };
-    res.precomputed = {
-      naf: pre.naf && {
-        wnd: pre.naf.wnd,
-        points: pre.naf.points.map(negate),
-      },
-      doubles: pre.doubles && {
-        step: pre.doubles.step,
-        points: pre.doubles.points.map(negate),
-      },
-    };
-  }
-  return res;
-};
-
-Point$3.prototype.toJ = function toJ() {
-  if (this.inf)
-    return this.curve.jpoint(null, null, null);
-
-  var res = this.curve.jpoint(this.x, this.y, this.curve.one);
-  return res;
-};
-
-function JPoint$1(curve, x, y, z) {
-  base$1.BasePoint.call(this, curve, 'jacobian');
-  if (x === null && y === null && z === null) {
-    this.x = this.curve.one;
-    this.y = this.curve.one;
-    this.z = new bn(0);
-  } else {
-    this.x = new bn(x, 16);
-    this.y = new bn(y, 16);
-    this.z = new bn(z, 16);
-  }
-  if (!this.x.red)
-    this.x = this.x.toRed(this.curve.red);
-  if (!this.y.red)
-    this.y = this.y.toRed(this.curve.red);
-  if (!this.z.red)
-    this.z = this.z.toRed(this.curve.red);
-
-  this.zOne = this.z === this.curve.one;
-}
-inherits_browser$1(JPoint$1, base$1.BasePoint);
-
-ShortCurve$1.prototype.jpoint = function jpoint(x, y, z) {
-  return new JPoint$1(this, x, y, z);
-};
-
-JPoint$1.prototype.toP = function toP() {
-  if (this.isInfinity())
-    return this.curve.point(null, null);
-
-  var zinv = this.z.redInvm();
-  var zinv2 = zinv.redSqr();
-  var ax = this.x.redMul(zinv2);
-  var ay = this.y.redMul(zinv2).redMul(zinv);
-
-  return this.curve.point(ax, ay);
-};
-
-JPoint$1.prototype.neg = function neg() {
-  return this.curve.jpoint(this.x, this.y.redNeg(), this.z);
-};
-
-JPoint$1.prototype.add = function add(p) {
-  // O + P = P
-  if (this.isInfinity())
-    return p;
-
-  // P + O = P
-  if (p.isInfinity())
-    return this;
-
-  // 12M + 4S + 7A
-  var pz2 = p.z.redSqr();
-  var z2 = this.z.redSqr();
-  var u1 = this.x.redMul(pz2);
-  var u2 = p.x.redMul(z2);
-  var s1 = this.y.redMul(pz2.redMul(p.z));
-  var s2 = p.y.redMul(z2.redMul(this.z));
-
-  var h = u1.redSub(u2);
-  var r = s1.redSub(s2);
-  if (h.cmpn(0) === 0) {
-    if (r.cmpn(0) !== 0)
-      return this.curve.jpoint(null, null, null);
-    else
-      return this.dbl();
-  }
-
-  var h2 = h.redSqr();
-  var h3 = h2.redMul(h);
-  var v = u1.redMul(h2);
-
-  var nx = r.redSqr().redIAdd(h3).redISub(v).redISub(v);
-  var ny = r.redMul(v.redISub(nx)).redISub(s1.redMul(h3));
-  var nz = this.z.redMul(p.z).redMul(h);
-
-  return this.curve.jpoint(nx, ny, nz);
-};
-
-JPoint$1.prototype.mixedAdd = function mixedAdd(p) {
-  // O + P = P
-  if (this.isInfinity())
-    return p.toJ();
-
-  // P + O = P
-  if (p.isInfinity())
-    return this;
-
-  // 8M + 3S + 7A
-  var z2 = this.z.redSqr();
-  var u1 = this.x;
-  var u2 = p.x.redMul(z2);
-  var s1 = this.y;
-  var s2 = p.y.redMul(z2).redMul(this.z);
-
-  var h = u1.redSub(u2);
-  var r = s1.redSub(s2);
-  if (h.cmpn(0) === 0) {
-    if (r.cmpn(0) !== 0)
-      return this.curve.jpoint(null, null, null);
-    else
-      return this.dbl();
-  }
-
-  var h2 = h.redSqr();
-  var h3 = h2.redMul(h);
-  var v = u1.redMul(h2);
-
-  var nx = r.redSqr().redIAdd(h3).redISub(v).redISub(v);
-  var ny = r.redMul(v.redISub(nx)).redISub(s1.redMul(h3));
-  var nz = this.z.redMul(h);
-
-  return this.curve.jpoint(nx, ny, nz);
-};
-
-JPoint$1.prototype.dblp = function dblp(pow) {
-  if (pow === 0)
-    return this;
-  if (this.isInfinity())
-    return this;
-  if (!pow)
-    return this.dbl();
-
-  var i;
-  if (this.curve.zeroA || this.curve.threeA) {
-    var r = this;
-    for (i = 0; i < pow; i++)
-      r = r.dbl();
-    return r;
-  }
-
-  // 1M + 2S + 1A + N * (4S + 5M + 8A)
-  // N = 1 => 6M + 6S + 9A
-  var a = this.curve.a;
-  var tinv = this.curve.tinv;
-
-  var jx = this.x;
-  var jy = this.y;
-  var jz = this.z;
-  var jz4 = jz.redSqr().redSqr();
-
-  // Reuse results
-  var jyd = jy.redAdd(jy);
-  for (i = 0; i < pow; i++) {
-    var jx2 = jx.redSqr();
-    var jyd2 = jyd.redSqr();
-    var jyd4 = jyd2.redSqr();
-    var c = jx2.redAdd(jx2).redIAdd(jx2).redIAdd(a.redMul(jz4));
-
-    var t1 = jx.redMul(jyd2);
-    var nx = c.redSqr().redISub(t1.redAdd(t1));
-    var t2 = t1.redISub(nx);
-    var dny = c.redMul(t2);
-    dny = dny.redIAdd(dny).redISub(jyd4);
-    var nz = jyd.redMul(jz);
-    if (i + 1 < pow)
-      jz4 = jz4.redMul(jyd4);
-
-    jx = nx;
-    jz = nz;
-    jyd = dny;
-  }
-
-  return this.curve.jpoint(jx, jyd.redMul(tinv), jz);
-};
-
-JPoint$1.prototype.dbl = function dbl() {
-  if (this.isInfinity())
-    return this;
-
-  if (this.curve.zeroA)
-    return this._zeroDbl();
-  else if (this.curve.threeA)
-    return this._threeDbl();
-  else
-    return this._dbl();
-};
-
-JPoint$1.prototype._zeroDbl = function _zeroDbl() {
-  var nx;
-  var ny;
-  var nz;
-  // Z = 1
-  if (this.zOne) {
-    // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html
-    //     #doubling-mdbl-2007-bl
-    // 1M + 5S + 14A
-
-    // XX = X1^2
-    var xx = this.x.redSqr();
-    // YY = Y1^2
-    var yy = this.y.redSqr();
-    // YYYY = YY^2
-    var yyyy = yy.redSqr();
-    // S = 2 * ((X1 + YY)^2 - XX - YYYY)
-    var s = this.x.redAdd(yy).redSqr().redISub(xx).redISub(yyyy);
-    s = s.redIAdd(s);
-    // M = 3 * XX + a; a = 0
-    var m = xx.redAdd(xx).redIAdd(xx);
-    // T = M ^ 2 - 2*S
-    var t = m.redSqr().redISub(s).redISub(s);
-
-    // 8 * YYYY
-    var yyyy8 = yyyy.redIAdd(yyyy);
-    yyyy8 = yyyy8.redIAdd(yyyy8);
-    yyyy8 = yyyy8.redIAdd(yyyy8);
-
-    // X3 = T
-    nx = t;
-    // Y3 = M * (S - T) - 8 * YYYY
-    ny = m.redMul(s.redISub(t)).redISub(yyyy8);
-    // Z3 = 2*Y1
-    nz = this.y.redAdd(this.y);
-  } else {
-    // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html
-    //     #doubling-dbl-2009-l
-    // 2M + 5S + 13A
-
-    // A = X1^2
-    var a = this.x.redSqr();
-    // B = Y1^2
-    var b = this.y.redSqr();
-    // C = B^2
-    var c = b.redSqr();
-    // D = 2 * ((X1 + B)^2 - A - C)
-    var d = this.x.redAdd(b).redSqr().redISub(a).redISub(c);
-    d = d.redIAdd(d);
-    // E = 3 * A
-    var e = a.redAdd(a).redIAdd(a);
-    // F = E^2
-    var f = e.redSqr();
-
-    // 8 * C
-    var c8 = c.redIAdd(c);
-    c8 = c8.redIAdd(c8);
-    c8 = c8.redIAdd(c8);
-
-    // X3 = F - 2 * D
-    nx = f.redISub(d).redISub(d);
-    // Y3 = E * (D - X3) - 8 * C
-    ny = e.redMul(d.redISub(nx)).redISub(c8);
-    // Z3 = 2 * Y1 * Z1
-    nz = this.y.redMul(this.z);
-    nz = nz.redIAdd(nz);
-  }
-
-  return this.curve.jpoint(nx, ny, nz);
-};
-
-JPoint$1.prototype._threeDbl = function _threeDbl() {
-  var nx;
-  var ny;
-  var nz;
-  // Z = 1
-  if (this.zOne) {
-    // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html
-    //     #doubling-mdbl-2007-bl
-    // 1M + 5S + 15A
-
-    // XX = X1^2
-    var xx = this.x.redSqr();
-    // YY = Y1^2
-    var yy = this.y.redSqr();
-    // YYYY = YY^2
-    var yyyy = yy.redSqr();
-    // S = 2 * ((X1 + YY)^2 - XX - YYYY)
-    var s = this.x.redAdd(yy).redSqr().redISub(xx).redISub(yyyy);
-    s = s.redIAdd(s);
-    // M = 3 * XX + a
-    var m = xx.redAdd(xx).redIAdd(xx).redIAdd(this.curve.a);
-    // T = M^2 - 2 * S
-    var t = m.redSqr().redISub(s).redISub(s);
-    // X3 = T
-    nx = t;
-    // Y3 = M * (S - T) - 8 * YYYY
-    var yyyy8 = yyyy.redIAdd(yyyy);
-    yyyy8 = yyyy8.redIAdd(yyyy8);
-    yyyy8 = yyyy8.redIAdd(yyyy8);
-    ny = m.redMul(s.redISub(t)).redISub(yyyy8);
-    // Z3 = 2 * Y1
-    nz = this.y.redAdd(this.y);
-  } else {
-    // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-3.html#doubling-dbl-2001-b
-    // 3M + 5S
-
-    // delta = Z1^2
-    var delta = this.z.redSqr();
-    // gamma = Y1^2
-    var gamma = this.y.redSqr();
-    // beta = X1 * gamma
-    var beta = this.x.redMul(gamma);
-    // alpha = 3 * (X1 - delta) * (X1 + delta)
-    var alpha = this.x.redSub(delta).redMul(this.x.redAdd(delta));
-    alpha = alpha.redAdd(alpha).redIAdd(alpha);
-    // X3 = alpha^2 - 8 * beta
-    var beta4 = beta.redIAdd(beta);
-    beta4 = beta4.redIAdd(beta4);
-    var beta8 = beta4.redAdd(beta4);
-    nx = alpha.redSqr().redISub(beta8);
-    // Z3 = (Y1 + Z1)^2 - gamma - delta
-    nz = this.y.redAdd(this.z).redSqr().redISub(gamma).redISub(delta);
-    // Y3 = alpha * (4 * beta - X3) - 8 * gamma^2
-    var ggamma8 = gamma.redSqr();
-    ggamma8 = ggamma8.redIAdd(ggamma8);
-    ggamma8 = ggamma8.redIAdd(ggamma8);
-    ggamma8 = ggamma8.redIAdd(ggamma8);
-    ny = alpha.redMul(beta4.redISub(nx)).redISub(ggamma8);
-  }
-
-  return this.curve.jpoint(nx, ny, nz);
-};
-
-JPoint$1.prototype._dbl = function _dbl() {
-  var a = this.curve.a;
-
-  // 4M + 6S + 10A
-  var jx = this.x;
-  var jy = this.y;
-  var jz = this.z;
-  var jz4 = jz.redSqr().redSqr();
-
-  var jx2 = jx.redSqr();
-  var jy2 = jy.redSqr();
-
-  var c = jx2.redAdd(jx2).redIAdd(jx2).redIAdd(a.redMul(jz4));
-
-  var jxd4 = jx.redAdd(jx);
-  jxd4 = jxd4.redIAdd(jxd4);
-  var t1 = jxd4.redMul(jy2);
-  var nx = c.redSqr().redISub(t1.redAdd(t1));
-  var t2 = t1.redISub(nx);
-
-  var jyd8 = jy2.redSqr();
-  jyd8 = jyd8.redIAdd(jyd8);
-  jyd8 = jyd8.redIAdd(jyd8);
-  jyd8 = jyd8.redIAdd(jyd8);
-  var ny = c.redMul(t2).redISub(jyd8);
-  var nz = jy.redAdd(jy).redMul(jz);
-
-  return this.curve.jpoint(nx, ny, nz);
-};
-
-JPoint$1.prototype.trpl = function trpl() {
-  if (!this.curve.zeroA)
-    return this.dbl().add(this);
-
-  // hyperelliptic.org/EFD/g1p/auto-shortw-jacobian-0.html#tripling-tpl-2007-bl
-  // 5M + 10S + ...
-
-  // XX = X1^2
-  var xx = this.x.redSqr();
-  // YY = Y1^2
-  var yy = this.y.redSqr();
-  // ZZ = Z1^2
-  var zz = this.z.redSqr();
-  // YYYY = YY^2
-  var yyyy = yy.redSqr();
-  // M = 3 * XX + a * ZZ2; a = 0
-  var m = xx.redAdd(xx).redIAdd(xx);
-  // MM = M^2
-  var mm = m.redSqr();
-  // E = 6 * ((X1 + YY)^2 - XX - YYYY) - MM
-  var e = this.x.redAdd(yy).redSqr().redISub(xx).redISub(yyyy);
-  e = e.redIAdd(e);
-  e = e.redAdd(e).redIAdd(e);
-  e = e.redISub(mm);
-  // EE = E^2
-  var ee = e.redSqr();
-  // T = 16*YYYY
-  var t = yyyy.redIAdd(yyyy);
-  t = t.redIAdd(t);
-  t = t.redIAdd(t);
-  t = t.redIAdd(t);
-  // U = (M + E)^2 - MM - EE - T
-  var u = m.redIAdd(e).redSqr().redISub(mm).redISub(ee).redISub(t);
-  // X3 = 4 * (X1 * EE - 4 * YY * U)
-  var yyu4 = yy.redMul(u);
-  yyu4 = yyu4.redIAdd(yyu4);
-  yyu4 = yyu4.redIAdd(yyu4);
-  var nx = this.x.redMul(ee).redISub(yyu4);
-  nx = nx.redIAdd(nx);
-  nx = nx.redIAdd(nx);
-  // Y3 = 8 * Y1 * (U * (T - U) - E * EE)
-  var ny = this.y.redMul(u.redMul(t.redISub(u)).redISub(e.redMul(ee)));
-  ny = ny.redIAdd(ny);
-  ny = ny.redIAdd(ny);
-  ny = ny.redIAdd(ny);
-  // Z3 = (Z1 + E)^2 - ZZ - EE
-  var nz = this.z.redAdd(e).redSqr().redISub(zz).redISub(ee);
-
-  return this.curve.jpoint(nx, ny, nz);
-};
-
-JPoint$1.prototype.mul = function mul(k, kbase) {
-  k = new bn(k, kbase);
-
-  return this.curve._wnafMul(this, k);
-};
-
-JPoint$1.prototype.eq = function eq(p) {
-  if (p.type === 'affine')
-    return this.eq(p.toJ());
-
-  if (this === p)
-    return true;
-
-  // x1 * z2^2 == x2 * z1^2
-  var z2 = this.z.redSqr();
-  var pz2 = p.z.redSqr();
-  if (this.x.redMul(pz2).redISub(p.x.redMul(z2)).cmpn(0) !== 0)
-    return false;
-
-  // y1 * z2^3 == y2 * z1^3
-  var z3 = z2.redMul(this.z);
-  var pz3 = pz2.redMul(p.z);
-  return this.y.redMul(pz3).redISub(p.y.redMul(z3)).cmpn(0) === 0;
-};
-
-JPoint$1.prototype.eqXToP = function eqXToP(x) {
-  var zs = this.z.redSqr();
-  var rx = x.toRed(this.curve.red).redMul(zs);
-  if (this.x.cmp(rx) === 0)
-    return true;
-
-  var xc = x.clone();
-  var t = this.curve.redN.redMul(zs);
-  for (;;) {
-    xc.iadd(this.curve.n);
-    if (xc.cmp(this.curve.p) >= 0)
-      return false;
-
-    rx.redIAdd(t);
-    if (this.x.cmp(rx) === 0)
-      return true;
-  }
-};
-
-JPoint$1.prototype.inspect = function inspect() {
-  if (this.isInfinity())
-    return '<EC JPoint Infinity>';
-  return '<EC JPoint x: ' + this.x.toString(16, 2) +
-      ' y: ' + this.y.toString(16, 2) +
-      ' z: ' + this.z.toString(16, 2) + '>';
-};
-
-JPoint$1.prototype.isInfinity = function isInfinity() {
-  // XXX This code assumes that zero is always zero in red
-  return this.z.cmpn(0) === 0;
-};
-
-var curve_1$1 = createCommonjsModule$1(function (module, exports) {
-'use strict';
-
-var curve = exports;
-
-curve.base = base$1;
-curve.short = short_1$1;
-curve.mont = /*RicMoo:ethers:require(./mont)*/(null);
-curve.edwards = /*RicMoo:ethers:require(./edwards)*/(null);
-});
-
-var curves_1$1 = createCommonjsModule$1(function (module, exports) {
-'use strict';
-
-var curves = exports;
-
-
-
-
-
-var assert = utils_1$1$1.assert;
-
-function PresetCurve(options) {
-  if (options.type === 'short')
-    this.curve = new curve_1$1.short(options);
-  else if (options.type === 'edwards')
-    this.curve = new curve_1$1.edwards(options);
-  else
-    this.curve = new curve_1$1.mont(options);
-  this.g = this.curve.g;
-  this.n = this.curve.n;
-  this.hash = options.hash;
-
-  assert(this.g.validate(), 'Invalid curve');
-  assert(this.g.mul(this.n).isInfinity(), 'Invalid curve, G*N != O');
-}
-curves.PresetCurve = PresetCurve;
-
-function defineCurve(name, options) {
-  Object.defineProperty(curves, name, {
-    configurable: true,
-    enumerable: true,
-    get: function() {
-      var curve = new PresetCurve(options);
-      Object.defineProperty(curves, name, {
-        configurable: true,
-        enumerable: true,
-        value: curve,
-      });
-      return curve;
-    },
-  });
-}
-
-defineCurve('p192', {
-  type: 'short',
-  prime: 'p192',
-  p: 'ffffffff ffffffff ffffffff fffffffe ffffffff ffffffff',
-  a: 'ffffffff ffffffff ffffffff fffffffe ffffffff fffffffc',
-  b: '64210519 e59c80e7 0fa7e9ab 72243049 feb8deec c146b9b1',
-  n: 'ffffffff ffffffff ffffffff 99def836 146bc9b1 b4d22831',
-  hash: hash_1.sha256,
-  gRed: false,
-  g: [
-    '188da80e b03090f6 7cbf20eb 43a18800 f4ff0afd 82ff1012',
-    '07192b95 ffc8da78 631011ed 6b24cdd5 73f977a1 1e794811',
-  ],
-});
-
-defineCurve('p224', {
-  type: 'short',
-  prime: 'p224',
-  p: 'ffffffff ffffffff ffffffff ffffffff 00000000 00000000 00000001',
-  a: 'ffffffff ffffffff ffffffff fffffffe ffffffff ffffffff fffffffe',
-  b: 'b4050a85 0c04b3ab f5413256 5044b0b7 d7bfd8ba 270b3943 2355ffb4',
-  n: 'ffffffff ffffffff ffffffff ffff16a2 e0b8f03e 13dd2945 5c5c2a3d',
-  hash: hash_1.sha256,
-  gRed: false,
-  g: [
-    'b70e0cbd 6bb4bf7f 321390b9 4a03c1d3 56c21122 343280d6 115c1d21',
-    'bd376388 b5f723fb 4c22dfe6 cd4375a0 5a074764 44d58199 85007e34',
-  ],
-});
-
-defineCurve('p256', {
-  type: 'short',
-  prime: null,
-  p: 'ffffffff 00000001 00000000 00000000 00000000 ffffffff ffffffff ffffffff',
-  a: 'ffffffff 00000001 00000000 00000000 00000000 ffffffff ffffffff fffffffc',
-  b: '5ac635d8 aa3a93e7 b3ebbd55 769886bc 651d06b0 cc53b0f6 3bce3c3e 27d2604b',
-  n: 'ffffffff 00000000 ffffffff ffffffff bce6faad a7179e84 f3b9cac2 fc632551',
-  hash: hash_1.sha256,
-  gRed: false,
-  g: [
-    '6b17d1f2 e12c4247 f8bce6e5 63a440f2 77037d81 2deb33a0 f4a13945 d898c296',
-    '4fe342e2 fe1a7f9b 8ee7eb4a 7c0f9e16 2bce3357 6b315ece cbb64068 37bf51f5',
-  ],
-});
-
-defineCurve('p384', {
-  type: 'short',
-  prime: null,
-  p: 'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
-     'fffffffe ffffffff 00000000 00000000 ffffffff',
-  a: 'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
-     'fffffffe ffffffff 00000000 00000000 fffffffc',
-  b: 'b3312fa7 e23ee7e4 988e056b e3f82d19 181d9c6e fe814112 0314088f ' +
-     '5013875a c656398d 8a2ed19d 2a85c8ed d3ec2aef',
-  n: 'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff c7634d81 ' +
-     'f4372ddf 581a0db2 48b0a77a ecec196a ccc52973',
-  hash: hash_1.sha384,
-  gRed: false,
-  g: [
-    'aa87ca22 be8b0537 8eb1c71e f320ad74 6e1d3b62 8ba79b98 59f741e0 82542a38 ' +
-    '5502f25d bf55296c 3a545e38 72760ab7',
-    '3617de4a 96262c6f 5d9e98bf 9292dc29 f8f41dbd 289a147c e9da3113 b5f0b8c0 ' +
-    '0a60b1ce 1d7e819d 7a431d7c 90ea0e5f',
-  ],
-});
-
-defineCurve('p521', {
-  type: 'short',
-  prime: null,
-  p: '000001ff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
-     'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
-     'ffffffff ffffffff ffffffff ffffffff ffffffff',
-  a: '000001ff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
-     'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
-     'ffffffff ffffffff ffffffff ffffffff fffffffc',
-  b: '00000051 953eb961 8e1c9a1f 929a21a0 b68540ee a2da725b ' +
-     '99b315f3 b8b48991 8ef109e1 56193951 ec7e937b 1652c0bd ' +
-     '3bb1bf07 3573df88 3d2c34f1 ef451fd4 6b503f00',
-  n: '000001ff ffffffff ffffffff ffffffff ffffffff ffffffff ' +
-     'ffffffff ffffffff fffffffa 51868783 bf2f966b 7fcc0148 ' +
-     'f709a5d0 3bb5c9b8 899c47ae bb6fb71e 91386409',
-  hash: hash_1.sha512,
-  gRed: false,
-  g: [
-    '000000c6 858e06b7 0404e9cd 9e3ecb66 2395b442 9c648139 ' +
-    '053fb521 f828af60 6b4d3dba a14b5e77 efe75928 fe1dc127 ' +
-    'a2ffa8de 3348b3c1 856a429b f97e7e31 c2e5bd66',
-    '00000118 39296a78 9a3bc004 5c8a5fb4 2c7d1bd9 98f54449 ' +
-    '579b4468 17afbd17 273e662c 97ee7299 5ef42640 c550b901 ' +
-    '3fad0761 353c7086 a272c240 88be9476 9fd16650',
-  ],
-});
-
-defineCurve('curve25519', {
-  type: 'mont',
-  prime: 'p25519',
-  p: '7fffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffed',
-  a: '76d06',
-  b: '1',
-  n: '1000000000000000 0000000000000000 14def9dea2f79cd6 5812631a5cf5d3ed',
-  hash: hash_1.sha256,
-  gRed: false,
-  g: [
-    '9',
-  ],
-});
-
-defineCurve('ed25519', {
-  type: 'edwards',
-  prime: 'p25519',
-  p: '7fffffffffffffff ffffffffffffffff ffffffffffffffff ffffffffffffffed',
-  a: '-1',
-  c: '1',
-  // -121665 * (121666^(-1)) (mod P)
-  d: '52036cee2b6ffe73 8cc740797779e898 00700a4d4141d8ab 75eb4dca135978a3',
-  n: '1000000000000000 0000000000000000 14def9dea2f79cd6 5812631a5cf5d3ed',
-  hash: hash_1.sha256,
-  gRed: false,
-  g: [
-    '216936d3cd6e53fec0a4e231fdd6dc5c692cc7609525a7b2c9562d608f25d51a',
-
-    // 4/5
-    '6666666666666666666666666666666666666666666666666666666666666658',
-  ],
-});
-
-var pre;
-try {
-  pre = /*RicMoo:ethers:require(./precomputed/secp256k1)*/(null).crash();
-} catch (e) {
-  pre = undefined;
-}
-
-defineCurve('secp256k1', {
-  type: 'short',
-  prime: 'k256',
-  p: 'ffffffff ffffffff ffffffff ffffffff ffffffff ffffffff fffffffe fffffc2f',
-  a: '0',
-  b: '7',
-  n: 'ffffffff ffffffff ffffffff fffffffe baaedce6 af48a03b bfd25e8c d0364141',
-  h: '1',
-  hash: hash_1.sha256,
-
-  // Precomputed endomorphism
-  beta: '7ae96a2b657c07106e64479eac3434e99cf0497512f58995c1396c28719501ee',
-  lambda: '5363ad4cc05c30e0a5261c028812645a122e22ea20816678df02967c1b23bd72',
-  basis: [
-    {
-      a: '3086d221a7d46bcde86c90e49284eb15',
-      b: '-e4437ed6010e88286f547fa90abfe4c3',
-    },
-    {
-      a: '114ca50f7a8e2f3f657c1108d9d44cfd8',
-      b: '3086d221a7d46bcde86c90e49284eb15',
-    },
-  ],
-
-  gRed: false,
-  g: [
-    '79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798',
-    '483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8',
-    pre,
-  ],
-});
-});
-
-'use strict';
-
-
-
-
-
-function HmacDRBG$1(options) {
-  if (!(this instanceof HmacDRBG$1))
-    return new HmacDRBG$1(options);
-  this.hash = options.hash;
-  this.predResist = !!options.predResist;
-
-  this.outLen = this.hash.outSize;
-  this.minEntropy = options.minEntropy || this.hash.hmacStrength;
-
-  this._reseed = null;
-  this.reseedInterval = null;
-  this.K = null;
-  this.V = null;
-
-  var entropy = utils_1$2.toArray(options.entropy, options.entropyEnc || 'hex');
-  var nonce = utils_1$2.toArray(options.nonce, options.nonceEnc || 'hex');
-  var pers = utils_1$2.toArray(options.pers, options.persEnc || 'hex');
-  minimalisticAssert$1(entropy.length >= (this.minEntropy / 8),
-         'Not enough entropy. Minimum is: ' + this.minEntropy + ' bits');
-  this._init(entropy, nonce, pers);
-}
-var hmacDrbg$1 = HmacDRBG$1;
-
-HmacDRBG$1.prototype._init = function init(entropy, nonce, pers) {
-  var seed = entropy.concat(nonce).concat(pers);
-
-  this.K = new Array(this.outLen / 8);
-  this.V = new Array(this.outLen / 8);
-  for (var i = 0; i < this.V.length; i++) {
-    this.K[i] = 0x00;
-    this.V[i] = 0x01;
-  }
-
-  this._update(seed);
-  this._reseed = 1;
-  this.reseedInterval = 0x1000000000000;  // 2^48
-};
-
-HmacDRBG$1.prototype._hmac = function hmac() {
-  return new hash_1.hmac(this.hash, this.K);
-};
-
-HmacDRBG$1.prototype._update = function update(seed) {
-  var kmac = this._hmac()
-                 .update(this.V)
-                 .update([ 0x00 ]);
-  if (seed)
-    kmac = kmac.update(seed);
-  this.K = kmac.digest();
-  this.V = this._hmac().update(this.V).digest();
-  if (!seed)
-    return;
-
-  this.K = this._hmac()
-               .update(this.V)
-               .update([ 0x01 ])
-               .update(seed)
-               .digest();
-  this.V = this._hmac().update(this.V).digest();
-};
-
-HmacDRBG$1.prototype.reseed = function reseed(entropy, entropyEnc, add, addEnc) {
-  // Optional entropy enc
-  if (typeof entropyEnc !== 'string') {
-    addEnc = add;
-    add = entropyEnc;
-    entropyEnc = null;
-  }
-
-  entropy = utils_1$2.toArray(entropy, entropyEnc);
-  add = utils_1$2.toArray(add, addEnc);
-
-  minimalisticAssert$1(entropy.length >= (this.minEntropy / 8),
-         'Not enough entropy. Minimum is: ' + this.minEntropy + ' bits');
-
-  this._update(entropy.concat(add || []));
-  this._reseed = 1;
-};
-
-HmacDRBG$1.prototype.generate = function generate(len, enc, add, addEnc) {
-  if (this._reseed > this.reseedInterval)
-    throw new Error('Reseed is required');
-
-  // Optional encoding
-  if (typeof enc !== 'string') {
-    addEnc = add;
-    add = enc;
-    enc = null;
-  }
-
-  // Optional additional data
-  if (add) {
-    add = utils_1$2.toArray(add, addEnc || 'hex');
-    this._update(add);
-  }
-
-  var temp = [];
-  while (temp.length < len) {
-    this.V = this._hmac().update(this.V).digest();
-    temp = temp.concat(this.V);
-  }
-
-  var res = temp.slice(0, len);
-  this._update(add);
-  this._reseed++;
-  return utils_1$2.encode(res, enc);
-};
-
-'use strict';
-
-
-
-var assert$3$1 = utils_1$1$1.assert;
-
-function KeyPair$2(ec, options) {
-  this.ec = ec;
-  this.priv = null;
-  this.pub = null;
-
-  // KeyPair(ec, { priv: ..., pub: ... })
-  if (options.priv)
-    this._importPrivate(options.priv, options.privEnc);
-  if (options.pub)
-    this._importPublic(options.pub, options.pubEnc);
-}
-var key$2 = KeyPair$2;
-
-KeyPair$2.fromPublic = function fromPublic(ec, pub, enc) {
-  if (pub instanceof KeyPair$2)
-    return pub;
-
-  return new KeyPair$2(ec, {
-    pub: pub,
-    pubEnc: enc,
-  });
-};
-
-KeyPair$2.fromPrivate = function fromPrivate(ec, priv, enc) {
-  if (priv instanceof KeyPair$2)
-    return priv;
-
-  return new KeyPair$2(ec, {
-    priv: priv,
-    privEnc: enc,
-  });
-};
-
-KeyPair$2.prototype.validate = function validate() {
-  var pub = this.getPublic();
-
-  if (pub.isInfinity())
-    return { result: false, reason: 'Invalid public key' };
-  if (!pub.validate())
-    return { result: false, reason: 'Public key is not a point' };
-  if (!pub.mul(this.ec.curve.n).isInfinity())
-    return { result: false, reason: 'Public key * N != O' };
-
-  return { result: true, reason: null };
-};
-
-KeyPair$2.prototype.getPublic = function getPublic(compact, enc) {
-  // compact is optional argument
-  if (typeof compact === 'string') {
-    enc = compact;
-    compact = null;
-  }
-
-  if (!this.pub)
-    this.pub = this.ec.g.mul(this.priv);
-
-  if (!enc)
-    return this.pub;
-
-  return this.pub.encode(enc, compact);
-};
-
-KeyPair$2.prototype.getPrivate = function getPrivate(enc) {
-  if (enc === 'hex')
-    return this.priv.toString(16, 2);
-  else
-    return this.priv;
-};
-
-KeyPair$2.prototype._importPrivate = function _importPrivate(key, enc) {
-  this.priv = new bn(key, enc || 16);
-
-  // Ensure that the priv won't be bigger than n, otherwise we may fail
-  // in fixed multiplication method
-  this.priv = this.priv.umod(this.ec.curve.n);
-};
-
-KeyPair$2.prototype._importPublic = function _importPublic(key, enc) {
-  if (key.x || key.y) {
-    // Montgomery points only have an `x` coordinate.
-    // Weierstrass/Edwards points on the other hand have both `x` and
-    // `y` coordinates.
-    if (this.ec.curve.type === 'mont') {
-      assert$3$1(key.x, 'Need x coordinate');
-    } else if (this.ec.curve.type === 'short' ||
-               this.ec.curve.type === 'edwards') {
-      assert$3$1(key.x && key.y, 'Need both x and y coordinate');
-    }
-    this.pub = this.ec.curve.point(key.x, key.y);
-    return;
-  }
-  this.pub = this.ec.curve.decodePoint(key, enc);
-};
-
-// ECDH
-KeyPair$2.prototype.derive = function derive(pub) {
-  if(!pub.validate()) {
-    assert$3$1(pub.validate(), 'public point not validated');
-  }
-  return pub.mul(this.priv).getX();
-};
-
-// ECDSA
-KeyPair$2.prototype.sign = function sign(msg, enc, options) {
-  return this.ec.sign(msg, this, enc, options);
-};
-
-KeyPair$2.prototype.verify = function verify(msg, signature) {
-  return this.ec.verify(msg, signature, this);
-};
-
-KeyPair$2.prototype.inspect = function inspect() {
-  return '<Key priv: ' + (this.priv && this.priv.toString(16, 2)) +
-         ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
-};
-
-'use strict';
-
-
-
-
-var assert$4$1 = utils_1$1$1.assert;
-
-function Signature$2(options, enc) {
-  if (options instanceof Signature$2)
-    return options;
-
-  if (this._importDER(options, enc))
-    return;
-
-  assert$4$1(options.r && options.s, 'Signature without r or s');
-  this.r = new bn(options.r, 16);
-  this.s = new bn(options.s, 16);
-  if (options.recoveryParam === undefined)
-    this.recoveryParam = null;
-  else
-    this.recoveryParam = options.recoveryParam;
-}
-var signature$2 = Signature$2;
-
-function Position$1() {
-  this.place = 0;
-}
-
-function getLength$1(buf, p) {
-  var initial = buf[p.place++];
-  if (!(initial & 0x80)) {
-    return initial;
-  }
-  var octetLen = initial & 0xf;
-
-  // Indefinite length or overflow
-  if (octetLen === 0 || octetLen > 4) {
-    return false;
-  }
-
-  var val = 0;
-  for (var i = 0, off = p.place; i < octetLen; i++, off++) {
-    val <<= 8;
-    val |= buf[off];
-    val >>>= 0;
-  }
-
-  // Leading zeroes
-  if (val <= 0x7f) {
-    return false;
-  }
-
-  p.place = off;
-  return val;
-}
-
-function rmPadding$1(buf) {
-  var i = 0;
-  var len = buf.length - 1;
-  while (!buf[i] && !(buf[i + 1] & 0x80) && i < len) {
-    i++;
-  }
-  if (i === 0) {
-    return buf;
-  }
-  return buf.slice(i);
-}
-
-Signature$2.prototype._importDER = function _importDER(data, enc) {
-  data = utils_1$1$1.toArray(data, enc);
-  var p = new Position$1();
-  if (data[p.place++] !== 0x30) {
-    return false;
-  }
-  var len = getLength$1(data, p);
-  if (len === false) {
-    return false;
-  }
-  if ((len + p.place) !== data.length) {
-    return false;
-  }
-  if (data[p.place++] !== 0x02) {
-    return false;
-  }
-  var rlen = getLength$1(data, p);
-  if (rlen === false) {
-    return false;
-  }
-  var r = data.slice(p.place, rlen + p.place);
-  p.place += rlen;
-  if (data[p.place++] !== 0x02) {
-    return false;
-  }
-  var slen = getLength$1(data, p);
-  if (slen === false) {
-    return false;
-  }
-  if (data.length !== slen + p.place) {
-    return false;
-  }
-  var s = data.slice(p.place, slen + p.place);
-  if (r[0] === 0) {
-    if (r[1] & 0x80) {
-      r = r.slice(1);
-    } else {
-      // Leading zeroes
-      return false;
-    }
-  }
-  if (s[0] === 0) {
-    if (s[1] & 0x80) {
-      s = s.slice(1);
-    } else {
-      // Leading zeroes
-      return false;
-    }
-  }
-
-  this.r = new bn(r);
-  this.s = new bn(s);
-  this.recoveryParam = null;
-
-  return true;
-};
-
-function constructLength$1(arr, len) {
-  if (len < 0x80) {
-    arr.push(len);
-    return;
-  }
-  var octets = 1 + (Math.log(len) / Math.LN2 >>> 3);
-  arr.push(octets | 0x80);
-  while (--octets) {
-    arr.push((len >>> (octets << 3)) & 0xff);
-  }
-  arr.push(len);
-}
-
-Signature$2.prototype.toDER = function toDER(enc) {
-  var r = this.r.toArray();
-  var s = this.s.toArray();
-
-  // Pad values
-  if (r[0] & 0x80)
-    r = [ 0 ].concat(r);
-  // Pad values
-  if (s[0] & 0x80)
-    s = [ 0 ].concat(s);
-
-  r = rmPadding$1(r);
-  s = rmPadding$1(s);
-
-  while (!s[0] && !(s[1] & 0x80)) {
-    s = s.slice(1);
-  }
-  var arr = [ 0x02 ];
-  constructLength$1(arr, r.length);
-  arr = arr.concat(r);
-  arr.push(0x02);
-  constructLength$1(arr, s.length);
-  var backHalf = arr.concat(s);
-  var res = [ 0x30 ];
-  constructLength$1(res, backHalf.length);
-  res = res.concat(backHalf);
-  return utils_1$1$1.encode(res, enc);
-};
-
-'use strict';
-
-
-
-
-
-var rand = /*RicMoo:ethers:require(brorand)*/(function() { throw new Error('unsupported'); });
-var assert$5$1 = utils_1$1$1.assert;
-
-
-
-
-function EC$1(options) {
-  if (!(this instanceof EC$1))
-    return new EC$1(options);
-
-  // Shortcut `elliptic.ec(curve-name)`
-  if (typeof options === 'string') {
-    assert$5$1(Object.prototype.hasOwnProperty.call(curves_1$1, options),
-      'Unknown curve ' + options);
-
-    options = curves_1$1[options];
-  }
-
-  // Shortcut for `elliptic.ec(elliptic.curves.curveName)`
-  if (options instanceof curves_1$1.PresetCurve)
-    options = { curve: options };
-
-  this.curve = options.curve.curve;
-  this.n = this.curve.n;
-  this.nh = this.n.ushrn(1);
-  this.g = this.curve.g;
-
-  // Point on curve
-  this.g = options.curve.g;
-  this.g.precompute(options.curve.n.bitLength() + 1);
-
-  // Hash for function for DRBG
-  this.hash = options.hash || options.curve.hash;
-}
-var ec$1 = EC$1;
-
-EC$1.prototype.keyPair = function keyPair(options) {
-  return new key$2(this, options);
-};
-
-EC$1.prototype.keyFromPrivate = function keyFromPrivate(priv, enc) {
-  return key$2.fromPrivate(this, priv, enc);
-};
-
-EC$1.prototype.keyFromPublic = function keyFromPublic(pub, enc) {
-  return key$2.fromPublic(this, pub, enc);
-};
-
-EC$1.prototype.genKeyPair = function genKeyPair(options) {
-  if (!options)
-    options = {};
-
-  // Instantiate Hmac_DRBG
-  var drbg = new hmacDrbg$1({
-    hash: this.hash,
-    pers: options.pers,
-    persEnc: options.persEnc || 'utf8',
-    entropy: options.entropy || rand(this.hash.hmacStrength),
-    entropyEnc: options.entropy && options.entropyEnc || 'utf8',
-    nonce: this.n.toArray(),
-  });
-
-  var bytes = this.n.byteLength();
-  var ns2 = this.n.sub(new bn(2));
-  for (;;) {
-    var priv = new bn(drbg.generate(bytes));
-    if (priv.cmp(ns2) > 0)
-      continue;
-
-    priv.iaddn(1);
-    return this.keyFromPrivate(priv);
-  }
-};
-
-EC$1.prototype._truncateToN = function _truncateToN(msg, truncOnly) {
-  var delta = msg.byteLength() * 8 - this.n.bitLength();
-  if (delta > 0)
-    msg = msg.ushrn(delta);
-  if (!truncOnly && msg.cmp(this.n) >= 0)
-    return msg.sub(this.n);
-  else
-    return msg;
-};
-
-EC$1.prototype.sign = function sign(msg, key, enc, options) {
-  if (typeof enc === 'object') {
-    options = enc;
-    enc = null;
-  }
-  if (!options)
-    options = {};
-
-  key = this.keyFromPrivate(key, enc);
-  msg = this._truncateToN(new bn(msg, 16));
-
-  // Zero-extend key to provide enough entropy
-  var bytes = this.n.byteLength();
-  var bkey = key.getPrivate().toArray('be', bytes);
-
-  // Zero-extend nonce to have the same byte size as N
-  var nonce = msg.toArray('be', bytes);
-
-  // Instantiate Hmac_DRBG
-  var drbg = new hmacDrbg$1({
-    hash: this.hash,
-    entropy: bkey,
-    nonce: nonce,
-    pers: options.pers,
-    persEnc: options.persEnc || 'utf8',
-  });
-
-  // Number of bytes to generate
-  var ns1 = this.n.sub(new bn(1));
-
-  for (var iter = 0; ; iter++) {
-    var k = options.k ?
-      options.k(iter) :
-      new bn(drbg.generate(this.n.byteLength()));
-    k = this._truncateToN(k, true);
-    if (k.cmpn(1) <= 0 || k.cmp(ns1) >= 0)
-      continue;
-
-    var kp = this.g.mul(k);
-    if (kp.isInfinity())
-      continue;
-
-    var kpX = kp.getX();
-    var r = kpX.umod(this.n);
-    if (r.cmpn(0) === 0)
-      continue;
-
-    var s = k.invm(this.n).mul(r.mul(key.getPrivate()).iadd(msg));
-    s = s.umod(this.n);
-    if (s.cmpn(0) === 0)
-      continue;
-
-    var recoveryParam = (kp.getY().isOdd() ? 1 : 0) |
-                        (kpX.cmp(r) !== 0 ? 2 : 0);
-
-    // Use complement of `s`, if it is > `n / 2`
-    if (options.canonical && s.cmp(this.nh) > 0) {
-      s = this.n.sub(s);
-      recoveryParam ^= 1;
-    }
-
-    return new signature$2({ r: r, s: s, recoveryParam: recoveryParam });
-  }
-};
-
-EC$1.prototype.verify = function verify(msg, signature$1, key, enc) {
-  msg = this._truncateToN(new bn(msg, 16));
-  key = this.keyFromPublic(key, enc);
-  signature$1 = new signature$2(signature$1, 'hex');
-
-  // Perform primitive values validation
-  var r = signature$1.r;
-  var s = signature$1.s;
-  if (r.cmpn(1) < 0 || r.cmp(this.n) >= 0)
-    return false;
-  if (s.cmpn(1) < 0 || s.cmp(this.n) >= 0)
-    return false;
-
-  // Validate signature
-  var sinv = s.invm(this.n);
-  var u1 = sinv.mul(msg).umod(this.n);
-  var u2 = sinv.mul(r).umod(this.n);
-  var p;
-
-  if (!this.curve._maxwellTrick) {
-    p = this.g.mulAdd(u1, key.getPublic(), u2);
-    if (p.isInfinity())
-      return false;
-
-    return p.getX().umod(this.n).cmp(r) === 0;
-  }
-
-  // NOTE: Greg Maxwell's trick, inspired by:
-  // https://git.io/vad3K
-
-  p = this.g.jmulAdd(u1, key.getPublic(), u2);
-  if (p.isInfinity())
-    return false;
-
-  // Compare `p.x` of Jacobian point with `r`,
-  // this will do `p.x == r * p.z^2` instead of multiplying `p.x` by the
-  // inverse of `p.z^2`
-  return p.eqXToP(r);
-};
-
-EC$1.prototype.recoverPubKey = function(msg, signature$1, j, enc) {
-  assert$5$1((3 & j) === j, 'The recovery param is more than two bits');
-  signature$1 = new signature$2(signature$1, enc);
-
-  var n = this.n;
-  var e = new bn(msg);
-  var r = signature$1.r;
-  var s = signature$1.s;
-
-  // A set LSB signifies that the y-coordinate is odd
-  var isYOdd = j & 1;
-  var isSecondKey = j >> 1;
-  if (r.cmp(this.curve.p.umod(this.curve.n)) >= 0 && isSecondKey)
-    throw new Error('Unable to find sencond key candinate');
-
-  // 1.1. Let x = r + jn.
-  if (isSecondKey)
-    r = this.curve.pointFromX(r.add(this.curve.n), isYOdd);
-  else
-    r = this.curve.pointFromX(r, isYOdd);
-
-  var rInv = signature$1.r.invm(n);
-  var s1 = n.sub(e).mul(rInv).umod(n);
-  var s2 = s.mul(rInv).umod(n);
-
-  // 1.6.1 Compute Q = r^-1 (sR -  eG)
-  //               Q = r^-1 (sR + -eG)
-  return this.g.mulAdd(s1, r, s2);
-};
-
-EC$1.prototype.getKeyRecoveryParam = function(e, signature$1, Q, enc) {
-  signature$1 = new signature$2(signature$1, enc);
-  if (signature$1.recoveryParam !== null)
-    return signature$1.recoveryParam;
-
-  for (var i = 0; i < 4; i++) {
-    var Qprime;
-    try {
-      Qprime = this.recoverPubKey(e, signature$1, i);
-    } catch (e) {
-      continue;
-    }
-
-    if (Qprime.eq(Q))
-      return i;
-  }
-  throw new Error('Unable to find valid recovery factor');
-};
-
-var elliptic_1$1 = createCommonjsModule$1(function (module, exports) {
-'use strict';
-
-var elliptic = exports;
-
-elliptic.version = /*RicMoo:ethers*/{ version: "6.5.4" }.version;
-elliptic.utils = utils_1$1$1;
-elliptic.rand = /*RicMoo:ethers:require(brorand)*/(function() { throw new Error('unsupported'); });
-elliptic.curve = curve_1$1;
-elliptic.curves = curves_1$1;
-
-// Protocols
-elliptic.ec = ec$1;
-elliptic.eddsa = /*RicMoo:ethers:require(./elliptic/eddsa)*/(null);
-});
-
-var EC$1$1 = elliptic_1$1.ec;
-
-const version$d = "signing-key/5.5.0";
-
-"use strict";
-const logger$f = new Logger(version$d);
-let _curve = null;
-function getCurve() {
-    if (!_curve) {
-        _curve = new EC$1$1("secp256k1");
-    }
-    return _curve;
-}
-class SigningKey {
-    constructor(privateKey) {
-        defineReadOnly(this, "curve", "secp256k1");
-        defineReadOnly(this, "privateKey", hexlify(privateKey));
-        const keyPair = getCurve().keyFromPrivate(arrayify(this.privateKey));
-        defineReadOnly(this, "publicKey", "0x" + keyPair.getPublic(false, "hex"));
-        defineReadOnly(this, "compressedPublicKey", "0x" + keyPair.getPublic(true, "hex"));
-        defineReadOnly(this, "_isSigningKey", true);
-    }
-    _addPoint(other) {
-        const p0 = getCurve().keyFromPublic(arrayify(this.publicKey));
-        const p1 = getCurve().keyFromPublic(arrayify(other));
-        return "0x" + p0.pub.add(p1.pub).encodeCompressed("hex");
-    }
-    signDigest(digest) {
-        const keyPair = getCurve().keyFromPrivate(arrayify(this.privateKey));
-        const digestBytes = arrayify(digest);
-        if (digestBytes.length !== 32) {
-            logger$f.throwArgumentError("bad digest length", "digest", digest);
-        }
-        const signature = keyPair.sign(digestBytes, { canonical: true });
-        return splitSignature({
-            recoveryParam: signature.recoveryParam,
-            r: hexZeroPad("0x" + signature.r.toString(16), 32),
-            s: hexZeroPad("0x" + signature.s.toString(16), 32),
-        });
-    }
-    computeSharedSecret(otherKey) {
-        const keyPair = getCurve().keyFromPrivate(arrayify(this.privateKey));
-        const otherKeyPair = getCurve().keyFromPublic(arrayify(computePublicKey(otherKey)));
-        return hexZeroPad("0x" + keyPair.derive(otherKeyPair.getPublic()).toString(16), 32);
-    }
-    static isSigningKey(value) {
-        return !!(value && value._isSigningKey);
-    }
-}
-function recoverPublicKey(digest, signature) {
-    const sig = splitSignature(signature);
-    const rs = { r: arrayify(sig.r), s: arrayify(sig.s) };
-    return "0x" + getCurve().recoverPubKey(arrayify(digest), rs, sig.recoveryParam).encode("hex", false);
-}
-function computePublicKey(key, compressed) {
-    const bytes = arrayify(key);
-    if (bytes.length === 32) {
-        const signingKey = new SigningKey(bytes);
-        if (compressed) {
-            return "0x" + getCurve().keyFromPrivate(bytes).getPublic(true, "hex");
-        }
-        return signingKey.publicKey;
-    }
-    else if (bytes.length === 33) {
-        if (compressed) {
-            return hexlify(bytes);
-        }
-        return "0x" + getCurve().keyFromPublic(bytes).getPublic(false, "hex");
-    }
-    else if (bytes.length === 65) {
-        if (!compressed) {
-            return hexlify(bytes);
-        }
-        return "0x" + getCurve().keyFromPublic(bytes).getPublic(true, "hex");
-    }
-    return logger$f.throwArgumentError("invalid public or private key", "key", "[REDACTED]");
-}
-
-var lib_esm$9 = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	SigningKey: SigningKey,
-	recoverPublicKey: recoverPublicKey,
-	computePublicKey: computePublicKey
-});
-
-const version$e = "transactions/5.5.0";
-
-"use strict";
-function decode$7(textData) {
-    textData = atob(textData);
-    const data = [];
-    for (let i = 0; i < textData.length; i++) {
-        data.push(textData.charCodeAt(i));
-    }
-    return arrayify(data);
-}
-function encode$6(data) {
-    data = arrayify(data);
-    let textData = "";
-    for (let i = 0; i < data.length; i++) {
-        textData += String.fromCharCode(data[i]);
-    }
-    return btoa(textData);
-}
-
-"use strict";
-
-var lib_esm$a = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	decode: decode$7,
-	encode: encode$6
-});
-
-/**
- * var basex = require("base-x");
- *
- * This implementation is heavily based on base-x. The main reason to
- * deviate was to prevent the dependency of Buffer.
- *
- * Contributors:
- *
- * base-x encoding
- * Forked from https://github.com/cryptocoinjs/bs58
- * Originally written by Mike Hearn for BitcoinJ
- * Copyright (c) 2011 Google Inc
- * Ported to JavaScript by Stefan Thomas
- * Merged Buffer refactorings from base58-native by Stephen Pair
- * Copyright (c) 2013 BitPay Inc
- *
- * The MIT License (MIT)
- *
- * Copyright base-x contributors (c) 2016
- *
- * Permission is hereby granted, free of charge, to any person obtaining a
- * copy of this software and associated documentation files (the "Software"),
- * to deal in the Software without restriction, including without limitation
- * the rights to use, copy, modify, merge, publish, distribute, sublicense,
- * and/or sell copies of the Software, and to permit persons to whom the
- * Software is furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
-
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
- * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
- * IN THE SOFTWARE.
- *
- */
-class BaseX {
-    constructor(alphabet) {
-        defineReadOnly(this, "alphabet", alphabet);
-        defineReadOnly(this, "base", alphabet.length);
-        defineReadOnly(this, "_alphabetMap", {});
-        defineReadOnly(this, "_leader", alphabet.charAt(0));
-        // pre-compute lookup table
-        for (let i = 0; i < alphabet.length; i++) {
-            this._alphabetMap[alphabet.charAt(i)] = i;
-        }
-    }
-    encode(value) {
-        let source = arrayify(value);
-        if (source.length === 0) {
-            return "";
-        }
-        let digits = [0];
-        for (let i = 0; i < source.length; ++i) {
-            let carry = source[i];
-            for (let j = 0; j < digits.length; ++j) {
-                carry += digits[j] << 8;
-                digits[j] = carry % this.base;
-                carry = (carry / this.base) | 0;
-            }
-            while (carry > 0) {
-                digits.push(carry % this.base);
-                carry = (carry / this.base) | 0;
-            }
-        }
-        let string = "";
-        // deal with leading zeros
-        for (let k = 0; source[k] === 0 && k < source.length - 1; ++k) {
-            string += this._leader;
-        }
-        // convert digits to a string
-        for (let q = digits.length - 1; q >= 0; --q) {
-            string += this.alphabet[digits[q]];
-        }
-        return string;
-    }
-    decode(value) {
-        if (typeof (value) !== "string") {
-            throw new TypeError("Expected String");
-        }
-        let bytes = [];
-        if (value.length === 0) {
-            return new Uint8Array(bytes);
-        }
-        bytes.push(0);
-        for (let i = 0; i < value.length; i++) {
-            let byte = this._alphabetMap[value[i]];
-            if (byte === undefined) {
-                throw new Error("Non-base" + this.base + " character");
-            }
-            let carry = byte;
-            for (let j = 0; j < bytes.length; ++j) {
-                carry += bytes[j] * this.base;
-                bytes[j] = carry & 0xff;
-                carry >>= 8;
-            }
-            while (carry > 0) {
-                bytes.push(carry & 0xff);
-                carry >>= 8;
-            }
-        }
-        // deal with leading zeros
-        for (let k = 0; value[k] === this._leader && k < value.length - 1; ++k) {
-            bytes.push(0);
-        }
-        return arrayify(new Uint8Array(bytes.reverse()));
-    }
-}
-const Base32 = new BaseX("abcdefghijklmnopqrstuvwxyz234567");
-const Base58 = new BaseX("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz");
-//console.log(Base58.decode("Qmd2V777o5XvJbYMeMb8k2nU5f8d3ciUQ5YpYuWhzv8iDj"))
-//console.log(Base58.encode(Base58.decode("Qmd2V777o5XvJbYMeMb8k2nU5f8d3ciUQ5YpYuWhzv8iDj")))
-
-var lib_esm$b = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	BaseX: BaseX,
-	Base32: Base32,
-	Base58: Base58
-});
-
-var SupportedAlgorithm;
-(function (SupportedAlgorithm) {
-    SupportedAlgorithm["sha256"] = "sha256";
-    SupportedAlgorithm["sha512"] = "sha512";
-})(SupportedAlgorithm || (SupportedAlgorithm = {}));
-;
-
-const version$f = "sha2/5.5.0";
-
-"use strict";
-const logger$g = new Logger(version$f);
-function ripemd160$1(data) {
-    return "0x" + (hash_1.ripemd160().update(arrayify(data)).digest("hex"));
-}
-function sha256$1(data) {
-    return "0x" + (hash_1.sha256().update(arrayify(data)).digest("hex"));
-}
-function sha512$1(data) {
-    return "0x" + (hash_1.sha512().update(arrayify(data)).digest("hex"));
-}
-function computeHmac(algorithm, key, data) {
-    if (!SupportedAlgorithm[algorithm]) {
-        logger$g.throwError("unsupported algorithm " + algorithm, Logger.errors.UNSUPPORTED_OPERATION, {
-            operation: "hmac",
-            algorithm: algorithm
-        });
-    }
-    return "0x" + hash_1.hmac(hash_1[algorithm], arrayify(key)).update(arrayify(data)).digest("hex");
-}
-
-var lib_esm$c = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	computeHmac: computeHmac,
-	ripemd160: ripemd160$1,
-	sha256: sha256$1,
-	sha512: sha512$1,
-	get SupportedAlgorithm () { return SupportedAlgorithm; }
-});
-
-"use strict";
-function pbkdf2(password, salt, iterations, keylen, hashAlgorithm) {
-    password = arrayify(password);
-    salt = arrayify(salt);
-    let hLen;
-    let l = 1;
-    const DK = new Uint8Array(keylen);
-    const block1 = new Uint8Array(salt.length + 4);
-    block1.set(salt);
-    //salt.copy(block1, 0, 0, salt.length)
-    let r;
-    let T;
-    for (let i = 1; i <= l; i++) {
-        //block1.writeUInt32BE(i, salt.length)
-        block1[salt.length] = (i >> 24) & 0xff;
-        block1[salt.length + 1] = (i >> 16) & 0xff;
-        block1[salt.length + 2] = (i >> 8) & 0xff;
-        block1[salt.length + 3] = i & 0xff;
-        //let U = createHmac(password).update(block1).digest();
-        let U = arrayify(computeHmac(hashAlgorithm, password, block1));
-        if (!hLen) {
-            hLen = U.length;
-            T = new Uint8Array(hLen);
-            l = Math.ceil(keylen / hLen);
-            r = keylen - (l - 1) * hLen;
-        }
-        //U.copy(T, 0, 0, hLen)
-        T.set(U);
-        for (let j = 1; j < iterations; j++) {
-            //U = createHmac(password).update(U).digest();
-            U = arrayify(computeHmac(hashAlgorithm, password, U));
-            for (let k = 0; k < hLen; k++)
-                T[k] ^= U[k];
-        }
-        const destPos = (i - 1) * hLen;
-        const len = (i === l ? r : hLen);
-        //T.copy(DK, destPos, 0, len)
-        DK.set(arrayify(T).slice(0, len), destPos);
-    }
-    return hexlify(DK);
-}
-
-const version$g = "wordlists/5.5.0";
-
-"use strict";
-// This gets overridden by rollup
-const exportWordlist = false;
-const logger$h = new Logger(version$g);
-class Wordlist {
-    constructor(locale) {
-        logger$h.checkAbstract(new.target, Wordlist);
-        defineReadOnly(this, "locale", locale);
-    }
-    // Subclasses may override this
-    split(mnemonic) {
-        return mnemonic.toLowerCase().split(/ +/g);
-    }
-    // Subclasses may override this
-    join(words) {
-        return words.join(" ");
-    }
-    static check(wordlist) {
-        const words = [];
-        for (let i = 0; i < 2048; i++) {
-            const word = wordlist.getWord(i);
-            /* istanbul ignore if */
-            if (i !== wordlist.getWordIndex(word)) {
-                return "0x";
-            }
-            words.push(word);
-        }
-        return id(words.join("\n") + "\n");
-    }
-    static register(lang, name) {
-        if (!name) {
-            name = lang.locale;
-        }
-        /* istanbul ignore if */
-        if (exportWordlist) {
-            try {
-                const anyGlobal = window;
-                if (anyGlobal._ethers && anyGlobal._ethers.wordlists) {
-                    if (!anyGlobal._ethers.wordlists[name]) {
-                        defineReadOnly(anyGlobal._ethers.wordlists, name, lang);
-                    }
-                }
-            }
-            catch (error) { }
-        }
-    }
-}
-
-"use strict";
-const words$1 = "AbandonAbilityAbleAboutAboveAbsentAbsorbAbstractAbsurdAbuseAccessAccidentAccountAccuseAchieveAcidAcousticAcquireAcrossActActionActorActressActualAdaptAddAddictAddressAdjustAdmitAdultAdvanceAdviceAerobicAffairAffordAfraidAgainAgeAgentAgreeAheadAimAirAirportAisleAlarmAlbumAlcoholAlertAlienAllAlleyAllowAlmostAloneAlphaAlreadyAlsoAlterAlwaysAmateurAmazingAmongAmountAmusedAnalystAnchorAncientAngerAngleAngryAnimalAnkleAnnounceAnnualAnotherAnswerAntennaAntiqueAnxietyAnyApartApologyAppearAppleApproveAprilArchArcticAreaArenaArgueArmArmedArmorArmyAroundArrangeArrestArriveArrowArtArtefactArtistArtworkAskAspectAssaultAssetAssistAssumeAsthmaAthleteAtomAttackAttendAttitudeAttractAuctionAuditAugustAuntAuthorAutoAutumnAverageAvocadoAvoidAwakeAwareAwayAwesomeAwfulAwkwardAxisBabyBachelorBaconBadgeBagBalanceBalconyBallBambooBananaBannerBarBarelyBargainBarrelBaseBasicBasketBattleBeachBeanBeautyBecauseBecomeBeefBeforeBeginBehaveBehindBelieveBelowBeltBenchBenefitBestBetrayBetterBetweenBeyondBicycleBidBikeBindBiologyBirdBirthBitterBlackBladeBlameBlanketBlastBleakBlessBlindBloodBlossomBlouseBlueBlurBlushBoardBoatBodyBoilBombBoneBonusBookBoostBorderBoringBorrowBossBottomBounceBoxBoyBracketBrainBrandBrassBraveBreadBreezeBrickBridgeBriefBrightBringBriskBroccoliBrokenBronzeBroomBrotherBrownBrushBubbleBuddyBudgetBuffaloBuildBulbBulkBulletBundleBunkerBurdenBurgerBurstBusBusinessBusyButterBuyerBuzzCabbageCabinCableCactusCageCakeCallCalmCameraCampCanCanalCancelCandyCannonCanoeCanvasCanyonCapableCapitalCaptainCarCarbonCardCargoCarpetCarryCartCaseCashCasinoCastleCasualCatCatalogCatchCategoryCattleCaughtCauseCautionCaveCeilingCeleryCementCensusCenturyCerealCertainChairChalkChampionChangeChaosChapterChargeChaseChatCheapCheckCheeseChefCherryChestChickenChiefChildChimneyChoiceChooseChronicChuckleChunkChurnCigarCinnamonCircleCitizenCityCivilClaimClapClarifyClawClayCleanClerkCleverClickClientCliffClimbClinicClipClockClogCloseClothCloudClownClubClumpClusterClutchCoachCoastCoconutCodeCoffeeCoilCoinCollectColorColumnCombineComeComfortComicCommonCompanyConcertConductConfirmCongressConnectConsiderControlConvinceCookCoolCopperCopyCoralCoreCornCorrectCostCottonCouchCountryCoupleCourseCousinCoverCoyoteCrackCradleCraftCramCraneCrashCraterCrawlCrazyCreamCreditCreekCrewCricketCrimeCrispCriticCropCrossCrouchCrowdCrucialCruelCruiseCrumbleCrunchCrushCryCrystalCubeCultureCupCupboardCuriousCurrentCurtainCurveCushionCustomCuteCycleDadDamageDampDanceDangerDaringDashDaughterDawnDayDealDebateDebrisDecadeDecemberDecideDeclineDecorateDecreaseDeerDefenseDefineDefyDegreeDelayDeliverDemandDemiseDenialDentistDenyDepartDependDepositDepthDeputyDeriveDescribeDesertDesignDeskDespairDestroyDetailDetectDevelopDeviceDevoteDiagramDialDiamondDiaryDiceDieselDietDifferDigitalDignityDilemmaDinnerDinosaurDirectDirtDisagreeDiscoverDiseaseDishDismissDisorderDisplayDistanceDivertDivideDivorceDizzyDoctorDocumentDogDollDolphinDomainDonateDonkeyDonorDoorDoseDoubleDoveDraftDragonDramaDrasticDrawDreamDressDriftDrillDrinkDripDriveDropDrumDryDuckDumbDuneDuringDustDutchDutyDwarfDynamicEagerEagleEarlyEarnEarthEasilyEastEasyEchoEcologyEconomyEdgeEditEducateEffortEggEightEitherElbowElderElectricElegantElementElephantElevatorEliteElseEmbarkEmbodyEmbraceEmergeEmotionEmployEmpowerEmptyEnableEnactEndEndlessEndorseEnemyEnergyEnforceEngageEngineEnhanceEnjoyEnlistEnoughEnrichEnrollEnsureEnterEntireEntryEnvelopeEpisodeEqualEquipEraEraseErodeErosionErrorEruptEscapeEssayEssenceEstateEternalEthicsEvidenceEvilEvokeEvolveExactExampleExcessExchangeExciteExcludeExcuseExecuteExerciseExhaustExhibitExileExistExitExoticExpandExpectExpireExplainExposeExpressExtendExtraEyeEyebrowFabricFaceFacultyFadeFaintFaithFallFalseFameFamilyFamousFanFancyFantasyFarmFashionFatFatalFatherFatigueFaultFavoriteFeatureFebruaryFederalFeeFeedFeelFemaleFenceFestivalFetchFeverFewFiberFictionFieldFigureFileFilmFilterFinalFindFineFingerFinishFireFirmFirstFiscalFishFitFitnessFixFlagFlameFlashFlatFlavorFleeFlightFlipFloatFlockFloorFlowerFluidFlushFlyFoamFocusFogFoilFoldFollowFoodFootForceForestForgetForkFortuneForumForwardFossilFosterFoundFoxFragileFrameFrequentFreshFriendFringeFrogFrontFrostFrownFrozenFruitFuelFunFunnyFurnaceFuryFutureGadgetGainGalaxyGalleryGameGapGarageGarbageGardenGarlicGarmentGasGaspGateGatherGaugeGazeGeneralGeniusGenreGentleGenuineGestureGhostGiantGiftGiggleGingerGiraffeGirlGiveGladGlanceGlareGlassGlideGlimpseGlobeGloomGloryGloveGlowGlueGoatGoddessGoldGoodGooseGorillaGospelGossipGovernGownGrabGraceGrainGrantGrapeGrassGravityGreatGreenGridGriefGritGroceryGroupGrowGruntGuardGuessGuideGuiltGuitarGunGymHabitHairHalfHammerHamsterHandHappyHarborHardHarshHarvestHatHaveHawkHazardHeadHealthHeartHeavyHedgehogHeightHelloHelmetHelpHenHeroHiddenHighHillHintHipHireHistoryHobbyHockeyHoldHoleHolidayHollowHomeHoneyHoodHopeHornHorrorHorseHospitalHostHotelHourHoverHubHugeHumanHumbleHumorHundredHungryHuntHurdleHurryHurtHusbandHybridIceIconIdeaIdentifyIdleIgnoreIllIllegalIllnessImageImitateImmenseImmuneImpactImposeImproveImpulseInchIncludeIncomeIncreaseIndexIndicateIndoorIndustryInfantInflictInformInhaleInheritInitialInjectInjuryInmateInnerInnocentInputInquiryInsaneInsectInsideInspireInstallIntactInterestIntoInvestInviteInvolveIronIslandIsolateIssueItemIvoryJacketJaguarJarJazzJealousJeansJellyJewelJobJoinJokeJourneyJoyJudgeJuiceJumpJungleJuniorJunkJustKangarooKeenKeepKetchupKeyKickKidKidneyKindKingdomKissKitKitchenKiteKittenKiwiKneeKnifeKnockKnowLabLabelLaborLadderLadyLakeLampLanguageLaptopLargeLaterLatinLaughLaundryLavaLawLawnLawsuitLayerLazyLeaderLeafLearnLeaveLectureLeftLegLegalLegendLeisureLemonLendLengthLensLeopardLessonLetterLevelLiarLibertyLibraryLicenseLifeLiftLightLikeLimbLimitLinkLionLiquidListLittleLiveLizardLoadLoanLobsterLocalLockLogicLonelyLongLoopLotteryLoudLoungeLoveLoyalLuckyLuggageLumberLunarLunchLuxuryLyricsMachineMadMagicMagnetMaidMailMainMajorMakeMammalManManageMandateMangoMansionManualMapleMarbleMarchMarginMarineMarketMarriageMaskMassMasterMatchMaterialMathMatrixMatterMaximumMazeMeadowMeanMeasureMeatMechanicMedalMediaMelodyMeltMemberMemoryMentionMenuMercyMergeMeritMerryMeshMessageMetalMethodMiddleMidnightMilkMillionMimicMindMinimumMinorMinuteMiracleMirrorMiseryMissMistakeMixMixedMixtureMobileModelModifyMomMomentMonitorMonkeyMonsterMonthMoonMoralMoreMorningMosquitoMotherMotionMotorMountainMouseMoveMovieMuchMuffinMuleMultiplyMuscleMuseumMushroomMusicMustMutualMyselfMysteryMythNaiveNameNapkinNarrowNastyNationNatureNearNeckNeedNegativeNeglectNeitherNephewNerveNestNetNetworkNeutralNeverNewsNextNiceNightNobleNoiseNomineeNoodleNormalNorthNoseNotableNoteNothingNoticeNovelNowNuclearNumberNurseNutOakObeyObjectObligeObscureObserveObtainObviousOccurOceanOctoberOdorOffOfferOfficeOftenOilOkayOldOliveOlympicOmitOnceOneOnionOnlineOnlyOpenOperaOpinionOpposeOptionOrangeOrbitOrchardOrderOrdinaryOrganOrientOriginalOrphanOstrichOtherOutdoorOuterOutputOutsideOvalOvenOverOwnOwnerOxygenOysterOzonePactPaddlePagePairPalacePalmPandaPanelPanicPantherPaperParadeParentParkParrotPartyPassPatchPathPatientPatrolPatternPausePavePaymentPeacePeanutPearPeasantPelicanPenPenaltyPencilPeoplePepperPerfectPermitPersonPetPhonePhotoPhrasePhysicalPianoPicnicPicturePiecePigPigeonPillPilotPinkPioneerPipePistolPitchPizzaPlacePlanetPlasticPlatePlayPleasePledgePluckPlugPlungePoemPoetPointPolarPolePolicePondPonyPoolPopularPortionPositionPossiblePostPotatoPotteryPovertyPowderPowerPracticePraisePredictPreferPreparePresentPrettyPreventPricePridePrimaryPrintPriorityPrisonPrivatePrizeProblemProcessProduceProfitProgramProjectPromoteProofPropertyProsperProtectProudProvidePublicPuddingPullPulpPulsePumpkinPunchPupilPuppyPurchasePurityPurposePursePushPutPuzzlePyramidQualityQuantumQuarterQuestionQuickQuitQuizQuoteRabbitRaccoonRaceRackRadarRadioRailRainRaiseRallyRampRanchRandomRangeRapidRareRateRatherRavenRawRazorReadyRealReasonRebelRebuildRecallReceiveRecipeRecordRecycleReduceReflectReformRefuseRegionRegretRegularRejectRelaxReleaseReliefRelyRemainRememberRemindRemoveRenderRenewRentReopenRepairRepeatReplaceReportRequireRescueResembleResistResourceResponseResultRetireRetreatReturnReunionRevealReviewRewardRhythmRibRibbonRiceRichRideRidgeRifleRightRigidRingRiotRippleRiskRitualRivalRiverRoadRoastRobotRobustRocketRomanceRoofRookieRoomRoseRotateRoughRoundRouteRoyalRubberRudeRugRuleRunRunwayRuralSadSaddleSadnessSafeSailSaladSalmonSalonSaltSaluteSameSampleSandSatisfySatoshiSauceSausageSaveSayScaleScanScareScatterSceneSchemeSchoolScienceScissorsScorpionScoutScrapScreenScriptScrubSeaSearchSeasonSeatSecondSecretSectionSecuritySeedSeekSegmentSelectSellSeminarSeniorSenseSentenceSeriesServiceSessionSettleSetupSevenShadowShaftShallowShareShedShellSheriffShieldShiftShineShipShiverShockShoeShootShopShortShoulderShoveShrimpShrugShuffleShySiblingSickSideSiegeSightSignSilentSilkSillySilverSimilarSimpleSinceSingSirenSisterSituateSixSizeSkateSketchSkiSkillSkinSkirtSkullSlabSlamSleepSlenderSliceSlideSlightSlimSloganSlotSlowSlushSmallSmartSmileSmokeSmoothSnackSnakeSnapSniffSnowSoapSoccerSocialSockSodaSoftSolarSoldierSolidSolutionSolveSomeoneSongSoonSorrySortSoulSoundSoupSourceSouthSpaceSpareSpatialSpawnSpeakSpecialSpeedSpellSpendSphereSpiceSpiderSpikeSpinSpiritSplitSpoilSponsorSpoonSportSpotSpraySpreadSpringSpySquareSqueezeSquirrelStableStadiumStaffStageStairsStampStandStartStateStaySteakSteelStemStepStereoStickStillStingStockStomachStoneStoolStoryStoveStrategyStreetStrikeStrongStruggleStudentStuffStumbleStyleSubjectSubmitSubwaySuccessSuchSuddenSufferSugarSuggestSuitSummerSunSunnySunsetSuperSupplySupremeSureSurfaceSurgeSurpriseSurroundSurveySuspectSustainSwallowSwampSwapSwarmSwearSweetSwiftSwimSwingSwitchSwordSymbolSymptomSyrupSystemTableTackleTagTailTalentTalkTankTapeTargetTaskTasteTattooTaxiTeachTeamTellTenTenantTennisTentTermTestTextThankThatThemeThenTheoryThereTheyThingThisThoughtThreeThriveThrowThumbThunderTicketTideTigerTiltTimberTimeTinyTipTiredTissueTitleToastTobaccoTodayToddlerToeTogetherToiletTokenTomatoTomorrowToneTongueTonightToolToothTopTopicToppleTorchTornadoTortoiseTossTotalTouristTowardTowerTownToyTrackTradeTrafficTragicTrainTransferTrapTrashTravelTrayTreatTreeTrendTrialTribeTrickTriggerTrimTripTrophyTroubleTruckTrueTrulyTrumpetTrustTruthTryTubeTuitionTumbleTunaTunnelTurkeyTurnTurtleTwelveTwentyTwiceTwinTwistTwoTypeTypicalUglyUmbrellaUnableUnawareUncleUncoverUnderUndoUnfairUnfoldUnhappyUniformUniqueUnitUniverseUnknownUnlockUntilUnusualUnveilUpdateUpgradeUpholdUponUpperUpsetUrbanUrgeUsageUseUsedUsefulUselessUsualUtilityVacantVacuumVagueValidValleyValveVanVanishVaporVariousVastVaultVehicleVelvetVendorVentureVenueVerbVerifyVersionVeryVesselVeteranViableVibrantViciousVictoryVideoViewVillageVintageViolinVirtualVirusVisaVisitVisualVitalVividVocalVoiceVoidVolcanoVolumeVoteVoyageWageWagonWaitWalkWallWalnutWantWarfareWarmWarriorWashWaspWasteWaterWaveWayWealthWeaponWearWeaselWeatherWebWeddingWeekendWeirdWelcomeWestWetWhaleWhatWheatWheelWhenWhereWhipWhisperWideWidthWifeWildWillWinWindowWineWingWinkWinnerWinterWireWisdomWiseWishWitnessWolfWomanWonderWoodWoolWordWorkWorldWorryWorthWrapWreckWrestleWristWriteWrongYardYearYellowYouYoungYouthZebraZeroZoneZoo";
-let wordlist = null;
-function loadWords(lang) {
-    if (wordlist != null) {
-        return;
-    }
-    wordlist = words$1.replace(/([A-Z])/g, " $1").toLowerCase().substring(1).split(" ");
-    // Verify the computed list matches the official list
-    /* istanbul ignore if */
-    if (Wordlist.check(lang) !== "0x3c8acc1e7b08d8e76f9fda015ef48dc8c710a73cb7e0f77b2c18a9b5a7adde60") {
-        wordlist = null;
-        throw new Error("BIP39 Wordlist for en (English) FAILED");
-    }
-}
-class LangEn extends Wordlist {
-    constructor() {
-        super("en");
-    }
-    getWord(index) {
-        loadWords(this);
-        return wordlist[index];
-    }
-    getWordIndex(word) {
-        loadWords(this);
-        return wordlist.indexOf(word);
-    }
-}
-const langEn = new LangEn();
-Wordlist.register(langEn);
-
-"use strict";
-const wordlists = {
-    en: langEn
-};
-
-"use strict";
-
-const version$h = "hdnode/5.5.0";
-
-"use strict";
-const logger$i = new Logger(version$h);
-const N = BigNumber.from("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
-// "Bitcoin seed"
-const MasterSecret = toUtf8Bytes("Bitcoin seed");
-const HardenedBit = 0x80000000;
-// Returns a byte with the MSB bits set
-function getUpperMask(bits) {
-    return ((1 << bits) - 1) << (8 - bits);
-}
-// Returns a byte with the LSB bits set
-function getLowerMask(bits) {
-    return (1 << bits) - 1;
-}
-function bytes32(value) {
-    return hexZeroPad(hexlify(value), 32);
-}
-function base58check(data) {
-    return Base58.encode(concat([data, hexDataSlice(sha256$1(sha256$1(data)), 0, 4)]));
-}
-function getWordlist(wordlist) {
-    if (wordlist == null) {
-        return wordlists["en"];
-    }
-    if (typeof (wordlist) === "string") {
-        const words = wordlists[wordlist];
-        if (words == null) {
-            logger$i.throwArgumentError("unknown locale", "wordlist", wordlist);
-        }
-        return words;
-    }
-    return wordlist;
-}
-const _constructorGuard$3 = {};
-const defaultPath = "m/44'/60'/0'/0/0";
-class HDNode {
-    /**
-     *  This constructor should not be called directly.
-     *
-     *  Please use:
-     *   - fromMnemonic
-     *   - fromSeed
-     */
-    constructor(constructorGuard, privateKey, publicKey, parentFingerprint, chainCode, index, depth, mnemonicOrPath) {
-        logger$i.checkNew(new.target, HDNode);
-        /* istanbul ignore if */
-        if (constructorGuard !== _constructorGuard$3) {
-            throw new Error("HDNode constructor cannot be called directly");
-        }
-        if (privateKey) {
-            const signingKey = new SigningKey(privateKey);
-            defineReadOnly(this, "privateKey", signingKey.privateKey);
-            defineReadOnly(this, "publicKey", signingKey.compressedPublicKey);
-            defineReadOnly(this, "alias", computeAlias(this.privateKey));
-        }
-        else {
-            defineReadOnly(this, "privateKey", null);
-            defineReadOnly(this, "alias", null);
-            defineReadOnly(this, "publicKey", hexlify(publicKey));
-        }
-        defineReadOnly(this, "parentFingerprint", parentFingerprint);
-        defineReadOnly(this, "fingerprint", hexDataSlice(ripemd160$1(sha256$1(this.publicKey)), 0, 4));
-        defineReadOnly(this, "chainCode", chainCode);
-        defineReadOnly(this, "index", index);
-        defineReadOnly(this, "depth", depth);
-        if (mnemonicOrPath == null) {
-            // From a source that does not preserve the path (e.g. extended keys)
-            defineReadOnly(this, "mnemonic", null);
-            defineReadOnly(this, "path", null);
-        }
-        else if (typeof (mnemonicOrPath) === "string") {
-            // From a source that does not preserve the mnemonic (e.g. neutered)
-            defineReadOnly(this, "mnemonic", null);
-            defineReadOnly(this, "path", mnemonicOrPath);
-        }
-        else {
-            // From a fully qualified source
-            defineReadOnly(this, "mnemonic", mnemonicOrPath);
-            defineReadOnly(this, "path", mnemonicOrPath.path);
-        }
-    }
-    get extendedKey() {
-        // We only support the mainnet values for now, but if anyone needs
-        // testnet values, let me know. I believe current sentiment is that
-        // we should always use mainnet, and use BIP-44 to derive the network
-        //   - Mainnet: public=0x0488B21E, private=0x0488ADE4
-        //   - Testnet: public=0x043587CF, private=0x04358394
-        if (this.depth >= 256) {
-            throw new Error("Depth too large!");
-        }
-        return base58check(concat([
-            ((this.privateKey != null) ? "0x0488ADE4" : "0x0488B21E"),
-            hexlify(this.depth),
-            this.parentFingerprint,
-            hexZeroPad(hexlify(this.index), 4),
-            this.chainCode,
-            ((this.privateKey != null) ? concat(["0x00", this.privateKey]) : this.publicKey),
-        ]));
-    }
-    neuter() {
-        return new HDNode(_constructorGuard$3, null, this.publicKey, this.parentFingerprint, this.chainCode, this.index, this.depth, this.path);
-    }
-    _derive(index) {
-        if (index > 0xffffffff) {
-            throw new Error("invalid index - " + String(index));
-        }
-        // Base path
-        let path = this.path;
-        if (path) {
-            path += "/" + (index & ~HardenedBit);
-        }
-        const data = new Uint8Array(37);
-        if (index & HardenedBit) {
-            if (!this.privateKey) {
-                throw new Error("cannot derive child of neutered node");
-            }
-            // Data = 0x00 || ser_256(k_par)
-            data.set(arrayify(this.privateKey), 1);
-            // Hardened path
-            if (path) {
-                path += "'";
-            }
-        }
-        else {
-            // Data = ser_p(point(k_par))
-            data.set(arrayify(this.publicKey));
-        }
-        // Data += ser_32(i)
-        for (let i = 24; i >= 0; i -= 8) {
-            data[33 + (i >> 3)] = ((index >> (24 - i)) & 0xff);
-        }
-        const I = arrayify(computeHmac(SupportedAlgorithm.sha512, this.chainCode, data));
-        const IL = I.slice(0, 32);
-        const IR = I.slice(32);
-        // The private key
-        let ki = null;
-        // The public key
-        let Ki = null;
-        if (this.privateKey) {
-            ki = bytes32(BigNumber.from(IL).add(this.privateKey).mod(N));
-        }
-        else {
-            const ek = new SigningKey(hexlify(IL));
-            Ki = ek._addPoint(this.publicKey);
-        }
-        let mnemonicOrPath = path;
-        const srcMnemonic = this.mnemonic;
-        if (srcMnemonic) {
-            mnemonicOrPath = Object.freeze({
-                phrase: srcMnemonic.phrase,
-                path: path,
-                locale: (srcMnemonic.locale || "en")
-            });
-        }
-        return new HDNode(_constructorGuard$3, ki, Ki, this.fingerprint, bytes32(IR), index, this.depth + 1, mnemonicOrPath);
-    }
-    derivePath(path) {
-        const components = path.split("/");
-        if (components.length === 0 || (components[0] === "m" && this.depth !== 0)) {
-            throw new Error("invalid path - " + path);
-        }
-        if (components[0] === "m") {
-            components.shift();
-        }
-        let result = this;
-        for (let i = 0; i < components.length; i++) {
-            const component = components[i];
-            if (component.match(/^[0-9]+'$/)) {
-                const index = parseInt(component.substring(0, component.length - 1));
-                if (index >= HardenedBit) {
-                    throw new Error("invalid path index - " + component);
-                }
-                result = result._derive(HardenedBit + index);
-            }
-            else if (component.match(/^[0-9]+$/)) {
-                const index = parseInt(component);
-                if (index >= HardenedBit) {
-                    throw new Error("invalid path index - " + component);
-                }
-                result = result._derive(index);
-            }
-            else {
-                throw new Error("invalid path component - " + component);
-            }
-        }
-        return result;
-    }
-    static _fromSeed(seed, mnemonic) {
-        const seedArray = arrayify(seed);
-        if (seedArray.length < 16 || seedArray.length > 64) {
-            throw new Error("invalid seed");
-        }
-        const I = arrayify(computeHmac(SupportedAlgorithm.sha512, MasterSecret, seedArray));
-        return new HDNode(_constructorGuard$3, bytes32(I.slice(0, 32)), null, "0x00000000", bytes32(I.slice(32)), 0, 0, mnemonic);
-    }
-    static fromMnemonic(mnemonic, password, wordlist) {
-        // If a locale name was passed in, find the associated wordlist
-        wordlist = getWordlist(wordlist);
-        // Normalize the case and spacing in the mnemonic (throws if the mnemonic is invalid)
-        mnemonic = entropyToMnemonic(mnemonicToEntropy(mnemonic, wordlist), wordlist);
-        return HDNode._fromSeed(mnemonicToSeed(mnemonic, password), {
-            phrase: mnemonic,
-            path: "m",
-            locale: wordlist.locale
-        });
-    }
-    static fromSeed(seed) {
-        return HDNode._fromSeed(seed, null);
-    }
-    static fromExtendedKey(extendedKey) {
-        const bytes = Base58.decode(extendedKey);
-        if (bytes.length !== 82 || base58check(bytes.slice(0, 78)) !== extendedKey) {
-            logger$i.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
-        }
-        const depth = bytes[4];
-        const parentFingerprint = hexlify(bytes.slice(5, 9));
-        const index = parseInt(hexlify(bytes.slice(9, 13)).substring(2), 16);
-        const chainCode = hexlify(bytes.slice(13, 45));
-        const key = bytes.slice(45, 78);
-        switch (hexlify(bytes.slice(0, 4))) {
-            // Public Key
-            case "0x0488b21e":
-            case "0x043587cf":
-                return new HDNode(_constructorGuard$3, null, hexlify(key), parentFingerprint, chainCode, index, depth, null);
-            // Private Key
-            case "0x0488ade4":
-            case "0x04358394 ":
-                if (key[0] !== 0) {
-                    break;
-                }
-                return new HDNode(_constructorGuard$3, hexlify(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
-        }
-        return logger$i.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
-    }
-}
-function mnemonicToSeed(mnemonic, password) {
-    if (!password) {
-        password = "";
-    }
-    const salt = toUtf8Bytes("mnemonic" + password, UnicodeNormalizationForm.NFKD);
-    return pbkdf2(toUtf8Bytes(mnemonic, UnicodeNormalizationForm.NFKD), salt, 2048, 64, "sha512");
-}
-function mnemonicToEntropy(mnemonic, wordlist) {
-    wordlist = getWordlist(wordlist);
-    logger$i.checkNormalize();
-    const words = wordlist.split(mnemonic);
-    if ((words.length % 3) !== 0) {
-        throw new Error("invalid mnemonic");
-    }
-    const entropy = arrayify(new Uint8Array(Math.ceil(11 * words.length / 8)));
-    let offset = 0;
-    for (let i = 0; i < words.length; i++) {
-        let index = wordlist.getWordIndex(words[i].normalize("NFKD"));
-        if (index === -1) {
-            throw new Error("invalid mnemonic");
-        }
-        for (let bit = 0; bit < 11; bit++) {
-            if (index & (1 << (10 - bit))) {
-                entropy[offset >> 3] |= (1 << (7 - (offset % 8)));
-            }
-            offset++;
-        }
-    }
-    const entropyBits = 32 * words.length / 3;
-    const checksumBits = words.length / 3;
-    const checksumMask = getUpperMask(checksumBits);
-    const checksum = arrayify(sha256$1(entropy.slice(0, entropyBits / 8)))[0] & checksumMask;
-    if (checksum !== (entropy[entropy.length - 1] & checksumMask)) {
-        throw new Error("invalid checksum");
-    }
-    return hexlify(entropy.slice(0, entropyBits / 8));
-}
-function entropyToMnemonic(entropy, wordlist) {
-    wordlist = getWordlist(wordlist);
-    entropy = arrayify(entropy);
-    if ((entropy.length % 4) !== 0 || entropy.length < 16 || entropy.length > 32) {
-        throw new Error("invalid entropy");
-    }
-    const indices = [0];
-    let remainingBits = 11;
-    for (let i = 0; i < entropy.length; i++) {
-        // Consume the whole byte (with still more to go)
-        if (remainingBits > 8) {
-            indices[indices.length - 1] <<= 8;
-            indices[indices.length - 1] |= entropy[i];
-            remainingBits -= 8;
-            // This byte will complete an 11-bit index
-        }
-        else {
-            indices[indices.length - 1] <<= remainingBits;
-            indices[indices.length - 1] |= entropy[i] >> (8 - remainingBits);
-            // Start the next word
-            indices.push(entropy[i] & getLowerMask(8 - remainingBits));
-            remainingBits += 3;
-        }
-    }
-    // Compute the checksum bits
-    const checksumBits = entropy.length / 4;
-    const checksum = arrayify(sha256$1(entropy))[0] & getUpperMask(checksumBits);
-    // Shift the checksum into the word indices
-    indices[indices.length - 1] <<= checksumBits;
-    indices[indices.length - 1] |= (checksum >> (8 - checksumBits));
-    return wordlist.join(indices.map((index) => wordlist.getWord(index)));
-}
-function isValidMnemonic(mnemonic, wordlist) {
-    try {
-        mnemonicToEntropy(mnemonic, wordlist);
-        return true;
-    }
-    catch (error) { }
-    return false;
-}
-function getAccountPath(index) {
-    if (typeof (index) !== "number" || index < 0 || index >= HardenedBit || index % 1) {
-        logger$i.throwArgumentError("invalid account index", "index", index);
-    }
-    return `m/44'/60'/${index}'/0/0`;
-}
-
-var lib_esm$d = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	defaultPath: defaultPath,
-	HDNode: HDNode,
-	mnemonicToSeed: mnemonicToSeed,
-	mnemonicToEntropy: mnemonicToEntropy,
-	entropyToMnemonic: entropyToMnemonic,
-	isValidMnemonic: isValidMnemonic,
-	getAccountPath: getAccountPath
-});
-
-var aesJs = createCommonjsModule(function (module, exports) {
-"use strict";
-
-(function(root) {
-
-    function checkInt(value) {
-        return (parseInt(value) === value);
-    }
-
-    function checkInts(arrayish) {
-        if (!checkInt(arrayish.length)) { return false; }
-
-        for (var i = 0; i < arrayish.length; i++) {
-            if (!checkInt(arrayish[i]) || arrayish[i] < 0 || arrayish[i] > 255) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    function coerceArray(arg, copy) {
-
-        // ArrayBuffer view
-        if (arg.buffer && ArrayBuffer.isView(arg) && arg.name === 'Uint8Array') {
-
-            if (copy) {
-                if (arg.slice) {
-                    arg = arg.slice();
-                } else {
-                    arg = Array.prototype.slice.call(arg);
-                }
-            }
-
-            return arg;
-        }
-
-        // It's an array; check it is a valid representation of a byte
-        if (Array.isArray(arg)) {
-            if (!checkInts(arg)) {
-                throw new Error('Array contains invalid value: ' + arg);
-            }
-
-            return new Uint8Array(arg);
-        }
-
-        // Something else, but behaves like an array (maybe a Buffer? Arguments?)
-        if (checkInt(arg.length) && checkInts(arg)) {
-            return new Uint8Array(arg);
-        }
-
-        throw new Error('unsupported array-like object');
-    }
-
-    function createArray(length) {
-        return new Uint8Array(length);
-    }
-
-    function copyArray(sourceArray, targetArray, targetStart, sourceStart, sourceEnd) {
-        if (sourceStart != null || sourceEnd != null) {
-            if (sourceArray.slice) {
-                sourceArray = sourceArray.slice(sourceStart, sourceEnd);
-            } else {
-                sourceArray = Array.prototype.slice.call(sourceArray, sourceStart, sourceEnd);
-            }
-        }
-        targetArray.set(sourceArray, targetStart);
-    }
-
-
-
-    var convertUtf8 = (function() {
-        function toBytes(text) {
-            var result = [], i = 0;
-            text = encodeURI(text);
-            while (i < text.length) {
-                var c = text.charCodeAt(i++);
-
-                // if it is a % sign, encode the following 2 bytes as a hex value
-                if (c === 37) {
-                    result.push(parseInt(text.substr(i, 2), 16));
-                    i += 2;
-
-                // otherwise, just the actual byte
-                } else {
-                    result.push(c);
-                }
-            }
-
-            return coerceArray(result);
-        }
-
-        function fromBytes(bytes) {
-            var result = [], i = 0;
-
-            while (i < bytes.length) {
-                var c = bytes[i];
-
-                if (c < 128) {
-                    result.push(String.fromCharCode(c));
-                    i++;
-                } else if (c > 191 && c < 224) {
-                    result.push(String.fromCharCode(((c & 0x1f) << 6) | (bytes[i + 1] & 0x3f)));
-                    i += 2;
-                } else {
-                    result.push(String.fromCharCode(((c & 0x0f) << 12) | ((bytes[i + 1] & 0x3f) << 6) | (bytes[i + 2] & 0x3f)));
-                    i += 3;
-                }
-            }
-
-            return result.join('');
-        }
-
-        return {
-            toBytes: toBytes,
-            fromBytes: fromBytes,
-        }
-    })();
-
-    var convertHex = (function() {
-        function toBytes(text) {
-            var result = [];
-            for (var i = 0; i < text.length; i += 2) {
-                result.push(parseInt(text.substr(i, 2), 16));
-            }
-
-            return result;
-        }
-
-        // http://ixti.net/development/javascript/2011/11/11/base64-encodedecode-of-utf8-in-browser-with-js.html
-        var Hex = '0123456789abcdef';
-
-        function fromBytes(bytes) {
-                var result = [];
-                for (var i = 0; i < bytes.length; i++) {
-                    var v = bytes[i];
-                    result.push(Hex[(v & 0xf0) >> 4] + Hex[v & 0x0f]);
-                }
-                return result.join('');
-        }
-
-        return {
-            toBytes: toBytes,
-            fromBytes: fromBytes,
-        }
-    })();
-
-
-    // Number of rounds by keysize
-    var numberOfRounds = {16: 10, 24: 12, 32: 14};
-
-    // Round constant words
-    var rcon = [0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91];
-
-    // S-box and Inverse S-box (S is for Substitution)
-    var S = [0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76, 0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0, 0xb7, 0xfd, 0x93, 0x26, 0x36, 0x3f, 0xf7, 0xcc, 0x34, 0xa5, 0xe5, 0xf1, 0x71, 0xd8, 0x31, 0x15, 0x04, 0xc7, 0x23, 0xc3, 0x18, 0x96, 0x05, 0x9a, 0x07, 0x12, 0x80, 0xe2, 0xeb, 0x27, 0xb2, 0x75, 0x09, 0x83, 0x2c, 0x1a, 0x1b, 0x6e, 0x5a, 0xa0, 0x52, 0x3b, 0xd6, 0xb3, 0x29, 0xe3, 0x2f, 0x84, 0x53, 0xd1, 0x00, 0xed, 0x20, 0xfc, 0xb1, 0x5b, 0x6a, 0xcb, 0xbe, 0x39, 0x4a, 0x4c, 0x58, 0xcf, 0xd0, 0xef, 0xaa, 0xfb, 0x43, 0x4d, 0x33, 0x85, 0x45, 0xf9, 0x02, 0x7f, 0x50, 0x3c, 0x9f, 0xa8, 0x51, 0xa3, 0x40, 0x8f, 0x92, 0x9d, 0x38, 0xf5, 0xbc, 0xb6, 0xda, 0x21, 0x10, 0xff, 0xf3, 0xd2, 0xcd, 0x0c, 0x13, 0xec, 0x5f, 0x97, 0x44, 0x17, 0xc4, 0xa7, 0x7e, 0x3d, 0x64, 0x5d, 0x19, 0x73, 0x60, 0x81, 0x4f, 0xdc, 0x22, 0x2a, 0x90, 0x88, 0x46, 0xee, 0xb8, 0x14, 0xde, 0x5e, 0x0b, 0xdb, 0xe0, 0x32, 0x3a, 0x0a, 0x49, 0x06, 0x24, 0x5c, 0xc2, 0xd3, 0xac, 0x62, 0x91, 0x95, 0xe4, 0x79, 0xe7, 0xc8, 0x37, 0x6d, 0x8d, 0xd5, 0x4e, 0xa9, 0x6c, 0x56, 0xf4, 0xea, 0x65, 0x7a, 0xae, 0x08, 0xba, 0x78, 0x25, 0x2e, 0x1c, 0xa6, 0xb4, 0xc6, 0xe8, 0xdd, 0x74, 0x1f, 0x4b, 0xbd, 0x8b, 0x8a, 0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e, 0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf, 0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16];
-    var Si =[0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb, 0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb, 0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e, 0x08, 0x2e, 0xa1, 0x66, 0x28, 0xd9, 0x24, 0xb2, 0x76, 0x5b, 0xa2, 0x49, 0x6d, 0x8b, 0xd1, 0x25, 0x72, 0xf8, 0xf6, 0x64, 0x86, 0x68, 0x98, 0x16, 0xd4, 0xa4, 0x5c, 0xcc, 0x5d, 0x65, 0xb6, 0x92, 0x6c, 0x70, 0x48, 0x50, 0xfd, 0xed, 0xb9, 0xda, 0x5e, 0x15, 0x46, 0x57, 0xa7, 0x8d, 0x9d, 0x84, 0x90, 0xd8, 0xab, 0x00, 0x8c, 0xbc, 0xd3, 0x0a, 0xf7, 0xe4, 0x58, 0x05, 0xb8, 0xb3, 0x45, 0x06, 0xd0, 0x2c, 0x1e, 0x8f, 0xca, 0x3f, 0x0f, 0x02, 0xc1, 0xaf, 0xbd, 0x03, 0x01, 0x13, 0x8a, 0x6b, 0x3a, 0x91, 0x11, 0x41, 0x4f, 0x67, 0xdc, 0xea, 0x97, 0xf2, 0xcf, 0xce, 0xf0, 0xb4, 0xe6, 0x73, 0x96, 0xac, 0x74, 0x22, 0xe7, 0xad, 0x35, 0x85, 0xe2, 0xf9, 0x37, 0xe8, 0x1c, 0x75, 0xdf, 0x6e, 0x47, 0xf1, 0x1a, 0x71, 0x1d, 0x29, 0xc5, 0x89, 0x6f, 0xb7, 0x62, 0x0e, 0xaa, 0x18, 0xbe, 0x1b, 0xfc, 0x56, 0x3e, 0x4b, 0xc6, 0xd2, 0x79, 0x20, 0x9a, 0xdb, 0xc0, 0xfe, 0x78, 0xcd, 0x5a, 0xf4, 0x1f, 0xdd, 0xa8, 0x33, 0x88, 0x07, 0xc7, 0x31, 0xb1, 0x12, 0x10, 0x59, 0x27, 0x80, 0xec, 0x5f, 0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d, 0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef, 0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61, 0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d];
-
-    // Transformations for encryption
-    var T1 = [0xc66363a5, 0xf87c7c84, 0xee777799, 0xf67b7b8d, 0xfff2f20d, 0xd66b6bbd, 0xde6f6fb1, 0x91c5c554, 0x60303050, 0x02010103, 0xce6767a9, 0x562b2b7d, 0xe7fefe19, 0xb5d7d762, 0x4dababe6, 0xec76769a, 0x8fcaca45, 0x1f82829d, 0x89c9c940, 0xfa7d7d87, 0xeffafa15, 0xb25959eb, 0x8e4747c9, 0xfbf0f00b, 0x41adadec, 0xb3d4d467, 0x5fa2a2fd, 0x45afafea, 0x239c9cbf, 0x53a4a4f7, 0xe4727296, 0x9bc0c05b, 0x75b7b7c2, 0xe1fdfd1c, 0x3d9393ae, 0x4c26266a, 0x6c36365a, 0x7e3f3f41, 0xf5f7f702, 0x83cccc4f, 0x6834345c, 0x51a5a5f4, 0xd1e5e534, 0xf9f1f108, 0xe2717193, 0xabd8d873, 0x62313153, 0x2a15153f, 0x0804040c, 0x95c7c752, 0x46232365, 0x9dc3c35e, 0x30181828, 0x379696a1, 0x0a05050f, 0x2f9a9ab5, 0x0e070709, 0x24121236, 0x1b80809b, 0xdfe2e23d, 0xcdebeb26, 0x4e272769, 0x7fb2b2cd, 0xea75759f, 0x1209091b, 0x1d83839e, 0x582c2c74, 0x341a1a2e, 0x361b1b2d, 0xdc6e6eb2, 0xb45a5aee, 0x5ba0a0fb, 0xa45252f6, 0x763b3b4d, 0xb7d6d661, 0x7db3b3ce, 0x5229297b, 0xdde3e33e, 0x5e2f2f71, 0x13848497, 0xa65353f5, 0xb9d1d168, 0x00000000, 0xc1eded2c, 0x40202060, 0xe3fcfc1f, 0x79b1b1c8, 0xb65b5bed, 0xd46a6abe, 0x8dcbcb46, 0x67bebed9, 0x7239394b, 0x944a4ade, 0x984c4cd4, 0xb05858e8, 0x85cfcf4a, 0xbbd0d06b, 0xc5efef2a, 0x4faaaae5, 0xedfbfb16, 0x864343c5, 0x9a4d4dd7, 0x66333355, 0x11858594, 0x8a4545cf, 0xe9f9f910, 0x04020206, 0xfe7f7f81, 0xa05050f0, 0x783c3c44, 0x259f9fba, 0x4ba8a8e3, 0xa25151f3, 0x5da3a3fe, 0x804040c0, 0x058f8f8a, 0x3f9292ad, 0x219d9dbc, 0x70383848, 0xf1f5f504, 0x63bcbcdf, 0x77b6b6c1, 0xafdada75, 0x42212163, 0x20101030, 0xe5ffff1a, 0xfdf3f30e, 0xbfd2d26d, 0x81cdcd4c, 0x180c0c14, 0x26131335, 0xc3ecec2f, 0xbe5f5fe1, 0x359797a2, 0x884444cc, 0x2e171739, 0x93c4c457, 0x55a7a7f2, 0xfc7e7e82, 0x7a3d3d47, 0xc86464ac, 0xba5d5de7, 0x3219192b, 0xe6737395, 0xc06060a0, 0x19818198, 0x9e4f4fd1, 0xa3dcdc7f, 0x44222266, 0x542a2a7e, 0x3b9090ab, 0x0b888883, 0x8c4646ca, 0xc7eeee29, 0x6bb8b8d3, 0x2814143c, 0xa7dede79, 0xbc5e5ee2, 0x160b0b1d, 0xaddbdb76, 0xdbe0e03b, 0x64323256, 0x743a3a4e, 0x140a0a1e, 0x924949db, 0x0c06060a, 0x4824246c, 0xb85c5ce4, 0x9fc2c25d, 0xbdd3d36e, 0x43acacef, 0xc46262a6, 0x399191a8, 0x319595a4, 0xd3e4e437, 0xf279798b, 0xd5e7e732, 0x8bc8c843, 0x6e373759, 0xda6d6db7, 0x018d8d8c, 0xb1d5d564, 0x9c4e4ed2, 0x49a9a9e0, 0xd86c6cb4, 0xac5656fa, 0xf3f4f407, 0xcfeaea25, 0xca6565af, 0xf47a7a8e, 0x47aeaee9, 0x10080818, 0x6fbabad5, 0xf0787888, 0x4a25256f, 0x5c2e2e72, 0x381c1c24, 0x57a6a6f1, 0x73b4b4c7, 0x97c6c651, 0xcbe8e823, 0xa1dddd7c, 0xe874749c, 0x3e1f1f21, 0x964b4bdd, 0x61bdbddc, 0x0d8b8b86, 0x0f8a8a85, 0xe0707090, 0x7c3e3e42, 0x71b5b5c4, 0xcc6666aa, 0x904848d8, 0x06030305, 0xf7f6f601, 0x1c0e0e12, 0xc26161a3, 0x6a35355f, 0xae5757f9, 0x69b9b9d0, 0x17868691, 0x99c1c158, 0x3a1d1d27, 0x279e9eb9, 0xd9e1e138, 0xebf8f813, 0x2b9898b3, 0x22111133, 0xd26969bb, 0xa9d9d970, 0x078e8e89, 0x339494a7, 0x2d9b9bb6, 0x3c1e1e22, 0x15878792, 0xc9e9e920, 0x87cece49, 0xaa5555ff, 0x50282878, 0xa5dfdf7a, 0x038c8c8f, 0x59a1a1f8, 0x09898980, 0x1a0d0d17, 0x65bfbfda, 0xd7e6e631, 0x844242c6, 0xd06868b8, 0x824141c3, 0x299999b0, 0x5a2d2d77, 0x1e0f0f11, 0x7bb0b0cb, 0xa85454fc, 0x6dbbbbd6, 0x2c16163a];
-    var T2 = [0xa5c66363, 0x84f87c7c, 0x99ee7777, 0x8df67b7b, 0x0dfff2f2, 0xbdd66b6b, 0xb1de6f6f, 0x5491c5c5, 0x50603030, 0x03020101, 0xa9ce6767, 0x7d562b2b, 0x19e7fefe, 0x62b5d7d7, 0xe64dabab, 0x9aec7676, 0x458fcaca, 0x9d1f8282, 0x4089c9c9, 0x87fa7d7d, 0x15effafa, 0xebb25959, 0xc98e4747, 0x0bfbf0f0, 0xec41adad, 0x67b3d4d4, 0xfd5fa2a2, 0xea45afaf, 0xbf239c9c, 0xf753a4a4, 0x96e47272, 0x5b9bc0c0, 0xc275b7b7, 0x1ce1fdfd, 0xae3d9393, 0x6a4c2626, 0x5a6c3636, 0x417e3f3f, 0x02f5f7f7, 0x4f83cccc, 0x5c683434, 0xf451a5a5, 0x34d1e5e5, 0x08f9f1f1, 0x93e27171, 0x73abd8d8, 0x53623131, 0x3f2a1515, 0x0c080404, 0x5295c7c7, 0x65462323, 0x5e9dc3c3, 0x28301818, 0xa1379696, 0x0f0a0505, 0xb52f9a9a, 0x090e0707, 0x36241212, 0x9b1b8080, 0x3ddfe2e2, 0x26cdebeb, 0x694e2727, 0xcd7fb2b2, 0x9fea7575, 0x1b120909, 0x9e1d8383, 0x74582c2c, 0x2e341a1a, 0x2d361b1b, 0xb2dc6e6e, 0xeeb45a5a, 0xfb5ba0a0, 0xf6a45252, 0x4d763b3b, 0x61b7d6d6, 0xce7db3b3, 0x7b522929, 0x3edde3e3, 0x715e2f2f, 0x97138484, 0xf5a65353, 0x68b9d1d1, 0x00000000, 0x2cc1eded, 0x60402020, 0x1fe3fcfc, 0xc879b1b1, 0xedb65b5b, 0xbed46a6a, 0x468dcbcb, 0xd967bebe, 0x4b723939, 0xde944a4a, 0xd4984c4c, 0xe8b05858, 0x4a85cfcf, 0x6bbbd0d0, 0x2ac5efef, 0xe54faaaa, 0x16edfbfb, 0xc5864343, 0xd79a4d4d, 0x55663333, 0x94118585, 0xcf8a4545, 0x10e9f9f9, 0x06040202, 0x81fe7f7f, 0xf0a05050, 0x44783c3c, 0xba259f9f, 0xe34ba8a8, 0xf3a25151, 0xfe5da3a3, 0xc0804040, 0x8a058f8f, 0xad3f9292, 0xbc219d9d, 0x48703838, 0x04f1f5f5, 0xdf63bcbc, 0xc177b6b6, 0x75afdada, 0x63422121, 0x30201010, 0x1ae5ffff, 0x0efdf3f3, 0x6dbfd2d2, 0x4c81cdcd, 0x14180c0c, 0x35261313, 0x2fc3ecec, 0xe1be5f5f, 0xa2359797, 0xcc884444, 0x392e1717, 0x5793c4c4, 0xf255a7a7, 0x82fc7e7e, 0x477a3d3d, 0xacc86464, 0xe7ba5d5d, 0x2b321919, 0x95e67373, 0xa0c06060, 0x98198181, 0xd19e4f4f, 0x7fa3dcdc, 0x66442222, 0x7e542a2a, 0xab3b9090, 0x830b8888, 0xca8c4646, 0x29c7eeee, 0xd36bb8b8, 0x3c281414, 0x79a7dede, 0xe2bc5e5e, 0x1d160b0b, 0x76addbdb, 0x3bdbe0e0, 0x56643232, 0x4e743a3a, 0x1e140a0a, 0xdb924949, 0x0a0c0606, 0x6c482424, 0xe4b85c5c, 0x5d9fc2c2, 0x6ebdd3d3, 0xef43acac, 0xa6c46262, 0xa8399191, 0xa4319595, 0x37d3e4e4, 0x8bf27979, 0x32d5e7e7, 0x438bc8c8, 0x596e3737, 0xb7da6d6d, 0x8c018d8d, 0x64b1d5d5, 0xd29c4e4e, 0xe049a9a9, 0xb4d86c6c, 0xfaac5656, 0x07f3f4f4, 0x25cfeaea, 0xafca6565, 0x8ef47a7a, 0xe947aeae, 0x18100808, 0xd56fbaba, 0x88f07878, 0x6f4a2525, 0x725c2e2e, 0x24381c1c, 0xf157a6a6, 0xc773b4b4, 0x5197c6c6, 0x23cbe8e8, 0x7ca1dddd, 0x9ce87474, 0x213e1f1f, 0xdd964b4b, 0xdc61bdbd, 0x860d8b8b, 0x850f8a8a, 0x90e07070, 0x427c3e3e, 0xc471b5b5, 0xaacc6666, 0xd8904848, 0x05060303, 0x01f7f6f6, 0x121c0e0e, 0xa3c26161, 0x5f6a3535, 0xf9ae5757, 0xd069b9b9, 0x91178686, 0x5899c1c1, 0x273a1d1d, 0xb9279e9e, 0x38d9e1e1, 0x13ebf8f8, 0xb32b9898, 0x33221111, 0xbbd26969, 0x70a9d9d9, 0x89078e8e, 0xa7339494, 0xb62d9b9b, 0x223c1e1e, 0x92158787, 0x20c9e9e9, 0x4987cece, 0xffaa5555, 0x78502828, 0x7aa5dfdf, 0x8f038c8c, 0xf859a1a1, 0x80098989, 0x171a0d0d, 0xda65bfbf, 0x31d7e6e6, 0xc6844242, 0xb8d06868, 0xc3824141, 0xb0299999, 0x775a2d2d, 0x111e0f0f, 0xcb7bb0b0, 0xfca85454, 0xd66dbbbb, 0x3a2c1616];
-    var T3 = [0x63a5c663, 0x7c84f87c, 0x7799ee77, 0x7b8df67b, 0xf20dfff2, 0x6bbdd66b, 0x6fb1de6f, 0xc55491c5, 0x30506030, 0x01030201, 0x67a9ce67, 0x2b7d562b, 0xfe19e7fe, 0xd762b5d7, 0xabe64dab, 0x769aec76, 0xca458fca, 0x829d1f82, 0xc94089c9, 0x7d87fa7d, 0xfa15effa, 0x59ebb259, 0x47c98e47, 0xf00bfbf0, 0xadec41ad, 0xd467b3d4, 0xa2fd5fa2, 0xafea45af, 0x9cbf239c, 0xa4f753a4, 0x7296e472, 0xc05b9bc0, 0xb7c275b7, 0xfd1ce1fd, 0x93ae3d93, 0x266a4c26, 0x365a6c36, 0x3f417e3f, 0xf702f5f7, 0xcc4f83cc, 0x345c6834, 0xa5f451a5, 0xe534d1e5, 0xf108f9f1, 0x7193e271, 0xd873abd8, 0x31536231, 0x153f2a15, 0x040c0804, 0xc75295c7, 0x23654623, 0xc35e9dc3, 0x18283018, 0x96a13796, 0x050f0a05, 0x9ab52f9a, 0x07090e07, 0x12362412, 0x809b1b80, 0xe23ddfe2, 0xeb26cdeb, 0x27694e27, 0xb2cd7fb2, 0x759fea75, 0x091b1209, 0x839e1d83, 0x2c74582c, 0x1a2e341a, 0x1b2d361b, 0x6eb2dc6e, 0x5aeeb45a, 0xa0fb5ba0, 0x52f6a452, 0x3b4d763b, 0xd661b7d6, 0xb3ce7db3, 0x297b5229, 0xe33edde3, 0x2f715e2f, 0x84971384, 0x53f5a653, 0xd168b9d1, 0x00000000, 0xed2cc1ed, 0x20604020, 0xfc1fe3fc, 0xb1c879b1, 0x5bedb65b, 0x6abed46a, 0xcb468dcb, 0xbed967be, 0x394b7239, 0x4ade944a, 0x4cd4984c, 0x58e8b058, 0xcf4a85cf, 0xd06bbbd0, 0xef2ac5ef, 0xaae54faa, 0xfb16edfb, 0x43c58643, 0x4dd79a4d, 0x33556633, 0x85941185, 0x45cf8a45, 0xf910e9f9, 0x02060402, 0x7f81fe7f, 0x50f0a050, 0x3c44783c, 0x9fba259f, 0xa8e34ba8, 0x51f3a251, 0xa3fe5da3, 0x40c08040, 0x8f8a058f, 0x92ad3f92, 0x9dbc219d, 0x38487038, 0xf504f1f5, 0xbcdf63bc, 0xb6c177b6, 0xda75afda, 0x21634221, 0x10302010, 0xff1ae5ff, 0xf30efdf3, 0xd26dbfd2, 0xcd4c81cd, 0x0c14180c, 0x13352613, 0xec2fc3ec, 0x5fe1be5f, 0x97a23597, 0x44cc8844, 0x17392e17, 0xc45793c4, 0xa7f255a7, 0x7e82fc7e, 0x3d477a3d, 0x64acc864, 0x5de7ba5d, 0x192b3219, 0x7395e673, 0x60a0c060, 0x81981981, 0x4fd19e4f, 0xdc7fa3dc, 0x22664422, 0x2a7e542a, 0x90ab3b90, 0x88830b88, 0x46ca8c46, 0xee29c7ee, 0xb8d36bb8, 0x143c2814, 0xde79a7de, 0x5ee2bc5e, 0x0b1d160b, 0xdb76addb, 0xe03bdbe0, 0x32566432, 0x3a4e743a, 0x0a1e140a, 0x49db9249, 0x060a0c06, 0x246c4824, 0x5ce4b85c, 0xc25d9fc2, 0xd36ebdd3, 0xacef43ac, 0x62a6c462, 0x91a83991, 0x95a43195, 0xe437d3e4, 0x798bf279, 0xe732d5e7, 0xc8438bc8, 0x37596e37, 0x6db7da6d, 0x8d8c018d, 0xd564b1d5, 0x4ed29c4e, 0xa9e049a9, 0x6cb4d86c, 0x56faac56, 0xf407f3f4, 0xea25cfea, 0x65afca65, 0x7a8ef47a, 0xaee947ae, 0x08181008, 0xbad56fba, 0x7888f078, 0x256f4a25, 0x2e725c2e, 0x1c24381c, 0xa6f157a6, 0xb4c773b4, 0xc65197c6, 0xe823cbe8, 0xdd7ca1dd, 0x749ce874, 0x1f213e1f, 0x4bdd964b, 0xbddc61bd, 0x8b860d8b, 0x8a850f8a, 0x7090e070, 0x3e427c3e, 0xb5c471b5, 0x66aacc66, 0x48d89048, 0x03050603, 0xf601f7f6, 0x0e121c0e, 0x61a3c261, 0x355f6a35, 0x57f9ae57, 0xb9d069b9, 0x86911786, 0xc15899c1, 0x1d273a1d, 0x9eb9279e, 0xe138d9e1, 0xf813ebf8, 0x98b32b98, 0x11332211, 0x69bbd269, 0xd970a9d9, 0x8e89078e, 0x94a73394, 0x9bb62d9b, 0x1e223c1e, 0x87921587, 0xe920c9e9, 0xce4987ce, 0x55ffaa55, 0x28785028, 0xdf7aa5df, 0x8c8f038c, 0xa1f859a1, 0x89800989, 0x0d171a0d, 0xbfda65bf, 0xe631d7e6, 0x42c68442, 0x68b8d068, 0x41c38241, 0x99b02999, 0x2d775a2d, 0x0f111e0f, 0xb0cb7bb0, 0x54fca854, 0xbbd66dbb, 0x163a2c16];
-    var T4 = [0x6363a5c6, 0x7c7c84f8, 0x777799ee, 0x7b7b8df6, 0xf2f20dff, 0x6b6bbdd6, 0x6f6fb1de, 0xc5c55491, 0x30305060, 0x01010302, 0x6767a9ce, 0x2b2b7d56, 0xfefe19e7, 0xd7d762b5, 0xababe64d, 0x76769aec, 0xcaca458f, 0x82829d1f, 0xc9c94089, 0x7d7d87fa, 0xfafa15ef, 0x5959ebb2, 0x4747c98e, 0xf0f00bfb, 0xadadec41, 0xd4d467b3, 0xa2a2fd5f, 0xafafea45, 0x9c9cbf23, 0xa4a4f753, 0x727296e4, 0xc0c05b9b, 0xb7b7c275, 0xfdfd1ce1, 0x9393ae3d, 0x26266a4c, 0x36365a6c, 0x3f3f417e, 0xf7f702f5, 0xcccc4f83, 0x34345c68, 0xa5a5f451, 0xe5e534d1, 0xf1f108f9, 0x717193e2, 0xd8d873ab, 0x31315362, 0x15153f2a, 0x04040c08, 0xc7c75295, 0x23236546, 0xc3c35e9d, 0x18182830, 0x9696a137, 0x05050f0a, 0x9a9ab52f, 0x0707090e, 0x12123624, 0x80809b1b, 0xe2e23ddf, 0xebeb26cd, 0x2727694e, 0xb2b2cd7f, 0x75759fea, 0x09091b12, 0x83839e1d, 0x2c2c7458, 0x1a1a2e34, 0x1b1b2d36, 0x6e6eb2dc, 0x5a5aeeb4, 0xa0a0fb5b, 0x5252f6a4, 0x3b3b4d76, 0xd6d661b7, 0xb3b3ce7d, 0x29297b52, 0xe3e33edd, 0x2f2f715e, 0x84849713, 0x5353f5a6, 0xd1d168b9, 0x00000000, 0xeded2cc1, 0x20206040, 0xfcfc1fe3, 0xb1b1c879, 0x5b5bedb6, 0x6a6abed4, 0xcbcb468d, 0xbebed967, 0x39394b72, 0x4a4ade94, 0x4c4cd498, 0x5858e8b0, 0xcfcf4a85, 0xd0d06bbb, 0xefef2ac5, 0xaaaae54f, 0xfbfb16ed, 0x4343c586, 0x4d4dd79a, 0x33335566, 0x85859411, 0x4545cf8a, 0xf9f910e9, 0x02020604, 0x7f7f81fe, 0x5050f0a0, 0x3c3c4478, 0x9f9fba25, 0xa8a8e34b, 0x5151f3a2, 0xa3a3fe5d, 0x4040c080, 0x8f8f8a05, 0x9292ad3f, 0x9d9dbc21, 0x38384870, 0xf5f504f1, 0xbcbcdf63, 0xb6b6c177, 0xdada75af, 0x21216342, 0x10103020, 0xffff1ae5, 0xf3f30efd, 0xd2d26dbf, 0xcdcd4c81, 0x0c0c1418, 0x13133526, 0xecec2fc3, 0x5f5fe1be, 0x9797a235, 0x4444cc88, 0x1717392e, 0xc4c45793, 0xa7a7f255, 0x7e7e82fc, 0x3d3d477a, 0x6464acc8, 0x5d5de7ba, 0x19192b32, 0x737395e6, 0x6060a0c0, 0x81819819, 0x4f4fd19e, 0xdcdc7fa3, 0x22226644, 0x2a2a7e54, 0x9090ab3b, 0x8888830b, 0x4646ca8c, 0xeeee29c7, 0xb8b8d36b, 0x14143c28, 0xdede79a7, 0x5e5ee2bc, 0x0b0b1d16, 0xdbdb76ad, 0xe0e03bdb, 0x32325664, 0x3a3a4e74, 0x0a0a1e14, 0x4949db92, 0x06060a0c, 0x24246c48, 0x5c5ce4b8, 0xc2c25d9f, 0xd3d36ebd, 0xacacef43, 0x6262a6c4, 0x9191a839, 0x9595a431, 0xe4e437d3, 0x79798bf2, 0xe7e732d5, 0xc8c8438b, 0x3737596e, 0x6d6db7da, 0x8d8d8c01, 0xd5d564b1, 0x4e4ed29c, 0xa9a9e049, 0x6c6cb4d8, 0x5656faac, 0xf4f407f3, 0xeaea25cf, 0x6565afca, 0x7a7a8ef4, 0xaeaee947, 0x08081810, 0xbabad56f, 0x787888f0, 0x25256f4a, 0x2e2e725c, 0x1c1c2438, 0xa6a6f157, 0xb4b4c773, 0xc6c65197, 0xe8e823cb, 0xdddd7ca1, 0x74749ce8, 0x1f1f213e, 0x4b4bdd96, 0xbdbddc61, 0x8b8b860d, 0x8a8a850f, 0x707090e0, 0x3e3e427c, 0xb5b5c471, 0x6666aacc, 0x4848d890, 0x03030506, 0xf6f601f7, 0x0e0e121c, 0x6161a3c2, 0x35355f6a, 0x5757f9ae, 0xb9b9d069, 0x86869117, 0xc1c15899, 0x1d1d273a, 0x9e9eb927, 0xe1e138d9, 0xf8f813eb, 0x9898b32b, 0x11113322, 0x6969bbd2, 0xd9d970a9, 0x8e8e8907, 0x9494a733, 0x9b9bb62d, 0x1e1e223c, 0x87879215, 0xe9e920c9, 0xcece4987, 0x5555ffaa, 0x28287850, 0xdfdf7aa5, 0x8c8c8f03, 0xa1a1f859, 0x89898009, 0x0d0d171a, 0xbfbfda65, 0xe6e631d7, 0x4242c684, 0x6868b8d0, 0x4141c382, 0x9999b029, 0x2d2d775a, 0x0f0f111e, 0xb0b0cb7b, 0x5454fca8, 0xbbbbd66d, 0x16163a2c];
-
-    // Transformations for decryption
-    var T5 = [0x51f4a750, 0x7e416553, 0x1a17a4c3, 0x3a275e96, 0x3bab6bcb, 0x1f9d45f1, 0xacfa58ab, 0x4be30393, 0x2030fa55, 0xad766df6, 0x88cc7691, 0xf5024c25, 0x4fe5d7fc, 0xc52acbd7, 0x26354480, 0xb562a38f, 0xdeb15a49, 0x25ba1b67, 0x45ea0e98, 0x5dfec0e1, 0xc32f7502, 0x814cf012, 0x8d4697a3, 0x6bd3f9c6, 0x038f5fe7, 0x15929c95, 0xbf6d7aeb, 0x955259da, 0xd4be832d, 0x587421d3, 0x49e06929, 0x8ec9c844, 0x75c2896a, 0xf48e7978, 0x99583e6b, 0x27b971dd, 0xbee14fb6, 0xf088ad17, 0xc920ac66, 0x7dce3ab4, 0x63df4a18, 0xe51a3182, 0x97513360, 0x62537f45, 0xb16477e0, 0xbb6bae84, 0xfe81a01c, 0xf9082b94, 0x70486858, 0x8f45fd19, 0x94de6c87, 0x527bf8b7, 0xab73d323, 0x724b02e2, 0xe31f8f57, 0x6655ab2a, 0xb2eb2807, 0x2fb5c203, 0x86c57b9a, 0xd33708a5, 0x302887f2, 0x23bfa5b2, 0x02036aba, 0xed16825c, 0x8acf1c2b, 0xa779b492, 0xf307f2f0, 0x4e69e2a1, 0x65daf4cd, 0x0605bed5, 0xd134621f, 0xc4a6fe8a, 0x342e539d, 0xa2f355a0, 0x058ae132, 0xa4f6eb75, 0x0b83ec39, 0x4060efaa, 0x5e719f06, 0xbd6e1051, 0x3e218af9, 0x96dd063d, 0xdd3e05ae, 0x4de6bd46, 0x91548db5, 0x71c45d05, 0x0406d46f, 0x605015ff, 0x1998fb24, 0xd6bde997, 0x894043cc, 0x67d99e77, 0xb0e842bd, 0x07898b88, 0xe7195b38, 0x79c8eedb, 0xa17c0a47, 0x7c420fe9, 0xf8841ec9, 0x00000000, 0x09808683, 0x322bed48, 0x1e1170ac, 0x6c5a724e, 0xfd0efffb, 0x0f853856, 0x3daed51e, 0x362d3927, 0x0a0fd964, 0x685ca621, 0x9b5b54d1, 0x24362e3a, 0x0c0a67b1, 0x9357e70f, 0xb4ee96d2, 0x1b9b919e, 0x80c0c54f, 0x61dc20a2, 0x5a774b69, 0x1c121a16, 0xe293ba0a, 0xc0a02ae5, 0x3c22e043, 0x121b171d, 0x0e090d0b, 0xf28bc7ad, 0x2db6a8b9, 0x141ea9c8, 0x57f11985, 0xaf75074c, 0xee99ddbb, 0xa37f60fd, 0xf701269f, 0x5c72f5bc, 0x44663bc5, 0x5bfb7e34, 0x8b432976, 0xcb23c6dc, 0xb6edfc68, 0xb8e4f163, 0xd731dcca, 0x42638510, 0x13972240, 0x84c61120, 0x854a247d, 0xd2bb3df8, 0xaef93211, 0xc729a16d, 0x1d9e2f4b, 0xdcb230f3, 0x0d8652ec, 0x77c1e3d0, 0x2bb3166c, 0xa970b999, 0x119448fa, 0x47e96422, 0xa8fc8cc4, 0xa0f03f1a, 0x567d2cd8, 0x223390ef, 0x87494ec7, 0xd938d1c1, 0x8ccaa2fe, 0x98d40b36, 0xa6f581cf, 0xa57ade28, 0xdab78e26, 0x3fadbfa4, 0x2c3a9de4, 0x5078920d, 0x6a5fcc9b, 0x547e4662, 0xf68d13c2, 0x90d8b8e8, 0x2e39f75e, 0x82c3aff5, 0x9f5d80be, 0x69d0937c, 0x6fd52da9, 0xcf2512b3, 0xc8ac993b, 0x10187da7, 0xe89c636e, 0xdb3bbb7b, 0xcd267809, 0x6e5918f4, 0xec9ab701, 0x834f9aa8, 0xe6956e65, 0xaaffe67e, 0x21bccf08, 0xef15e8e6, 0xbae79bd9, 0x4a6f36ce, 0xea9f09d4, 0x29b07cd6, 0x31a4b2af, 0x2a3f2331, 0xc6a59430, 0x35a266c0, 0x744ebc37, 0xfc82caa6, 0xe090d0b0, 0x33a7d815, 0xf104984a, 0x41ecdaf7, 0x7fcd500e, 0x1791f62f, 0x764dd68d, 0x43efb04d, 0xccaa4d54, 0xe49604df, 0x9ed1b5e3, 0x4c6a881b, 0xc12c1fb8, 0x4665517f, 0x9d5eea04, 0x018c355d, 0xfa877473, 0xfb0b412e, 0xb3671d5a, 0x92dbd252, 0xe9105633, 0x6dd64713, 0x9ad7618c, 0x37a10c7a, 0x59f8148e, 0xeb133c89, 0xcea927ee, 0xb761c935, 0xe11ce5ed, 0x7a47b13c, 0x9cd2df59, 0x55f2733f, 0x1814ce79, 0x73c737bf, 0x53f7cdea, 0x5ffdaa5b, 0xdf3d6f14, 0x7844db86, 0xcaaff381, 0xb968c43e, 0x3824342c, 0xc2a3405f, 0x161dc372, 0xbce2250c, 0x283c498b, 0xff0d9541, 0x39a80171, 0x080cb3de, 0xd8b4e49c, 0x6456c190, 0x7bcb8461, 0xd532b670, 0x486c5c74, 0xd0b85742];
-    var T6 = [0x5051f4a7, 0x537e4165, 0xc31a17a4, 0x963a275e, 0xcb3bab6b, 0xf11f9d45, 0xabacfa58, 0x934be303, 0x552030fa, 0xf6ad766d, 0x9188cc76, 0x25f5024c, 0xfc4fe5d7, 0xd7c52acb, 0x80263544, 0x8fb562a3, 0x49deb15a, 0x6725ba1b, 0x9845ea0e, 0xe15dfec0, 0x02c32f75, 0x12814cf0, 0xa38d4697, 0xc66bd3f9, 0xe7038f5f, 0x9515929c, 0xebbf6d7a, 0xda955259, 0x2dd4be83, 0xd3587421, 0x2949e069, 0x448ec9c8, 0x6a75c289, 0x78f48e79, 0x6b99583e, 0xdd27b971, 0xb6bee14f, 0x17f088ad, 0x66c920ac, 0xb47dce3a, 0x1863df4a, 0x82e51a31, 0x60975133, 0x4562537f, 0xe0b16477, 0x84bb6bae, 0x1cfe81a0, 0x94f9082b, 0x58704868, 0x198f45fd, 0x8794de6c, 0xb7527bf8, 0x23ab73d3, 0xe2724b02, 0x57e31f8f, 0x2a6655ab, 0x07b2eb28, 0x032fb5c2, 0x9a86c57b, 0xa5d33708, 0xf2302887, 0xb223bfa5, 0xba02036a, 0x5ced1682, 0x2b8acf1c, 0x92a779b4, 0xf0f307f2, 0xa14e69e2, 0xcd65daf4, 0xd50605be, 0x1fd13462, 0x8ac4a6fe, 0x9d342e53, 0xa0a2f355, 0x32058ae1, 0x75a4f6eb, 0x390b83ec, 0xaa4060ef, 0x065e719f, 0x51bd6e10, 0xf93e218a, 0x3d96dd06, 0xaedd3e05, 0x464de6bd, 0xb591548d, 0x0571c45d, 0x6f0406d4, 0xff605015, 0x241998fb, 0x97d6bde9, 0xcc894043, 0x7767d99e, 0xbdb0e842, 0x8807898b, 0x38e7195b, 0xdb79c8ee, 0x47a17c0a, 0xe97c420f, 0xc9f8841e, 0x00000000, 0x83098086, 0x48322bed, 0xac1e1170, 0x4e6c5a72, 0xfbfd0eff, 0x560f8538, 0x1e3daed5, 0x27362d39, 0x640a0fd9, 0x21685ca6, 0xd19b5b54, 0x3a24362e, 0xb10c0a67, 0x0f9357e7, 0xd2b4ee96, 0x9e1b9b91, 0x4f80c0c5, 0xa261dc20, 0x695a774b, 0x161c121a, 0x0ae293ba, 0xe5c0a02a, 0x433c22e0, 0x1d121b17, 0x0b0e090d, 0xadf28bc7, 0xb92db6a8, 0xc8141ea9, 0x8557f119, 0x4caf7507, 0xbbee99dd, 0xfda37f60, 0x9ff70126, 0xbc5c72f5, 0xc544663b, 0x345bfb7e, 0x768b4329, 0xdccb23c6, 0x68b6edfc, 0x63b8e4f1, 0xcad731dc, 0x10426385, 0x40139722, 0x2084c611, 0x7d854a24, 0xf8d2bb3d, 0x11aef932, 0x6dc729a1, 0x4b1d9e2f, 0xf3dcb230, 0xec0d8652, 0xd077c1e3, 0x6c2bb316, 0x99a970b9, 0xfa119448, 0x2247e964, 0xc4a8fc8c, 0x1aa0f03f, 0xd8567d2c, 0xef223390, 0xc787494e, 0xc1d938d1, 0xfe8ccaa2, 0x3698d40b, 0xcfa6f581, 0x28a57ade, 0x26dab78e, 0xa43fadbf, 0xe42c3a9d, 0x0d507892, 0x9b6a5fcc, 0x62547e46, 0xc2f68d13, 0xe890d8b8, 0x5e2e39f7, 0xf582c3af, 0xbe9f5d80, 0x7c69d093, 0xa96fd52d, 0xb3cf2512, 0x3bc8ac99, 0xa710187d, 0x6ee89c63, 0x7bdb3bbb, 0x09cd2678, 0xf46e5918, 0x01ec9ab7, 0xa8834f9a, 0x65e6956e, 0x7eaaffe6, 0x0821bccf, 0xe6ef15e8, 0xd9bae79b, 0xce4a6f36, 0xd4ea9f09, 0xd629b07c, 0xaf31a4b2, 0x312a3f23, 0x30c6a594, 0xc035a266, 0x37744ebc, 0xa6fc82ca, 0xb0e090d0, 0x1533a7d8, 0x4af10498, 0xf741ecda, 0x0e7fcd50, 0x2f1791f6, 0x8d764dd6, 0x4d43efb0, 0x54ccaa4d, 0xdfe49604, 0xe39ed1b5, 0x1b4c6a88, 0xb8c12c1f, 0x7f466551, 0x049d5eea, 0x5d018c35, 0x73fa8774, 0x2efb0b41, 0x5ab3671d, 0x5292dbd2, 0x33e91056, 0x136dd647, 0x8c9ad761, 0x7a37a10c, 0x8e59f814, 0x89eb133c, 0xeecea927, 0x35b761c9, 0xede11ce5, 0x3c7a47b1, 0x599cd2df, 0x3f55f273, 0x791814ce, 0xbf73c737, 0xea53f7cd, 0x5b5ffdaa, 0x14df3d6f, 0x867844db, 0x81caaff3, 0x3eb968c4, 0x2c382434, 0x5fc2a340, 0x72161dc3, 0x0cbce225, 0x8b283c49, 0x41ff0d95, 0x7139a801, 0xde080cb3, 0x9cd8b4e4, 0x906456c1, 0x617bcb84, 0x70d532b6, 0x74486c5c, 0x42d0b857];
-    var T7 = [0xa75051f4, 0x65537e41, 0xa4c31a17, 0x5e963a27, 0x6bcb3bab, 0x45f11f9d, 0x58abacfa, 0x03934be3, 0xfa552030, 0x6df6ad76, 0x769188cc, 0x4c25f502, 0xd7fc4fe5, 0xcbd7c52a, 0x44802635, 0xa38fb562, 0x5a49deb1, 0x1b6725ba, 0x0e9845ea, 0xc0e15dfe, 0x7502c32f, 0xf012814c, 0x97a38d46, 0xf9c66bd3, 0x5fe7038f, 0x9c951592, 0x7aebbf6d, 0x59da9552, 0x832dd4be, 0x21d35874, 0x692949e0, 0xc8448ec9, 0x896a75c2, 0x7978f48e, 0x3e6b9958, 0x71dd27b9, 0x4fb6bee1, 0xad17f088, 0xac66c920, 0x3ab47dce, 0x4a1863df, 0x3182e51a, 0x33609751, 0x7f456253, 0x77e0b164, 0xae84bb6b, 0xa01cfe81, 0x2b94f908, 0x68587048, 0xfd198f45, 0x6c8794de, 0xf8b7527b, 0xd323ab73, 0x02e2724b, 0x8f57e31f, 0xab2a6655, 0x2807b2eb, 0xc2032fb5, 0x7b9a86c5, 0x08a5d337, 0x87f23028, 0xa5b223bf, 0x6aba0203, 0x825ced16, 0x1c2b8acf, 0xb492a779, 0xf2f0f307, 0xe2a14e69, 0xf4cd65da, 0xbed50605, 0x621fd134, 0xfe8ac4a6, 0x539d342e, 0x55a0a2f3, 0xe132058a, 0xeb75a4f6, 0xec390b83, 0xefaa4060, 0x9f065e71, 0x1051bd6e, 0x8af93e21, 0x063d96dd, 0x05aedd3e, 0xbd464de6, 0x8db59154, 0x5d0571c4, 0xd46f0406, 0x15ff6050, 0xfb241998, 0xe997d6bd, 0x43cc8940, 0x9e7767d9, 0x42bdb0e8, 0x8b880789, 0x5b38e719, 0xeedb79c8, 0x0a47a17c, 0x0fe97c42, 0x1ec9f884, 0x00000000, 0x86830980, 0xed48322b, 0x70ac1e11, 0x724e6c5a, 0xfffbfd0e, 0x38560f85, 0xd51e3dae, 0x3927362d, 0xd9640a0f, 0xa621685c, 0x54d19b5b, 0x2e3a2436, 0x67b10c0a, 0xe70f9357, 0x96d2b4ee, 0x919e1b9b, 0xc54f80c0, 0x20a261dc, 0x4b695a77, 0x1a161c12, 0xba0ae293, 0x2ae5c0a0, 0xe0433c22, 0x171d121b, 0x0d0b0e09, 0xc7adf28b, 0xa8b92db6, 0xa9c8141e, 0x198557f1, 0x074caf75, 0xddbbee99, 0x60fda37f, 0x269ff701, 0xf5bc5c72, 0x3bc54466, 0x7e345bfb, 0x29768b43, 0xc6dccb23, 0xfc68b6ed, 0xf163b8e4, 0xdccad731, 0x85104263, 0x22401397, 0x112084c6, 0x247d854a, 0x3df8d2bb, 0x3211aef9, 0xa16dc729, 0x2f4b1d9e, 0x30f3dcb2, 0x52ec0d86, 0xe3d077c1, 0x166c2bb3, 0xb999a970, 0x48fa1194, 0x642247e9, 0x8cc4a8fc, 0x3f1aa0f0, 0x2cd8567d, 0x90ef2233, 0x4ec78749, 0xd1c1d938, 0xa2fe8cca, 0x0b3698d4, 0x81cfa6f5, 0xde28a57a, 0x8e26dab7, 0xbfa43fad, 0x9de42c3a, 0x920d5078, 0xcc9b6a5f, 0x4662547e, 0x13c2f68d, 0xb8e890d8, 0xf75e2e39, 0xaff582c3, 0x80be9f5d, 0x937c69d0, 0x2da96fd5, 0x12b3cf25, 0x993bc8ac, 0x7da71018, 0x636ee89c, 0xbb7bdb3b, 0x7809cd26, 0x18f46e59, 0xb701ec9a, 0x9aa8834f, 0x6e65e695, 0xe67eaaff, 0xcf0821bc, 0xe8e6ef15, 0x9bd9bae7, 0x36ce4a6f, 0x09d4ea9f, 0x7cd629b0, 0xb2af31a4, 0x23312a3f, 0x9430c6a5, 0x66c035a2, 0xbc37744e, 0xcaa6fc82, 0xd0b0e090, 0xd81533a7, 0x984af104, 0xdaf741ec, 0x500e7fcd, 0xf62f1791, 0xd68d764d, 0xb04d43ef, 0x4d54ccaa, 0x04dfe496, 0xb5e39ed1, 0x881b4c6a, 0x1fb8c12c, 0x517f4665, 0xea049d5e, 0x355d018c, 0x7473fa87, 0x412efb0b, 0x1d5ab367, 0xd25292db, 0x5633e910, 0x47136dd6, 0x618c9ad7, 0x0c7a37a1, 0x148e59f8, 0x3c89eb13, 0x27eecea9, 0xc935b761, 0xe5ede11c, 0xb13c7a47, 0xdf599cd2, 0x733f55f2, 0xce791814, 0x37bf73c7, 0xcdea53f7, 0xaa5b5ffd, 0x6f14df3d, 0xdb867844, 0xf381caaf, 0xc43eb968, 0x342c3824, 0x405fc2a3, 0xc372161d, 0x250cbce2, 0x498b283c, 0x9541ff0d, 0x017139a8, 0xb3de080c, 0xe49cd8b4, 0xc1906456, 0x84617bcb, 0xb670d532, 0x5c74486c, 0x5742d0b8];
-    var T8 = [0xf4a75051, 0x4165537e, 0x17a4c31a, 0x275e963a, 0xab6bcb3b, 0x9d45f11f, 0xfa58abac, 0xe303934b, 0x30fa5520, 0x766df6ad, 0xcc769188, 0x024c25f5, 0xe5d7fc4f, 0x2acbd7c5, 0x35448026, 0x62a38fb5, 0xb15a49de, 0xba1b6725, 0xea0e9845, 0xfec0e15d, 0x2f7502c3, 0x4cf01281, 0x4697a38d, 0xd3f9c66b, 0x8f5fe703, 0x929c9515, 0x6d7aebbf, 0x5259da95, 0xbe832dd4, 0x7421d358, 0xe0692949, 0xc9c8448e, 0xc2896a75, 0x8e7978f4, 0x583e6b99, 0xb971dd27, 0xe14fb6be, 0x88ad17f0, 0x20ac66c9, 0xce3ab47d, 0xdf4a1863, 0x1a3182e5, 0x51336097, 0x537f4562, 0x6477e0b1, 0x6bae84bb, 0x81a01cfe, 0x082b94f9, 0x48685870, 0x45fd198f, 0xde6c8794, 0x7bf8b752, 0x73d323ab, 0x4b02e272, 0x1f8f57e3, 0x55ab2a66, 0xeb2807b2, 0xb5c2032f, 0xc57b9a86, 0x3708a5d3, 0x2887f230, 0xbfa5b223, 0x036aba02, 0x16825ced, 0xcf1c2b8a, 0x79b492a7, 0x07f2f0f3, 0x69e2a14e, 0xdaf4cd65, 0x05bed506, 0x34621fd1, 0xa6fe8ac4, 0x2e539d34, 0xf355a0a2, 0x8ae13205, 0xf6eb75a4, 0x83ec390b, 0x60efaa40, 0x719f065e, 0x6e1051bd, 0x218af93e, 0xdd063d96, 0x3e05aedd, 0xe6bd464d, 0x548db591, 0xc45d0571, 0x06d46f04, 0x5015ff60, 0x98fb2419, 0xbde997d6, 0x4043cc89, 0xd99e7767, 0xe842bdb0, 0x898b8807, 0x195b38e7, 0xc8eedb79, 0x7c0a47a1, 0x420fe97c, 0x841ec9f8, 0x00000000, 0x80868309, 0x2bed4832, 0x1170ac1e, 0x5a724e6c, 0x0efffbfd, 0x8538560f, 0xaed51e3d, 0x2d392736, 0x0fd9640a, 0x5ca62168, 0x5b54d19b, 0x362e3a24, 0x0a67b10c, 0x57e70f93, 0xee96d2b4, 0x9b919e1b, 0xc0c54f80, 0xdc20a261, 0x774b695a, 0x121a161c, 0x93ba0ae2, 0xa02ae5c0, 0x22e0433c, 0x1b171d12, 0x090d0b0e, 0x8bc7adf2, 0xb6a8b92d, 0x1ea9c814, 0xf1198557, 0x75074caf, 0x99ddbbee, 0x7f60fda3, 0x01269ff7, 0x72f5bc5c, 0x663bc544, 0xfb7e345b, 0x4329768b, 0x23c6dccb, 0xedfc68b6, 0xe4f163b8, 0x31dccad7, 0x63851042, 0x97224013, 0xc6112084, 0x4a247d85, 0xbb3df8d2, 0xf93211ae, 0x29a16dc7, 0x9e2f4b1d, 0xb230f3dc, 0x8652ec0d, 0xc1e3d077, 0xb3166c2b, 0x70b999a9, 0x9448fa11, 0xe9642247, 0xfc8cc4a8, 0xf03f1aa0, 0x7d2cd856, 0x3390ef22, 0x494ec787, 0x38d1c1d9, 0xcaa2fe8c, 0xd40b3698, 0xf581cfa6, 0x7ade28a5, 0xb78e26da, 0xadbfa43f, 0x3a9de42c, 0x78920d50, 0x5fcc9b6a, 0x7e466254, 0x8d13c2f6, 0xd8b8e890, 0x39f75e2e, 0xc3aff582, 0x5d80be9f, 0xd0937c69, 0xd52da96f, 0x2512b3cf, 0xac993bc8, 0x187da710, 0x9c636ee8, 0x3bbb7bdb, 0x267809cd, 0x5918f46e, 0x9ab701ec, 0x4f9aa883, 0x956e65e6, 0xffe67eaa, 0xbccf0821, 0x15e8e6ef, 0xe79bd9ba, 0x6f36ce4a, 0x9f09d4ea, 0xb07cd629, 0xa4b2af31, 0x3f23312a, 0xa59430c6, 0xa266c035, 0x4ebc3774, 0x82caa6fc, 0x90d0b0e0, 0xa7d81533, 0x04984af1, 0xecdaf741, 0xcd500e7f, 0x91f62f17, 0x4dd68d76, 0xefb04d43, 0xaa4d54cc, 0x9604dfe4, 0xd1b5e39e, 0x6a881b4c, 0x2c1fb8c1, 0x65517f46, 0x5eea049d, 0x8c355d01, 0x877473fa, 0x0b412efb, 0x671d5ab3, 0xdbd25292, 0x105633e9, 0xd647136d, 0xd7618c9a, 0xa10c7a37, 0xf8148e59, 0x133c89eb, 0xa927eece, 0x61c935b7, 0x1ce5ede1, 0x47b13c7a, 0xd2df599c, 0xf2733f55, 0x14ce7918, 0xc737bf73, 0xf7cdea53, 0xfdaa5b5f, 0x3d6f14df, 0x44db8678, 0xaff381ca, 0x68c43eb9, 0x24342c38, 0xa3405fc2, 0x1dc37216, 0xe2250cbc, 0x3c498b28, 0x0d9541ff, 0xa8017139, 0x0cb3de08, 0xb4e49cd8, 0x56c19064, 0xcb84617b, 0x32b670d5, 0x6c5c7448, 0xb85742d0];
-
-    // Transformations for decryption key expansion
-    var U1 = [0x00000000, 0x0e090d0b, 0x1c121a16, 0x121b171d, 0x3824342c, 0x362d3927, 0x24362e3a, 0x2a3f2331, 0x70486858, 0x7e416553, 0x6c5a724e, 0x62537f45, 0x486c5c74, 0x4665517f, 0x547e4662, 0x5a774b69, 0xe090d0b0, 0xee99ddbb, 0xfc82caa6, 0xf28bc7ad, 0xd8b4e49c, 0xd6bde997, 0xc4a6fe8a, 0xcaaff381, 0x90d8b8e8, 0x9ed1b5e3, 0x8ccaa2fe, 0x82c3aff5, 0xa8fc8cc4, 0xa6f581cf, 0xb4ee96d2, 0xbae79bd9, 0xdb3bbb7b, 0xd532b670, 0xc729a16d, 0xc920ac66, 0xe31f8f57, 0xed16825c, 0xff0d9541, 0xf104984a, 0xab73d323, 0xa57ade28, 0xb761c935, 0xb968c43e, 0x9357e70f, 0x9d5eea04, 0x8f45fd19, 0x814cf012, 0x3bab6bcb, 0x35a266c0, 0x27b971dd, 0x29b07cd6, 0x038f5fe7, 0x0d8652ec, 0x1f9d45f1, 0x119448fa, 0x4be30393, 0x45ea0e98, 0x57f11985, 0x59f8148e, 0x73c737bf, 0x7dce3ab4, 0x6fd52da9, 0x61dc20a2, 0xad766df6, 0xa37f60fd, 0xb16477e0, 0xbf6d7aeb, 0x955259da, 0x9b5b54d1, 0x894043cc, 0x87494ec7, 0xdd3e05ae, 0xd33708a5, 0xc12c1fb8, 0xcf2512b3, 0xe51a3182, 0xeb133c89, 0xf9082b94, 0xf701269f, 0x4de6bd46, 0x43efb04d, 0x51f4a750, 0x5ffdaa5b, 0x75c2896a, 0x7bcb8461, 0x69d0937c, 0x67d99e77, 0x3daed51e, 0x33a7d815, 0x21bccf08, 0x2fb5c203, 0x058ae132, 0x0b83ec39, 0x1998fb24, 0x1791f62f, 0x764dd68d, 0x7844db86, 0x6a5fcc9b, 0x6456c190, 0x4e69e2a1, 0x4060efaa, 0x527bf8b7, 0x5c72f5bc, 0x0605bed5, 0x080cb3de, 0x1a17a4c3, 0x141ea9c8, 0x3e218af9, 0x302887f2, 0x223390ef, 0x2c3a9de4, 0x96dd063d, 0x98d40b36, 0x8acf1c2b, 0x84c61120, 0xaef93211, 0xa0f03f1a, 0xb2eb2807, 0xbce2250c, 0xe6956e65, 0xe89c636e, 0xfa877473, 0xf48e7978, 0xdeb15a49, 0xd0b85742, 0xc2a3405f, 0xccaa4d54, 0x41ecdaf7, 0x4fe5d7fc, 0x5dfec0e1, 0x53f7cdea, 0x79c8eedb, 0x77c1e3d0, 0x65daf4cd, 0x6bd3f9c6, 0x31a4b2af, 0x3fadbfa4, 0x2db6a8b9, 0x23bfa5b2, 0x09808683, 0x07898b88, 0x15929c95, 0x1b9b919e, 0xa17c0a47, 0xaf75074c, 0xbd6e1051, 0xb3671d5a, 0x99583e6b, 0x97513360, 0x854a247d, 0x8b432976, 0xd134621f, 0xdf3d6f14, 0xcd267809, 0xc32f7502, 0xe9105633, 0xe7195b38, 0xf5024c25, 0xfb0b412e, 0x9ad7618c, 0x94de6c87, 0x86c57b9a, 0x88cc7691, 0xa2f355a0, 0xacfa58ab, 0xbee14fb6, 0xb0e842bd, 0xea9f09d4, 0xe49604df, 0xf68d13c2, 0xf8841ec9, 0xd2bb3df8, 0xdcb230f3, 0xcea927ee, 0xc0a02ae5, 0x7a47b13c, 0x744ebc37, 0x6655ab2a, 0x685ca621, 0x42638510, 0x4c6a881b, 0x5e719f06, 0x5078920d, 0x0a0fd964, 0x0406d46f, 0x161dc372, 0x1814ce79, 0x322bed48, 0x3c22e043, 0x2e39f75e, 0x2030fa55, 0xec9ab701, 0xe293ba0a, 0xf088ad17, 0xfe81a01c, 0xd4be832d, 0xdab78e26, 0xc8ac993b, 0xc6a59430, 0x9cd2df59, 0x92dbd252, 0x80c0c54f, 0x8ec9c844, 0xa4f6eb75, 0xaaffe67e, 0xb8e4f163, 0xb6edfc68, 0x0c0a67b1, 0x02036aba, 0x10187da7, 0x1e1170ac, 0x342e539d, 0x3a275e96, 0x283c498b, 0x26354480, 0x7c420fe9, 0x724b02e2, 0x605015ff, 0x6e5918f4, 0x44663bc5, 0x4a6f36ce, 0x587421d3, 0x567d2cd8, 0x37a10c7a, 0x39a80171, 0x2bb3166c, 0x25ba1b67, 0x0f853856, 0x018c355d, 0x13972240, 0x1d9e2f4b, 0x47e96422, 0x49e06929, 0x5bfb7e34, 0x55f2733f, 0x7fcd500e, 0x71c45d05, 0x63df4a18, 0x6dd64713, 0xd731dcca, 0xd938d1c1, 0xcb23c6dc, 0xc52acbd7, 0xef15e8e6, 0xe11ce5ed, 0xf307f2f0, 0xfd0efffb, 0xa779b492, 0xa970b999, 0xbb6bae84, 0xb562a38f, 0x9f5d80be, 0x91548db5, 0x834f9aa8, 0x8d4697a3];
-    var U2 = [0x00000000, 0x0b0e090d, 0x161c121a, 0x1d121b17, 0x2c382434, 0x27362d39, 0x3a24362e, 0x312a3f23, 0x58704868, 0x537e4165, 0x4e6c5a72, 0x4562537f, 0x74486c5c, 0x7f466551, 0x62547e46, 0x695a774b, 0xb0e090d0, 0xbbee99dd, 0xa6fc82ca, 0xadf28bc7, 0x9cd8b4e4, 0x97d6bde9, 0x8ac4a6fe, 0x81caaff3, 0xe890d8b8, 0xe39ed1b5, 0xfe8ccaa2, 0xf582c3af, 0xc4a8fc8c, 0xcfa6f581, 0xd2b4ee96, 0xd9bae79b, 0x7bdb3bbb, 0x70d532b6, 0x6dc729a1, 0x66c920ac, 0x57e31f8f, 0x5ced1682, 0x41ff0d95, 0x4af10498, 0x23ab73d3, 0x28a57ade, 0x35b761c9, 0x3eb968c4, 0x0f9357e7, 0x049d5eea, 0x198f45fd, 0x12814cf0, 0xcb3bab6b, 0xc035a266, 0xdd27b971, 0xd629b07c, 0xe7038f5f, 0xec0d8652, 0xf11f9d45, 0xfa119448, 0x934be303, 0x9845ea0e, 0x8557f119, 0x8e59f814, 0xbf73c737, 0xb47dce3a, 0xa96fd52d, 0xa261dc20, 0xf6ad766d, 0xfda37f60, 0xe0b16477, 0xebbf6d7a, 0xda955259, 0xd19b5b54, 0xcc894043, 0xc787494e, 0xaedd3e05, 0xa5d33708, 0xb8c12c1f, 0xb3cf2512, 0x82e51a31, 0x89eb133c, 0x94f9082b, 0x9ff70126, 0x464de6bd, 0x4d43efb0, 0x5051f4a7, 0x5b5ffdaa, 0x6a75c289, 0x617bcb84, 0x7c69d093, 0x7767d99e, 0x1e3daed5, 0x1533a7d8, 0x0821bccf, 0x032fb5c2, 0x32058ae1, 0x390b83ec, 0x241998fb, 0x2f1791f6, 0x8d764dd6, 0x867844db, 0x9b6a5fcc, 0x906456c1, 0xa14e69e2, 0xaa4060ef, 0xb7527bf8, 0xbc5c72f5, 0xd50605be, 0xde080cb3, 0xc31a17a4, 0xc8141ea9, 0xf93e218a, 0xf2302887, 0xef223390, 0xe42c3a9d, 0x3d96dd06, 0x3698d40b, 0x2b8acf1c, 0x2084c611, 0x11aef932, 0x1aa0f03f, 0x07b2eb28, 0x0cbce225, 0x65e6956e, 0x6ee89c63, 0x73fa8774, 0x78f48e79, 0x49deb15a, 0x42d0b857, 0x5fc2a340, 0x54ccaa4d, 0xf741ecda, 0xfc4fe5d7, 0xe15dfec0, 0xea53f7cd, 0xdb79c8ee, 0xd077c1e3, 0xcd65daf4, 0xc66bd3f9, 0xaf31a4b2, 0xa43fadbf, 0xb92db6a8, 0xb223bfa5, 0x83098086, 0x8807898b, 0x9515929c, 0x9e1b9b91, 0x47a17c0a, 0x4caf7507, 0x51bd6e10, 0x5ab3671d, 0x6b99583e, 0x60975133, 0x7d854a24, 0x768b4329, 0x1fd13462, 0x14df3d6f, 0x09cd2678, 0x02c32f75, 0x33e91056, 0x38e7195b, 0x25f5024c, 0x2efb0b41, 0x8c9ad761, 0x8794de6c, 0x9a86c57b, 0x9188cc76, 0xa0a2f355, 0xabacfa58, 0xb6bee14f, 0xbdb0e842, 0xd4ea9f09, 0xdfe49604, 0xc2f68d13, 0xc9f8841e, 0xf8d2bb3d, 0xf3dcb230, 0xeecea927, 0xe5c0a02a, 0x3c7a47b1, 0x37744ebc, 0x2a6655ab, 0x21685ca6, 0x10426385, 0x1b4c6a88, 0x065e719f, 0x0d507892, 0x640a0fd9, 0x6f0406d4, 0x72161dc3, 0x791814ce, 0x48322bed, 0x433c22e0, 0x5e2e39f7, 0x552030fa, 0x01ec9ab7, 0x0ae293ba, 0x17f088ad, 0x1cfe81a0, 0x2dd4be83, 0x26dab78e, 0x3bc8ac99, 0x30c6a594, 0x599cd2df, 0x5292dbd2, 0x4f80c0c5, 0x448ec9c8, 0x75a4f6eb, 0x7eaaffe6, 0x63b8e4f1, 0x68b6edfc, 0xb10c0a67, 0xba02036a, 0xa710187d, 0xac1e1170, 0x9d342e53, 0x963a275e, 0x8b283c49, 0x80263544, 0xe97c420f, 0xe2724b02, 0xff605015, 0xf46e5918, 0xc544663b, 0xce4a6f36, 0xd3587421, 0xd8567d2c, 0x7a37a10c, 0x7139a801, 0x6c2bb316, 0x6725ba1b, 0x560f8538, 0x5d018c35, 0x40139722, 0x4b1d9e2f, 0x2247e964, 0x2949e069, 0x345bfb7e, 0x3f55f273, 0x0e7fcd50, 0x0571c45d, 0x1863df4a, 0x136dd647, 0xcad731dc, 0xc1d938d1, 0xdccb23c6, 0xd7c52acb, 0xe6ef15e8, 0xede11ce5, 0xf0f307f2, 0xfbfd0eff, 0x92a779b4, 0x99a970b9, 0x84bb6bae, 0x8fb562a3, 0xbe9f5d80, 0xb591548d, 0xa8834f9a, 0xa38d4697];
-    var U3 = [0x00000000, 0x0d0b0e09, 0x1a161c12, 0x171d121b, 0x342c3824, 0x3927362d, 0x2e3a2436, 0x23312a3f, 0x68587048, 0x65537e41, 0x724e6c5a, 0x7f456253, 0x5c74486c, 0x517f4665, 0x4662547e, 0x4b695a77, 0xd0b0e090, 0xddbbee99, 0xcaa6fc82, 0xc7adf28b, 0xe49cd8b4, 0xe997d6bd, 0xfe8ac4a6, 0xf381caaf, 0xb8e890d8, 0xb5e39ed1, 0xa2fe8cca, 0xaff582c3, 0x8cc4a8fc, 0x81cfa6f5, 0x96d2b4ee, 0x9bd9bae7, 0xbb7bdb3b, 0xb670d532, 0xa16dc729, 0xac66c920, 0x8f57e31f, 0x825ced16, 0x9541ff0d, 0x984af104, 0xd323ab73, 0xde28a57a, 0xc935b761, 0xc43eb968, 0xe70f9357, 0xea049d5e, 0xfd198f45, 0xf012814c, 0x6bcb3bab, 0x66c035a2, 0x71dd27b9, 0x7cd629b0, 0x5fe7038f, 0x52ec0d86, 0x45f11f9d, 0x48fa1194, 0x03934be3, 0x0e9845ea, 0x198557f1, 0x148e59f8, 0x37bf73c7, 0x3ab47dce, 0x2da96fd5, 0x20a261dc, 0x6df6ad76, 0x60fda37f, 0x77e0b164, 0x7aebbf6d, 0x59da9552, 0x54d19b5b, 0x43cc8940, 0x4ec78749, 0x05aedd3e, 0x08a5d337, 0x1fb8c12c, 0x12b3cf25, 0x3182e51a, 0x3c89eb13, 0x2b94f908, 0x269ff701, 0xbd464de6, 0xb04d43ef, 0xa75051f4, 0xaa5b5ffd, 0x896a75c2, 0x84617bcb, 0x937c69d0, 0x9e7767d9, 0xd51e3dae, 0xd81533a7, 0xcf0821bc, 0xc2032fb5, 0xe132058a, 0xec390b83, 0xfb241998, 0xf62f1791, 0xd68d764d, 0xdb867844, 0xcc9b6a5f, 0xc1906456, 0xe2a14e69, 0xefaa4060, 0xf8b7527b, 0xf5bc5c72, 0xbed50605, 0xb3de080c, 0xa4c31a17, 0xa9c8141e, 0x8af93e21, 0x87f23028, 0x90ef2233, 0x9de42c3a, 0x063d96dd, 0x0b3698d4, 0x1c2b8acf, 0x112084c6, 0x3211aef9, 0x3f1aa0f0, 0x2807b2eb, 0x250cbce2, 0x6e65e695, 0x636ee89c, 0x7473fa87, 0x7978f48e, 0x5a49deb1, 0x5742d0b8, 0x405fc2a3, 0x4d54ccaa, 0xdaf741ec, 0xd7fc4fe5, 0xc0e15dfe, 0xcdea53f7, 0xeedb79c8, 0xe3d077c1, 0xf4cd65da, 0xf9c66bd3, 0xb2af31a4, 0xbfa43fad, 0xa8b92db6, 0xa5b223bf, 0x86830980, 0x8b880789, 0x9c951592, 0x919e1b9b, 0x0a47a17c, 0x074caf75, 0x1051bd6e, 0x1d5ab367, 0x3e6b9958, 0x33609751, 0x247d854a, 0x29768b43, 0x621fd134, 0x6f14df3d, 0x7809cd26, 0x7502c32f, 0x5633e910, 0x5b38e719, 0x4c25f502, 0x412efb0b, 0x618c9ad7, 0x6c8794de, 0x7b9a86c5, 0x769188cc, 0x55a0a2f3, 0x58abacfa, 0x4fb6bee1, 0x42bdb0e8, 0x09d4ea9f, 0x04dfe496, 0x13c2f68d, 0x1ec9f884, 0x3df8d2bb, 0x30f3dcb2, 0x27eecea9, 0x2ae5c0a0, 0xb13c7a47, 0xbc37744e, 0xab2a6655, 0xa621685c, 0x85104263, 0x881b4c6a, 0x9f065e71, 0x920d5078, 0xd9640a0f, 0xd46f0406, 0xc372161d, 0xce791814, 0xed48322b, 0xe0433c22, 0xf75e2e39, 0xfa552030, 0xb701ec9a, 0xba0ae293, 0xad17f088, 0xa01cfe81, 0x832dd4be, 0x8e26dab7, 0x993bc8ac, 0x9430c6a5, 0xdf599cd2, 0xd25292db, 0xc54f80c0, 0xc8448ec9, 0xeb75a4f6, 0xe67eaaff, 0xf163b8e4, 0xfc68b6ed, 0x67b10c0a, 0x6aba0203, 0x7da71018, 0x70ac1e11, 0x539d342e, 0x5e963a27, 0x498b283c, 0x44802635, 0x0fe97c42, 0x02e2724b, 0x15ff6050, 0x18f46e59, 0x3bc54466, 0x36ce4a6f, 0x21d35874, 0x2cd8567d, 0x0c7a37a1, 0x017139a8, 0x166c2bb3, 0x1b6725ba, 0x38560f85, 0x355d018c, 0x22401397, 0x2f4b1d9e, 0x642247e9, 0x692949e0, 0x7e345bfb, 0x733f55f2, 0x500e7fcd, 0x5d0571c4, 0x4a1863df, 0x47136dd6, 0xdccad731, 0xd1c1d938, 0xc6dccb23, 0xcbd7c52a, 0xe8e6ef15, 0xe5ede11c, 0xf2f0f307, 0xfffbfd0e, 0xb492a779, 0xb999a970, 0xae84bb6b, 0xa38fb562, 0x80be9f5d, 0x8db59154, 0x9aa8834f, 0x97a38d46];
-    var U4 = [0x00000000, 0x090d0b0e, 0x121a161c, 0x1b171d12, 0x24342c38, 0x2d392736, 0x362e3a24, 0x3f23312a, 0x48685870, 0x4165537e, 0x5a724e6c, 0x537f4562, 0x6c5c7448, 0x65517f46, 0x7e466254, 0x774b695a, 0x90d0b0e0, 0x99ddbbee, 0x82caa6fc, 0x8bc7adf2, 0xb4e49cd8, 0xbde997d6, 0xa6fe8ac4, 0xaff381ca, 0xd8b8e890, 0xd1b5e39e, 0xcaa2fe8c, 0xc3aff582, 0xfc8cc4a8, 0xf581cfa6, 0xee96d2b4, 0xe79bd9ba, 0x3bbb7bdb, 0x32b670d5, 0x29a16dc7, 0x20ac66c9, 0x1f8f57e3, 0x16825ced, 0x0d9541ff, 0x04984af1, 0x73d323ab, 0x7ade28a5, 0x61c935b7, 0x68c43eb9, 0x57e70f93, 0x5eea049d, 0x45fd198f, 0x4cf01281, 0xab6bcb3b, 0xa266c035, 0xb971dd27, 0xb07cd629, 0x8f5fe703, 0x8652ec0d, 0x9d45f11f, 0x9448fa11, 0xe303934b, 0xea0e9845, 0xf1198557, 0xf8148e59, 0xc737bf73, 0xce3ab47d, 0xd52da96f, 0xdc20a261, 0x766df6ad, 0x7f60fda3, 0x6477e0b1, 0x6d7aebbf, 0x5259da95, 0x5b54d19b, 0x4043cc89, 0x494ec787, 0x3e05aedd, 0x3708a5d3, 0x2c1fb8c1, 0x2512b3cf, 0x1a3182e5, 0x133c89eb, 0x082b94f9, 0x01269ff7, 0xe6bd464d, 0xefb04d43, 0xf4a75051, 0xfdaa5b5f, 0xc2896a75, 0xcb84617b, 0xd0937c69, 0xd99e7767, 0xaed51e3d, 0xa7d81533, 0xbccf0821, 0xb5c2032f, 0x8ae13205, 0x83ec390b, 0x98fb2419, 0x91f62f17, 0x4dd68d76, 0x44db8678, 0x5fcc9b6a, 0x56c19064, 0x69e2a14e, 0x60efaa40, 0x7bf8b752, 0x72f5bc5c, 0x05bed506, 0x0cb3de08, 0x17a4c31a, 0x1ea9c814, 0x218af93e, 0x2887f230, 0x3390ef22, 0x3a9de42c, 0xdd063d96, 0xd40b3698, 0xcf1c2b8a, 0xc6112084, 0xf93211ae, 0xf03f1aa0, 0xeb2807b2, 0xe2250cbc, 0x956e65e6, 0x9c636ee8, 0x877473fa, 0x8e7978f4, 0xb15a49de, 0xb85742d0, 0xa3405fc2, 0xaa4d54cc, 0xecdaf741, 0xe5d7fc4f, 0xfec0e15d, 0xf7cdea53, 0xc8eedb79, 0xc1e3d077, 0xdaf4cd65, 0xd3f9c66b, 0xa4b2af31, 0xadbfa43f, 0xb6a8b92d, 0xbfa5b223, 0x80868309, 0x898b8807, 0x929c9515, 0x9b919e1b, 0x7c0a47a1, 0x75074caf, 0x6e1051bd, 0x671d5ab3, 0x583e6b99, 0x51336097, 0x4a247d85, 0x4329768b, 0x34621fd1, 0x3d6f14df, 0x267809cd, 0x2f7502c3, 0x105633e9, 0x195b38e7, 0x024c25f5, 0x0b412efb, 0xd7618c9a, 0xde6c8794, 0xc57b9a86, 0xcc769188, 0xf355a0a2, 0xfa58abac, 0xe14fb6be, 0xe842bdb0, 0x9f09d4ea, 0x9604dfe4, 0x8d13c2f6, 0x841ec9f8, 0xbb3df8d2, 0xb230f3dc, 0xa927eece, 0xa02ae5c0, 0x47b13c7a, 0x4ebc3774, 0x55ab2a66, 0x5ca62168, 0x63851042, 0x6a881b4c, 0x719f065e, 0x78920d50, 0x0fd9640a, 0x06d46f04, 0x1dc37216, 0x14ce7918, 0x2bed4832, 0x22e0433c, 0x39f75e2e, 0x30fa5520, 0x9ab701ec, 0x93ba0ae2, 0x88ad17f0, 0x81a01cfe, 0xbe832dd4, 0xb78e26da, 0xac993bc8, 0xa59430c6, 0xd2df599c, 0xdbd25292, 0xc0c54f80, 0xc9c8448e, 0xf6eb75a4, 0xffe67eaa, 0xe4f163b8, 0xedfc68b6, 0x0a67b10c, 0x036aba02, 0x187da710, 0x1170ac1e, 0x2e539d34, 0x275e963a, 0x3c498b28, 0x35448026, 0x420fe97c, 0x4b02e272, 0x5015ff60, 0x5918f46e, 0x663bc544, 0x6f36ce4a, 0x7421d358, 0x7d2cd856, 0xa10c7a37, 0xa8017139, 0xb3166c2b, 0xba1b6725, 0x8538560f, 0x8c355d01, 0x97224013, 0x9e2f4b1d, 0xe9642247, 0xe0692949, 0xfb7e345b, 0xf2733f55, 0xcd500e7f, 0xc45d0571, 0xdf4a1863, 0xd647136d, 0x31dccad7, 0x38d1c1d9, 0x23c6dccb, 0x2acbd7c5, 0x15e8e6ef, 0x1ce5ede1, 0x07f2f0f3, 0x0efffbfd, 0x79b492a7, 0x70b999a9, 0x6bae84bb, 0x62a38fb5, 0x5d80be9f, 0x548db591, 0x4f9aa883, 0x4697a38d];
-
-    function convertToInt32(bytes) {
-        var result = [];
-        for (var i = 0; i < bytes.length; i += 4) {
-            result.push(
-                (bytes[i    ] << 24) |
-                (bytes[i + 1] << 16) |
-                (bytes[i + 2] <<  8) |
-                 bytes[i + 3]
-            );
-        }
-        return result;
-    }
-
-    var AES = function(key) {
-        if (!(this instanceof AES)) {
-            throw Error('AES must be instanitated with `new`');
-        }
-
-        Object.defineProperty(this, 'key', {
-            value: coerceArray(key, true)
-        });
-
-        this._prepare();
-    };
-
-
-    AES.prototype._prepare = function() {
-
-        var rounds = numberOfRounds[this.key.length];
-        if (rounds == null) {
-            throw new Error('invalid key size (must be 16, 24 or 32 bytes)');
-        }
-
-        // encryption round keys
-        this._Ke = [];
-
-        // decryption round keys
-        this._Kd = [];
-
-        for (var i = 0; i <= rounds; i++) {
-            this._Ke.push([0, 0, 0, 0]);
-            this._Kd.push([0, 0, 0, 0]);
-        }
-
-        var roundKeyCount = (rounds + 1) * 4;
-        var KC = this.key.length / 4;
-
-        // convert the key into ints
-        var tk = convertToInt32(this.key);
-
-        // copy values into round key arrays
-        var index;
-        for (var i = 0; i < KC; i++) {
-            index = i >> 2;
-            this._Ke[index][i % 4] = tk[i];
-            this._Kd[rounds - index][i % 4] = tk[i];
-        }
-
-        // key expansion (fips-197 section 5.2)
-        var rconpointer = 0;
-        var t = KC, tt;
-        while (t < roundKeyCount) {
-            tt = tk[KC - 1];
-            tk[0] ^= ((S[(tt >> 16) & 0xFF] << 24) ^
-                      (S[(tt >>  8) & 0xFF] << 16) ^
-                      (S[ tt        & 0xFF] <<  8) ^
-                       S[(tt >> 24) & 0xFF]        ^
-                      (rcon[rconpointer] << 24));
-            rconpointer += 1;
-
-            // key expansion (for non-256 bit)
-            if (KC != 8) {
-                for (var i = 1; i < KC; i++) {
-                    tk[i] ^= tk[i - 1];
-                }
-
-            // key expansion for 256-bit keys is "slightly different" (fips-197)
-            } else {
-                for (var i = 1; i < (KC / 2); i++) {
-                    tk[i] ^= tk[i - 1];
-                }
-                tt = tk[(KC / 2) - 1];
-
-                tk[KC / 2] ^= (S[ tt        & 0xFF]        ^
-                              (S[(tt >>  8) & 0xFF] <<  8) ^
-                              (S[(tt >> 16) & 0xFF] << 16) ^
-                              (S[(tt >> 24) & 0xFF] << 24));
-
-                for (var i = (KC / 2) + 1; i < KC; i++) {
-                    tk[i] ^= tk[i - 1];
-                }
-            }
-
-            // copy values into round key arrays
-            var i = 0, r, c;
-            while (i < KC && t < roundKeyCount) {
-                r = t >> 2;
-                c = t % 4;
-                this._Ke[r][c] = tk[i];
-                this._Kd[rounds - r][c] = tk[i++];
-                t++;
-            }
-        }
-
-        // inverse-cipher-ify the decryption round key (fips-197 section 5.3)
-        for (var r = 1; r < rounds; r++) {
-            for (var c = 0; c < 4; c++) {
-                tt = this._Kd[r][c];
-                this._Kd[r][c] = (U1[(tt >> 24) & 0xFF] ^
-                                  U2[(tt >> 16) & 0xFF] ^
-                                  U3[(tt >>  8) & 0xFF] ^
-                                  U4[ tt        & 0xFF]);
-            }
-        }
-    };
-
-    AES.prototype.encrypt = function(plaintext) {
-        if (plaintext.length != 16) {
-            throw new Error('invalid plaintext size (must be 16 bytes)');
-        }
-
-        var rounds = this._Ke.length - 1;
-        var a = [0, 0, 0, 0];
-
-        // convert plaintext to (ints ^ key)
-        var t = convertToInt32(plaintext);
-        for (var i = 0; i < 4; i++) {
-            t[i] ^= this._Ke[0][i];
-        }
-
-        // apply round transforms
-        for (var r = 1; r < rounds; r++) {
-            for (var i = 0; i < 4; i++) {
-                a[i] = (T1[(t[ i         ] >> 24) & 0xff] ^
-                        T2[(t[(i + 1) % 4] >> 16) & 0xff] ^
-                        T3[(t[(i + 2) % 4] >>  8) & 0xff] ^
-                        T4[ t[(i + 3) % 4]        & 0xff] ^
-                        this._Ke[r][i]);
-            }
-            t = a.slice();
-        }
-
-        // the last round is special
-        var result = createArray(16), tt;
-        for (var i = 0; i < 4; i++) {
-            tt = this._Ke[rounds][i];
-            result[4 * i    ] = (S[(t[ i         ] >> 24) & 0xff] ^ (tt >> 24)) & 0xff;
-            result[4 * i + 1] = (S[(t[(i + 1) % 4] >> 16) & 0xff] ^ (tt >> 16)) & 0xff;
-            result[4 * i + 2] = (S[(t[(i + 2) % 4] >>  8) & 0xff] ^ (tt >>  8)) & 0xff;
-            result[4 * i + 3] = (S[ t[(i + 3) % 4]        & 0xff] ^  tt       ) & 0xff;
-        }
-
-        return result;
-    };
-
-    AES.prototype.decrypt = function(ciphertext) {
-        if (ciphertext.length != 16) {
-            throw new Error('invalid ciphertext size (must be 16 bytes)');
-        }
-
-        var rounds = this._Kd.length - 1;
-        var a = [0, 0, 0, 0];
-
-        // convert plaintext to (ints ^ key)
-        var t = convertToInt32(ciphertext);
-        for (var i = 0; i < 4; i++) {
-            t[i] ^= this._Kd[0][i];
-        }
-
-        // apply round transforms
-        for (var r = 1; r < rounds; r++) {
-            for (var i = 0; i < 4; i++) {
-                a[i] = (T5[(t[ i          ] >> 24) & 0xff] ^
-                        T6[(t[(i + 3) % 4] >> 16) & 0xff] ^
-                        T7[(t[(i + 2) % 4] >>  8) & 0xff] ^
-                        T8[ t[(i + 1) % 4]        & 0xff] ^
-                        this._Kd[r][i]);
-            }
-            t = a.slice();
-        }
-
-        // the last round is special
-        var result = createArray(16), tt;
-        for (var i = 0; i < 4; i++) {
-            tt = this._Kd[rounds][i];
-            result[4 * i    ] = (Si[(t[ i         ] >> 24) & 0xff] ^ (tt >> 24)) & 0xff;
-            result[4 * i + 1] = (Si[(t[(i + 3) % 4] >> 16) & 0xff] ^ (tt >> 16)) & 0xff;
-            result[4 * i + 2] = (Si[(t[(i + 2) % 4] >>  8) & 0xff] ^ (tt >>  8)) & 0xff;
-            result[4 * i + 3] = (Si[ t[(i + 1) % 4]        & 0xff] ^  tt       ) & 0xff;
-        }
-
-        return result;
-    };
-
-
-    /**
-     *  Mode Of Operation - Electonic Codebook (ECB)
-     */
-    var ModeOfOperationECB = function(key) {
-        if (!(this instanceof ModeOfOperationECB)) {
-            throw Error('AES must be instanitated with `new`');
-        }
-
-        this.description = "Electronic Code Block";
-        this.name = "ecb";
-
-        this._aes = new AES(key);
-    };
-
-    ModeOfOperationECB.prototype.encrypt = function(plaintext) {
-        plaintext = coerceArray(plaintext);
-
-        if ((plaintext.length % 16) !== 0) {
-            throw new Error('invalid plaintext size (must be multiple of 16 bytes)');
-        }
-
-        var ciphertext = createArray(plaintext.length);
-        var block = createArray(16);
-
-        for (var i = 0; i < plaintext.length; i += 16) {
-            copyArray(plaintext, block, 0, i, i + 16);
-            block = this._aes.encrypt(block);
-            copyArray(block, ciphertext, i);
-        }
-
-        return ciphertext;
-    };
-
-    ModeOfOperationECB.prototype.decrypt = function(ciphertext) {
-        ciphertext = coerceArray(ciphertext);
-
-        if ((ciphertext.length % 16) !== 0) {
-            throw new Error('invalid ciphertext size (must be multiple of 16 bytes)');
-        }
-
-        var plaintext = createArray(ciphertext.length);
-        var block = createArray(16);
-
-        for (var i = 0; i < ciphertext.length; i += 16) {
-            copyArray(ciphertext, block, 0, i, i + 16);
-            block = this._aes.decrypt(block);
-            copyArray(block, plaintext, i);
-        }
-
-        return plaintext;
-    };
-
-
-    /**
-     *  Mode Of Operation - Cipher Block Chaining (CBC)
-     */
-    var ModeOfOperationCBC = function(key, iv) {
-        if (!(this instanceof ModeOfOperationCBC)) {
-            throw Error('AES must be instanitated with `new`');
-        }
-
-        this.description = "Cipher Block Chaining";
-        this.name = "cbc";
-
-        if (!iv) {
-            iv = createArray(16);
-
-        } else if (iv.length != 16) {
-            throw new Error('invalid initialation vector size (must be 16 bytes)');
-        }
-
-        this._lastCipherblock = coerceArray(iv, true);
-
-        this._aes = new AES(key);
-    };
-
-    ModeOfOperationCBC.prototype.encrypt = function(plaintext) {
-        plaintext = coerceArray(plaintext);
-
-        if ((plaintext.length % 16) !== 0) {
-            throw new Error('invalid plaintext size (must be multiple of 16 bytes)');
-        }
-
-        var ciphertext = createArray(plaintext.length);
-        var block = createArray(16);
-
-        for (var i = 0; i < plaintext.length; i += 16) {
-            copyArray(plaintext, block, 0, i, i + 16);
-
-            for (var j = 0; j < 16; j++) {
-                block[j] ^= this._lastCipherblock[j];
-            }
-
-            this._lastCipherblock = this._aes.encrypt(block);
-            copyArray(this._lastCipherblock, ciphertext, i);
-        }
-
-        return ciphertext;
-    };
-
-    ModeOfOperationCBC.prototype.decrypt = function(ciphertext) {
-        ciphertext = coerceArray(ciphertext);
-
-        if ((ciphertext.length % 16) !== 0) {
-            throw new Error('invalid ciphertext size (must be multiple of 16 bytes)');
-        }
-
-        var plaintext = createArray(ciphertext.length);
-        var block = createArray(16);
-
-        for (var i = 0; i < ciphertext.length; i += 16) {
-            copyArray(ciphertext, block, 0, i, i + 16);
-            block = this._aes.decrypt(block);
-
-            for (var j = 0; j < 16; j++) {
-                plaintext[i + j] = block[j] ^ this._lastCipherblock[j];
-            }
-
-            copyArray(ciphertext, this._lastCipherblock, 0, i, i + 16);
-        }
-
-        return plaintext;
-    };
-
-
-    /**
-     *  Mode Of Operation - Cipher Feedback (CFB)
-     */
-    var ModeOfOperationCFB = function(key, iv, segmentSize) {
-        if (!(this instanceof ModeOfOperationCFB)) {
-            throw Error('AES must be instanitated with `new`');
-        }
-
-        this.description = "Cipher Feedback";
-        this.name = "cfb";
-
-        if (!iv) {
-            iv = createArray(16);
-
-        } else if (iv.length != 16) {
-            throw new Error('invalid initialation vector size (must be 16 size)');
-        }
-
-        if (!segmentSize) { segmentSize = 1; }
-
-        this.segmentSize = segmentSize;
-
-        this._shiftRegister = coerceArray(iv, true);
-
-        this._aes = new AES(key);
-    };
-
-    ModeOfOperationCFB.prototype.encrypt = function(plaintext) {
-        if ((plaintext.length % this.segmentSize) != 0) {
-            throw new Error('invalid plaintext size (must be segmentSize bytes)');
-        }
-
-        var encrypted = coerceArray(plaintext, true);
-
-        var xorSegment;
-        for (var i = 0; i < encrypted.length; i += this.segmentSize) {
-            xorSegment = this._aes.encrypt(this._shiftRegister);
-            for (var j = 0; j < this.segmentSize; j++) {
-                encrypted[i + j] ^= xorSegment[j];
-            }
-
-            // Shift the register
-            copyArray(this._shiftRegister, this._shiftRegister, 0, this.segmentSize);
-            copyArray(encrypted, this._shiftRegister, 16 - this.segmentSize, i, i + this.segmentSize);
-        }
-
-        return encrypted;
-    };
-
-    ModeOfOperationCFB.prototype.decrypt = function(ciphertext) {
-        if ((ciphertext.length % this.segmentSize) != 0) {
-            throw new Error('invalid ciphertext size (must be segmentSize bytes)');
-        }
-
-        var plaintext = coerceArray(ciphertext, true);
-
-        var xorSegment;
-        for (var i = 0; i < plaintext.length; i += this.segmentSize) {
-            xorSegment = this._aes.encrypt(this._shiftRegister);
-
-            for (var j = 0; j < this.segmentSize; j++) {
-                plaintext[i + j] ^= xorSegment[j];
-            }
-
-            // Shift the register
-            copyArray(this._shiftRegister, this._shiftRegister, 0, this.segmentSize);
-            copyArray(ciphertext, this._shiftRegister, 16 - this.segmentSize, i, i + this.segmentSize);
-        }
-
-        return plaintext;
-    };
-
-    /**
-     *  Mode Of Operation - Output Feedback (OFB)
-     */
-    var ModeOfOperationOFB = function(key, iv) {
-        if (!(this instanceof ModeOfOperationOFB)) {
-            throw Error('AES must be instanitated with `new`');
-        }
-
-        this.description = "Output Feedback";
-        this.name = "ofb";
-
-        if (!iv) {
-            iv = createArray(16);
-
-        } else if (iv.length != 16) {
-            throw new Error('invalid initialation vector size (must be 16 bytes)');
-        }
-
-        this._lastPrecipher = coerceArray(iv, true);
-        this._lastPrecipherIndex = 16;
-
-        this._aes = new AES(key);
-    };
-
-    ModeOfOperationOFB.prototype.encrypt = function(plaintext) {
-        var encrypted = coerceArray(plaintext, true);
-
-        for (var i = 0; i < encrypted.length; i++) {
-            if (this._lastPrecipherIndex === 16) {
-                this._lastPrecipher = this._aes.encrypt(this._lastPrecipher);
-                this._lastPrecipherIndex = 0;
-            }
-            encrypted[i] ^= this._lastPrecipher[this._lastPrecipherIndex++];
-        }
-
-        return encrypted;
-    };
-
-    // Decryption is symetric
-    ModeOfOperationOFB.prototype.decrypt = ModeOfOperationOFB.prototype.encrypt;
-
-
-    /**
-     *  Counter object for CTR common mode of operation
-     */
-    var Counter = function(initialValue) {
-        if (!(this instanceof Counter)) {
-            throw Error('Counter must be instanitated with `new`');
-        }
-
-        // We allow 0, but anything false-ish uses the default 1
-        if (initialValue !== 0 && !initialValue) { initialValue = 1; }
-
-        if (typeof(initialValue) === 'number') {
-            this._counter = createArray(16);
-            this.setValue(initialValue);
-
-        } else {
-            this.setBytes(initialValue);
-        }
-    };
-
-    Counter.prototype.setValue = function(value) {
-        if (typeof(value) !== 'number' || parseInt(value) != value) {
-            throw new Error('invalid counter value (must be an integer)');
-        }
-
-        for (var index = 15; index >= 0; --index) {
-            this._counter[index] = value % 256;
-            value = value >> 8;
-        }
-    };
-
-    Counter.prototype.setBytes = function(bytes) {
-        bytes = coerceArray(bytes, true);
-
-        if (bytes.length != 16) {
-            throw new Error('invalid counter bytes size (must be 16 bytes)');
-        }
-
-        this._counter = bytes;
-    };
-
-    Counter.prototype.increment = function() {
-        for (var i = 15; i >= 0; i--) {
-            if (this._counter[i] === 255) {
-                this._counter[i] = 0;
-            } else {
-                this._counter[i]++;
-                break;
-            }
-        }
-    };
-
-
-    /**
-     *  Mode Of Operation - Counter (CTR)
-     */
-    var ModeOfOperationCTR = function(key, counter) {
-        if (!(this instanceof ModeOfOperationCTR)) {
-            throw Error('AES must be instanitated with `new`');
-        }
-
-        this.description = "Counter";
-        this.name = "ctr";
-
-        if (!(counter instanceof Counter)) {
-            counter = new Counter(counter);
-        }
-
-        this._counter = counter;
-
-        this._remainingCounter = null;
-        this._remainingCounterIndex = 16;
-
-        this._aes = new AES(key);
-    };
-
-    ModeOfOperationCTR.prototype.encrypt = function(plaintext) {
-        var encrypted = coerceArray(plaintext, true);
-
-        for (var i = 0; i < encrypted.length; i++) {
-            if (this._remainingCounterIndex === 16) {
-                this._remainingCounter = this._aes.encrypt(this._counter._counter);
-                this._remainingCounterIndex = 0;
-                this._counter.increment();
-            }
-            encrypted[i] ^= this._remainingCounter[this._remainingCounterIndex++];
-        }
-
-        return encrypted;
-    };
-
-    // Decryption is symetric
-    ModeOfOperationCTR.prototype.decrypt = ModeOfOperationCTR.prototype.encrypt;
-
-
-    ///////////////////////
-    // Padding
-
-    // See:https://tools.ietf.org/html/rfc2315
-    function pkcs7pad(data) {
-        data = coerceArray(data, true);
-        var padder = 16 - (data.length % 16);
-        var result = createArray(data.length + padder);
-        copyArray(data, result);
-        for (var i = data.length; i < result.length; i++) {
-            result[i] = padder;
-        }
-        return result;
-    }
-
-    function pkcs7strip(data) {
-        data = coerceArray(data, true);
-        if (data.length < 16) { throw new Error('PKCS#7 invalid length'); }
-
-        var padder = data[data.length - 1];
-        if (padder > 16) { throw new Error('PKCS#7 padding byte out of range'); }
-
-        var length = data.length - padder;
-        for (var i = 0; i < padder; i++) {
-            if (data[length + i] !== padder) {
-                throw new Error('PKCS#7 invalid padding byte');
-            }
-        }
-
-        var result = createArray(length);
-        copyArray(data, result, 0, 0, length);
-        return result;
-    }
-
-    ///////////////////////
-    // Exporting
-
-
-    // The block cipher
-    var aesjs = {
-        AES: AES,
-        Counter: Counter,
-
-        ModeOfOperation: {
-            ecb: ModeOfOperationECB,
-            cbc: ModeOfOperationCBC,
-            cfb: ModeOfOperationCFB,
-            ofb: ModeOfOperationOFB,
-            ctr: ModeOfOperationCTR
-        },
-
-        utils: {
-            hex: convertHex,
-            utf8: convertUtf8
-        },
-
-        padding: {
-            pkcs7: {
-                pad: pkcs7pad,
-                strip: pkcs7strip
-            }
-        },
-
-        _arrayTest: {
-            coerceArray: coerceArray,
-            createArray: createArray,
-            copyArray: copyArray,
-        }
-    };
-
-
-    // node.js
-    if ('object' !== 'undefined') {
-        module.exports = aesjs;
-
-    // RequireJS/AMD
-    // http://www.requirejs.org/docs/api.html
-    // https://github.com/amdjs/amdjs-api/wiki/AMD
-    } else if (typeof(undefined) === 'function' && undefined.amd) {
-        undefined(aesjs);
-
-    // Web Browsers
-    } else {
-
-        // If there was an existing library at "aesjs" make sure it's still available
-        if (root.aesjs) {
-            aesjs._aesjs = root.aesjs;
-        }
-
-        root.aesjs = aesjs;
-    }
-
-
-})(commonjsGlobal);
-});
-
-const version$i = "json-wallets/5.5.0";
-
-"use strict";
-function looseArrayify(hexString) {
-    if (typeof (hexString) === 'string' && hexString.substring(0, 2) !== '0x') {
-        hexString = '0x' + hexString;
-    }
-    return arrayify(hexString);
-}
-function zpad(value, length) {
-    value = String(value);
-    while (value.length < length) {
-        value = '0' + value;
-    }
-    return value;
-}
-function getPassword(password) {
-    if (typeof (password) === 'string') {
-        return toUtf8Bytes(password, UnicodeNormalizationForm.NFKC);
-    }
-    return arrayify(password);
-}
-function searchPath(object, path) {
-    let currentChild = object;
-    const comps = path.toLowerCase().split('/');
-    for (let i = 0; i < comps.length; i++) {
-        // Search for a child object with a case-insensitive matching key
-        let matchingChild = null;
-        for (const key in currentChild) {
-            if (key.toLowerCase() === comps[i]) {
-                matchingChild = currentChild[key];
-                break;
-            }
-        }
-        // Didn't find one. :'(
-        if (matchingChild === null) {
-            return null;
-        }
-        // Now check this child...
-        currentChild = matchingChild;
-    }
-    return currentChild;
-}
-// See: https://www.ietf.org/rfc/rfc4122.txt (Section 4.4)
-function uuidV4(randomBytes) {
-    const bytes = arrayify(randomBytes);
-    // Section: 4.1.3:
-    // - time_hi_and_version[12:16] = 0b0100
-    bytes[6] = (bytes[6] & 0x0f) | 0x40;
-    // Section 4.4
-    // - clock_seq_hi_and_reserved[6] = 0b0
-    // - clock_seq_hi_and_reserved[7] = 0b1
-    bytes[8] = (bytes[8] & 0x3f) | 0x80;
-    const value = hexlify(bytes);
-    return [
-        value.substring(2, 10),
-        value.substring(10, 14),
-        value.substring(14, 18),
-        value.substring(18, 22),
-        value.substring(22, 34),
-    ].join("-");
-}
-
-"use strict";
-const logger$j = new Logger(version$i);
-class CrowdsaleAccount extends Description {
-    isCrowdsaleAccount(value) {
-        return !!(value && value._isCrowdsaleAccount);
-    }
-}
-// See: https://github.com/ethereum/pyethsaletool
-function decrypt(json, password) {
-    const data = JSON.parse(json);
-    password = getPassword(password);
-    // Ethereum Address
-    const ethaddr = getAddress(searchPath(data, "ethaddr"));
-    // Encrypted Seed
-    const encseed = looseArrayify(searchPath(data, "encseed"));
-    if (!encseed || (encseed.length % 16) !== 0) {
-        logger$j.throwArgumentError("invalid encseed", "json", json);
-    }
-    const key = arrayify(pbkdf2(password, password, 2000, 32, "sha256")).slice(0, 16);
-    const iv = encseed.slice(0, 16);
-    const encryptedSeed = encseed.slice(16);
-    // Decrypt the seed
-    const aesCbc = new aesJs.ModeOfOperation.cbc(key, iv);
-    const seed = aesJs.padding.pkcs7.strip(arrayify(aesCbc.decrypt(encryptedSeed)));
-    // This wallet format is weird... Convert the binary encoded hex to a string.
-    let seedHex = "";
-    for (let i = 0; i < seed.length; i++) {
-        seedHex += String.fromCharCode(seed[i]);
-    }
-    const seedHexBytes = toUtf8Bytes(seedHex);
-    const privateKey = keccak256(seedHexBytes);
-    return new CrowdsaleAccount({
-        _isCrowdsaleAccount: true,
-        address: ethaddr,
-        privateKey: privateKey
-    });
-}
-
-"use strict";
-function isCrowdsaleWallet(json) {
-    let data = null;
-    try {
-        data = JSON.parse(json);
-    }
-    catch (error) {
-        return false;
-    }
-    return (data.encseed && data.ethaddr);
-}
-function isKeystoreWallet(json) {
-    let data = null;
-    try {
-        data = JSON.parse(json);
-    }
-    catch (error) {
-        return false;
-    }
-    if (!data.version || parseInt(data.version) !== data.version || parseInt(data.version) !== 3) {
-        return false;
-    }
-    // @TODO: Put more checks to make sure it has kdf, iv and all that good stuff
-    return true;
-}
-//export function isJsonWallet(json: string): boolean {
-//    return (isSecretStorageWallet(json) || isCrowdsaleWallet(json));
-//}
-function getJsonWalletAddress(json) {
-    if (isCrowdsaleWallet(json)) {
-        try {
-            return getAddress(JSON.parse(json).ethaddr);
-        }
-        catch (error) {
-            return null;
-        }
-    }
-    if (isKeystoreWallet(json)) {
-        try {
-            return getAddress(JSON.parse(json).address);
-        }
-        catch (error) {
-            return null;
-        }
-    }
-    return null;
-}
-
-var scrypt = createCommonjsModule(function (module, exports) {
-"use strict";
-
-(function(root) {
-    const MAX_VALUE = 0x7fffffff;
-
-    // The SHA256 and PBKDF2 implementation are from scrypt-async-js:
-    // See: https://github.com/dchest/scrypt-async-js
-    function SHA256(m) {
-        const K = new Uint32Array([
-           0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5, 0x3956c25b,
-           0x59f111f1, 0x923f82a4, 0xab1c5ed5, 0xd807aa98, 0x12835b01,
-           0x243185be, 0x550c7dc3, 0x72be5d74, 0x80deb1fe, 0x9bdc06a7,
-           0xc19bf174, 0xe49b69c1, 0xefbe4786, 0x0fc19dc6, 0x240ca1cc,
-           0x2de92c6f, 0x4a7484aa, 0x5cb0a9dc, 0x76f988da, 0x983e5152,
-           0xa831c66d, 0xb00327c8, 0xbf597fc7, 0xc6e00bf3, 0xd5a79147,
-           0x06ca6351, 0x14292967, 0x27b70a85, 0x2e1b2138, 0x4d2c6dfc,
-           0x53380d13, 0x650a7354, 0x766a0abb, 0x81c2c92e, 0x92722c85,
-           0xa2bfe8a1, 0xa81a664b, 0xc24b8b70, 0xc76c51a3, 0xd192e819,
-           0xd6990624, 0xf40e3585, 0x106aa070, 0x19a4c116, 0x1e376c08,
-           0x2748774c, 0x34b0bcb5, 0x391c0cb3, 0x4ed8aa4a, 0x5b9cca4f,
-           0x682e6ff3, 0x748f82ee, 0x78a5636f, 0x84c87814, 0x8cc70208,
-           0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
-       ]);
-
-        let h0 = 0x6a09e667, h1 = 0xbb67ae85, h2 = 0x3c6ef372, h3 = 0xa54ff53a;
-        let h4 = 0x510e527f, h5 = 0x9b05688c, h6 = 0x1f83d9ab, h7 = 0x5be0cd19;
-        const w = new Uint32Array(64);
-
-        function blocks(p) {
-            let off = 0, len = p.length;
-            while (len >= 64) {
-                let a = h0, b = h1, c = h2, d = h3, e = h4, f = h5, g = h6, h = h7, u, i, j, t1, t2;
-
-                for (i = 0; i < 16; i++) {
-                    j = off + i*4;
-                    w[i] = ((p[j] & 0xff)<<24) | ((p[j+1] & 0xff)<<16) |
-                    ((p[j+2] & 0xff)<<8) | (p[j+3] & 0xff);
-                }
-
-                for (i = 16; i < 64; i++) {
-                    u = w[i-2];
-                    t1 = ((u>>>17) | (u<<(32-17))) ^ ((u>>>19) | (u<<(32-19))) ^ (u>>>10);
-
-                    u = w[i-15];
-                    t2 = ((u>>>7) | (u<<(32-7))) ^ ((u>>>18) | (u<<(32-18))) ^ (u>>>3);
-
-                    w[i] = (((t1 + w[i-7]) | 0) + ((t2 + w[i-16]) | 0)) | 0;
-                }
-
-                for (i = 0; i < 64; i++) {
-                    t1 = ((((((e>>>6) | (e<<(32-6))) ^ ((e>>>11) | (e<<(32-11))) ^
-                             ((e>>>25) | (e<<(32-25)))) + ((e & f) ^ (~e & g))) | 0) +
-                          ((h + ((K[i] + w[i]) | 0)) | 0)) | 0;
-
-                    t2 = ((((a>>>2) | (a<<(32-2))) ^ ((a>>>13) | (a<<(32-13))) ^
-                           ((a>>>22) | (a<<(32-22)))) + ((a & b) ^ (a & c) ^ (b & c))) | 0;
-
-                    h = g;
-                    g = f;
-                    f = e;
-                    e = (d + t1) | 0;
-                    d = c;
-                    c = b;
-                    b = a;
-                    a = (t1 + t2) | 0;
-                }
-
-                h0 = (h0 + a) | 0;
-                h1 = (h1 + b) | 0;
-                h2 = (h2 + c) | 0;
-                h3 = (h3 + d) | 0;
-                h4 = (h4 + e) | 0;
-                h5 = (h5 + f) | 0;
-                h6 = (h6 + g) | 0;
-                h7 = (h7 + h) | 0;
-
-                off += 64;
-                len -= 64;
-            }
-        }
-
-        blocks(m);
-
-        let i, bytesLeft = m.length % 64,
-        bitLenHi = (m.length / 0x20000000) | 0,
-        bitLenLo = m.length << 3,
-        numZeros = (bytesLeft < 56) ? 56 : 120,
-        p = m.slice(m.length - bytesLeft, m.length);
-
-        p.push(0x80);
-        for (i = bytesLeft + 1; i < numZeros; i++) { p.push(0); }
-        p.push((bitLenHi >>> 24) & 0xff);
-        p.push((bitLenHi >>> 16) & 0xff);
-        p.push((bitLenHi >>> 8)  & 0xff);
-        p.push((bitLenHi >>> 0)  & 0xff);
-        p.push((bitLenLo >>> 24) & 0xff);
-        p.push((bitLenLo >>> 16) & 0xff);
-        p.push((bitLenLo >>> 8)  & 0xff);
-        p.push((bitLenLo >>> 0)  & 0xff);
-
-        blocks(p);
-
-        return [
-            (h0 >>> 24) & 0xff, (h0 >>> 16) & 0xff, (h0 >>> 8) & 0xff, (h0 >>> 0) & 0xff,
-            (h1 >>> 24) & 0xff, (h1 >>> 16) & 0xff, (h1 >>> 8) & 0xff, (h1 >>> 0) & 0xff,
-            (h2 >>> 24) & 0xff, (h2 >>> 16) & 0xff, (h2 >>> 8) & 0xff, (h2 >>> 0) & 0xff,
-            (h3 >>> 24) & 0xff, (h3 >>> 16) & 0xff, (h3 >>> 8) & 0xff, (h3 >>> 0) & 0xff,
-            (h4 >>> 24) & 0xff, (h4 >>> 16) & 0xff, (h4 >>> 8) & 0xff, (h4 >>> 0) & 0xff,
-            (h5 >>> 24) & 0xff, (h5 >>> 16) & 0xff, (h5 >>> 8) & 0xff, (h5 >>> 0) & 0xff,
-            (h6 >>> 24) & 0xff, (h6 >>> 16) & 0xff, (h6 >>> 8) & 0xff, (h6 >>> 0) & 0xff,
-            (h7 >>> 24) & 0xff, (h7 >>> 16) & 0xff, (h7 >>> 8) & 0xff, (h7 >>> 0) & 0xff
-        ];
-    }
-
-    function PBKDF2_HMAC_SHA256_OneIter(password, salt, dkLen) {
-        // compress password if it's longer than hash block length
-        password = (password.length <= 64) ? password : SHA256(password);
-
-        const innerLen = 64 + salt.length + 4;
-        const inner = new Array(innerLen);
-        const outerKey = new Array(64);
-
-        let i;
-        let dk = [];
-
-        // inner = (password ^ ipad) || salt || counter
-        for (i = 0; i < 64; i++) { inner[i] = 0x36; }
-        for (i = 0; i < password.length; i++) { inner[i] ^= password[i]; }
-        for (i = 0; i < salt.length; i++) { inner[64 + i] = salt[i]; }
-        for (i = innerLen - 4; i < innerLen; i++) { inner[i] = 0; }
-
-        // outerKey = password ^ opad
-        for (i = 0; i < 64; i++) outerKey[i] = 0x5c;
-        for (i = 0; i < password.length; i++) outerKey[i] ^= password[i];
-
-        // increments counter inside inner
-        function incrementCounter() {
-            for (let i = innerLen - 1; i >= innerLen - 4; i--) {
-                inner[i]++;
-                if (inner[i] <= 0xff) return;
-                inner[i] = 0;
-            }
-        }
-
-        // output blocks = SHA256(outerKey || SHA256(inner)) ...
-        while (dkLen >= 32) {
-            incrementCounter();
-            dk = dk.concat(SHA256(outerKey.concat(SHA256(inner))));
-            dkLen -= 32;
-        }
-        if (dkLen > 0) {
-            incrementCounter();
-            dk = dk.concat(SHA256(outerKey.concat(SHA256(inner))).slice(0, dkLen));
-        }
-
-        return dk;
-    }
-
-    // The following is an adaptation of scryptsy
-    // See: https://www.npmjs.com/package/scryptsy
-    function blockmix_salsa8(BY, Yi, r, x, _X) {
-        let i;
-
-        arraycopy(BY, (2 * r - 1) * 16, _X, 0, 16);
-        for (i = 0; i < 2 * r; i++) {
-            blockxor(BY, i * 16, _X, 16);
-            salsa20_8(_X, x);
-            arraycopy(_X, 0, BY, Yi + (i * 16), 16);
-        }
-
-        for (i = 0; i < r; i++) {
-            arraycopy(BY, Yi + (i * 2) * 16, BY, (i * 16), 16);
-        }
-
-        for (i = 0; i < r; i++) {
-            arraycopy(BY, Yi + (i * 2 + 1) * 16, BY, (i + r) * 16, 16);
-        }
-    }
-
-    function R(a, b) {
-        return (a << b) | (a >>> (32 - b));
-    }
-
-    function salsa20_8(B, x) {
-        arraycopy(B, 0, x, 0, 16);
-
-        for (let i = 8; i > 0; i -= 2) {
-            x[ 4] ^= R(x[ 0] + x[12], 7);
-            x[ 8] ^= R(x[ 4] + x[ 0], 9);
-            x[12] ^= R(x[ 8] + x[ 4], 13);
-            x[ 0] ^= R(x[12] + x[ 8], 18);
-            x[ 9] ^= R(x[ 5] + x[ 1], 7);
-            x[13] ^= R(x[ 9] + x[ 5], 9);
-            x[ 1] ^= R(x[13] + x[ 9], 13);
-            x[ 5] ^= R(x[ 1] + x[13], 18);
-            x[14] ^= R(x[10] + x[ 6], 7);
-            x[ 2] ^= R(x[14] + x[10], 9);
-            x[ 6] ^= R(x[ 2] + x[14], 13);
-            x[10] ^= R(x[ 6] + x[ 2], 18);
-            x[ 3] ^= R(x[15] + x[11], 7);
-            x[ 7] ^= R(x[ 3] + x[15], 9);
-            x[11] ^= R(x[ 7] + x[ 3], 13);
-            x[15] ^= R(x[11] + x[ 7], 18);
-            x[ 1] ^= R(x[ 0] + x[ 3], 7);
-            x[ 2] ^= R(x[ 1] + x[ 0], 9);
-            x[ 3] ^= R(x[ 2] + x[ 1], 13);
-            x[ 0] ^= R(x[ 3] + x[ 2], 18);
-            x[ 6] ^= R(x[ 5] + x[ 4], 7);
-            x[ 7] ^= R(x[ 6] + x[ 5], 9);
-            x[ 4] ^= R(x[ 7] + x[ 6], 13);
-            x[ 5] ^= R(x[ 4] + x[ 7], 18);
-            x[11] ^= R(x[10] + x[ 9], 7);
-            x[ 8] ^= R(x[11] + x[10], 9);
-            x[ 9] ^= R(x[ 8] + x[11], 13);
-            x[10] ^= R(x[ 9] + x[ 8], 18);
-            x[12] ^= R(x[15] + x[14], 7);
-            x[13] ^= R(x[12] + x[15], 9);
-            x[14] ^= R(x[13] + x[12], 13);
-            x[15] ^= R(x[14] + x[13], 18);
-        }
-
-        for (let i = 0; i < 16; ++i) {
-            B[i] += x[i];
-        }
-    }
-
-    // naive approach... going back to loop unrolling may yield additional performance
-    function blockxor(S, Si, D, len) {
-        for (let i = 0; i < len; i++) {
-            D[i] ^= S[Si + i];
-        }
-    }
-
-    function arraycopy(src, srcPos, dest, destPos, length) {
-        while (length--) {
-            dest[destPos++] = src[srcPos++];
-        }
-    }
-
-    function checkBufferish(o) {
-        if (!o || typeof(o.length) !== 'number') { return false; }
-
-        for (let i = 0; i < o.length; i++) {
-            const v = o[i];
-            if (typeof(v) !== 'number' || v % 1 || v < 0 || v >= 256) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    function ensureInteger(value, name) {
-        if (typeof(value) !== "number" || (value % 1)) { throw new Error('invalid ' + name); }
-        return value;
-    }
-
-    // N = Cpu cost, r = Memory cost, p = parallelization cost
-    // callback(error, progress, key)
-    function _scrypt(password, salt, N, r, p, dkLen, callback) {
-
-        N = ensureInteger(N, 'N');
-        r = ensureInteger(r, 'r');
-        p = ensureInteger(p, 'p');
-
-        dkLen = ensureInteger(dkLen, 'dkLen');
-
-        if (N === 0 || (N & (N - 1)) !== 0) { throw new Error('N must be power of 2'); }
-
-        if (N > MAX_VALUE / 128 / r) { throw new Error('N too large'); }
-        if (r > MAX_VALUE / 128 / p) { throw new Error('r too large'); }
-
-        if (!checkBufferish(password)) {
-            throw new Error('password must be an array or buffer');
-        }
-        password = Array.prototype.slice.call(password);
-
-        if (!checkBufferish(salt)) {
-            throw new Error('salt must be an array or buffer');
-        }
-        salt = Array.prototype.slice.call(salt);
-
-        let b = PBKDF2_HMAC_SHA256_OneIter(password, salt, p * 128 * r);
-        const B = new Uint32Array(p * 32 * r);
-        for (let i = 0; i < B.length; i++) {
-            const j = i * 4;
-            B[i] = ((b[j + 3] & 0xff) << 24) |
-                   ((b[j + 2] & 0xff) << 16) |
-                   ((b[j + 1] & 0xff) << 8) |
-                   ((b[j + 0] & 0xff) << 0);
-        }
-
-        const XY = new Uint32Array(64 * r);
-        const V = new Uint32Array(32 * r * N);
-
-        const Yi = 32 * r;
-
-        // scratch space
-        const x = new Uint32Array(16);       // salsa20_8
-        const _X = new Uint32Array(16);      // blockmix_salsa8
-
-        const totalOps = p * N * 2;
-        let currentOp = 0;
-        let lastPercent10 = null;
-
-        // Set this to true to abandon the scrypt on the next step
-        let stop = false;
-
-        // State information
-        let state = 0;
-        let i0 = 0, i1;
-        let Bi;
-
-        // How many blockmix_salsa8 can we do per step?
-        const limit = callback ? parseInt(1000 / r): 0xffffffff;
-
-        // Trick from scrypt-async; if there is a setImmediate shim in place, use it
-        const nextTick = (typeof(setImmediate) !== 'undefined') ? setImmediate : setTimeout;
-
-        // This is really all I changed; making scryptsy a state machine so we occasionally
-        // stop and give other evnts on the evnt loop a chance to run. ~RicMoo
-        const incrementalSMix = function() {
-            if (stop) {
-                return callback(new Error('cancelled'), currentOp / totalOps);
-            }
-
-            let steps;
-
-            switch (state) {
-                case 0:
-                    // for (var i = 0; i < p; i++)...
-                    Bi = i0 * 32 * r;
-
-                    arraycopy(B, Bi, XY, 0, Yi);                       // ROMix - 1
-
-                    state = 1;                                         // Move to ROMix 2
-                    i1 = 0;
-
-                    // Fall through
-
-                case 1:
-
-                    // Run up to 1000 steps of the first inner smix loop
-                    steps = N - i1;
-                    if (steps > limit) { steps = limit; }
-                    for (let i = 0; i < steps; i++) {                  // ROMix - 2
-                        arraycopy(XY, 0, V, (i1 + i) * Yi, Yi);         // ROMix - 3
-                        blockmix_salsa8(XY, Yi, r, x, _X);             // ROMix - 4
-                    }
-
-                    // for (var i = 0; i < N; i++)
-                    i1 += steps;
-                    currentOp += steps;
-
-                    if (callback) {
-                        // Call the callback with the progress (optionally stopping us)
-                        const percent10 = parseInt(1000 * currentOp / totalOps);
-                        if (percent10 !== lastPercent10) {
-                            stop = callback(null, currentOp / totalOps);
-                            if (stop) { break; }
-                            lastPercent10 = percent10;
-                        }
-                    }
-
-                    if (i1 < N) { break; }
-
-                    i1 = 0;                                          // Move to ROMix 6
-                    state = 2;
-
-                    // Fall through
-
-                case 2:
-
-                    // Run up to 1000 steps of the second inner smix loop
-                    steps = N - i1;
-                    if (steps > limit) { steps = limit; }
-                    for (let i = 0; i < steps; i++) {                // ROMix - 6
-                        const offset = (2 * r - 1) * 16;             // ROMix - 7
-                        const j = XY[offset] & (N - 1);
-                        blockxor(V, j * Yi, XY, Yi);                 // ROMix - 8 (inner)
-                        blockmix_salsa8(XY, Yi, r, x, _X);           // ROMix - 9 (outer)
-                    }
-
-                    // for (var i = 0; i < N; i++)...
-                    i1 += steps;
-                    currentOp += steps;
-
-                    // Call the callback with the progress (optionally stopping us)
-                    if (callback) {
-                        const percent10 = parseInt(1000 * currentOp / totalOps);
-                        if (percent10 !== lastPercent10) {
-                            stop = callback(null, currentOp / totalOps);
-                            if (stop) { break; }
-                            lastPercent10 = percent10;
-                        }
-                    }
-
-                    if (i1 < N) { break; }
-
-                    arraycopy(XY, 0, B, Bi, Yi);                     // ROMix - 10
-
-                    // for (var i = 0; i < p; i++)...
-                    i0++;
-                    if (i0 < p) {
-                        state = 0;
-                        break;
-                    }
-
-                    b = [];
-                    for (let i = 0; i < B.length; i++) {
-                        b.push((B[i] >>  0) & 0xff);
-                        b.push((B[i] >>  8) & 0xff);
-                        b.push((B[i] >> 16) & 0xff);
-                        b.push((B[i] >> 24) & 0xff);
-                    }
-
-                    const derivedKey = PBKDF2_HMAC_SHA256_OneIter(password, b, dkLen);
-
-                    // Send the result to the callback
-                    if (callback) { callback(null, 1.0, derivedKey); }
-
-                    // Done; don't break (which would reschedule)
-                    return derivedKey;
-            }
-
-            // Schedule the next steps
-            if (callback) { nextTick(incrementalSMix); }
-        };
-
-        // Run the smix state machine until completion
-        if (!callback) {
-            while (true) {
-                const derivedKey = incrementalSMix();
-                if (derivedKey != undefined) { return derivedKey; }
-            }
-        }
-
-        // Bootstrap the async incremental smix
-        incrementalSMix();
-    }
-
-    const lib = {
-        scrypt: function(password, salt, N, r, p, dkLen, progressCallback) {
-            return new Promise(function(resolve, reject) {
-                let lastProgress = 0;
-                if (progressCallback) { progressCallback(0); }
-                _scrypt(password, salt, N, r, p, dkLen, function(error, progress, key) {
-                    if (error) {
-                        reject(error);
-                    } else if (key) {
-                        if (progressCallback && lastProgress !== 1) {
-                            progressCallback(1);
-                        }
-                        resolve(new Uint8Array(key));
-                    } else if (progressCallback && progress !== lastProgress) {
-                        lastProgress = progress;
-                        return progressCallback(progress);
-                    }
-                });
-            });
-        },
-        syncScrypt: function(password, salt, N, r, p, dkLen) {
-            return new Uint8Array(_scrypt(password, salt, N, r, p, dkLen));
-        }
-    };
-
-    // node.js
-    if ('object' !== 'undefined') {
-       module.exports = lib;
-
-    // RequireJS/AMD
-    // http://www.requirejs.org/docs/api.html
-    // https://github.com/amdjs/amdjs-api/wiki/AMD
-    } else if (typeof(undefined) === 'function' && undefined.amd) {
-        undefined(lib);
-
-    // Web Browsers
-    } else if (root) {
-
-        // If there was an existing library "scrypt", make sure it is still available
-        if (root.scrypt) {
-            root._scrypt = root.scrypt;
-        }
-
-        root.scrypt = lib;
-    }
-
-})(commonjsGlobal);
-});
-
-const version$j = "random/5.5.0";
-
-"use strict";
-const logger$k = new Logger(version$j);
-// Debugging line for testing browser lib in node
-//const window = { crypto: { getRandomValues: () => { } } };
-let anyGlobal = null;
-try {
-    anyGlobal = window;
-    if (anyGlobal == null) {
-        throw new Error("try next");
-    }
-}
-catch (error) {
-    try {
-        anyGlobal = global;
-        if (anyGlobal == null) {
-            throw new Error("try next");
-        }
-    }
-    catch (error) {
-        anyGlobal = {};
-    }
-}
-let crypto$2 = anyGlobal.crypto || anyGlobal.msCrypto;
-if (!crypto$2 || !crypto$2.getRandomValues) {
-    logger$k.warn("WARNING: Missing strong random number source");
-    crypto$2 = {
-        getRandomValues: function (buffer) {
-            return logger$k.throwError("no secure random source avaialble", Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: "crypto.getRandomValues"
-            });
-        }
-    };
-}
-function randomBytes(length) {
-    if (length <= 0 || length > 1024 || (length % 1) || length != length) {
-        logger$k.throwArgumentError("invalid length", "length", length);
-    }
-    const result = new Uint8Array(length);
-    crypto$2.getRandomValues(result);
-    return arrayify(result);
-}
-;
-
-"use strict";
-function shuffled(array) {
-    array = array.slice();
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        const tmp = array[i];
-        array[i] = array[j];
-        array[j] = tmp;
-    }
-    return array;
-}
-
-"use strict";
-
-var lib_esm$e = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	randomBytes: randomBytes,
-	shuffled: shuffled
-});
-
-"use strict";
-var __awaiter$2 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-const logger$l = new Logger(version$i);
-// Exported Types
-function hasMnemonic(value) {
-    return (value != null && value.mnemonic && value.mnemonic.phrase);
-}
-class KeystoreAccount extends Description {
-    isKeystoreAccount(value) {
-        return !!(value && value._isKeystoreAccount);
-    }
-}
-function _decrypt(data, key, ciphertext) {
-    const cipher = searchPath(data, "crypto/cipher");
-    if (cipher === "aes-128-ctr") {
-        const iv = looseArrayify(searchPath(data, "crypto/cipherparams/iv"));
-        const counter = new aesJs.Counter(iv);
-        const aesCtr = new aesJs.ModeOfOperation.ctr(key, counter);
-        return arrayify(aesCtr.decrypt(ciphertext));
-    }
-    return null;
-}
-function _getAccount(data, key) {
-    const ciphertext = looseArrayify(searchPath(data, "crypto/ciphertext"));
-    const computedMAC = hexlify(keccak256(concat([key.slice(16, 32), ciphertext]))).substring(2);
-    if (computedMAC !== searchPath(data, "crypto/mac").toLowerCase()) {
-        throw new Error("invalid password");
-    }
-    const privateKey = _decrypt(data, key.slice(0, 16), ciphertext);
-    if (!privateKey) {
-        logger$l.throwError("unsupported cipher", Logger.errors.UNSUPPORTED_OPERATION, {
-            operation: "decrypt"
-        });
-    }
-    const mnemonicKey = key.slice(32, 64);
-    let address;
-    if (data.address) {
-        address = data.address.toLowerCase();
-        if (address.substring(0, 2) !== "0x") {
-            address = "0x" + address;
-        }
-    }
-    const account = {
-        _isKeystoreAccount: true,
-        address: address ? getAddress(address) : undefined,
-        privateKey: hexlify(privateKey)
-    };
-    // Version 0.1 x-ethers metadata must contain an encrypted mnemonic phrase
-    if (searchPath(data, "x-ethers/version") === "0.1") {
-        const mnemonicCiphertext = looseArrayify(searchPath(data, "x-ethers/mnemonicCiphertext"));
-        const mnemonicIv = looseArrayify(searchPath(data, "x-ethers/mnemonicCounter"));
-        const mnemonicCounter = new aesJs.Counter(mnemonicIv);
-        const mnemonicAesCtr = new aesJs.ModeOfOperation.ctr(mnemonicKey, mnemonicCounter);
-        const path = searchPath(data, "x-ethers/path") || defaultPath;
-        const locale = searchPath(data, "x-ethers/locale") || "en";
-        const entropy = arrayify(mnemonicAesCtr.decrypt(mnemonicCiphertext));
-        try {
-            const mnemonic = entropyToMnemonic(entropy, locale);
-            const node = HDNode.fromMnemonic(mnemonic, null, locale).derivePath(path);
-            if (node.privateKey != account.privateKey) {
-                throw new Error("mnemonic mismatch");
-            }
-            account.mnemonic = node.mnemonic;
-        }
-        catch (error) {
-            // If we don't have the locale wordlist installed to
-            // read this mnemonic, just bail and don't set the
-            // mnemonic
-            if (error.code !== Logger.errors.INVALID_ARGUMENT || error.argument !== "wordlist") {
-                throw error;
-            }
-        }
-    }
-    return new KeystoreAccount(account);
-}
-function pbkdf2Sync(passwordBytes, salt, count, dkLen, prfFunc) {
-    return arrayify(pbkdf2(passwordBytes, salt, count, dkLen, prfFunc));
-}
-function pbkdf2$1(passwordBytes, salt, count, dkLen, prfFunc) {
-    return Promise.resolve(pbkdf2Sync(passwordBytes, salt, count, dkLen, prfFunc));
-}
-function _computeKdfKey(data, password, pbkdf2Func, scryptFunc, progressCallback) {
-    const passwordBytes = getPassword(password);
-    const kdf = searchPath(data, "crypto/kdf");
-    if (kdf && typeof (kdf) === "string") {
-        const throwError = function (name, value) {
-            return logger$l.throwArgumentError("invalid key-derivation function parameters", name, value);
-        };
-        if (kdf.toLowerCase() === "scrypt") {
-            const salt = looseArrayify(searchPath(data, "crypto/kdfparams/salt"));
-            const N = parseInt(searchPath(data, "crypto/kdfparams/n"));
-            const r = parseInt(searchPath(data, "crypto/kdfparams/r"));
-            const p = parseInt(searchPath(data, "crypto/kdfparams/p"));
-            // Check for all required parameters
-            if (!N || !r || !p) {
-                throwError("kdf", kdf);
-            }
-            // Make sure N is a power of 2
-            if ((N & (N - 1)) !== 0) {
-                throwError("N", N);
-            }
-            const dkLen = parseInt(searchPath(data, "crypto/kdfparams/dklen"));
-            if (dkLen !== 32) {
-                throwError("dklen", dkLen);
-            }
-            return scryptFunc(passwordBytes, salt, N, r, p, 64, progressCallback);
-        }
-        else if (kdf.toLowerCase() === "pbkdf2") {
-            const salt = looseArrayify(searchPath(data, "crypto/kdfparams/salt"));
-            let prfFunc = null;
-            const prf = searchPath(data, "crypto/kdfparams/prf");
-            if (prf === "hmac-sha256") {
-                prfFunc = "sha256";
-            }
-            else if (prf === "hmac-sha512") {
-                prfFunc = "sha512";
-            }
-            else {
-                throwError("prf", prf);
-            }
-            const count = parseInt(searchPath(data, "crypto/kdfparams/c"));
-            const dkLen = parseInt(searchPath(data, "crypto/kdfparams/dklen"));
-            if (dkLen !== 32) {
-                throwError("dklen", dkLen);
-            }
-            return pbkdf2Func(passwordBytes, salt, count, dkLen, prfFunc);
-        }
-    }
-    return logger$l.throwArgumentError("unsupported key-derivation function", "kdf", kdf);
-}
-function decryptSync(json, password) {
-    const data = JSON.parse(json);
-    const key = _computeKdfKey(data, password, pbkdf2Sync, scrypt.syncScrypt);
-    return _getAccount(data, key);
-}
-function decrypt$1(json, password, progressCallback) {
-    return __awaiter$2(this, void 0, void 0, function* () {
-        const data = JSON.parse(json);
-        const key = yield _computeKdfKey(data, password, pbkdf2$1, scrypt.scrypt, progressCallback);
-        return _getAccount(data, key);
-    });
-}
-function encrypt(account, password, options, progressCallback) {
-    try {
-        // Check the mnemonic (if any) matches the private key
-        if (hasMnemonic(account)) {
-            const mnemonic = account.mnemonic;
-            const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path || defaultPath);
-            if (node.privateKey != account.privateKey) {
-                throw new Error("mnemonic mismatch");
-            }
-        }
-    }
-    catch (e) {
-        return Promise.reject(e);
-    }
-    // The options are optional, so adjust the call as needed
-    if (typeof (options) === "function" && !progressCallback) {
-        progressCallback = options;
-        options = {};
-    }
-    if (!options) {
-        options = {};
-    }
-    const privateKey = arrayify(account.privateKey);
-    const passwordBytes = getPassword(password);
-    let entropy = null;
-    let path = null;
-    let locale = null;
-    if (hasMnemonic(account)) {
-        const srcMnemonic = account.mnemonic;
-        entropy = arrayify(mnemonicToEntropy(srcMnemonic.phrase, srcMnemonic.locale || "en"));
-        path = srcMnemonic.path || defaultPath;
-        locale = srcMnemonic.locale || "en";
-    }
-    let client = options.client;
-    if (!client) {
-        client = "ethers.js";
-    }
-    // Check/generate the salt
-    let salt = null;
-    if (options.salt) {
-        salt = arrayify(options.salt);
-    }
-    else {
-        salt = randomBytes(32);
-        ;
-    }
-    // Override initialization vector
-    let iv = null;
-    if (options.iv) {
-        iv = arrayify(options.iv);
-        if (iv.length !== 16) {
-            throw new Error("invalid iv");
-        }
-    }
-    else {
-        iv = randomBytes(16);
-    }
-    // Override the uuid
-    let uuidRandom = null;
-    if (options.uuid) {
-        uuidRandom = arrayify(options.uuid);
-        if (uuidRandom.length !== 16) {
-            throw new Error("invalid uuid");
-        }
-    }
-    else {
-        uuidRandom = randomBytes(16);
-    }
-    // Override the scrypt password-based key derivation function parameters
-    let N = (1 << 17), r = 8, p = 1;
-    if (options.scrypt) {
-        if (options.scrypt.N) {
-            N = options.scrypt.N;
-        }
-        if (options.scrypt.r) {
-            r = options.scrypt.r;
-        }
-        if (options.scrypt.p) {
-            p = options.scrypt.p;
-        }
-    }
-    // We take 64 bytes:
-    //   - 32 bytes   As normal for the Web3 secret storage (derivedKey, macPrefix)
-    //   - 32 bytes   AES key to encrypt mnemonic with (required here to be Ethers Wallet)
-    return scrypt.scrypt(passwordBytes, salt, N, r, p, 64, progressCallback).then((key) => {
-        key = arrayify(key);
-        // This will be used to encrypt the wallet (as per Web3 secret storage)
-        const derivedKey = key.slice(0, 16);
-        const macPrefix = key.slice(16, 32);
-        // This will be used to encrypt the mnemonic phrase (if any)
-        const mnemonicKey = key.slice(32, 64);
-        // Encrypt the private key
-        const counter = new aesJs.Counter(iv);
-        const aesCtr = new aesJs.ModeOfOperation.ctr(derivedKey, counter);
-        const ciphertext = arrayify(aesCtr.encrypt(privateKey));
-        // Compute the message authentication code, used to check the password
-        const mac = keccak256(concat([macPrefix, ciphertext]));
-        // See: https://github.com/ethereum/wiki/wiki/Web3-Secret-Storage-Definition
-        // As per Version 3, the address field is OPTIONAL
-        const data = {
-            address: account.address ? account.address.substring(2).toLowerCase() : undefined,
-            id: uuidV4(uuidRandom),
-            version: 3,
-            Crypto: {
-                cipher: "aes-128-ctr",
-                cipherparams: {
-                    iv: hexlify(iv).substring(2),
-                },
-                ciphertext: hexlify(ciphertext).substring(2),
-                kdf: "scrypt",
-                kdfparams: {
-                    salt: hexlify(salt).substring(2),
-                    n: N,
-                    dklen: 32,
-                    p: p,
-                    r: r
-                },
-                mac: mac.substring(2)
-            }
-        };
-        // If we have a mnemonic, encrypt it into the JSON wallet
-        if (entropy) {
-            const mnemonicIv = randomBytes(16);
-            const mnemonicCounter = new aesJs.Counter(mnemonicIv);
-            const mnemonicAesCtr = new aesJs.ModeOfOperation.ctr(mnemonicKey, mnemonicCounter);
-            const mnemonicCiphertext = arrayify(mnemonicAesCtr.encrypt(entropy));
-            const now = new Date();
-            const timestamp = (now.getUTCFullYear() + "-" +
-                zpad(now.getUTCMonth() + 1, 2) + "-" +
-                zpad(now.getUTCDate(), 2) + "T" +
-                zpad(now.getUTCHours(), 2) + "-" +
-                zpad(now.getUTCMinutes(), 2) + "-" +
-                zpad(now.getUTCSeconds(), 2) + ".0Z");
-            data["x-ethers"] = {
-                client: client,
-                gethFilename: ("UTC--" + timestamp + "--" + data.address),
-                mnemonicCounter: hexlify(mnemonicIv).substring(2),
-                mnemonicCiphertext: hexlify(mnemonicCiphertext).substring(2),
-                path: path,
-                locale: locale,
-                version: "0.1"
-            };
-        }
-        return JSON.stringify(data);
-    });
-}
-
-"use strict";
-function decryptJsonWallet(json, password, progressCallback) {
-    if (isKeystoreWallet(json)) {
-        return decrypt$1(json, password, progressCallback);
-    }
-    return Promise.reject(new Error("invalid JSON wallet"));
-}
-function decryptJsonWalletSync(json, password) {
-    if (isKeystoreWallet(json)) {
-        return decryptSync(json, password);
-    }
-    throw new Error("invalid JSON wallet");
-}
-
-var lib_esm$f = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	decryptCrowdsale: decrypt,
-	decryptKeystore: decrypt$1,
-	decryptKeystoreSync: decryptSync,
-	encryptKeystore: encrypt,
-	isCrowdsaleWallet: isCrowdsaleWallet,
-	isKeystoreWallet: isKeystoreWallet,
-	getJsonWalletAddress: getJsonWalletAddress,
-	decryptJsonWallet: decryptJsonWallet,
-	decryptJsonWalletSync: decryptJsonWalletSync
-});
-
-const version$k = "solidity/5.5.0";
-
-"use strict";
-const regexBytes = new RegExp("^bytes([0-9]+)$");
-const regexNumber = new RegExp("^(u?int)([0-9]*)$");
-const regexArray = new RegExp("^(.*)\\[([0-9]*)\\]$");
-const Zeros = "0000000000000000000000000000000000000000000000000000000000000000";
-const logger$m = new Logger(version$k);
-function _pack(type, value, isArray) {
-    switch (type) {
-        case "address":
-            if (isArray) {
-                return zeroPad(value, 32);
-            }
-            return arrayify(value);
-        case "string":
-            return toUtf8Bytes(value);
-        case "bytes":
-            return arrayify(value);
-        case "bool":
-            value = (value ? "0x01" : "0x00");
-            if (isArray) {
-                return zeroPad(value, 32);
-            }
-            return arrayify(value);
-    }
-    let match = type.match(regexNumber);
-    if (match) {
-        //let signed = (match[1] === "int")
-        let size = parseInt(match[2] || "256");
-        if ((match[2] && String(size) !== match[2]) || (size % 8 !== 0) || size === 0 || size > 256) {
-            logger$m.throwArgumentError("invalid number type", "type", type);
-        }
-        if (isArray) {
-            size = 256;
-        }
-        value = BigNumber.from(value).toTwos(size);
-        return zeroPad(value, size / 8);
-    }
-    match = type.match(regexBytes);
-    if (match) {
-        const size = parseInt(match[1]);
-        if (String(size) !== match[1] || size === 0 || size > 32) {
-            logger$m.throwArgumentError("invalid bytes type", "type", type);
-        }
-        if (arrayify(value).byteLength !== size) {
-            logger$m.throwArgumentError(`invalid value for ${type}`, "value", value);
-        }
-        if (isArray) {
-            return arrayify((value + Zeros).substring(0, 66));
-        }
-        return value;
-    }
-    match = type.match(regexArray);
-    if (match && Array.isArray(value)) {
-        const baseType = match[1];
-        const count = parseInt(match[2] || String(value.length));
-        if (count != value.length) {
-            logger$m.throwArgumentError(`invalid array length for ${type}`, "value", value);
-        }
-        const result = [];
-        value.forEach(function (value) {
-            result.push(_pack(baseType, value, true));
-        });
-        return concat(result);
-    }
-    return logger$m.throwArgumentError("invalid type", "type", type);
-}
-// @TODO: Array Enum
-function pack$1(types, values) {
-    if (types.length != values.length) {
-        logger$m.throwArgumentError("wrong number of values; expected ${ types.length }", "values", values);
-    }
-    const tight = [];
-    types.forEach(function (type, index) {
-        tight.push(_pack(type, values[index]));
-    });
-    return hexlify(concat(tight));
-}
-function keccak256$3(types, values) {
-    return keccak256(pack$1(types, values));
-}
-function sha256$2(types, values) {
-    return sha256$1(pack$1(types, values));
-}
-
-var lib_esm$g = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	pack: pack$1,
-	keccak256: keccak256$3,
-	sha256: sha256$2
-});
-
-const version$l = "units/5.5.0";
-
-"use strict";
-const logger$n = new Logger(version$l);
-const names = [
-    "wei",
-    "kwei",
-    "mwei",
-    "gwei",
-    "szabo",
-    "finney",
-    "ether",
-];
-// Some environments have issues with RegEx that contain back-tracking, so we cannot
-// use them.
-function commify(value) {
-    const comps = String(value).split(".");
-    if (comps.length > 2 || !comps[0].match(/^-?[0-9]*$/) || (comps[1] && !comps[1].match(/^[0-9]*$/)) || value === "." || value === "-.") {
-        logger$n.throwArgumentError("invalid value", "value", value);
-    }
-    // Make sure we have at least one whole digit (0 if none)
-    let whole = comps[0];
-    let negative = "";
-    if (whole.substring(0, 1) === "-") {
-        negative = "-";
-        whole = whole.substring(1);
-    }
-    // Make sure we have at least 1 whole digit with no leading zeros
-    while (whole.substring(0, 1) === "0") {
-        whole = whole.substring(1);
-    }
-    if (whole === "") {
-        whole = "0";
-    }
-    let suffix = "";
-    if (comps.length === 2) {
-        suffix = "." + (comps[1] || "0");
-    }
-    while (suffix.length > 2 && suffix[suffix.length - 1] === "0") {
-        suffix = suffix.substring(0, suffix.length - 1);
-    }
-    const formatted = [];
-    while (whole.length) {
-        if (whole.length <= 3) {
-            formatted.unshift(whole);
-            break;
-        }
-        else {
-            const index = whole.length - 3;
-            formatted.unshift(whole.substring(index));
-            whole = whole.substring(0, index);
-        }
-    }
-    return negative + formatted.join(",") + suffix;
-}
-function formatUnits(value, unitName) {
-    if (typeof (unitName) === "string") {
-        const index = names.indexOf(unitName);
-        if (index !== -1) {
-            unitName = 3 * index;
-        }
-    }
-    return formatFixed(value, (unitName != null) ? unitName : 18);
-}
-function parseUnits(value, unitName) {
-    if (typeof (value) !== "string") {
-        logger$n.throwArgumentError("value must be a string", "value", value);
-    }
-    if (typeof (unitName) === "string") {
-        const index = names.indexOf(unitName);
-        if (index !== -1) {
-            unitName = 3 * index;
-        }
-    }
-    return parseFixed(value, (unitName != null) ? unitName : 18);
-}
-function formatEther(wei) {
-    return formatUnits(wei, 18);
-}
-function parseEther(ether) {
-    return parseUnits(ether, 18);
-}
-
-var lib_esm$h = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	commify: commify,
-	formatUnits: formatUnits,
-	parseUnits: parseUnits,
-	formatEther: formatEther,
-	parseEther: parseEther
-});
-
-const version$m = "wallet/5.5.0";
+const version$o = "wallet/5.5.0";
 
 var __awaiter$3 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -91878,7 +91993,7 @@ var __awaiter$3 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$o = new Logger(version$m);
+const logger$p = new Logger(version$o);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
 }
@@ -91891,7 +92006,7 @@ function hasAlias(value) {
 }
 class Wallet extends Signer {
     constructor(identity, provider) {
-        logger$o.checkNew(new.target, Wallet);
+        logger$p.checkNew(new.target, Wallet);
         super();
         if (isAccount(identity) && !SigningKey.isSigningKey(identity)) {
             const signingKey = new SigningKey(identity.privateKey);
@@ -91903,7 +92018,7 @@ class Wallet extends Signer {
             if (hasAlias(identity)) {
                 defineReadOnly(this, "alias", identity.alias);
                 if (this.alias !== computeAlias(signingKey.privateKey)) {
-                    logger$o.throwArgumentError("privateKey/alias mismatch", "privateKey", "[REDACTED]");
+                    logger$p.throwArgumentError("privateKey/alias mismatch", "privateKey", "[REDACTED]");
                 }
             }
             if (hasMnemonic$1(identity)) {
@@ -91916,7 +92031,7 @@ class Wallet extends Signer {
                 const mnemonic = this.mnemonic;
                 const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
                 if (node.privateKey !== this._signingKey().privateKey) {
-                    logger$o.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
+                    logger$p.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
                 }
             }
             else {
@@ -91927,7 +92042,7 @@ class Wallet extends Signer {
             if (SigningKey.isSigningKey(identity)) {
                 /* istanbul ignore if */
                 if (identity.curve !== "secp256k1") {
-                    logger$o.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
+                    logger$p.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
                 }
                 defineReadOnly(this, "_signingKey", () => identity);
             }
@@ -91946,7 +92061,7 @@ class Wallet extends Signer {
         }
         /* istanbul ignore if */
         if (provider && !Provider.isProvider(provider)) {
-            logger$o.throwArgumentError("invalid provider", "provider", provider);
+            logger$p.throwArgumentError("invalid provider", "provider", provider);
         }
         defineReadOnly(this, "provider", provider || null);
     }
@@ -91998,7 +92113,7 @@ class Wallet extends Signer {
     }
     _signTypedData(domain, types, value) {
         return __awaiter$3(this, void 0, void 0, function* () {
-            return logger$o.throwError("_signTypedData not supported", Logger.errors.UNSUPPORTED_OPERATION, {
+            return logger$p.throwError("_signTypedData not supported", Logger.errors.UNSUPPORTED_OPERATION, {
                 operation: '_signTypedData'
             });
         });
@@ -92067,7 +92182,7 @@ class Wallet extends Signer {
     }
     _checkAddress(operation) {
         if (!this.address) {
-            logger$o.throwError("missing address", Logger.errors.UNSUPPORTED_OPERATION, {
+            logger$p.throwError("missing address", Logger.errors.UNSUPPORTED_OPERATION, {
                 operation: (operation || "_checkAddress")
             });
         }
@@ -92077,7 +92192,7 @@ function verifyMessage(message, signature) {
     return recoverPublicKey(arrayify(hashMessage(message)), signature);
 }
 function verifyTypedData(domain, types, value, signature) {
-    return logger$o.throwError("verifyTypedData not supported", Logger.errors.UNSUPPORTED_OPERATION, {
+    return logger$p.throwError("verifyTypedData not supported", Logger.errors.UNSUPPORTED_OPERATION, {
         operation: 'verifyTypedData'
     });
 }
@@ -92089,7 +92204,7 @@ var lib_esm$i = /*#__PURE__*/Object.freeze({
 	verifyTypedData: verifyTypedData
 });
 
-const version$n = "web/5.5.0";
+const version$p = "web/5.5.0";
 
 "use strict";
 var __awaiter$4 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -92151,7 +92266,7 @@ var __awaiter$5 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$p = new Logger(version$n);
+const logger$q = new Logger(version$p);
 function staller(duration) {
     return new Promise((resolve) => {
         setTimeout(resolve, duration);
@@ -92185,10 +92300,10 @@ function bodyify(value, type) {
 function _fetchData(connection, body, processFunc) {
     // How many times to retry in the event of a throttle
     const attemptLimit = (typeof (connection) === "object" && connection.throttleLimit != null) ? connection.throttleLimit : 12;
-    logger$p.assertArgument((attemptLimit > 0 && (attemptLimit % 1) === 0), "invalid connection throttle limit", "connection.throttleLimit", attemptLimit);
+    logger$q.assertArgument((attemptLimit > 0 && (attemptLimit % 1) === 0), "invalid connection throttle limit", "connection.throttleLimit", attemptLimit);
     const throttleCallback = ((typeof (connection) === "object") ? connection.throttleCallback : null);
     const throttleSlotInterval = ((typeof (connection) === "object" && typeof (connection.throttleSlotInterval) === "number") ? connection.throttleSlotInterval : 100);
-    logger$p.assertArgument((throttleSlotInterval > 0 && (throttleSlotInterval % 1) === 0), "invalid connection throttle slot interval", "connection.throttleSlotInterval", throttleSlotInterval);
+    logger$q.assertArgument((throttleSlotInterval > 0 && (throttleSlotInterval % 1) === 0), "invalid connection throttle slot interval", "connection.throttleSlotInterval", throttleSlotInterval);
     const headers = {};
     let url = null;
     // @TODO: Allow ConnectionInfo to override some of these values
@@ -92202,7 +92317,7 @@ function _fetchData(connection, body, processFunc) {
     }
     else if (typeof (connection) === "object") {
         if (connection == null || connection.url == null) {
-            logger$p.throwArgumentError("missing URL", "connection.url", connection);
+            logger$q.throwArgumentError("missing URL", "connection.url", connection);
         }
         url = connection.url;
         if (typeof (connection.timeout) === "number" && connection.timeout > 0) {
@@ -92219,12 +92334,12 @@ function _fetchData(connection, body, processFunc) {
         options.allowGzip = !!connection.allowGzip;
         if (connection.user != null && connection.password != null) {
             if (url.substring(0, 6) !== "https:" && connection.allowInsecureAuthentication !== true) {
-                logger$p.throwError("basic authentication requires a secure https url", Logger.errors.INVALID_ARGUMENT, { argument: "url", url: url, user: connection.user, password: "[REDACTED]" });
+                logger$q.throwError("basic authentication requires a secure https url", Logger.errors.INVALID_ARGUMENT, { argument: "url", url: url, user: connection.user, password: "[REDACTED]" });
             }
             const authorization = connection.user + ":" + connection.password;
             headers["authorization"] = {
                 key: "Authorization",
-                value: "Basic " + encode$6(toUtf8Bytes(authorization))
+                value: "Basic " + encode$1(toUtf8Bytes(authorization))
             };
         }
     }
@@ -92253,7 +92368,7 @@ function _fetchData(connection, body, processFunc) {
                         return;
                     }
                     timer = null;
-                    reject(logger$p.makeError("timeout", Logger.errors.TIMEOUT, {
+                    reject(logger$q.makeError("timeout", Logger.errors.TIMEOUT, {
                         requestBody: bodyify(options.body, flatHeaders["content-type"]),
                         requestMethod: options.method,
                         timeout: timeout,
@@ -92302,7 +92417,7 @@ function _fetchData(connection, body, processFunc) {
                     response = error.response;
                     if (response == null) {
                         runningTimeout.cancel();
-                        logger$p.throwError("missing response", Logger.errors.SERVER_ERROR, {
+                        logger$q.throwError("missing response", Logger.errors.SERVER_ERROR, {
                             requestBody: bodyify(options.body, flatHeaders["content-type"]),
                             requestMethod: options.method,
                             serverError: error,
@@ -92316,7 +92431,7 @@ function _fetchData(connection, body, processFunc) {
                 }
                 else if (response.statusCode < 200 || response.statusCode >= 300) {
                     runningTimeout.cancel();
-                    logger$p.throwError("bad response", Logger.errors.SERVER_ERROR, {
+                    logger$q.throwError("bad response", Logger.errors.SERVER_ERROR, {
                         status: response.statusCode,
                         headers: response.headers,
                         body: bodyify(body, ((response.headers) ? response.headers["content-type"] : null)),
@@ -92346,7 +92461,7 @@ function _fetchData(connection, body, processFunc) {
                             }
                         }
                         runningTimeout.cancel();
-                        logger$p.throwError("processing response error", Logger.errors.SERVER_ERROR, {
+                        logger$q.throwError("processing response error", Logger.errors.SERVER_ERROR, {
                             body: bodyify(body, ((response.headers) ? response.headers["content-type"] : null)),
                             error: error,
                             requestBody: bodyify(options.body, flatHeaders["content-type"]),
@@ -92360,7 +92475,7 @@ function _fetchData(connection, body, processFunc) {
                 // The "body" is now a Uint8Array.
                 return body;
             }
-            return logger$p.throwError("failed response", Logger.errors.SERVER_ERROR, {
+            return logger$q.throwError("failed response", Logger.errors.SERVER_ERROR, {
                 requestBody: bodyify(options.body, flatHeaders["content-type"]),
                 requestMethod: options.method,
                 url: url
@@ -92377,7 +92492,7 @@ function fetchJson(connection, json, processFunc) {
                 result = JSON.parse(toUtf8String(value));
             }
             catch (error) {
-                logger$p.throwError("invalid JSON", Logger.errors.SERVER_ERROR, {
+                logger$q.throwError("invalid JSON", Logger.errors.SERVER_ERROR, {
                     body: value,
                     error: error
                 });
@@ -92703,7 +92818,7 @@ var __awaiter$6 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$q = new Logger(version$e);
+const logger$r = new Logger(version$d);
 var TransactionTypes;
 (function (TransactionTypes) {
     TransactionTypes[TransactionTypes["legacy"] = 0] = "legacy";
@@ -92736,7 +92851,7 @@ function accessSetify(addr, storageKeys) {
         address: getAddress(addr),
         storageKeys: (storageKeys || []).map((storageKey, index) => {
             if (hexDataLength(storageKey) !== 32) {
-                logger$q.throwArgumentError("invalid access list storageKey", `accessList[${addr}:${index}]`, storageKey);
+                logger$r.throwArgumentError("invalid access list storageKey", `accessList[${addr}:${index}]`, storageKey);
             }
             return storageKey.toLowerCase();
         })
@@ -92747,7 +92862,7 @@ function accessListify(value) {
         return value.map((set, index) => {
             if (Array.isArray(set)) {
                 if (set.length > 2) {
-                    logger$q.throwArgumentError("access list expected to be [ address, storageKeys[] ]", `value[${index}]`, set);
+                    logger$r.throwArgumentError("access list expected to be [ address, storageKeys[] ]", `value[${index}]`, set);
                 }
                 return accessSetify(set[0], set[1]);
             }
@@ -92808,7 +92923,7 @@ function serializeHederaTransaction(transaction, pubKey) {
                     .setInitialBalance(Hbar.fromTinybars(initialBalance.toString()));
             }
             else {
-                logger$q.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
+                logger$r.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger.errors.INVALID_ARGUMENT, transaction);
             }
         }
     }
@@ -92919,7 +93034,7 @@ function parse$2(rawTransaction) {
             parsed = Transaction.fromBytes(payload);
         }
         catch (error) {
-            logger$q.throwArgumentError(error.message, "rawTransaction", rawTransaction);
+            logger$r.throwArgumentError(error.message, "rawTransaction", rawTransaction);
         }
         const tx = parsed.transactionId;
         let contents = {
@@ -92960,1060 +93075,21 @@ function parse$2(rawTransaction) {
                 handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
         }
         else {
-            return logger$q.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
+            return logger$r.throwError(`unsupported transaction`, Logger.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
         return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
-
-const version$o = "contracts/5.5.0";
+function numberify(num) {
+    return BigNumber.from(num).toNumber();
+}
 
 "use strict";
-var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-const logger$r = new Logger(version$o);
-///////////////////////////////
-const allowedTransactionKeys$1 = {
-    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
-    type: true,
-    maxFeePerGas: true, maxPriorityFeePerGas: true,
-    customData: true, nodeId: true,
-};
-function populateTransaction(contract, fragment, args) {
-    return __awaiter$7(this, void 0, void 0, function* () {
-        // If an extra argument is given, it is overrides
-        let overrides = {};
-        if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-            overrides = shallowCopy(args.pop());
-        }
-        // Make sure the parameter count matches
-        logger$r.checkArgumentCount(args.length, fragment.inputs.length, "passed to contract");
-        // Populate "from" override (allow promises)
-        if (contract.signer) {
-            if (overrides.from) {
-                // Contracts with a Signer are from the Signer's frame-of-reference;
-                // but we allow overriding "from" if it matches the signer
-                overrides.from = resolveProperties({
-                    override: overrides.from,
-                    signer: contract.signer.getAddress()
-                }).then((check) => __awaiter$7(this, void 0, void 0, function* () {
-                    if (getAddress(check.signer) !== check.override) {
-                        logger$r.throwError("Contract with a Signer cannot override from", Logger.errors.UNSUPPORTED_OPERATION, {
-                            operation: "overrides.from"
-                        });
-                    }
-                    return check.override;
-                }));
-            }
-            else {
-                overrides.from = contract.signer.getAddress();
-            }
-        }
-        // Wait for all dependencies to be resolved (prefer the signer over the provider)
-        const resolved = yield resolveProperties({
-            args: args,
-            address: contract.address,
-            overrides: (resolveProperties(overrides) || {})
-        });
-        // The ABI coded transaction
-        const data = contract.interface.encodeFunctionData(fragment, resolved.args);
-        const tx = {
-            data: data,
-            to: resolved.address
-        };
-        // Resolved Overrides
-        const ro = resolved.overrides;
-        // Populate simple overrides
-        if (ro.gasLimit != null) {
-            tx.gasLimit = BigNumber.from(ro.gasLimit);
-        }
-        if (ro.maxFeePerGas != null) {
-            tx.maxFeePerGas = BigNumber.from(ro.maxFeePerGas);
-        }
-        if (ro.maxPriorityFeePerGas != null) {
-            tx.maxPriorityFeePerGas = BigNumber.from(ro.maxPriorityFeePerGas);
-        }
-        if (ro.from != null) {
-            tx.from = ro.from;
-        }
-        if (ro.type != null) {
-            tx.type = ro.type;
-        }
-        if (ro.accessList != null) {
-            tx.accessList = accessListify(ro.accessList);
-        }
-        if (ro.nodeId != null) {
-            tx.nodeId = ro.nodeId;
-        }
-        // If there was no "gasLimit" override, but the ABI specifies a default, use it
-        if (tx.gasLimit == null && fragment.gas != null) {
-            let intrinsic = 21000;
-            let contractCreationExtraGasCost = 11000;
-            const bytes = arrayify(data);
-            for (let i = 0; i < bytes.length; i++) {
-                intrinsic += 4;
-                if (bytes[i]) {
-                    intrinsic += 16;
-                }
-            }
-            const txGas = tx.to != null ? intrinsic : intrinsic + contractCreationExtraGasCost;
-            tx.gasLimit = BigNumber.from(fragment.gas).add(txGas);
-        }
-        // Populate "value" override
-        if (ro.value) {
-            const roValue = BigNumber.from(ro.value);
-            if (!roValue.isZero() && !fragment.payable) {
-                logger$r.throwError("non-payable method cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "overrides.value",
-                    value: overrides.value
-                });
-            }
-            tx.value = roValue;
-        }
-        if (ro.customData) {
-            tx.customData = shallowCopy(ro.customData);
-        }
-        // Remove the overrides
-        delete overrides.gasLimit;
-        delete overrides.from;
-        delete overrides.value;
-        delete overrides.type;
-        delete overrides.accessList;
-        delete overrides.maxFeePerGas;
-        delete overrides.maxPriorityFeePerGas;
-        delete overrides.customData;
-        delete overrides.nodeId;
-        // Make sure there are no stray overrides, which may indicate a
-        // typo or using an unsupported key.
-        const leftovers = Object.keys(overrides).filter((key) => (overrides[key] != null));
-        if (leftovers.length) {
-            logger$r.throwError(`cannot override ${leftovers.map((l) => JSON.stringify(l)).join(",")}`, Logger.errors.UNSUPPORTED_OPERATION, {
-                operation: "overrides",
-                overrides: leftovers
-            });
-        }
-        return tx;
-    });
-}
-function buildPopulate(contract, fragment) {
-    return function (...args) {
-        return populateTransaction(contract, fragment, args);
-    };
-}
-// @ts-ignore
-function buildEstimate(contract, fragment) {
-    const signerOrProvider = (contract.signer || contract.provider);
-    return function (...args) {
-        return __awaiter$7(this, void 0, void 0, function* () {
-            if (!signerOrProvider) {
-                logger$r.throwError("estimate require a provider or signer", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "estimateGas"
-                });
-            }
-            const tx = yield populateTransaction(contract, fragment, args);
-            return yield signerOrProvider.estimateGas(tx);
-        });
-    };
-}
-function addContractWait(contract, tx) {
-    const wait = tx.wait.bind(tx);
-    tx.wait = (timeout) => {
-        return wait(timeout).then((receipt) => {
-            receipt.events = receipt.logs.map((log) => {
-                let event = deepCopy(log);
-                let parsed = null;
-                try {
-                    parsed = contract.interface.parseLog(log);
-                }
-                catch (e) { }
-                // Successfully parsed the event log; include it
-                if (parsed) {
-                    event.args = parsed.args;
-                    event.decode = (data, topics) => {
-                        return contract.interface.decodeEventLog(parsed.eventFragment, data, topics);
-                    };
-                    event.event = parsed.name;
-                    event.eventSignature = parsed.signature;
-                }
-                // Useful operations
-                event.removeListener = () => { return contract.provider; };
-                event.getTransaction = () => {
-                    return contract.provider.getTransaction(receipt.transactionId);
-                };
-                event.getTransactionReceipt = () => {
-                    return Promise.resolve(receipt);
-                };
-                return event;
-            });
-            return receipt;
-        });
-    };
-}
-function buildCall(contract, fragment, collapseSimple) {
-    const signer = contract.signer;
-    return function (...args) {
-        return __awaiter$7(this, void 0, void 0, function* () {
-            if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-                const overrides = shallowCopy(args.pop());
-                args.push(overrides);
-            }
-            // If the contract was just deployed, wait until it is mined
-            if (contract.deployTransaction != null) {
-                yield contract._deployed();
-            }
-            // Call a node and get the result
-            const tx = yield populateTransaction(contract, fragment, args);
-            const result = yield signer.call(tx);
-            try {
-                let value = contract.interface.decodeFunctionResult(fragment, result);
-                if (collapseSimple && fragment.outputs.length === 1) {
-                    value = value[0];
-                }
-                return value;
-            }
-            catch (error) {
-                if (error.code === Logger.errors.CALL_EXCEPTION) {
-                    error.address = contract.address;
-                    error.args = args;
-                    error.transaction = tx;
-                }
-                throw error;
-            }
-        });
-    };
-}
-function buildSend(contract, fragment) {
-    return function (...args) {
-        return __awaiter$7(this, void 0, void 0, function* () {
-            if (!contract.signer) {
-                logger$r.throwError("sending a transaction requires a signer", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "sendTransaction"
-                });
-            }
-            // If the contract was just deployed, wait until it is mined
-            if (contract.deployTransaction != null) {
-                yield contract._deployed();
-            }
-            const txRequest = yield populateTransaction(contract, fragment, args);
-            const tx = yield contract.signer.sendTransaction(txRequest);
-            // Tweak the tx.wait so the receipt has extra properties
-            addContractWait(contract, tx);
-            return tx;
-        });
-    };
-}
-function buildDefault(contract, fragment, collapseSimple) {
-    if (fragment.constant) {
-        return buildCall(contract, fragment, collapseSimple);
-    }
-    return buildSend(contract, fragment);
-}
-function getEventTag(filter) {
-    if (filter.address && (filter.topics == null || filter.topics.length === 0)) {
-        return "*";
-    }
-    return (filter.address || "*") + "@" + (filter.topics ? filter.topics.map((topic) => {
-        if (Array.isArray(topic)) {
-            return topic.join("|");
-        }
-        return topic;
-    }).join(":") : "");
-}
-class RunningEvent {
-    constructor(tag, filter) {
-        defineReadOnly(this, "tag", tag);
-        defineReadOnly(this, "filter", filter);
-        this._listeners = [];
-    }
-    addListener(listener, once) {
-        this._listeners.push({ listener: listener, once: once });
-    }
-    removeListener(listener) {
-        let done = false;
-        this._listeners = this._listeners.filter((item) => {
-            if (done || item.listener !== listener) {
-                return true;
-            }
-            done = true;
-            return false;
-        });
-    }
-    removeAllListeners() {
-        this._listeners = [];
-    }
-    listeners() {
-        return this._listeners.map((i) => i.listener);
-    }
-    listenerCount() {
-        return this._listeners.length;
-    }
-    run(args) {
-        const listenerCount = this.listenerCount();
-        this._listeners = this._listeners.filter((item) => {
-            const argsCopy = args.slice();
-            // Call the callback in the next event loop
-            setTimeout(() => {
-                item.listener.apply(this, argsCopy);
-            }, 0);
-            // Reschedule it if it not "once"
-            return !(item.once);
-        });
-        return listenerCount;
-    }
-    prepareEvent(event) {
-    }
-    // Returns the array that will be applied to an emit
-    getEmit(event) {
-        return [event];
-    }
-}
-class ErrorRunningEvent extends RunningEvent {
-    constructor() {
-        super("error", null);
-    }
-}
-// @TODO Fragment should inherit Wildcard? and just override getEmit?
-//       or have a common abstract super class, with enough constructor
-//       options to configure both.
-// A Fragment Event will populate all the properties that Wildcard
-// will, and additionally dereference the arguments when emitting
-class FragmentRunningEvent extends RunningEvent {
-    constructor(address, contractInterface, fragment, topics) {
-        const filter = {
-            address: address
-        };
-        let topic = contractInterface.getEventTopic(fragment);
-        if (topics) {
-            if (topic !== topics[0]) {
-                logger$r.throwArgumentError("topic mismatch", "topics", topics);
-            }
-            filter.topics = topics.slice();
-        }
-        else {
-            filter.topics = [topic];
-        }
-        super(getEventTag(filter), filter);
-        defineReadOnly(this, "address", address);
-        defineReadOnly(this, "interface", contractInterface);
-        defineReadOnly(this, "fragment", fragment);
-    }
-    prepareEvent(event) {
-        super.prepareEvent(event);
-        event.event = this.fragment.name;
-        event.eventSignature = this.fragment.format();
-        event.decode = (data, topics) => {
-            return this.interface.decodeEventLog(this.fragment, data, topics);
-        };
-        try {
-            event.args = this.interface.decodeEventLog(this.fragment, event.data, event.topics);
-        }
-        catch (error) {
-            event.args = null;
-            event.decodeError = error;
-        }
-    }
-    getEmit(event) {
-        const errors = checkResultErrors(event.args);
-        if (errors.length) {
-            throw errors[0].error;
-        }
-        const args = (event.args || []).slice();
-        args.push(event);
-        return args;
-    }
-}
-// A Wildcard Event will attempt to populate:
-//  - event            The name of the event name
-//  - eventSignature   The full signature of the event
-//  - decode           A function to decode data and topics
-//  - args             The decoded data and topics
-class WildcardRunningEvent extends RunningEvent {
-    constructor(address, contractInterface) {
-        super("*", { address: address });
-        defineReadOnly(this, "address", address);
-        defineReadOnly(this, "interface", contractInterface);
-    }
-    prepareEvent(event) {
-        super.prepareEvent(event);
-        try {
-            const parsed = this.interface.parseLog(event);
-            event.event = parsed.name;
-            event.eventSignature = parsed.signature;
-            event.decode = (data, topics) => {
-                return this.interface.decodeEventLog(parsed.eventFragment, data, topics);
-            };
-            event.args = parsed.args;
-        }
-        catch (error) {
-            // No matching event
-        }
-    }
-}
-class BaseContract {
-    constructor(address, contractInterface, signerOrProvider) {
-        logger$r.checkNew(new.target, Contract);
-        if (address) {
-            this.address = getAddressFromAccount(address);
-        }
-        defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
-        if (signerOrProvider == null) {
-            defineReadOnly(this, "provider", null);
-            defineReadOnly(this, "signer", null);
-        }
-        else if (Signer.isSigner(signerOrProvider)) {
-            defineReadOnly(this, "provider", signerOrProvider.provider || null);
-            defineReadOnly(this, "signer", signerOrProvider);
-        }
-        else if (Provider.isProvider(signerOrProvider)) {
-            defineReadOnly(this, "provider", signerOrProvider);
-            defineReadOnly(this, "signer", null);
-        }
-        else {
-            logger$r.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
-        }
-        defineReadOnly(this, "callStatic", {});
-        defineReadOnly(this, "functions", {});
-        defineReadOnly(this, "populateTransaction", {});
-        defineReadOnly(this, "filters", {});
-        {
-            const uniqueFilters = {};
-            Object.keys(this.interface.events).forEach((eventSignature) => {
-                const event = this.interface.events[eventSignature];
-                defineReadOnly(this.filters, eventSignature, (...args) => {
-                    return {
-                        address: this.address,
-                        topics: this.interface.encodeFilterTopics(event, args)
-                    };
-                });
-                if (!uniqueFilters[event.name]) {
-                    uniqueFilters[event.name] = [];
-                }
-                uniqueFilters[event.name].push(eventSignature);
-            });
-            Object.keys(uniqueFilters).forEach((name) => {
-                const filters = uniqueFilters[name];
-                if (filters.length === 1) {
-                    defineReadOnly(this.filters, name, this.filters[filters[0]]);
-                }
-                else {
-                    logger$r.warn(`Duplicate definition of ${name} (${filters.join(", ")})`);
-                }
-            });
-        }
-        defineReadOnly(this, "_runningEvents", {});
-        defineReadOnly(this, "_wrappedEmits", {});
-        const uniqueNames = {};
-        const uniqueSignatures = {};
-        Object.keys(this.interface.functions).forEach((signature) => {
-            const fragment = this.interface.functions[signature];
-            // Check that the signature is unique; if not the ABI generation has
-            // not been cleaned or may be incorrectly generated
-            if (uniqueSignatures[signature]) {
-                logger$r.warn(`Duplicate ABI entry for ${JSON.stringify(signature)}`);
-                return;
-            }
-            uniqueSignatures[signature] = true;
-            // Track unique names; we only expose bare named functions if they
-            // are ambiguous
-            {
-                const name = fragment.name;
-                if (!uniqueNames[`%${name}`]) {
-                    uniqueNames[`%${name}`] = [];
-                }
-                uniqueNames[`%${name}`].push(signature);
-            }
-            if (this[signature] == null) {
-                defineReadOnly(this, signature, buildDefault(this, fragment, true));
-            }
-            // We do not collapse simple calls on this bucket, which allows
-            // frameworks to safely use this without introspection as well as
-            // allows decoding error recovery.
-            if (this.functions[signature] == null) {
-                defineReadOnly(this.functions, signature, buildDefault(this, fragment, false));
-            }
-            if (this.callStatic[signature] == null) {
-                defineReadOnly(this.callStatic, signature, buildCall(this, fragment, true));
-            }
-            if (this.populateTransaction[signature] == null) {
-                defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
-            }
-        });
-        Object.keys(uniqueNames).forEach((name) => {
-            // Ambiguous names to not get attached as bare names
-            const signatures = uniqueNames[name];
-            if (signatures.length > 1) {
-                return;
-            }
-            // Strip off the leading "%" used for prototype protection
-            name = name.substring(1);
-            const signature = signatures[0];
-            // If overwriting a member property that is null, swallow the error
-            try {
-                if (this[name] == null) {
-                    defineReadOnly(this, name, this[signature]);
-                }
-            }
-            catch (e) { }
-            if (this.functions[name] == null) {
-                defineReadOnly(this.functions, name, this.functions[signature]);
-            }
-            if (this.callStatic[name] == null) {
-                defineReadOnly(this.callStatic, name, this.callStatic[signature]);
-            }
-            if (this.populateTransaction[name] == null) {
-                defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
-            }
-        });
-    }
-    set address(val) {
-        this._address = getAddressFromAccount(val);
-    }
-    get address() {
-        return this._address;
-    }
-    static getInterface(contractInterface) {
-        if (Interface.isInterface(contractInterface)) {
-            return contractInterface;
-        }
-        return new Interface(contractInterface);
-    }
-    // @TODO: Allow timeout?
-    deployed() {
-        return this._deployed();
-    }
-    _deployed() {
-        if (!this._deployedPromise) {
-            // If we were just deployed, we know the transaction we should occur in
-            if (this.deployTransaction) {
-                this._deployedPromise = this.deployTransaction.wait().then(() => {
-                    return this;
-                });
-            }
-            else {
-                // @TODO: Once we allow a timeout to be passed in, we will wait
-                // up to that many blocks for getCode
-                // Otherwise, poll for our code to be deployed
-                this._deployedPromise = this.provider.getCode(this.address).then((code) => {
-                    if (code === "0x") {
-                        logger$r.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
-                            contractAddress: this._address,
-                            operation: "getDeployed"
-                        });
-                    }
-                    return this;
-                });
-            }
-        }
-        return this._deployedPromise;
-    }
-    // @TODO:
-    // estimateFallback(overrides?: TransactionRequest): Promise<BigNumber>
-    // @TODO:
-    // estimateDeploy(bytecode: string, ...args): Promise<BigNumber>
-    fallback(overrides) {
-        if (!this.signer) {
-            logger$r.throwError("sending a transactions require a signer", Logger.errors.UNSUPPORTED_OPERATION, { operation: "sendTransaction(fallback)" });
-        }
-        const tx = shallowCopy(overrides || {});
-        ["from", "to"].forEach(function (key) {
-            if (tx[key] == null) {
-                return;
-            }
-            logger$r.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
-        });
-        tx.to = this.resolvedAddress;
-        return this.deployed().then(() => {
-            return this.signer.sendTransaction(tx);
-        });
-    }
-    // Reconnect to a different signer or provider
-    connect(signerOrProvider) {
-        if (typeof (signerOrProvider) === "string") {
-            signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
-        }
-        const contract = new (this.constructor)(this.address, this.interface, signerOrProvider);
-        if (this.deployTransaction) {
-            defineReadOnly(contract, "deployTransaction", this.deployTransaction);
-        }
-        return contract;
-    }
-    // Re-attach to a different on-chain instance of this contract
-    attach(addressOrName) {
-        return new (this.constructor)(addressOrName, this.interface, this.signer || this.provider);
-    }
-    static isIndexed(value) {
-        return Indexed.isIndexed(value);
-    }
-    _normalizeRunningEvent(runningEvent) {
-        // Already have an instance of this event running; we can re-use it
-        if (this._runningEvents[runningEvent.tag]) {
-            return this._runningEvents[runningEvent.tag];
-        }
-        return runningEvent;
-    }
-    _getRunningEvent(eventName) {
-        if (typeof (eventName) === "string") {
-            // Listen for "error" events (if your contract has an error event, include
-            // the full signature to bypass this special event keyword)
-            if (eventName === "error") {
-                return this._normalizeRunningEvent(new ErrorRunningEvent());
-            }
-            // Listen for any event that is registered
-            if (eventName === "event") {
-                return this._normalizeRunningEvent(new RunningEvent("event", null));
-            }
-            // Listen for any event
-            if (eventName === "*") {
-                return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
-            }
-            // Get the event Fragment (throws if ambiguous/unknown event)
-            const fragment = this.interface.getEvent(eventName);
-            return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment));
-        }
-        // We have topics to filter by...
-        if (eventName.topics && eventName.topics.length > 0) {
-            // Is it a known topichash? (throws if no matching topichash)
-            try {
-                const topic = eventName.topics[0];
-                if (typeof (topic) !== "string") {
-                    throw new Error("invalid topic"); // @TODO: May happen for anonymous events
-                }
-                const fragment = this.interface.getEvent(topic);
-                return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment, eventName.topics));
-            }
-            catch (error) { }
-            // Filter by the unknown topichash
-            const filter = {
-                address: this.address,
-                topics: eventName.topics
-            };
-            return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
-        }
-        return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
-    }
-    _requireAddressSet() {
-        if (!this.address || this.address == "") {
-            logger$r.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, this.address);
-        }
-    }
-    _checkRunningEvents(runningEvent) {
-        if (runningEvent.listenerCount() === 0) {
-            delete this._runningEvents[runningEvent.tag];
-            // If we have a poller for this, remove it
-            const emit = this._wrappedEmits[runningEvent.tag];
-            if (emit && runningEvent.filter) {
-                this.provider.off(runningEvent.filter, emit);
-                delete this._wrappedEmits[runningEvent.tag];
-            }
-        }
-    }
-    // Subclasses can override this to gracefully recover
-    // from parse errors if they wish
-    _wrapEvent(runningEvent, log, listener) {
-        const event = deepCopy(log);
-        event.removeListener = () => {
-            if (!listener) {
-                return;
-            }
-            runningEvent.removeListener(listener);
-            this._checkRunningEvents(runningEvent);
-        };
-        event.getTransaction = () => { return this.provider.getTransaction(log.transactionHash); };
-        event.getTransactionReceipt = () => { return this.provider.getTransactionReceipt(log.transactionHash); };
-        // This may throw if the topics and data mismatch the signature
-        runningEvent.prepareEvent(event);
-        return event;
-    }
-    _addEventListener(runningEvent, listener, once) {
-        if (!this.provider) {
-            logger$r.throwError("events require a provider or a signer with a provider", Logger.errors.UNSUPPORTED_OPERATION, { operation: "once" });
-        }
-        runningEvent.addListener(listener, once);
-        // Track this running event and its listeners (may already be there; but no hard in updating)
-        this._runningEvents[runningEvent.tag] = runningEvent;
-        // If we are not polling the provider, start polling
-        if (!this._wrappedEmits[runningEvent.tag]) {
-            const wrappedEmit = (log) => {
-                let event = this._wrapEvent(runningEvent, log, listener);
-                // Try to emit the result for the parameterized event...
-                if (event.decodeError == null) {
-                    try {
-                        const args = runningEvent.getEmit(event);
-                        this.emit(runningEvent.filter, ...args);
-                    }
-                    catch (error) {
-                        event.decodeError = error.error;
-                    }
-                }
-                // Always emit "event" for fragment-base events
-                if (runningEvent.filter != null) {
-                    this.emit("event", event);
-                }
-                // Emit "error" if there was an error
-                if (event.decodeError != null) {
-                    this.emit("error", event.decodeError, event);
-                }
-            };
-            this._wrappedEmits[runningEvent.tag] = wrappedEmit;
-            // Special events, like "error" do not have a filter
-            if (runningEvent.filter != null) {
-                this.provider.on(runningEvent.filter, wrappedEmit);
-            }
-        }
-    }
-    queryFilter(event) {
-        this._requireAddressSet();
-        const runningEvent = this._getRunningEvent(event);
-        const filter = shallowCopy(runningEvent.filter);
-        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-        //     if (toBlock != null) {
-        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-        //     }
-        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
-        // } else {
-        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
-        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
-        // }
-        return this.provider.getLogs(filter).then((logs) => {
-            return logs.map((log) => this._wrapEvent(runningEvent, log, null));
-        });
-    }
-    on(event, listener) {
-        this._requireAddressSet();
-        this._addEventListener(this._getRunningEvent(event), listener, false);
-        return this;
-    }
-    once(event, listener) {
-        this._requireAddressSet();
-        this._addEventListener(this._getRunningEvent(event), listener, true);
-        return this;
-    }
-    emit(eventName, ...args) {
-        if (!this.provider) {
-            return false;
-        }
-        this._requireAddressSet();
-        const runningEvent = this._getRunningEvent(eventName);
-        const result = (runningEvent.run(args) > 0);
-        // May have drained all the "once" events; check for living events
-        this._checkRunningEvents(runningEvent);
-        return result;
-    }
-    listenerCount(eventName) {
-        if (!this.provider) {
-            return 0;
-        }
-        this._requireAddressSet();
-        if (eventName == null) {
-            return Object.keys(this._runningEvents).reduce((accum, key) => {
-                return accum + this._runningEvents[key].listenerCount();
-            }, 0);
-        }
-        return this._getRunningEvent(eventName).listenerCount();
-    }
-    listeners(eventName) {
-        if (!this.provider) {
-            return [];
-        }
-        this._requireAddressSet();
-        if (eventName == null) {
-            const result = [];
-            for (let tag in this._runningEvents) {
-                this._runningEvents[tag].listeners().forEach((listener) => {
-                    result.push(listener);
-                });
-            }
-            return result;
-        }
-        return this._getRunningEvent(eventName).listeners();
-    }
-    removeAllListeners(eventName) {
-        if (!this.provider) {
-            return this;
-        }
-        this._requireAddressSet();
-        if (eventName == null) {
-            for (const tag in this._runningEvents) {
-                const runningEvent = this._runningEvents[tag];
-                runningEvent.removeAllListeners();
-                this._checkRunningEvents(runningEvent);
-            }
-            return this;
-        }
-        // Delete any listeners
-        const runningEvent = this._getRunningEvent(eventName);
-        runningEvent.removeAllListeners();
-        this._checkRunningEvents(runningEvent);
-        return this;
-    }
-    off(eventName, listener) {
-        if (!this.provider) {
-            return this;
-        }
-        this._requireAddressSet();
-        const runningEvent = this._getRunningEvent(eventName);
-        runningEvent.removeListener(listener);
-        this._checkRunningEvents(runningEvent);
-        return this;
-    }
-    removeListener(eventName, listener) {
-        this._requireAddressSet();
-        return this.off(eventName, listener);
-    }
-}
-class Contract extends BaseContract {
-}
-class ContractFactory {
-    constructor(contractInterface, bytecode, signer) {
-        let bytecodeHex = null;
-        if (typeof (bytecode) === "string") {
-            bytecodeHex = bytecode;
-        }
-        else if (isBytes(bytecode)) {
-            bytecodeHex = hexlify(bytecode);
-        }
-        else if (bytecode && typeof (bytecode.object) === "string") {
-            // Allow the bytecode object from the Solidity compiler
-            bytecodeHex = bytecode.object;
-        }
-        else {
-            // Crash in the next verification step
-            bytecodeHex = "!";
-        }
-        // Make sure it is 0x prefixed
-        if (bytecodeHex.substring(0, 2) !== "0x") {
-            bytecodeHex = "0x" + bytecodeHex;
-        }
-        // Make sure the final result is valid bytecode
-        if (!isHexString(bytecodeHex) || (bytecodeHex.length % 2)) {
-            logger$r.throwArgumentError("invalid bytecode", "bytecode", bytecode);
-        }
-        // If we have a signer, make sure it is valid
-        if (signer && !Signer.isSigner(signer)) {
-            logger$r.throwArgumentError("invalid signer", "signer", signer);
-        }
-        defineReadOnly(this, "bytecode", bytecodeHex);
-        defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
-        defineReadOnly(this, "signer", signer || null);
-    }
-    getDeployTransaction(...args) {
-        let contractCreateTx = {};
-        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
-            contractCreateTx = shallowCopy(args.pop());
-            for (const key in contractCreateTx) {
-                if (!allowedTransactionKeys$1[key]) {
-                    throw new Error("unknown transaction override " + key);
-                }
-            }
-        }
-        // Allow only these to be overwritten in a deployment transaction
-        Object.keys(contractCreateTx).forEach((key) => {
-            if (["gasLimit", "value"].indexOf(key) > -1) {
-                return;
-            }
-            logger$r.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
-        });
-        if (contractCreateTx.value) {
-            const value = BigNumber.from(contractCreateTx.value);
-            if (!value.isZero() && !this.interface.deploy.payable) {
-                logger$r.throwError("non-payable constructor cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
-                    operation: "overrides.value",
-                    value: contractCreateTx.value
-                });
-            }
-        }
-        // Make sure the call matches the constructor signature
-        logger$r.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-        contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: hexlify(concat([
-                this.bytecode,
-                this.interface.encodeDeploy(args)
-            ])), customData: {} });
-        return contractCreateTx;
-    }
-    deploy(...args) {
-        return __awaiter$7(this, void 0, void 0, function* () {
-            let overrides = {};
-            // If 1 extra parameter was passed in, it contains overrides
-            if (args.length === this.interface.deploy.inputs.length + 1) {
-                overrides = args.pop();
-            }
-            // Make sure the call matches the constructor signature
-            logger$r.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
-            args.push(overrides);
-            // Get the deployment transaction (with optional overrides)
-            const contractCreate = this.getDeployTransaction(...args);
-            const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
-            const address = contractCreateResponse.customData.contractId;
-            const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
-            // Add the modified wait that wraps events
-            addContractWait(contract, contractCreateResponse);
-            defineReadOnly(contract, "deployTransaction", contractCreateResponse);
-            return contract;
-        });
-    }
-    attach(address) {
-        return new (this.constructor).getContract(address, this.interface, this.signer);
-    }
-    connect(signer) {
-        return new (this.constructor)(this.interface, this.bytecode, signer);
-    }
-    static fromSolidity(compilerOutput, signer) {
-        if (compilerOutput == null) {
-            logger$r.throwError("missing compiler output", Logger.errors.MISSING_ARGUMENT, { argument: "compilerOutput" });
-        }
-        if (typeof (compilerOutput) === "string") {
-            compilerOutput = JSON.parse(compilerOutput);
-        }
-        const abi = compilerOutput.abi;
-        let bytecode = null;
-        if (compilerOutput.bytecode) {
-            bytecode = compilerOutput.bytecode;
-        }
-        else if (compilerOutput.evm && compilerOutput.evm.bytecode) {
-            bytecode = compilerOutput.evm.bytecode;
-        }
-        return new this(abi, bytecode, signer);
-    }
-    static getInterface(contractInterface) {
-        return Contract.getInterface(contractInterface);
-    }
-    static getContract(address, contractInterface, signer) {
-        return new Contract(address, contractInterface, signer);
-    }
-}
-
-const version$p = "networks/5.5.0";
-
-"use strict";
-const logger$s = new Logger(version$p);
-function isRenetworkable(value) {
-    return (value && typeof (value.renetwork) === "function");
-}
-function hederaDefaultProvider(network) {
-    const func = function (providers, options) {
-        if (options == null) {
-            options = {};
-        }
-        const providerList = [];
-        // TODO: JSON RPC provider, FallbackProvider for hedera
-        if (providers.DefaultHederaProvider) {
-            providerList.push(new providers.DefaultHederaProvider(network));
-        }
-        if (providerList.length === 0) {
-            return null;
-        }
-        return providerList[0];
-    };
-    func.renetwork = function (network) {
-        return hederaDefaultProvider(network);
-    };
-    return func;
-}
-const networks = {
-    // hedera networks
-    mainnet: {
-        chainId: 290,
-        name: 'mainnet',
-        _defaultProvider: hederaDefaultProvider("mainnet")
-    },
-    testnet: {
-        chainId: 291,
-        name: 'testnet',
-        _defaultProvider: hederaDefaultProvider("testnet")
-    },
-    previewnet: {
-        chainId: 292,
-        name: 'previewnet',
-        _defaultProvider: hederaDefaultProvider("previewnet")
-    }
-};
-/**
- *  getNetwork
- *
- *  Converts a named common networks or chain ID (network ID) to a Network
- *  and verifies a network is a valid Network..
- */
-function getNetwork(network) {
-    // No network (null)
-    if (network == null) {
-        return null;
-    }
-    if (typeof (network) === "number") {
-        for (const name in networks) {
-            const standard = networks[name];
-            if (standard.chainId === network) {
-                return {
-                    name: standard.name,
-                    chainId: standard.chainId,
-                    ensAddress: (standard.ensAddress || null),
-                    _defaultProvider: (standard._defaultProvider || null)
-                };
-            }
-        }
-        return {
-            chainId: network,
-            name: "unknown"
-        };
-    }
-    if (typeof (network) === "string") {
-        const standard = networks[network];
-        if (standard == null) {
-            return null;
-        }
-        return {
-            name: standard.name,
-            chainId: standard.chainId,
-            ensAddress: standard.ensAddress,
-            _defaultProvider: (standard._defaultProvider || null)
-        };
-    }
-    const standard = networks[network.name];
-    // Not a standard network; check that it is a valid network in general
-    if (!standard) {
-        if (typeof (network.chainId) !== "number") {
-            logger$s.throwArgumentError("invalid network chainId", "network", network);
-        }
-        return network;
-    }
-    // Make sure the chainId matches the expected network chainId (or is 0; disable EIP-155)
-    if (network.chainId !== 0 && network.chainId !== standard.chainId) {
-        logger$s.throwArgumentError("network chainId mismatch", "network", network);
-    }
-    // @TODO: In the next major version add an attach function to a defaultProvider
-    // class and move the _defaultProvider internal to this file (extend Network)
-    let defaultProvider = network._defaultProvider || null;
-    if (defaultProvider == null && standard._defaultProvider) {
-        if (isRenetworkable(standard._defaultProvider)) {
-            defaultProvider = standard._defaultProvider.renetwork(network);
-        }
-        else {
-            defaultProvider = standard._defaultProvider;
-        }
-    }
-    // Standard Network (allow overriding the ENS address)
-    return {
-        name: network.name,
-        chainId: standard.chainId,
-        ensAddress: (network.ensAddress || standard.ensAddress || null),
-        _defaultProvider: defaultProvider
-    };
-}
-
-const version$q = "providers/5.5.0";
-
-"use strict";
-const logger$t = new Logger(version$q);
+const logger$s = new Logger(version$b);
 class Formatter {
     constructor() {
-        logger$t.checkNew(new.target, Formatter);
+        logger$s.checkNew(new.target, Formatter);
         this.formats = this.getDefaultFormats();
     }
     getDefaultFormats() {
@@ -94110,7 +93186,7 @@ class Formatter {
     //TODO propper validation needed?
     timestamp(value) {
         if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
-            logger$t.throwArgumentError("bad timestamp format", "value", value);
+            logger$s.throwArgumentError("bad timestamp format", "value", value);
         }
         return value;
     }
@@ -94160,7 +93236,7 @@ class Formatter {
                 return value.toLowerCase();
             }
         }
-        return logger$t.throwArgumentError("invalid hash", "value", value);
+        return logger$s.throwArgumentError("invalid hash", "value", value);
     }
     data(value, strict) {
         const result = this.hex(value, strict);
@@ -94192,7 +93268,7 @@ class Formatter {
     hash48(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 48) {
-            return logger$t.throwArgumentError("invalid hash", "value", value);
+            return logger$s.throwArgumentError("invalid hash", "value", value);
         }
         return result;
     }
@@ -94200,7 +93276,7 @@ class Formatter {
     hash32(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 32) {
-            return logger$t.throwArgumentError("invalid topics hash", "value", value);
+            return logger$s.throwArgumentError("invalid topics hash", "value", value);
         }
         return result;
     }
@@ -96765,7 +95841,7 @@ function wrap(protocols) {
       }, input, options);
       options.nativeProtocols = nativeProtocols;
 
-      assert$b.equal(options.protocol, protocol, "protocol mismatch");
+      assert$f.equal(options.protocol, protocol, "protocol mismatch");
       debug_1("options", options);
       return new RedirectableRequest(options, callback);
     }
@@ -98031,7 +97107,7 @@ axios_1.default = _default;
 var axios$1 = axios_1;
 
 "use strict";
-var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -98040,7 +97116,7 @@ var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$u = new Logger(version$q);
+const logger$t = new Logger(version$b);
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -98049,7 +97125,7 @@ function checkTopic(topic) {
         return "null";
     }
     if (hexDataLength(topic) !== 32) {
-        logger$u.throwArgumentError("invalid topic", "topic", topic);
+        logger$t.throwArgumentError("invalid topic", "topic", topic);
     }
     return topic.toLowerCase();
 }
@@ -98176,7 +97252,7 @@ class BaseProvider extends Provider {
      *
      */
     constructor(network) {
-        logger$u.checkNew(new.target, Provider);
+        logger$t.checkNew(new.target, Provider);
         super();
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
@@ -98205,7 +97281,7 @@ class BaseProvider extends Provider {
                     this.emit("network", knownNetwork, null);
                 }
                 else {
-                    logger$u.throwArgumentError("invalid network", "network", network);
+                    logger$t.throwArgumentError("invalid network", "network", network);
                 }
                 this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
                 this._mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
@@ -98224,7 +97300,7 @@ class BaseProvider extends Provider {
         this._pollingInterval = 3000;
     }
     _ready() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             if (this._network == null) {
                 let network = null;
                 if (this._networkPromise) {
@@ -98273,20 +97349,20 @@ class BaseProvider extends Provider {
     }
     _checkMirrorNode() {
         if (!this._mirrorNodeUrl)
-            logger$u.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
+            logger$t.throwError("missing provider", Logger.errors.UNSUPPORTED_OPERATION);
     }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
     // With the current hedera implementation, we do not support a changeable networks,
     // thus we do not need to query at this level
     detectNetwork() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             this._networkPromise = Promise.resolve(this._network);
             return this._networkPromise;
         });
     }
     getNetwork() {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             const network = yield this._ready();
             // Make sure we are still connected to the same network; this is
             // only an external call for backends which can have the underlying
@@ -98304,7 +97380,7 @@ class BaseProvider extends Provider {
                     yield stall(0);
                     return this._network;
                 }
-                const error = logger$u.makeError("underlying network changed", Logger.errors.NETWORK_ERROR, {
+                const error = logger$t.makeError("underlying network changed", Logger.errors.NETWORK_ERROR, {
                     event: "changed",
                     network: network,
                     detectedNetwork: currentNetwork
@@ -98325,14 +97401,14 @@ class BaseProvider extends Provider {
         this._pollingInterval = value;
     }
     waitForTransaction(transactionId, timeout) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             return this._waitForTransaction(transactionId, timeout);
         });
     }
     _waitForTransaction(transactionId, timeout) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             let remainingTimeout = timeout;
-            return new Promise((resolve, reject) => __awaiter$8(this, void 0, void 0, function* () {
+            return new Promise((resolve, reject) => __awaiter$7(this, void 0, void 0, function* () {
                 while (remainingTimeout == null || remainingTimeout > 0) {
                     const txResponse = yield this.getTransaction(transactionId);
                     if (txResponse == null) {
@@ -98346,7 +97422,7 @@ class BaseProvider extends Provider {
                         return resolve(this.formatter.receiptFromResponse(txResponse));
                     }
                 }
-                reject(logger$u.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
+                reject(logger$t.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
             }));
         });
     }
@@ -98357,7 +97433,7 @@ class BaseProvider extends Provider {
      * @param accountLike The address to check balance of
      */
     getBalance(accountLike) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             accountLike = yield accountLike;
             const account = asAccountString(accountLike);
             try {
@@ -98367,7 +97443,7 @@ class BaseProvider extends Provider {
                 return BigNumber.from(balance.hbars.toTinybars().toNumber());
             }
             catch (error) {
-                return logger$u.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                return logger$t.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                     method: "AccountBalanceQuery",
                     params: { address: accountLike },
                     error
@@ -98383,7 +97459,7 @@ class BaseProvider extends Provider {
      * @param throwOnNonExisting Whether or not to throw exception if address is not a contract
      */
     getCode(accountLike, throwOnNonExisting) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             this._checkMirrorNode();
             accountLike = yield accountLike;
             const account = asAccountString(accountLike);
@@ -98394,7 +97470,7 @@ class BaseProvider extends Provider {
             catch (error) {
                 if (error.response && error.response.status &&
                     (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {
-                    logger$u.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    logger$t.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                         method: "ContractByteCodeQuery",
                         params: { address: accountLike },
                         error
@@ -98423,12 +97499,12 @@ class BaseProvider extends Provider {
         }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
-            logger$u.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
+            logger$t.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
-        result.wait = (timeout) => __awaiter$8(this, void 0, void 0, function* () {
+        result.wait = (timeout) => __awaiter$7(this, void 0, void 0, function* () {
             const receipt = yield this._waitForTransaction(tx.transactionId, timeout);
             if (receipt.status === 0) {
-                logger$u.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
+                logger$t.throwError("transaction failed", Logger.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
                     transaction: tx,
                     receipt: receipt
@@ -98446,7 +97522,7 @@ class BaseProvider extends Provider {
     }
     sendTransaction(signedTransaction) {
         var _a;
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             signedTransaction = yield signedTransaction;
             const txBytes = arrayify(signedTransaction);
             const hederaTx = Transaction.fromBytes(txBytes);
@@ -98460,7 +97536,7 @@ class BaseProvider extends Provider {
                 return this._wrapTransaction(ethersTx, txHash, receipt);
             }
             catch (error) {
-                const err = logger$u.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
+                const err = logger$t.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
                 err.transaction = ethersTx;
                 err.transactionHash = txHash;
                 throw err;
@@ -98468,7 +97544,7 @@ class BaseProvider extends Provider {
         });
     }
     _getFilter(filter) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             filter = yield filter;
             const result = {};
             if (filter.address != null) {
@@ -98490,8 +97566,8 @@ class BaseProvider extends Provider {
         });
     }
     estimateGas(transaction) {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            return logger$u.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
+        return __awaiter$7(this, void 0, void 0, function* () {
+            return logger$t.throwArgumentError("estimateGas not implemented", Logger.errors.NOT_IMPLEMENTED, {
                 operation: "estimateGas"
             });
         });
@@ -98499,13 +97575,14 @@ class BaseProvider extends Provider {
     /**
      * Transaction record query implementation using the mirror node REST API.
      *
-     * @param transactionId - id of the transaction to search for
+     * @param transactionIdOrTimestamp - id or consensus timestamp of the transaction to search for
      */
-    getTransaction(transactionId) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+    getTransaction(transactionIdOrTimestamp) {
+        return __awaiter$7(this, void 0, void 0, function* () {
             this._checkMirrorNode();
-            transactionId = yield transactionId;
-            const transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT + transactionId;
+            transactionIdOrTimestamp = yield transactionIdOrTimestamp;
+            let transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT;
+            !transactionIdOrTimestamp.includes("-") ? transactionsEndpoint += ('?timestamp=' + transactionIdOrTimestamp) : transactionsEndpoint += transactionIdOrTimestamp;
             try {
                 let { data } = yield axios$1.get(this._mirrorNodeUrl + transactionsEndpoint);
                 if (data) {
@@ -98514,12 +97591,12 @@ class BaseProvider extends Provider {
                         let record;
                         record = {
                             chainId: this._network.chainId,
-                            transactionId: transactionId,
+                            transactionId: filtered[0].transaction_id,
                             result: filtered[0].result,
                         };
                         const transactionName = filtered[0].name;
                         if (transactionName === 'CRYPTOCREATEACCOUNT') {
-                            record.from = getAccountFromTransactionId(transactionId);
+                            record.from = getAccountFromTransactionId(filtered[0].transaction_id);
                             record.timestamp = filtered[0].consensus_timestamp;
                             // Different endpoints of the mirror node API returns hashes in different formats.
                             // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
@@ -98528,7 +97605,7 @@ class BaseProvider extends Provider {
                             record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
                         }
                         else {
-                            const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
+                            const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + filtered[0].transaction_id;
                             const dataWithLogs = yield axios$1.get(this._mirrorNodeUrl + contractsEndpoint);
                             record = Object.assign({}, record, Object.assign({}, dataWithLogs.data));
                         }
@@ -98538,7 +97615,7 @@ class BaseProvider extends Provider {
             }
             catch (error) {
                 if (error && error.response && error.response.status != 404) {
-                    logger$u.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
+                    logger$t.throwError("bad result from backend", Logger.errors.SERVER_ERROR, {
                         method: "TransactionResponseQuery",
                         error
                     });
@@ -98553,8 +97630,8 @@ class BaseProvider extends Provider {
      * @param transactionId - id of the transaction to search for
      */
     getTransactionReceipt(transactionId) {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            return logger$u.throwError("getTransactionReceipt not implemented", Logger.errors.NOT_IMPLEMENTED, {
+        return __awaiter$7(this, void 0, void 0, function* () {
+            return logger$t.throwError("getTransactionReceipt not implemented", Logger.errors.NOT_IMPLEMENTED, {
                 operation: 'getTransactionReceipt'
             });
             // await this.getNetwork();
@@ -98581,7 +97658,7 @@ class BaseProvider extends Provider {
      * @param filter The parameters to filter logs by.
      */
     getLogs(filter) {
-        return __awaiter$8(this, void 0, void 0, function* () {
+        return __awaiter$7(this, void 0, void 0, function* () {
             this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
             const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
@@ -98595,7 +97672,7 @@ class BaseProvider extends Provider {
                 if (data) {
                     const mappedLogs = this.formatter.logsMapper(data.logs);
                     if (mappedLogs.length == oversizeResponseLegth) {
-                        logger$u.throwError(`query returned more than ${limit} results`, Logger.errors.SERVER_ERROR);
+                        logger$t.throwError(`query returned more than ${limit} results`, Logger.errors.SERVER_ERROR);
                     }
                     return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
                 }
@@ -98603,20 +97680,20 @@ class BaseProvider extends Provider {
             catch (error) {
                 const errorParams = { method: "ContractLogsQuery", error };
                 if (error.response && error.response.status != 404) {
-                    logger$u.throwError("bad result from backend", Logger.errors.SERVER_ERROR, errorParams);
+                    logger$t.throwError("bad result from backend", Logger.errors.SERVER_ERROR, errorParams);
                 }
-                logger$u.throwError(error.message, error.code, errorParams);
+                logger$t.throwError(error.message, error.code, errorParams);
             }
             return [];
         });
     }
     getHbarPrice() {
-        return __awaiter$8(this, void 0, void 0, function* () {
-            return logger$u.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
+        return __awaiter$7(this, void 0, void 0, function* () {
+            return logger$t.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
     perform(method, params) {
-        return logger$u.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
+        return logger$t.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
     }
     _addEventListener(eventName, listener, once) {
         return this;
@@ -98653,7 +97730,7 @@ function mapNetworkToHederaNetworkName(net) {
         case 'testnet':
             return NetworkName.Testnet;
         default:
-            logger$u.throwArgumentError("Invalid network name", "network", net);
+            logger$t.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
 }
@@ -98667,7 +97744,7 @@ function resolveMirrorNetworkUrl(net) {
         case 'testnet':
             return 'https://testnet.mirrornode.hedera.com';
         default:
-            logger$u.throwArgumentError("Invalid network name", "network", net);
+            logger$t.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
 }
@@ -98711,7 +97788,7 @@ class HederaProvider extends BaseProvider {
 }
 
 "use strict";
-const logger$v = new Logger(version$q);
+const logger$u = new Logger(version$b);
 ////////////////////////
 // Helper Functions
 function getDefaultProvider(network, options) {
@@ -98723,12 +97800,12 @@ function getDefaultProvider(network, options) {
         // Handle http and ws (and their secure variants)
         const match = network.match(/^(ws|http)s?:/i);
         if (match) {
-            logger$v.throwArgumentError("unsupported URL scheme", "network", network);
+            logger$u.throwArgumentError("unsupported URL scheme", "network", network);
         }
     }
     const n = getNetwork(network);
     if (!n || !n._defaultProvider) {
-        logger$v.throwError("unsupported getDefaultProvider network", Logger.errors.NETWORK_ERROR, {
+        logger$u.throwError("unsupported getDefaultProvider network", Logger.errors.NETWORK_ERROR, {
             operation: "getDefaultProvider",
             network: network
         });
@@ -98737,6 +97814,48 @@ function getDefaultProvider(network, options) {
         HederaProvider,
         DefaultHederaProvider,
     }, options);
+}
+/**
+ * Always composes a hedera timestamp from the given string/numeric input.
+ * May lose precision - JavaScript's floating point loss
+ *
+ * @param timestamp - the timestamp to be formatted
+ */
+function composeHederaTimestamp(timestamp) {
+    if (typeof timestamp === "number") {
+        const tsCopy = timestamp.toString();
+        let seconds = tsCopy.slice(0, 10);
+        if (seconds.length < 10) {
+            for (let i = seconds.length; i < 10; i++) {
+                seconds += "0";
+            }
+        }
+        let nanosTemp = tsCopy.slice(seconds.length);
+        if (nanosTemp.length < 9) {
+            for (let i = nanosTemp.length; i < 9; i++) {
+                nanosTemp += "0";
+            }
+        }
+        return `${seconds}.${nanosTemp}`;
+    }
+    else if (typeof timestamp === "string") {
+        if (timestamp.includes(".")) {
+            // already formatted
+            const split = timestamp.split(".");
+            if (split[0].length === 10 && split[1].length === 9) {
+                return timestamp;
+            }
+            // floating point number - we lose precision
+            return composeHederaTimestamp(parseInt(timestamp.split('.')[0]));
+        }
+        else {
+            return composeHederaTimestamp(parseInt(timestamp));
+        }
+    }
+    else {
+        // not a string, neither a number
+        return logger$u.throwArgumentError('invalid timestamp', Logger.errors.INVALID_ARGUMENT, { timestamp });
+    }
 }
 
 var index$5 = /*#__PURE__*/Object.freeze({
@@ -98747,8 +97866,936 @@ var index$5 = /*#__PURE__*/Object.freeze({
 	HederaProvider: HederaProvider,
 	getDefaultProvider: getDefaultProvider,
 	getNetwork: getNetwork,
+	composeHederaTimestamp: composeHederaTimestamp,
 	Formatter: Formatter
 });
+
+const version$q = "contracts/5.5.0";
+
+"use strict";
+var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+const logger$v = new Logger(version$q);
+///////////////////////////////
+const allowedTransactionKeys$1 = {
+    chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
+    type: true,
+    maxFeePerGas: true, maxPriorityFeePerGas: true,
+    customData: true, nodeId: true,
+};
+function populateTransaction(contract, fragment, args) {
+    return __awaiter$8(this, void 0, void 0, function* () {
+        // If an extra argument is given, it is overrides
+        let overrides = {};
+        if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+            overrides = shallowCopy(args.pop());
+        }
+        // Make sure the parameter count matches
+        logger$v.checkArgumentCount(args.length, fragment.inputs.length, "passed to contract");
+        // Populate "from" override (allow promises)
+        if (contract.signer) {
+            if (overrides.from) {
+                // Contracts with a Signer are from the Signer's frame-of-reference;
+                // but we allow overriding "from" if it matches the signer
+                overrides.from = resolveProperties({
+                    override: overrides.from,
+                    signer: contract.signer.getAddress()
+                }).then((check) => __awaiter$8(this, void 0, void 0, function* () {
+                    if (getAddress(check.signer) !== check.override) {
+                        logger$v.throwError("Contract with a Signer cannot override from", Logger.errors.UNSUPPORTED_OPERATION, {
+                            operation: "overrides.from"
+                        });
+                    }
+                    return check.override;
+                }));
+            }
+            else {
+                overrides.from = contract.signer.getAddress();
+            }
+        }
+        // Wait for all dependencies to be resolved (prefer the signer over the provider)
+        const resolved = yield resolveProperties({
+            args: args,
+            address: contract.address,
+            overrides: (resolveProperties(overrides) || {})
+        });
+        // The ABI coded transaction
+        const data = contract.interface.encodeFunctionData(fragment, resolved.args);
+        const tx = {
+            data: data,
+            to: resolved.address
+        };
+        // Resolved Overrides
+        const ro = resolved.overrides;
+        // Populate simple overrides
+        if (ro.gasLimit != null) {
+            tx.gasLimit = BigNumber.from(ro.gasLimit);
+        }
+        if (ro.maxFeePerGas != null) {
+            tx.maxFeePerGas = BigNumber.from(ro.maxFeePerGas);
+        }
+        if (ro.maxPriorityFeePerGas != null) {
+            tx.maxPriorityFeePerGas = BigNumber.from(ro.maxPriorityFeePerGas);
+        }
+        if (ro.from != null) {
+            tx.from = ro.from;
+        }
+        if (ro.type != null) {
+            tx.type = ro.type;
+        }
+        if (ro.accessList != null) {
+            tx.accessList = accessListify(ro.accessList);
+        }
+        if (ro.nodeId != null) {
+            tx.nodeId = ro.nodeId;
+        }
+        // If there was no "gasLimit" override, but the ABI specifies a default, use it
+        if (tx.gasLimit == null && fragment.gas != null) {
+            let intrinsic = 21000;
+            let contractCreationExtraGasCost = 11000;
+            const bytes = arrayify(data);
+            for (let i = 0; i < bytes.length; i++) {
+                intrinsic += 4;
+                if (bytes[i]) {
+                    intrinsic += 16;
+                }
+            }
+            const txGas = tx.to != null ? intrinsic : intrinsic + contractCreationExtraGasCost;
+            tx.gasLimit = BigNumber.from(fragment.gas).add(txGas);
+        }
+        // Populate "value" override
+        if (ro.value) {
+            const roValue = BigNumber.from(ro.value);
+            if (!roValue.isZero() && !fragment.payable) {
+                logger$v.throwError("non-payable method cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "overrides.value",
+                    value: overrides.value
+                });
+            }
+            tx.value = roValue;
+        }
+        if (ro.customData) {
+            tx.customData = shallowCopy(ro.customData);
+        }
+        // Remove the overrides
+        delete overrides.gasLimit;
+        delete overrides.from;
+        delete overrides.value;
+        delete overrides.type;
+        delete overrides.accessList;
+        delete overrides.maxFeePerGas;
+        delete overrides.maxPriorityFeePerGas;
+        delete overrides.customData;
+        delete overrides.nodeId;
+        // Make sure there are no stray overrides, which may indicate a
+        // typo or using an unsupported key.
+        const leftovers = Object.keys(overrides).filter((key) => (overrides[key] != null));
+        if (leftovers.length) {
+            logger$v.throwError(`cannot override ${leftovers.map((l) => JSON.stringify(l)).join(",")}`, Logger.errors.UNSUPPORTED_OPERATION, {
+                operation: "overrides",
+                overrides: leftovers
+            });
+        }
+        return tx;
+    });
+}
+function buildPopulate(contract, fragment) {
+    return function (...args) {
+        return populateTransaction(contract, fragment, args);
+    };
+}
+// @ts-ignore
+function buildEstimate(contract, fragment) {
+    const signerOrProvider = (contract.signer || contract.provider);
+    return function (...args) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            if (!signerOrProvider) {
+                logger$v.throwError("estimate require a provider or signer", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "estimateGas"
+                });
+            }
+            const tx = yield populateTransaction(contract, fragment, args);
+            return yield signerOrProvider.estimateGas(tx);
+        });
+    };
+}
+function addContractWait(contract, tx) {
+    const wait = tx.wait.bind(tx);
+    tx.wait = (timeout) => {
+        return wait(timeout).then((receipt) => {
+            receipt.events = receipt.logs.map((log) => {
+                let event = deepCopy(log);
+                let parsed = null;
+                try {
+                    parsed = contract.interface.parseLog(log);
+                }
+                catch (e) { }
+                // Successfully parsed the event log; include it
+                if (parsed) {
+                    event.args = parsed.args;
+                    event.decode = (data, topics) => {
+                        return contract.interface.decodeEventLog(parsed.eventFragment, data, topics);
+                    };
+                    event.event = parsed.name;
+                    event.eventSignature = parsed.signature;
+                }
+                // Useful operations
+                event.removeListener = () => { return contract.provider; };
+                event.getTransaction = () => {
+                    return contract.provider.getTransaction(receipt.transactionId);
+                };
+                event.getTransactionReceipt = () => {
+                    return Promise.resolve(receipt);
+                };
+                return event;
+            });
+            return receipt;
+        });
+    };
+}
+function buildCall(contract, fragment, collapseSimple) {
+    const signer = contract.signer;
+    return function (...args) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            if (args.length === fragment.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+                const overrides = shallowCopy(args.pop());
+                args.push(overrides);
+            }
+            // If the contract was just deployed, wait until it is mined
+            if (contract.deployTransaction != null) {
+                yield contract._deployed();
+            }
+            // Call a node and get the result
+            const tx = yield populateTransaction(contract, fragment, args);
+            const result = yield signer.call(tx);
+            try {
+                let value = contract.interface.decodeFunctionResult(fragment, result);
+                if (collapseSimple && fragment.outputs.length === 1) {
+                    value = value[0];
+                }
+                return value;
+            }
+            catch (error) {
+                if (error.code === Logger.errors.CALL_EXCEPTION) {
+                    error.address = contract.address;
+                    error.args = args;
+                    error.transaction = tx;
+                }
+                throw error;
+            }
+        });
+    };
+}
+function buildSend(contract, fragment) {
+    return function (...args) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            if (!contract.signer) {
+                logger$v.throwError("sending a transaction requires a signer", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "sendTransaction"
+                });
+            }
+            // If the contract was just deployed, wait until it is mined
+            if (contract.deployTransaction != null) {
+                yield contract._deployed();
+            }
+            const txRequest = yield populateTransaction(contract, fragment, args);
+            const tx = yield contract.signer.sendTransaction(txRequest);
+            // Tweak the tx.wait so the receipt has extra properties
+            addContractWait(contract, tx);
+            return tx;
+        });
+    };
+}
+function buildDefault(contract, fragment, collapseSimple) {
+    if (fragment.constant) {
+        return buildCall(contract, fragment, collapseSimple);
+    }
+    return buildSend(contract, fragment);
+}
+function getEventTag(filter) {
+    if (filter.address && (filter.topics == null || filter.topics.length === 0)) {
+        return "*";
+    }
+    return (filter.address || "*") + "@" + (filter.topics ? filter.topics.map((topic) => {
+        if (Array.isArray(topic)) {
+            return topic.join("|");
+        }
+        return topic;
+    }).join(":") : "");
+}
+class RunningEvent {
+    constructor(tag, filter) {
+        defineReadOnly(this, "tag", tag);
+        defineReadOnly(this, "filter", filter);
+        this._listeners = [];
+    }
+    addListener(listener, once) {
+        this._listeners.push({ listener: listener, once: once });
+    }
+    removeListener(listener) {
+        let done = false;
+        this._listeners = this._listeners.filter((item) => {
+            if (done || item.listener !== listener) {
+                return true;
+            }
+            done = true;
+            return false;
+        });
+    }
+    removeAllListeners() {
+        this._listeners = [];
+    }
+    listeners() {
+        return this._listeners.map((i) => i.listener);
+    }
+    listenerCount() {
+        return this._listeners.length;
+    }
+    run(args) {
+        const listenerCount = this.listenerCount();
+        this._listeners = this._listeners.filter((item) => {
+            const argsCopy = args.slice();
+            // Call the callback in the next event loop
+            setTimeout(() => {
+                item.listener.apply(this, argsCopy);
+            }, 0);
+            // Reschedule it if it not "once"
+            return !(item.once);
+        });
+        return listenerCount;
+    }
+    prepareEvent(event) {
+    }
+    // Returns the array that will be applied to an emit
+    getEmit(event) {
+        return [event];
+    }
+}
+class ErrorRunningEvent extends RunningEvent {
+    constructor() {
+        super("error", null);
+    }
+}
+// @TODO Fragment should inherit Wildcard? and just override getEmit?
+//       or have a common abstract super class, with enough constructor
+//       options to configure both.
+// A Fragment Event will populate all the properties that Wildcard
+// will, and additionally dereference the arguments when emitting
+class FragmentRunningEvent extends RunningEvent {
+    constructor(address, contractInterface, fragment, topics) {
+        const filter = {
+            address: address
+        };
+        let topic = contractInterface.getEventTopic(fragment);
+        if (topics) {
+            if (topic !== topics[0]) {
+                logger$v.throwArgumentError("topic mismatch", "topics", topics);
+            }
+            filter.topics = topics.slice();
+        }
+        else {
+            filter.topics = [topic];
+        }
+        super(getEventTag(filter), filter);
+        defineReadOnly(this, "address", address);
+        defineReadOnly(this, "interface", contractInterface);
+        defineReadOnly(this, "fragment", fragment);
+    }
+    prepareEvent(event) {
+        super.prepareEvent(event);
+        event.event = this.fragment.name;
+        event.eventSignature = this.fragment.format();
+        event.decode = (data, topics) => {
+            return this.interface.decodeEventLog(this.fragment, data, topics);
+        };
+        try {
+            event.args = this.interface.decodeEventLog(this.fragment, event.data, event.topics);
+        }
+        catch (error) {
+            event.args = null;
+            event.decodeError = error;
+        }
+    }
+    getEmit(event) {
+        const errors = checkResultErrors(event.args);
+        if (errors.length) {
+            throw errors[0].error;
+        }
+        const args = (event.args || []).slice();
+        args.push(event);
+        return args;
+    }
+}
+// A Wildcard Event will attempt to populate:
+//  - event            The name of the event name
+//  - eventSignature   The full signature of the event
+//  - decode           A function to decode data and topics
+//  - args             The decoded data and topics
+class WildcardRunningEvent extends RunningEvent {
+    constructor(address, contractInterface) {
+        super("*", { address: address });
+        defineReadOnly(this, "address", address);
+        defineReadOnly(this, "interface", contractInterface);
+    }
+    prepareEvent(event) {
+        super.prepareEvent(event);
+        try {
+            const parsed = this.interface.parseLog(event);
+            event.event = parsed.name;
+            event.eventSignature = parsed.signature;
+            event.decode = (data, topics) => {
+                return this.interface.decodeEventLog(parsed.eventFragment, data, topics);
+            };
+            event.args = parsed.args;
+        }
+        catch (error) {
+            // No matching event
+        }
+    }
+}
+class BaseContract {
+    constructor(address, contractInterface, signerOrProvider) {
+        logger$v.checkNew(new.target, Contract);
+        if (address) {
+            this.address = getAddressFromAccount(address);
+        }
+        defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
+        if (signerOrProvider == null) {
+            defineReadOnly(this, "provider", null);
+            defineReadOnly(this, "signer", null);
+        }
+        else if (Signer.isSigner(signerOrProvider)) {
+            defineReadOnly(this, "provider", signerOrProvider.provider || null);
+            defineReadOnly(this, "signer", signerOrProvider);
+        }
+        else if (Provider.isProvider(signerOrProvider)) {
+            defineReadOnly(this, "provider", signerOrProvider);
+            defineReadOnly(this, "signer", null);
+        }
+        else {
+            logger$v.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
+        }
+        defineReadOnly(this, "callStatic", {});
+        defineReadOnly(this, "functions", {});
+        defineReadOnly(this, "populateTransaction", {});
+        defineReadOnly(this, "filters", {});
+        {
+            const uniqueFilters = {};
+            Object.keys(this.interface.events).forEach((eventSignature) => {
+                const event = this.interface.events[eventSignature];
+                defineReadOnly(this.filters, eventSignature, (...args) => {
+                    return {
+                        address: this.address,
+                        topics: this.interface.encodeFilterTopics(event, args)
+                    };
+                });
+                if (!uniqueFilters[event.name]) {
+                    uniqueFilters[event.name] = [];
+                }
+                uniqueFilters[event.name].push(eventSignature);
+            });
+            Object.keys(uniqueFilters).forEach((name) => {
+                const filters = uniqueFilters[name];
+                if (filters.length === 1) {
+                    defineReadOnly(this.filters, name, this.filters[filters[0]]);
+                }
+                else {
+                    logger$v.warn(`Duplicate definition of ${name} (${filters.join(", ")})`);
+                }
+            });
+        }
+        defineReadOnly(this, "_runningEvents", {});
+        defineReadOnly(this, "_wrappedEmits", {});
+        const uniqueNames = {};
+        const uniqueSignatures = {};
+        Object.keys(this.interface.functions).forEach((signature) => {
+            const fragment = this.interface.functions[signature];
+            // Check that the signature is unique; if not the ABI generation has
+            // not been cleaned or may be incorrectly generated
+            if (uniqueSignatures[signature]) {
+                logger$v.warn(`Duplicate ABI entry for ${JSON.stringify(signature)}`);
+                return;
+            }
+            uniqueSignatures[signature] = true;
+            // Track unique names; we only expose bare named functions if they
+            // are ambiguous
+            {
+                const name = fragment.name;
+                if (!uniqueNames[`%${name}`]) {
+                    uniqueNames[`%${name}`] = [];
+                }
+                uniqueNames[`%${name}`].push(signature);
+            }
+            if (this[signature] == null) {
+                defineReadOnly(this, signature, buildDefault(this, fragment, true));
+            }
+            // We do not collapse simple calls on this bucket, which allows
+            // frameworks to safely use this without introspection as well as
+            // allows decoding error recovery.
+            if (this.functions[signature] == null) {
+                defineReadOnly(this.functions, signature, buildDefault(this, fragment, false));
+            }
+            if (this.callStatic[signature] == null) {
+                defineReadOnly(this.callStatic, signature, buildCall(this, fragment, true));
+            }
+            if (this.populateTransaction[signature] == null) {
+                defineReadOnly(this.populateTransaction, signature, buildPopulate(this, fragment));
+            }
+        });
+        Object.keys(uniqueNames).forEach((name) => {
+            // Ambiguous names to not get attached as bare names
+            const signatures = uniqueNames[name];
+            if (signatures.length > 1) {
+                return;
+            }
+            // Strip off the leading "%" used for prototype protection
+            name = name.substring(1);
+            const signature = signatures[0];
+            // If overwriting a member property that is null, swallow the error
+            try {
+                if (this[name] == null) {
+                    defineReadOnly(this, name, this[signature]);
+                }
+            }
+            catch (e) { }
+            if (this.functions[name] == null) {
+                defineReadOnly(this.functions, name, this.functions[signature]);
+            }
+            if (this.callStatic[name] == null) {
+                defineReadOnly(this.callStatic, name, this.callStatic[signature]);
+            }
+            if (this.populateTransaction[name] == null) {
+                defineReadOnly(this.populateTransaction, name, this.populateTransaction[signature]);
+            }
+        });
+    }
+    set address(val) {
+        this._address = getAddressFromAccount(val);
+    }
+    get address() {
+        return this._address;
+    }
+    static getInterface(contractInterface) {
+        if (Interface.isInterface(contractInterface)) {
+            return contractInterface;
+        }
+        return new Interface(contractInterface);
+    }
+    // @TODO: Allow timeout?
+    deployed() {
+        return this._deployed();
+    }
+    _deployed() {
+        if (!this._deployedPromise) {
+            // If we were just deployed, we know the transaction we should occur in
+            if (this.deployTransaction) {
+                this._deployedPromise = this.deployTransaction.wait().then(() => {
+                    return this;
+                });
+            }
+            else {
+                // @TODO: Once we allow a timeout to be passed in, we will wait
+                // up to that many blocks for getCode
+                // Otherwise, poll for our code to be deployed
+                this._deployedPromise = this.provider.getCode(this.address).then((code) => {
+                    if (code === "0x") {
+                        logger$v.throwError("contract not deployed", Logger.errors.UNSUPPORTED_OPERATION, {
+                            contractAddress: this._address,
+                            operation: "getDeployed"
+                        });
+                    }
+                    return this;
+                });
+            }
+        }
+        return this._deployedPromise;
+    }
+    // @TODO:
+    // estimateFallback(overrides?: TransactionRequest): Promise<BigNumber>
+    // @TODO:
+    // estimateDeploy(bytecode: string, ...args): Promise<BigNumber>
+    fallback(overrides) {
+        if (!this.signer) {
+            logger$v.throwError("sending a transactions require a signer", Logger.errors.UNSUPPORTED_OPERATION, { operation: "sendTransaction(fallback)" });
+        }
+        const tx = shallowCopy(overrides || {});
+        ["from", "to"].forEach(function (key) {
+            if (tx[key] == null) {
+                return;
+            }
+            logger$v.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
+        });
+        tx.to = this.resolvedAddress;
+        return this.deployed().then(() => {
+            return this.signer.sendTransaction(tx);
+        });
+    }
+    // Reconnect to a different signer or provider
+    connect(signerOrProvider) {
+        if (typeof (signerOrProvider) === "string") {
+            signerOrProvider = new VoidSigner(signerOrProvider, this.provider);
+        }
+        const contract = new (this.constructor)(this.address, this.interface, signerOrProvider);
+        if (this.deployTransaction) {
+            defineReadOnly(contract, "deployTransaction", this.deployTransaction);
+        }
+        return contract;
+    }
+    // Re-attach to a different on-chain instance of this contract
+    attach(addressOrName) {
+        return new (this.constructor)(addressOrName, this.interface, this.signer || this.provider);
+    }
+    static isIndexed(value) {
+        return Indexed.isIndexed(value);
+    }
+    _normalizeRunningEvent(runningEvent) {
+        // Already have an instance of this event running; we can re-use it
+        if (this._runningEvents[runningEvent.tag]) {
+            return this._runningEvents[runningEvent.tag];
+        }
+        return runningEvent;
+    }
+    _getRunningEvent(eventName) {
+        if (typeof (eventName) === "string") {
+            // Listen for "error" events (if your contract has an error event, include
+            // the full signature to bypass this special event keyword)
+            if (eventName === "error") {
+                return this._normalizeRunningEvent(new ErrorRunningEvent());
+            }
+            // Listen for any event that is registered
+            if (eventName === "event") {
+                return this._normalizeRunningEvent(new RunningEvent("event", null));
+            }
+            // Listen for any event
+            if (eventName === "*") {
+                return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
+            }
+            // Get the event Fragment (throws if ambiguous/unknown event)
+            const fragment = this.interface.getEvent(eventName);
+            return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment));
+        }
+        // We have topics to filter by...
+        if (eventName.topics && eventName.topics.length > 0) {
+            // Is it a known topichash? (throws if no matching topichash)
+            try {
+                const topic = eventName.topics[0];
+                if (typeof (topic) !== "string") {
+                    throw new Error("invalid topic"); // @TODO: May happen for anonymous events
+                }
+                const fragment = this.interface.getEvent(topic);
+                return this._normalizeRunningEvent(new FragmentRunningEvent(this.address, this.interface, fragment, eventName.topics));
+            }
+            catch (error) { }
+            // Filter by the unknown topichash
+            const filter = {
+                address: this.address,
+                topics: eventName.topics
+            };
+            return this._normalizeRunningEvent(new RunningEvent(getEventTag(filter), filter));
+        }
+        return this._normalizeRunningEvent(new WildcardRunningEvent(this.address, this.interface));
+    }
+    _requireAddressSet() {
+        if (!this.address || this.address == "") {
+            logger$v.throwArgumentError("Missing address", Logger.errors.INVALID_ARGUMENT, this.address);
+        }
+    }
+    _checkRunningEvents(runningEvent) {
+        if (runningEvent.listenerCount() === 0) {
+            delete this._runningEvents[runningEvent.tag];
+            // If we have a poller for this, remove it
+            const emit = this._wrappedEmits[runningEvent.tag];
+            if (emit && runningEvent.filter) {
+                this.provider.off(runningEvent.filter, emit);
+                delete this._wrappedEmits[runningEvent.tag];
+            }
+        }
+    }
+    // Subclasses can override this to gracefully recover
+    // from parse errors if they wish
+    _wrapEvent(runningEvent, log, listener) {
+        const event = deepCopy(log);
+        event.removeListener = () => {
+            if (!listener) {
+                return;
+            }
+            runningEvent.removeListener(listener);
+            this._checkRunningEvents(runningEvent);
+        };
+        event.getTransaction = () => { return this.provider.getTransaction(log.timestamp); };
+        event.getTransactionReceipt = () => {
+            return logger$v.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
+        };
+        // This may throw if the topics and data mismatch the signature
+        runningEvent.prepareEvent(event);
+        return event;
+    }
+    _addEventListener(runningEvent, listener, once) {
+        if (!this.provider) {
+            logger$v.throwError("events require a provider or a signer with a provider", Logger.errors.UNSUPPORTED_OPERATION, { operation: "once" });
+        }
+        runningEvent.addListener(listener, once);
+        // Track this running event and its listeners (may already be there; but no hard in updating)
+        this._runningEvents[runningEvent.tag] = runningEvent;
+        // If we are not polling the provider, start polling
+        if (!this._wrappedEmits[runningEvent.tag]) {
+            const wrappedEmit = (log) => {
+                let event = this._wrapEvent(runningEvent, log, listener);
+                // Try to emit the result for the parameterized event...
+                if (event.decodeError == null) {
+                    try {
+                        const args = runningEvent.getEmit(event);
+                        this.emit(runningEvent.filter, ...args);
+                    }
+                    catch (error) {
+                        event.decodeError = error.error;
+                    }
+                }
+                // Always emit "event" for fragment-base events
+                if (runningEvent.filter != null) {
+                    this.emit("event", event);
+                }
+                // Emit "error" if there was an error
+                if (event.decodeError != null) {
+                    this.emit("error", event.decodeError, event);
+                }
+            };
+            this._wrappedEmits[runningEvent.tag] = wrappedEmit;
+            // Special events, like "error" do not have a filter
+            if (runningEvent.filter != null) {
+                this.provider.on(runningEvent.filter, wrappedEmit);
+            }
+        }
+    }
+    queryFilter(event, fromTimestamp, toTimestamp) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            this._requireAddressSet();
+            const runningEvent = this._getRunningEvent(event);
+            const filter = shallowCopy(runningEvent.filter);
+            let fromTimestampComposed;
+            let toTimestampComposed;
+            if (fromTimestamp) {
+                fromTimestampComposed = composeHederaTimestamp(fromTimestamp);
+            }
+            if (toTimestamp) {
+                toTimestampComposed = composeHederaTimestamp(toTimestamp);
+            }
+            filter.fromTimestamp = fromTimestampComposed;
+            filter.toTimestamp = toTimestampComposed;
+            const logs = yield this.provider.getLogs(filter);
+            return logs.map((log) => this._wrapEvent(runningEvent, log, null));
+        });
+    }
+    on(event, listener) {
+        this._requireAddressSet();
+        this._addEventListener(this._getRunningEvent(event), listener, false);
+        return this;
+    }
+    once(event, listener) {
+        this._requireAddressSet();
+        this._addEventListener(this._getRunningEvent(event), listener, true);
+        return this;
+    }
+    emit(eventName, ...args) {
+        if (!this.provider) {
+            return false;
+        }
+        this._requireAddressSet();
+        const runningEvent = this._getRunningEvent(eventName);
+        const result = (runningEvent.run(args) > 0);
+        // May have drained all the "once" events; check for living events
+        this._checkRunningEvents(runningEvent);
+        return result;
+    }
+    listenerCount(eventName) {
+        if (!this.provider) {
+            return 0;
+        }
+        this._requireAddressSet();
+        if (eventName == null) {
+            return Object.keys(this._runningEvents).reduce((accum, key) => {
+                return accum + this._runningEvents[key].listenerCount();
+            }, 0);
+        }
+        return this._getRunningEvent(eventName).listenerCount();
+    }
+    listeners(eventName) {
+        if (!this.provider) {
+            return [];
+        }
+        this._requireAddressSet();
+        if (eventName == null) {
+            const result = [];
+            for (let tag in this._runningEvents) {
+                this._runningEvents[tag].listeners().forEach((listener) => {
+                    result.push(listener);
+                });
+            }
+            return result;
+        }
+        return this._getRunningEvent(eventName).listeners();
+    }
+    removeAllListeners(eventName) {
+        if (!this.provider) {
+            return this;
+        }
+        this._requireAddressSet();
+        if (eventName == null) {
+            for (const tag in this._runningEvents) {
+                const runningEvent = this._runningEvents[tag];
+                runningEvent.removeAllListeners();
+                this._checkRunningEvents(runningEvent);
+            }
+            return this;
+        }
+        // Delete any listeners
+        const runningEvent = this._getRunningEvent(eventName);
+        runningEvent.removeAllListeners();
+        this._checkRunningEvents(runningEvent);
+        return this;
+    }
+    off(eventName, listener) {
+        if (!this.provider) {
+            return this;
+        }
+        this._requireAddressSet();
+        const runningEvent = this._getRunningEvent(eventName);
+        runningEvent.removeListener(listener);
+        this._checkRunningEvents(runningEvent);
+        return this;
+    }
+    removeListener(eventName, listener) {
+        this._requireAddressSet();
+        return this.off(eventName, listener);
+    }
+}
+class Contract extends BaseContract {
+}
+class ContractFactory {
+    constructor(contractInterface, bytecode, signer) {
+        let bytecodeHex = null;
+        if (typeof (bytecode) === "string") {
+            bytecodeHex = bytecode;
+        }
+        else if (isBytes(bytecode)) {
+            bytecodeHex = hexlify(bytecode);
+        }
+        else if (bytecode && typeof (bytecode.object) === "string") {
+            // Allow the bytecode object from the Solidity compiler
+            bytecodeHex = bytecode.object;
+        }
+        else {
+            // Crash in the next verification step
+            bytecodeHex = "!";
+        }
+        // Make sure it is 0x prefixed
+        if (bytecodeHex.substring(0, 2) !== "0x") {
+            bytecodeHex = "0x" + bytecodeHex;
+        }
+        // Make sure the final result is valid bytecode
+        if (!isHexString(bytecodeHex) || (bytecodeHex.length % 2)) {
+            logger$v.throwArgumentError("invalid bytecode", "bytecode", bytecode);
+        }
+        // If we have a signer, make sure it is valid
+        if (signer && !Signer.isSigner(signer)) {
+            logger$v.throwArgumentError("invalid signer", "signer", signer);
+        }
+        defineReadOnly(this, "bytecode", bytecodeHex);
+        defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
+        defineReadOnly(this, "signer", signer || null);
+    }
+    getDeployTransaction(...args) {
+        let contractCreateTx = {};
+        if (args.length === this.interface.deploy.inputs.length + 1 && typeof (args[args.length - 1]) === "object") {
+            contractCreateTx = shallowCopy(args.pop());
+            for (const key in contractCreateTx) {
+                if (!allowedTransactionKeys$1[key]) {
+                    throw new Error("unknown transaction override " + key);
+                }
+            }
+        }
+        // Allow only these to be overwritten in a deployment transaction
+        Object.keys(contractCreateTx).forEach((key) => {
+            if (["gasLimit", "value"].indexOf(key) > -1) {
+                return;
+            }
+            logger$v.throwError("cannot override " + key, Logger.errors.UNSUPPORTED_OPERATION, { operation: key });
+        });
+        if (contractCreateTx.value) {
+            const value = BigNumber.from(contractCreateTx.value);
+            if (!value.isZero() && !this.interface.deploy.payable) {
+                logger$v.throwError("non-payable constructor cannot override value", Logger.errors.UNSUPPORTED_OPERATION, {
+                    operation: "overrides.value",
+                    value: contractCreateTx.value
+                });
+            }
+        }
+        // Make sure the call matches the constructor signature
+        logger$v.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
+        contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: hexlify(concat([
+                this.bytecode,
+                this.interface.encodeDeploy(args)
+            ])), customData: {} });
+        return contractCreateTx;
+    }
+    deploy(...args) {
+        return __awaiter$8(this, void 0, void 0, function* () {
+            let overrides = {};
+            // If 1 extra parameter was passed in, it contains overrides
+            if (args.length === this.interface.deploy.inputs.length + 1) {
+                overrides = args.pop();
+            }
+            // Make sure the call matches the constructor signature
+            logger$v.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
+            args.push(overrides);
+            // Get the deployment transaction (with optional overrides)
+            const contractCreate = this.getDeployTransaction(...args);
+            const contractCreateResponse = yield this.signer.sendTransaction(contractCreate);
+            const address = contractCreateResponse.customData.contractId;
+            const contract = getStatic(this.constructor, "getContract")(address, this.interface, this.signer);
+            // Add the modified wait that wraps events
+            addContractWait(contract, contractCreateResponse);
+            defineReadOnly(contract, "deployTransaction", contractCreateResponse);
+            return contract;
+        });
+    }
+    attach(address) {
+        return new (this.constructor).getContract(address, this.interface, this.signer);
+    }
+    connect(signer) {
+        return new (this.constructor)(this.interface, this.bytecode, signer);
+    }
+    static fromSolidity(compilerOutput, signer) {
+        if (compilerOutput == null) {
+            logger$v.throwError("missing compiler output", Logger.errors.MISSING_ARGUMENT, { argument: "compilerOutput" });
+        }
+        if (typeof (compilerOutput) === "string") {
+            compilerOutput = JSON.parse(compilerOutput);
+        }
+        const abi = compilerOutput.abi;
+        let bytecode = null;
+        if (compilerOutput.bytecode) {
+            bytecode = compilerOutput.bytecode;
+        }
+        else if (compilerOutput.evm && compilerOutput.evm.bytecode) {
+            bytecode = compilerOutput.evm.bytecode;
+        }
+        return new this(abi, bytecode, signer);
+    }
+    static getInterface(contractInterface) {
+        return Contract.getInterface(contractInterface);
+    }
+    static getContract(address, contractInterface, signer) {
+        return new Contract(address, contractInterface, signer);
+    }
+}
 
 "use strict";
 
@@ -98827,7 +98874,7 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 	randomBytes: randomBytes,
 	shuffled: shuffled,
 	solidityPack: pack$1,
-	solidityKeccak256: keccak256$3,
+	solidityKeccak256: keccak256$1,
 	soliditySha256: sha256$2,
 	splitSignature: splitSignature,
 	joinSignature: joinSignature,

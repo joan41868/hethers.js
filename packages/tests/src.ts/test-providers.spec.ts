@@ -1225,17 +1225,33 @@ describe("Test Hedera Provider", function () {
         }).timeout(timeout * 4);
     });
 
-    it("Should populate txn response", async function (){
+    it("Should populate tx record by transactionId", async function (){
         const existingId = `0.0.1546615-1641987871-235099329`;
         const record = await provider.getTransaction(existingId);
         const network = await provider.getNetwork();
+        assert.notStrictEqual(record, null);
         assert.strictEqual(record.transactionId, existingId);
         assert.strictEqual(record.chainId, network.chainId);
     }).timeout(timeout * 4);
 
-    it("Should return null on record not found", async function (){
+    it("Should populate tx record by consensus timestamp", async function (){
+        const timestamp = `1641987884.097680000`;
+        const record = await provider.getTransaction(timestamp);
+        const network = await provider.getNetwork();
+        assert.notStrictEqual(record, null);
+        assert.strictEqual(record.timestamp, timestamp);
+        assert.strictEqual(record.chainId, network.chainId);
+    }).timeout(timeout * 4);
+
+    it("Should return null on record not found by transactionId", async function (){
         const fakeTransactionId = `0.0.0-0000000000-000000000`;
         const record = await provider.getTransaction(fakeTransactionId);
+        assert.strictEqual(record, null);
+    }).timeout(timeout * 4);
+
+    it("Should return null on record not found by timestamp", async function (){
+        const fakeTimestamp = `0000000000.000000000`;
+        const record = await provider.getTransaction(fakeTimestamp);
         assert.strictEqual(record, null);
     }).timeout(timeout * 4);
 

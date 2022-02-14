@@ -1,7 +1,7 @@
 "use strict";
 
-import { AccountLike, getAccountFromAddress, getAddress } from "@hethers/address";
-import { BigNumber, BigNumberish, numberify } from "@hethers/bignumber";
+import { AccountLike, getAccountFromAddress, getAddress } from "@ethersproject/address";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import {
     arrayify,
     BytesLike,
@@ -10,13 +10,13 @@ import {
     hexlify,
     SignatureLike,
 } from "@ethersproject/bytes";
-import {Zero} from "@hethers/constants";
+import {Zero} from "@ethersproject/constants";
 import {keccak256} from "@ethersproject/keccak256";
 import {computePublicKey, recoverPublicKey} from "@ethersproject/signing-key";
 
-import {Logger} from "@hethers/logger";
+import {Logger} from "@ethersproject/logger";
 import {version} from "./_version";
-import {base64, getAddressFromAccount} from "hethers/lib/utils";
+import {base64, getAddressFromAccount} from "ethers/lib/utils";
 import {
     ContractCreateTransaction,
     ContractExecuteTransaction, ContractId, FileAppendTransaction,
@@ -24,7 +24,7 @@ import {
     Transaction as HederaTransaction,
     PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction, AccountCreateTransaction, Hbar
 } from "@hashgraph/sdk";
-import { TransactionRequest } from "@hethers/abstract-provider";
+import { TransactionRequest } from "@ethersproject/abstract-provider";
 
 const logger = new Logger(version);
 
@@ -363,3 +363,6 @@ export async function parse(rawTransaction: BytesLike): Promise<Transaction> {
     };
 }
 
+export function numberify(num: BigNumberish) {
+    return BigNumber.from(num).toNumber();
+}

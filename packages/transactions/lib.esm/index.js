@@ -8,15 +8,15 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-import { getAccountFromAddress, getAddress } from "@hethers/address";
-import { BigNumber, numberify } from "@hethers/bignumber";
+import { getAccountFromAddress, getAddress } from "@ethersproject/address";
+import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexDataLength, hexDataSlice, hexlify, } from "@ethersproject/bytes";
-import { Zero } from "@hethers/constants";
+import { Zero } from "@ethersproject/constants";
 import { keccak256 } from "@ethersproject/keccak256";
 import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
-import { Logger } from "@hethers/logger";
+import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
-import { base64, getAddressFromAccount } from "hethers/lib/utils";
+import { base64, getAddressFromAccount } from "ethers/lib/utils";
 import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction, AccountCreateTransaction, Hbar } from "@hashgraph/sdk";
 const logger = new Logger(version);
 export var TransactionTypes;
@@ -280,5 +280,8 @@ export function parse(rawTransaction) {
         // TODO populate r, s ,v
         return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
+}
+export function numberify(num) {
+    return BigNumber.from(num).toNumber();
 }
 //# sourceMappingURL=index.js.map
