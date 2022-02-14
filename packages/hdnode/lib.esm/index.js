@@ -2,7 +2,7 @@
 import { Base58 } from "@ethersproject/basex";
 import { arrayify, concat, hexDataSlice, hexZeroPad, hexlify } from "@ethersproject/bytes";
 import { BigNumber } from "@hethers/bignumber";
-import { toUtf8Bytes, UnicodeNormalizationForm } from "@hethers/strings";
+import { toUtf8Bytes, UnicodeNormalizationForm } from "@ethersproject/strings";
 import { pbkdf2 } from "@ethersproject/pbkdf2";
 import { defineReadOnly } from "@ethersproject/properties";
 import { SigningKey } from "@ethersproject/signing-key";
