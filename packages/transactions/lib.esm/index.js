@@ -84,20 +84,18 @@ export function serializeHederaTransaction(transaction, pubKey) {
     let tx;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-    if (transaction.to) {
-        if (transaction.isCryptoTransfer && transaction.value) {
-            tx = new TransferTransaction()
-                .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar).negated())
-                .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar));
-        }
-        else {
-            tx = new ContractExecuteTransaction()
-                .setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
-                .setFunctionParameters(arrayifiedData)
-                .setGas(gas);
-            if (transaction.value) {
-                tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
-            }
+    if (transaction.customData.isCryptoTransfer) {
+        tx = new TransferTransaction()
+            .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar).negated())
+            .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar));
+    }
+    else if (transaction.to) {
+        tx = new ContractExecuteTransaction()
+            .setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
+            .setFunctionParameters(arrayifiedData)
+            .setGas(gas);
+        if (transaction.value) {
+            tx.setPayableAmount((_a = transaction.value) === null || _a === void 0 ? void 0 : _a.toString());
         }
     }
     else {
