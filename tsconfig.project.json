@@ -32,9 +32,6 @@
       "path": "./packages/address"
     },
     {
-      "path": "./packages/strings"
-    },
-    {
       "path": "./packages/transactions"
     },
     {

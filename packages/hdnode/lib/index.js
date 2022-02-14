@@ -4,7 +4,7 @@ exports.getAccountPath = exports.isValidMnemonic = exports.entropyToMnemonic = e
 var basex_1 = require("@ethersproject/basex");
 var bytes_1 = require("@ethersproject/bytes");
 var bignumber_1 = require("@hethers/bignumber");
-var strings_1 = require("@hethers/strings");
+var strings_1 = require("@ethersproject/strings");
 var pbkdf2_1 = require("@ethersproject/pbkdf2");
 var properties_1 = require("@ethersproject/properties");
 var signing_key_1 = require("@ethersproject/signing-key");

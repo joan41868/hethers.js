@@ -7810,6 +7810,20 @@ function nameprep(value) {
 
 "use strict";
 
+var lib_esm$3 = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	_toEscapedUtf8String: _toEscapedUtf8String,
+	toUtf8Bytes: toUtf8Bytes,
+	toUtf8CodePoints: toUtf8CodePoints,
+	toUtf8String: toUtf8String,
+	Utf8ErrorFuncs: Utf8ErrorFuncs,
+	get Utf8ErrorReason () { return Utf8ErrorReason; },
+	get UnicodeNormalizationForm () { return UnicodeNormalizationForm; },
+	formatBytes32String: formatBytes32String,
+	parseBytes32String: parseBytes32String,
+	nameprep: nameprep
+});
+
 "use strict";
 class StringCoder extends DynamicBytesCoder {
     constructor(localName) {
@@ -8451,7 +8465,7 @@ class TypedDataEncoder {
 
 "use strict";
 
-var lib_esm$3 = /*#__PURE__*/Object.freeze({
+var lib_esm$4 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	id: id,
 	namehash: namehash,
@@ -9051,7 +9065,7 @@ class Interface {
 
 "use strict";
 
-var lib_esm$4 = /*#__PURE__*/Object.freeze({
+var lib_esm$5 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	ConstructorFragment: ConstructorFragment,
 	ErrorFragment: ErrorFragment,
@@ -9373,7 +9387,7 @@ class Logger$1 {
 Logger$1.errors = ErrorCode$1;
 Logger$1.levels = LogLevel$1;
 
-var lib_esm$5 = /*#__PURE__*/Object.freeze({
+var lib_esm$6 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	get LogLevel () { return LogLevel$1; },
 	get ErrorCode () { return ErrorCode$1; },
@@ -10198,7 +10212,7 @@ function decode$1(data) {
     return decoded.result;
 }
 
-var lib_esm$6 = /*#__PURE__*/Object.freeze({
+var lib_esm$7 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	encode: encode$1,
 	decode: decode$1
@@ -10389,7 +10403,7 @@ function parseAccount(account) {
     return result;
 }
 
-var lib_esm$7 = /*#__PURE__*/Object.freeze({
+var lib_esm$8 = /*#__PURE__*/Object.freeze({
 	__proto__: null,
 	getAccountFromTransactionId: getAccountFromTransactionId,
 	asAccountString: asAccountString,
@@ -87547,533 +87561,6 @@ var lib$1 = createCommonjsModule(function (module, exports) {
 
 var index$3 = /*@__PURE__*/getDefaultExportFromCjs(lib$1);
 
-const AddressZero$1 = "0x0000000000000000000000000000000000000000";
-
-const NegativeOne$4 = ( /*#__PURE__*/BigNumber$1.from(-1));
-const Zero$4 = ( /*#__PURE__*/BigNumber$1.from(0));
-const One$2 = ( /*#__PURE__*/BigNumber$1.from(1));
-const Two$1 = ( /*#__PURE__*/BigNumber$1.from(2));
-const WeiPerEther$1 = ( /*#__PURE__*/BigNumber$1.from("1000000000000000000"));
-const MaxUint256$2 = ( /*#__PURE__*/BigNumber$1.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
-const TinybarPerHbar = ( /*#__PURE__*/BigNumber$1.from("100000000"));
-const MinInt256$1 = ( /*#__PURE__*/BigNumber$1.from("-0x8000000000000000000000000000000000000000000000000000000000000000"));
-const MaxInt256$1 = ( /*#__PURE__*/BigNumber$1.from("0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
-
-const HashZero$1 = "0x0000000000000000000000000000000000000000000000000000000000000000";
-
-// NFKC (composed)             // (decomposed)
-const EtherSymbol$1 = "\u039e"; // "\uD835\uDF63";
-const HBarSymbol = "\u210F"; // none
-
-"use strict";
-
-var index$4 = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	AddressZero: AddressZero$1,
-	NegativeOne: NegativeOne$4,
-	Zero: Zero$4,
-	One: One$2,
-	Two: Two$1,
-	WeiPerEther: WeiPerEther$1,
-	MaxUint256: MaxUint256$2,
-	MinInt256: MinInt256$1,
-	MaxInt256: MaxInt256$1,
-	TinybarPerHbar: TinybarPerHbar,
-	HashZero: HashZero$1,
-	EtherSymbol: EtherSymbol$1,
-	HBarSymbol: HBarSymbol
-});
-
-const version$h = "strings/5.5.0";
-
-"use strict";
-const logger$j = new Logger$1(version$h);
-///////////////////////////////
-var UnicodeNormalizationForm$1;
-(function (UnicodeNormalizationForm) {
-    UnicodeNormalizationForm["current"] = "";
-    UnicodeNormalizationForm["NFC"] = "NFC";
-    UnicodeNormalizationForm["NFD"] = "NFD";
-    UnicodeNormalizationForm["NFKC"] = "NFKC";
-    UnicodeNormalizationForm["NFKD"] = "NFKD";
-})(UnicodeNormalizationForm$1 || (UnicodeNormalizationForm$1 = {}));
-;
-var Utf8ErrorReason$1;
-(function (Utf8ErrorReason) {
-    // A continuation byte was present where there was nothing to continue
-    // - offset = the index the codepoint began in
-    Utf8ErrorReason["UNEXPECTED_CONTINUE"] = "unexpected continuation byte";
-    // An invalid (non-continuation) byte to start a UTF-8 codepoint was found
-    // - offset = the index the codepoint began in
-    Utf8ErrorReason["BAD_PREFIX"] = "bad codepoint prefix";
-    // The string is too short to process the expected codepoint
-    // - offset = the index the codepoint began in
-    Utf8ErrorReason["OVERRUN"] = "string overrun";
-    // A missing continuation byte was expected but not found
-    // - offset = the index the continuation byte was expected at
-    Utf8ErrorReason["MISSING_CONTINUE"] = "missing continuation byte";
-    // The computed code point is outside the range for UTF-8
-    // - offset       = start of this codepoint
-    // - badCodepoint = the computed codepoint; outside the UTF-8 range
-    Utf8ErrorReason["OUT_OF_RANGE"] = "out of UTF-8 range";
-    // UTF-8 strings may not contain UTF-16 surrogate pairs
-    // - offset       = start of this codepoint
-    // - badCodepoint = the computed codepoint; inside the UTF-16 surrogate range
-    Utf8ErrorReason["UTF16_SURROGATE"] = "UTF-16 surrogate";
-    // The string is an overlong representation
-    // - offset       = start of this codepoint
-    // - badCodepoint = the computed codepoint; already bounds checked
-    Utf8ErrorReason["OVERLONG"] = "overlong representation";
-})(Utf8ErrorReason$1 || (Utf8ErrorReason$1 = {}));
-;
-function errorFunc$1(reason, offset, bytes, output, badCodepoint) {
-    return logger$j.throwArgumentError(`invalid codepoint at offset ${offset}; ${reason}`, "bytes", bytes);
-}
-function ignoreFunc$1(reason, offset, bytes, output, badCodepoint) {
-    // If there is an invalid prefix (including stray continuation), skip any additional continuation bytes
-    if (reason === Utf8ErrorReason$1.BAD_PREFIX || reason === Utf8ErrorReason$1.UNEXPECTED_CONTINUE) {
-        let i = 0;
-        for (let o = offset + 1; o < bytes.length; o++) {
-            if (bytes[o] >> 6 !== 0x02) {
-                break;
-            }
-            i++;
-        }
-        return i;
-    }
-    // This byte runs us past the end of the string, so just jump to the end
-    // (but the first byte was read already read and therefore skipped)
-    if (reason === Utf8ErrorReason$1.OVERRUN) {
-        return bytes.length - offset - 1;
-    }
-    // Nothing to skip
-    return 0;
-}
-function replaceFunc$1(reason, offset, bytes, output, badCodepoint) {
-    // Overlong representations are otherwise "valid" code points; just non-deistingtished
-    if (reason === Utf8ErrorReason$1.OVERLONG) {
-        output.push(badCodepoint);
-        return 0;
-    }
-    // Put the replacement character into the output
-    output.push(0xfffd);
-    // Otherwise, process as if ignoring errors
-    return ignoreFunc$1(reason, offset, bytes, output, badCodepoint);
-}
-// Common error handing strategies
-const Utf8ErrorFuncs$1 = Object.freeze({
-    error: errorFunc$1,
-    ignore: ignoreFunc$1,
-    replace: replaceFunc$1
-});
-// http://stackoverflow.com/questions/13356493/decode-utf-8-with-javascript#13691499
-function getUtf8CodePoints$1(bytes, onError) {
-    if (onError == null) {
-        onError = Utf8ErrorFuncs$1.error;
-    }
-    bytes = arrayify(bytes);
-    const result = [];
-    let i = 0;
-    // Invalid bytes are ignored
-    while (i < bytes.length) {
-        const c = bytes[i++];
-        // 0xxx xxxx
-        if (c >> 7 === 0) {
-            result.push(c);
-            continue;
-        }
-        // Multibyte; how many bytes left for this character?
-        let extraLength = null;
-        let overlongMask = null;
-        // 110x xxxx 10xx xxxx
-        if ((c & 0xe0) === 0xc0) {
-            extraLength = 1;
-            overlongMask = 0x7f;
-            // 1110 xxxx 10xx xxxx 10xx xxxx
-        }
-        else if ((c & 0xf0) === 0xe0) {
-            extraLength = 2;
-            overlongMask = 0x7ff;
-            // 1111 0xxx 10xx xxxx 10xx xxxx 10xx xxxx
-        }
-        else if ((c & 0xf8) === 0xf0) {
-            extraLength = 3;
-            overlongMask = 0xffff;
-        }
-        else {
-            if ((c & 0xc0) === 0x80) {
-                i += onError(Utf8ErrorReason$1.UNEXPECTED_CONTINUE, i - 1, bytes, result);
-            }
-            else {
-                i += onError(Utf8ErrorReason$1.BAD_PREFIX, i - 1, bytes, result);
-            }
-            continue;
-        }
-        // Do we have enough bytes in our data?
-        if (i - 1 + extraLength >= bytes.length) {
-            i += onError(Utf8ErrorReason$1.OVERRUN, i - 1, bytes, result);
-            continue;
-        }
-        // Remove the length prefix from the char
-        let res = c & ((1 << (8 - extraLength - 1)) - 1);
-        for (let j = 0; j < extraLength; j++) {
-            let nextChar = bytes[i];
-            // Invalid continuation byte
-            if ((nextChar & 0xc0) != 0x80) {
-                i += onError(Utf8ErrorReason$1.MISSING_CONTINUE, i, bytes, result);
-                res = null;
-                break;
-            }
-            ;
-            res = (res << 6) | (nextChar & 0x3f);
-            i++;
-        }
-        // See above loop for invalid continuation byte
-        if (res === null) {
-            continue;
-        }
-        // Maximum code point
-        if (res > 0x10ffff) {
-            i += onError(Utf8ErrorReason$1.OUT_OF_RANGE, i - 1 - extraLength, bytes, result, res);
-            continue;
-        }
-        // Reserved for UTF-16 surrogate halves
-        if (res >= 0xd800 && res <= 0xdfff) {
-            i += onError(Utf8ErrorReason$1.UTF16_SURROGATE, i - 1 - extraLength, bytes, result, res);
-            continue;
-        }
-        // Check for overlong sequences (more bytes than needed)
-        if (res <= overlongMask) {
-            i += onError(Utf8ErrorReason$1.OVERLONG, i - 1 - extraLength, bytes, result, res);
-            continue;
-        }
-        result.push(res);
-    }
-    return result;
-}
-// http://stackoverflow.com/questions/18729405/how-to-convert-utf8-string-to-byte-array
-function toUtf8Bytes$1(str, form = UnicodeNormalizationForm$1.current) {
-    if (form != UnicodeNormalizationForm$1.current) {
-        logger$j.checkNormalize();
-        str = str.normalize(form);
-    }
-    let result = [];
-    for (let i = 0; i < str.length; i++) {
-        const c = str.charCodeAt(i);
-        if (c < 0x80) {
-            result.push(c);
-        }
-        else if (c < 0x800) {
-            result.push((c >> 6) | 0xc0);
-            result.push((c & 0x3f) | 0x80);
-        }
-        else if ((c & 0xfc00) == 0xd800) {
-            i++;
-            const c2 = str.charCodeAt(i);
-            if (i >= str.length || (c2 & 0xfc00) !== 0xdc00) {
-                throw new Error("invalid utf-8 string");
-            }
-            // Surrogate Pair
-            const pair = 0x10000 + ((c & 0x03ff) << 10) + (c2 & 0x03ff);
-            result.push((pair >> 18) | 0xf0);
-            result.push(((pair >> 12) & 0x3f) | 0x80);
-            result.push(((pair >> 6) & 0x3f) | 0x80);
-            result.push((pair & 0x3f) | 0x80);
-        }
-        else {
-            result.push((c >> 12) | 0xe0);
-            result.push(((c >> 6) & 0x3f) | 0x80);
-            result.push((c & 0x3f) | 0x80);
-        }
-    }
-    return arrayify(result);
-}
-;
-function escapeChar$1(value) {
-    const hex = ("0000" + value.toString(16));
-    return "\\u" + hex.substring(hex.length - 4);
-}
-function _toEscapedUtf8String$1(bytes, onError) {
-    return '"' + getUtf8CodePoints$1(bytes, onError).map((codePoint) => {
-        if (codePoint < 256) {
-            switch (codePoint) {
-                case 8: return "\\b";
-                case 9: return "\\t";
-                case 10: return "\\n";
-                case 13: return "\\r";
-                case 34: return "\\\"";
-                case 92: return "\\\\";
-            }
-            if (codePoint >= 32 && codePoint < 127) {
-                return String.fromCharCode(codePoint);
-            }
-        }
-        if (codePoint <= 0xffff) {
-            return escapeChar$1(codePoint);
-        }
-        codePoint -= 0x10000;
-        return escapeChar$1(((codePoint >> 10) & 0x3ff) + 0xd800) + escapeChar$1((codePoint & 0x3ff) + 0xdc00);
-    }).join("") + '"';
-}
-function _toUtf8String$1(codePoints) {
-    return codePoints.map((codePoint) => {
-        if (codePoint <= 0xffff) {
-            return String.fromCharCode(codePoint);
-        }
-        codePoint -= 0x10000;
-        return String.fromCharCode((((codePoint >> 10) & 0x3ff) + 0xd800), ((codePoint & 0x3ff) + 0xdc00));
-    }).join("");
-}
-function toUtf8String$1(bytes, onError) {
-    return _toUtf8String$1(getUtf8CodePoints$1(bytes, onError));
-}
-function toUtf8CodePoints$1(str, form = UnicodeNormalizationForm$1.current) {
-    return getUtf8CodePoints$1(toUtf8Bytes$1(str, form));
-}
-function splitInChunks(data, chunkSize) {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
-}
-
-"use strict";
-function formatBytes32String$1(text) {
-    // Get the bytes
-    const bytes = toUtf8Bytes$1(text);
-    // Check we have room for null-termination
-    if (bytes.length > 31) {
-        throw new Error("bytes32 string must be less than 32 bytes");
-    }
-    // Zero-pad (implicitly null-terminates)
-    return hexlify(concat([bytes, HashZero$1]).slice(0, 32));
-}
-function parseBytes32String$1(bytes) {
-    const data = arrayify(bytes);
-    // Must be 32 bytes with a null-termination
-    if (data.length !== 32) {
-        throw new Error("invalid bytes32 - not 32 bytes long");
-    }
-    if (data[31] !== 0) {
-        throw new Error("invalid bytes32 string - no null terminator");
-    }
-    // Find the null termination
-    let length = 31;
-    while (data[length - 1] === 0) {
-        length--;
-    }
-    // Determine the string value
-    return toUtf8String$1(data.slice(0, length));
-}
-
-"use strict";
-function bytes2$1(data) {
-    if ((data.length % 4) !== 0) {
-        throw new Error("bad data");
-    }
-    let result = [];
-    for (let i = 0; i < data.length; i += 4) {
-        result.push(parseInt(data.substring(i, i + 4), 16));
-    }
-    return result;
-}
-function createTable$1(data, func) {
-    if (!func) {
-        func = function (value) { return [parseInt(value, 16)]; };
-    }
-    let lo = 0;
-    let result = {};
-    data.split(",").forEach((pair) => {
-        let comps = pair.split(":");
-        lo += parseInt(comps[0], 16);
-        result[lo] = func(comps[1]);
-    });
-    return result;
-}
-function createRangeTable$1(data) {
-    let hi = 0;
-    return data.split(",").map((v) => {
-        let comps = v.split("-");
-        if (comps.length === 1) {
-            comps[1] = "0";
-        }
-        else if (comps[1] === "") {
-            comps[1] = "1";
-        }
-        let lo = hi + parseInt(comps[0], 16);
-        hi = parseInt(comps[1], 16);
-        return { l: lo, h: hi };
-    });
-}
-function matchMap$1(value, ranges) {
-    let lo = 0;
-    for (let i = 0; i < ranges.length; i++) {
-        let range = ranges[i];
-        lo += range.l;
-        if (value >= lo && value <= lo + range.h && ((value - lo) % (range.d || 1)) === 0) {
-            if (range.e && range.e.indexOf(value - lo) !== -1) {
-                continue;
-            }
-            return range;
-        }
-    }
-    return null;
-}
-const Table_A_1_ranges$1 = createRangeTable$1("221,13-1b,5f-,40-10,51-f,11-3,3-3,2-2,2-4,8,2,15,2d,28-8,88,48,27-,3-5,11-20,27-,8,28,3-5,12,18,b-a,1c-4,6-16,2-d,2-2,2,1b-4,17-9,8f-,10,f,1f-2,1c-34,33-14e,4,36-,13-,6-2,1a-f,4,9-,3-,17,8,2-2,5-,2,8-,3-,4-8,2-3,3,6-,16-6,2-,7-3,3-,17,8,3,3,3-,2,6-3,3-,4-a,5,2-6,10-b,4,8,2,4,17,8,3,6-,b,4,4-,2-e,2-4,b-10,4,9-,3-,17,8,3-,5-,9-2,3-,4-7,3-3,3,4-3,c-10,3,7-2,4,5-2,3,2,3-2,3-2,4-2,9,4-3,6-2,4,5-8,2-e,d-d,4,9,4,18,b,6-3,8,4,5-6,3-8,3-3,b-11,3,9,4,18,b,6-3,8,4,5-6,3-6,2,3-3,b-11,3,9,4,18,11-3,7-,4,5-8,2-7,3-3,b-11,3,13-2,19,a,2-,8-2,2-3,7,2,9-11,4-b,3b-3,1e-24,3,2-,3,2-,2-5,5,8,4,2,2-,3,e,4-,6,2,7-,b-,3-21,49,23-5,1c-3,9,25,10-,2-2f,23,6,3,8-2,5-5,1b-45,27-9,2a-,2-3,5b-4,45-4,53-5,8,40,2,5-,8,2,5-,28,2,5-,20,2,5-,8,2,5-,8,8,18,20,2,5-,8,28,14-5,1d-22,56-b,277-8,1e-2,52-e,e,8-a,18-8,15-b,e,4,3-b,5e-2,b-15,10,b-5,59-7,2b-555,9d-3,5b-5,17-,7-,27-,7-,9,2,2,2,20-,36,10,f-,7,14-,4,a,54-3,2-6,6-5,9-,1c-10,13-1d,1c-14,3c-,10-6,32-b,240-30,28-18,c-14,a0,115-,3,66-,b-76,5,5-,1d,24,2,5-2,2,8-,35-2,19,f-10,1d-3,311-37f,1b,5a-b,d7-19,d-3,41,57-,68-4,29-3,5f,29-37,2e-2,25-c,2c-2,4e-3,30,78-3,64-,20,19b7-49,51a7-59,48e-2,38-738,2ba5-5b,222f-,3c-94,8-b,6-4,1b,6,2,3,3,6d-20,16e-f,41-,37-7,2e-2,11-f,5-b,18-,b,14,5-3,6,88-,2,bf-2,7-,7-,7-,4-2,8,8-9,8-2ff,20,5-b,1c-b4,27-,27-cbb1,f7-9,28-2,b5-221,56,48,3-,2-,3-,5,d,2,5,3,42,5-,9,8,1d,5,6,2-2,8,153-3,123-3,33-27fd,a6da-5128,21f-5df,3-fffd,3-fffd,3-fffd,3-fffd,3-fffd,3-fffd,3-fffd,3-fffd,3-fffd,3-fffd,3-fffd,3,2-1d,61-ff7d");
-// @TODO: Make this relative...
-const Table_B_1_flags$1 = "ad,34f,1806,180b,180c,180d,200b,200c,200d,2060,feff".split(",").map((v) => parseInt(v, 16));
-const Table_B_2_ranges$1 = [
-    { h: 25, s: 32, l: 65 },
-    { h: 30, s: 32, e: [23], l: 127 },
-    { h: 54, s: 1, e: [48], l: 64, d: 2 },
-    { h: 14, s: 1, l: 57, d: 2 },
-    { h: 44, s: 1, l: 17, d: 2 },
-    { h: 10, s: 1, e: [2, 6, 8], l: 61, d: 2 },
-    { h: 16, s: 1, l: 68, d: 2 },
-    { h: 84, s: 1, e: [18, 24, 66], l: 19, d: 2 },
-    { h: 26, s: 32, e: [17], l: 435 },
-    { h: 22, s: 1, l: 71, d: 2 },
-    { h: 15, s: 80, l: 40 },
-    { h: 31, s: 32, l: 16 },
-    { h: 32, s: 1, l: 80, d: 2 },
-    { h: 52, s: 1, l: 42, d: 2 },
-    { h: 12, s: 1, l: 55, d: 2 },
-    { h: 40, s: 1, e: [38], l: 15, d: 2 },
-    { h: 14, s: 1, l: 48, d: 2 },
-    { h: 37, s: 48, l: 49 },
-    { h: 148, s: 1, l: 6351, d: 2 },
-    { h: 88, s: 1, l: 160, d: 2 },
-    { h: 15, s: 16, l: 704 },
-    { h: 25, s: 26, l: 854 },
-    { h: 25, s: 32, l: 55915 },
-    { h: 37, s: 40, l: 1247 },
-    { h: 25, s: -119711, l: 53248 },
-    { h: 25, s: -119763, l: 52 },
-    { h: 25, s: -119815, l: 52 },
-    { h: 25, s: -119867, e: [1, 4, 5, 7, 8, 11, 12, 17], l: 52 },
-    { h: 25, s: -119919, l: 52 },
-    { h: 24, s: -119971, e: [2, 7, 8, 17], l: 52 },
-    { h: 24, s: -120023, e: [2, 7, 13, 15, 16, 17], l: 52 },
-    { h: 25, s: -120075, l: 52 },
-    { h: 25, s: -120127, l: 52 },
-    { h: 25, s: -120179, l: 52 },
-    { h: 25, s: -120231, l: 52 },
-    { h: 25, s: -120283, l: 52 },
-    { h: 25, s: -120335, l: 52 },
-    { h: 24, s: -119543, e: [17], l: 56 },
-    { h: 24, s: -119601, e: [17], l: 58 },
-    { h: 24, s: -119659, e: [17], l: 58 },
-    { h: 24, s: -119717, e: [17], l: 58 },
-    { h: 24, s: -119775, e: [17], l: 58 }
-];
-const Table_B_2_lut_abs$1 = createTable$1("b5:3bc,c3:ff,7:73,2:253,5:254,3:256,1:257,5:259,1:25b,3:260,1:263,2:269,1:268,5:26f,1:272,2:275,7:280,3:283,5:288,3:28a,1:28b,5:292,3f:195,1:1bf,29:19e,125:3b9,8b:3b2,1:3b8,1:3c5,3:3c6,1:3c0,1a:3ba,1:3c1,1:3c3,2:3b8,1:3b5,1bc9:3b9,1c:1f76,1:1f77,f:1f7a,1:1f7b,d:1f78,1:1f79,1:1f7c,1:1f7d,107:63,5:25b,4:68,1:68,1:68,3:69,1:69,1:6c,3:6e,4:70,1:71,1:72,1:72,1:72,7:7a,2:3c9,2:7a,2:6b,1:e5,1:62,1:63,3:65,1:66,2:6d,b:3b3,1:3c0,6:64,1b574:3b8,1a:3c3,20:3b8,1a:3c3,20:3b8,1a:3c3,20:3b8,1a:3c3,20:3b8,1a:3c3");
-const Table_B_2_lut_rel$1 = createTable$1("179:1,2:1,2:1,5:1,2:1,a:4f,a:1,8:1,2:1,2:1,3:1,5:1,3:1,4:1,2:1,3:1,4:1,8:2,1:1,2:2,1:1,2:2,27:2,195:26,2:25,1:25,1:25,2:40,2:3f,1:3f,33:1,11:-6,1:-9,1ac7:-3a,6d:-8,1:-8,1:-8,1:-8,1:-8,1:-8,1:-8,1:-8,9:-8,1:-8,1:-8,1:-8,1:-8,1:-8,b:-8,1:-8,1:-8,1:-8,1:-8,1:-8,1:-8,1:-8,9:-8,1:-8,1:-8,1:-8,1:-8,1:-8,1:-8,1:-8,9:-8,1:-8,1:-8,1:-8,1:-8,1:-8,c:-8,2:-8,2:-8,2:-8,9:-8,1:-8,1:-8,1:-8,1:-8,1:-8,1:-8,1:-8,49:-8,1:-8,1:-4a,1:-4a,d:-56,1:-56,1:-56,1:-56,d:-8,1:-8,f:-8,1:-8,3:-7");
-const Table_B_2_complex$1 = createTable$1("df:00730073,51:00690307,19:02BC006E,a7:006A030C,18a:002003B9,16:03B903080301,20:03C503080301,1d7:05650582,190f:00680331,1:00740308,1:0077030A,1:0079030A,1:006102BE,b6:03C50313,2:03C503130300,2:03C503130301,2:03C503130342,2a:1F0003B9,1:1F0103B9,1:1F0203B9,1:1F0303B9,1:1F0403B9,1:1F0503B9,1:1F0603B9,1:1F0703B9,1:1F0003B9,1:1F0103B9,1:1F0203B9,1:1F0303B9,1:1F0403B9,1:1F0503B9,1:1F0603B9,1:1F0703B9,1:1F2003B9,1:1F2103B9,1:1F2203B9,1:1F2303B9,1:1F2403B9,1:1F2503B9,1:1F2603B9,1:1F2703B9,1:1F2003B9,1:1F2103B9,1:1F2203B9,1:1F2303B9,1:1F2403B9,1:1F2503B9,1:1F2603B9,1:1F2703B9,1:1F6003B9,1:1F6103B9,1:1F6203B9,1:1F6303B9,1:1F6403B9,1:1F6503B9,1:1F6603B9,1:1F6703B9,1:1F6003B9,1:1F6103B9,1:1F6203B9,1:1F6303B9,1:1F6403B9,1:1F6503B9,1:1F6603B9,1:1F6703B9,3:1F7003B9,1:03B103B9,1:03AC03B9,2:03B10342,1:03B1034203B9,5:03B103B9,6:1F7403B9,1:03B703B9,1:03AE03B9,2:03B70342,1:03B7034203B9,5:03B703B9,6:03B903080300,1:03B903080301,3:03B90342,1:03B903080342,b:03C503080300,1:03C503080301,1:03C10313,2:03C50342,1:03C503080342,b:1F7C03B9,1:03C903B9,1:03CE03B9,2:03C90342,1:03C9034203B9,5:03C903B9,ac:00720073,5b:00B00063,6:00B00066,d:006E006F,a:0073006D,1:00740065006C,1:0074006D,124f:006800700061,2:00610075,2:006F0076,b:00700061,1:006E0061,1:03BC0061,1:006D0061,1:006B0061,1:006B0062,1:006D0062,1:00670062,3:00700066,1:006E0066,1:03BC0066,4:0068007A,1:006B0068007A,1:006D0068007A,1:00670068007A,1:00740068007A,15:00700061,1:006B00700061,1:006D00700061,1:006700700061,8:00700076,1:006E0076,1:03BC0076,1:006D0076,1:006B0076,1:006D0076,1:00700077,1:006E0077,1:03BC0077,1:006D0077,1:006B0077,1:006D0077,1:006B03C9,1:006D03C9,2:00620071,3:00632215006B0067,1:0063006F002E,1:00640062,1:00670079,2:00680070,2:006B006B,1:006B006D,9:00700068,2:00700070006D,1:00700072,2:00730076,1:00770062,c723:00660066,1:00660069,1:0066006C,1:006600660069,1:00660066006C,1:00730074,1:00730074,d:05740576,1:05740565,1:0574056B,1:057E0576,1:0574056D", bytes2$1);
-const Table_C_ranges$1 = createRangeTable$1("80-20,2a0-,39c,32,f71,18e,7f2-f,19-7,30-4,7-5,f81-b,5,a800-20ff,4d1-1f,110,fa-6,d174-7,2e84-,ffff-,ffff-,ffff-,ffff-,ffff-,ffff-,ffff-,ffff-,ffff-,ffff-,ffff-,ffff-,2,1f-5f,ff7f-20001");
-function flatten$1(values) {
-    return values.reduce((accum, value) => {
-        value.forEach((value) => { accum.push(value); });
-        return accum;
-    }, []);
-}
-function _nameprepTableA1$1(codepoint) {
-    return !!matchMap$1(codepoint, Table_A_1_ranges$1);
-}
-function _nameprepTableB2$1(codepoint) {
-    let range = matchMap$1(codepoint, Table_B_2_ranges$1);
-    if (range) {
-        return [codepoint + range.s];
-    }
-    let codes = Table_B_2_lut_abs$1[codepoint];
-    if (codes) {
-        return codes;
-    }
-    let shift = Table_B_2_lut_rel$1[codepoint];
-    if (shift) {
-        return [codepoint + shift[0]];
-    }
-    let complex = Table_B_2_complex$1[codepoint];
-    if (complex) {
-        return complex;
-    }
-    return null;
-}
-function _nameprepTableC$1(codepoint) {
-    return !!matchMap$1(codepoint, Table_C_ranges$1);
-}
-function nameprep$1(value) {
-    // This allows platforms with incomplete normalize to bypass
-    // it for very basic names which the built-in toLowerCase
-    // will certainly handle correctly
-    if (value.match(/^[a-z0-9-]*$/i) && value.length <= 59) {
-        return value.toLowerCase();
-    }
-    // Get the code points (keeping the current normalization)
-    let codes = toUtf8CodePoints$1(value);
-    codes = flatten$1(codes.map((code) => {
-        // Substitute Table B.1 (Maps to Nothing)
-        if (Table_B_1_flags$1.indexOf(code) >= 0) {
-            return [];
-        }
-        if (code >= 0xfe00 && code <= 0xfe0f) {
-            return [];
-        }
-        // Substitute Table B.2 (Case Folding)
-        let codesTableB2 = _nameprepTableB2$1(code);
-        if (codesTableB2) {
-            return codesTableB2;
-        }
-        // No Substitution
-        return [code];
-    }));
-    // Normalize using form KC
-    codes = toUtf8CodePoints$1(_toUtf8String$1(codes), UnicodeNormalizationForm$1.NFKC);
-    // Prohibit Tables C.1.2, C.2.2, C.3, C.4, C.5, C.6, C.7, C.8, C.9
-    codes.forEach((code) => {
-        if (_nameprepTableC$1(code)) {
-            throw new Error("STRINGPREP_CONTAINS_PROHIBITED");
-        }
-    });
-    // Prohibit Unassigned Code Points (Table A.1)
-    codes.forEach((code) => {
-        if (_nameprepTableA1$1(code)) {
-            throw new Error("STRINGPREP_CONTAINS_UNASSIGNED");
-        }
-    });
-    // IDNA extras
-    let name = _toUtf8String$1(codes);
-    // IDNA: 4.2.3.1
-    if (name.substring(0, 1) === "-" || name.substring(2, 4) === "--" || name.substring(name.length - 1) === "-") {
-        throw new Error("invalid hyphen");
-    }
-    // IDNA: 4.2.4
-    if (name.length > 63) {
-        throw new Error("too long");
-    }
-    return name;
-}
-
-"use strict";
-
-var lib_esm$8 = /*#__PURE__*/Object.freeze({
-	__proto__: null,
-	_toEscapedUtf8String: _toEscapedUtf8String$1,
-	toUtf8Bytes: toUtf8Bytes$1,
-	toUtf8CodePoints: toUtf8CodePoints$1,
-	toUtf8String: toUtf8String$1,
-	Utf8ErrorFuncs: Utf8ErrorFuncs$1,
-	get Utf8ErrorReason () { return Utf8ErrorReason$1; },
-	get UnicodeNormalizationForm () { return UnicodeNormalizationForm$1; },
-	formatBytes32String: formatBytes32String$1,
-	parseBytes32String: parseBytes32String$1,
-	nameprep: nameprep$1,
-	splitInChunks: splitInChunks
-});
-
 "use strict";
 var __awaiter$2 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -88084,7 +87571,7 @@ var __awaiter$2 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$k = new Logger$1(version$c);
+const logger$j = new Logger$1(version$c);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
     "nodeId"
@@ -88095,22 +87582,22 @@ function checkError(method, error, txRequest) {
     switch (error.status._code) {
         // insufficient gas
         case 30:
-            return logger$k.throwError("insufficient funds for gas cost", Logger$1.errors.CALL_EXCEPTION, { tx: txRequest });
+            return logger$j.throwError("insufficient funds for gas cost", Logger$1.errors.CALL_EXCEPTION, { tx: txRequest });
         // insufficient payer balance
         case 10:
-            return logger$k.throwError("insufficient funds in payer account", Logger$1.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
+            return logger$j.throwError("insufficient funds in payer account", Logger$1.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
         // insufficient tx fee
         case 9:
-            return logger$k.throwError("transaction fee too low", Logger$1.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
+            return logger$j.throwError("transaction fee too low", Logger$1.errors.INSUFFICIENT_FUNDS, { tx: txRequest });
         // invalid signature
         case 7:
-            return logger$k.throwError("invalid transaction signature", Logger$1.errors.UNKNOWN_ERROR, { tx: txRequest });
+            return logger$j.throwError("invalid transaction signature", Logger$1.errors.UNKNOWN_ERROR, { tx: txRequest });
         // invalid contract id
         case 16:
-            return logger$k.throwError("invalid contract address", Logger$1.errors.INVALID_ARGUMENT, { tx: txRequest });
+            return logger$j.throwError("invalid contract address", Logger$1.errors.INVALID_ARGUMENT, { tx: txRequest });
         // contract revert
         case 33:
-            return logger$k.throwError("contract execution reverted", Logger$1.errors.CALL_EXCEPTION, { tx: txRequest });
+            return logger$j.throwError("contract execution reverted", Logger$1.errors.CALL_EXCEPTION, { tx: txRequest });
     }
     throw error;
 }
@@ -88118,7 +87605,7 @@ class Signer {
     ///////////////////
     // Sub-classes MUST call super
     constructor() {
-        logger$k.checkAbstract(new.target, Signer);
+        logger$j.checkAbstract(new.target, Signer);
         defineReadOnly(this, "_isSigner", true);
     }
     getGasPrice() {
@@ -88263,7 +87750,7 @@ class Signer {
     checkTransaction(transaction) {
         for (const key in transaction) {
             if (allowedTransactionKeys.indexOf(key) === -1) {
-                logger$k.throwArgumentError("invalid transaction key: " + key, "transaction", transaction);
+                logger$j.throwArgumentError("invalid transaction key: " + key, "transaction", transaction);
             }
         }
         const tx = shallowCopy(transaction);
@@ -88275,7 +87762,7 @@ class Signer {
                 tx.nodeId = submittableNodeIDs[randomNumBetween(0, submittableNodeIDs.length - 1)].toString();
             }
             else {
-                logger$k.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
+                logger$j.throwError("Unable to find submittable node ID. The signer's provider is not connected to any usable network");
             }
         }
         if (tx.from == null) {
@@ -88288,7 +87775,7 @@ class Signer {
                 this.getAddress()
             ]).then((result) => {
                 if (result[0].toString().toLowerCase() !== result[1].toLowerCase()) {
-                    logger$k.throwArgumentError("from address mismatch", "transaction", transaction);
+                    logger$j.throwArgumentError("from address mismatch", "transaction", transaction);
                 }
                 return result[0];
             });
@@ -88320,7 +87807,7 @@ class Signer {
             // CreateAccount always has a publicKey
             const isCreateAccount = customData && customData.publicKey;
             if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
-                return logger$k.throwError("cannot estimate gas; transaction requires manual gas limit", Logger$1.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
+                return logger$j.throwError("cannot estimate gas; transaction requires manual gas limit", Logger$1.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
             }
             return yield resolveProperties(tx);
         });
@@ -88329,7 +87816,7 @@ class Signer {
     // Sub-classes SHOULD leave these alone
     _checkProvider(operation) {
         if (!this.provider) {
-            logger$k.throwError("missing provider", Logger$1.errors.UNSUPPORTED_OPERATION, {
+            logger$j.throwError("missing provider", Logger$1.errors.UNSUPPORTED_OPERATION, {
                 operation: (operation || "_checkProvider")
             });
         }
@@ -88340,7 +87827,7 @@ class Signer {
 }
 class VoidSigner extends Signer {
     constructor(address, provider) {
-        logger$k.checkNew(new.target, VoidSigner);
+        logger$j.checkNew(new.target, VoidSigner);
         super();
         defineReadOnly(this, "address", address);
         defineReadOnly(this, "provider", provider || null);
@@ -88350,7 +87837,7 @@ class VoidSigner extends Signer {
     }
     _fail(message, operation) {
         return Promise.resolve().then(() => {
-            logger$k.throwError(message, Logger$1.errors.UNSUPPORTED_OPERATION, { operation: operation });
+            logger$j.throwError(message, Logger$1.errors.UNSUPPORTED_OPERATION, { operation: operation });
         });
     }
     signMessage(message) {
@@ -88379,6 +87866,58 @@ function randomNumBetween(min, max) {
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
+/**
+ * Splits data (utf8) into chunks with the given size
+ * @param data
+ * @param chunkSize
+ */
+function splitInChunks(data, chunkSize) {
+    const chunks = [];
+    let num = 0;
+    while (num <= data.length) {
+        const slice = data.slice(num, chunkSize + num);
+        num += chunkSize;
+        chunks.push(slice);
+    }
+    return chunks;
+}
+
+const AddressZero$1 = "0x0000000000000000000000000000000000000000";
+
+const NegativeOne$4 = ( /*#__PURE__*/BigNumber$1.from(-1));
+const Zero$4 = ( /*#__PURE__*/BigNumber$1.from(0));
+const One$2 = ( /*#__PURE__*/BigNumber$1.from(1));
+const Two$1 = ( /*#__PURE__*/BigNumber$1.from(2));
+const WeiPerEther$1 = ( /*#__PURE__*/BigNumber$1.from("1000000000000000000"));
+const MaxUint256$2 = ( /*#__PURE__*/BigNumber$1.from("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+const TinybarPerHbar = ( /*#__PURE__*/BigNumber$1.from("100000000"));
+const MinInt256$1 = ( /*#__PURE__*/BigNumber$1.from("-0x8000000000000000000000000000000000000000000000000000000000000000"));
+const MaxInt256$1 = ( /*#__PURE__*/BigNumber$1.from("0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"));
+
+const HashZero$1 = "0x0000000000000000000000000000000000000000000000000000000000000000";
+
+// NFKC (composed)             // (decomposed)
+const EtherSymbol$1 = "\u039e"; // "\uD835\uDF63";
+const HBarSymbol = "\u210F"; // none
+
+"use strict";
+
+var index$4 = /*#__PURE__*/Object.freeze({
+	__proto__: null,
+	AddressZero: AddressZero$1,
+	NegativeOne: NegativeOne$4,
+	Zero: Zero$4,
+	One: One$2,
+	Two: Two$1,
+	WeiPerEther: WeiPerEther$1,
+	MaxUint256: MaxUint256$2,
+	MinInt256: MinInt256$1,
+	MaxInt256: MaxInt256$1,
+	TinybarPerHbar: TinybarPerHbar,
+	HashZero: HashZero$1,
+	EtherSymbol: EtherSymbol$1,
+	HBarSymbol: HBarSymbol
+});
 
 var commonjsGlobal$1 = typeof globalThis !== 'undefined' ? globalThis : typeof window !== 'undefined' ? window : typeof global !== 'undefined' ? global : typeof self !== 'undefined' ? self : {};
 
@@ -90853,10 +90392,10 @@ elliptic.eddsa = /*RicMoo:ethers:require(./elliptic/eddsa)*/(null);
 
 var EC$1$1 = elliptic_1$1.ec;
 
-const version$i = "signing-key/5.5.0";
+const version$h = "signing-key/5.5.0";
 
 "use strict";
-const logger$l = new Logger(version$i);
+const logger$k = new Logger(version$h);
 let _curve = null;
 function getCurve() {
     if (!_curve) {
@@ -90882,7 +90421,7 @@ class SigningKey {
         const keyPair = getCurve().keyFromPrivate(arrayify(this.privateKey));
         const digestBytes = arrayify(digest);
         if (digestBytes.length !== 32) {
-            logger$l.throwArgumentError("bad digest length", "digest", digest);
+            logger$k.throwArgumentError("bad digest length", "digest", digest);
         }
         const signature = keyPair.sign(digestBytes, { canonical: true });
         return splitSignature({
@@ -90926,7 +90465,7 @@ function computePublicKey(key, compressed) {
         }
         return "0x" + getCurve().keyFromPublic(bytes).getPublic(true, "hex");
     }
-    return logger$l.throwArgumentError("invalid public or private key", "key", "[REDACTED]");
+    return logger$k.throwArgumentError("invalid public or private key", "key", "[REDACTED]");
 }
 
 var lib_esm$9 = /*#__PURE__*/Object.freeze({
@@ -90936,7 +90475,7 @@ var lib_esm$9 = /*#__PURE__*/Object.freeze({
 	computePublicKey: computePublicKey
 });
 
-const version$j = "transactions/5.5.0";
+const version$i = "transactions/5.5.0";
 
 "use strict";
 function decode$8(textData) {
@@ -91094,10 +90633,10 @@ var SupportedAlgorithm;
 })(SupportedAlgorithm || (SupportedAlgorithm = {}));
 ;
 
-const version$k = "sha2/5.5.0";
+const version$j = "sha2/5.5.0";
 
 "use strict";
-const logger$m = new Logger(version$k);
+const logger$l = new Logger(version$j);
 function ripemd160$1(data) {
     return "0x" + (hash_1.ripemd160().update(arrayify(data)).digest("hex"));
 }
@@ -91109,7 +90648,7 @@ function sha512$1(data) {
 }
 function computeHmac(algorithm, key, data) {
     if (!SupportedAlgorithm[algorithm]) {
-        logger$m.throwError("unsupported algorithm " + algorithm, Logger.errors.UNSUPPORTED_OPERATION, {
+        logger$l.throwError("unsupported algorithm " + algorithm, Logger.errors.UNSUPPORTED_OPERATION, {
             operation: "hmac",
             algorithm: algorithm
         });
@@ -91168,15 +90707,15 @@ function pbkdf2(password, salt, iterations, keylen, hashAlgorithm) {
     return hexlify(DK);
 }
 
-const version$l = "wordlists/5.5.0";
+const version$k = "wordlists/5.5.0";
 
 "use strict";
 // This gets overridden by rollup
 const exportWordlist = false;
-const logger$n = new Logger(version$l);
+const logger$m = new Logger(version$k);
 class Wordlist {
     constructor(locale) {
-        logger$n.checkAbstract(new.target, Wordlist);
+        logger$m.checkAbstract(new.target, Wordlist);
         defineReadOnly(this, "locale", locale);
     }
     // Subclasses may override this
@@ -91256,13 +90795,13 @@ const wordlists = {
 
 "use strict";
 
-const version$m = "hdnode/5.5.0";
+const version$l = "hdnode/5.5.0";
 
 "use strict";
-const logger$o = new Logger$1(version$m);
+const logger$n = new Logger$1(version$l);
 const N = BigNumber$1.from("0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141");
 // "Bitcoin seed"
-const MasterSecret = toUtf8Bytes$1("Bitcoin seed");
+const MasterSecret = toUtf8Bytes("Bitcoin seed");
 const HardenedBit = 0x80000000;
 // Returns a byte with the MSB bits set
 function getUpperMask(bits) {
@@ -91285,7 +90824,7 @@ function getWordlist(wordlist) {
     if (typeof (wordlist) === "string") {
         const words = wordlists[wordlist];
         if (words == null) {
-            logger$o.throwArgumentError("unknown locale", "wordlist", wordlist);
+            logger$n.throwArgumentError("unknown locale", "wordlist", wordlist);
         }
         return words;
     }
@@ -91302,7 +90841,7 @@ class HDNode {
      *   - fromSeed
      */
     constructor(constructorGuard, privateKey, publicKey, parentFingerprint, chainCode, index, depth, mnemonicOrPath) {
-        logger$o.checkNew(new.target, HDNode);
+        logger$n.checkNew(new.target, HDNode);
         /* istanbul ignore if */
         if (constructorGuard !== _constructorGuard$5) {
             throw new Error("HDNode constructor cannot be called directly");
@@ -91470,7 +91009,7 @@ class HDNode {
     static fromExtendedKey(extendedKey) {
         const bytes = Base58.decode(extendedKey);
         if (bytes.length !== 82 || base58check(bytes.slice(0, 78)) !== extendedKey) {
-            logger$o.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
+            logger$n.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
         }
         const depth = bytes[4];
         const parentFingerprint = hexlify(bytes.slice(5, 9));
@@ -91490,19 +91029,19 @@ class HDNode {
                 }
                 return new HDNode(_constructorGuard$5, hexlify(key.slice(1)), null, parentFingerprint, chainCode, index, depth, null);
         }
-        return logger$o.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
+        return logger$n.throwArgumentError("invalid extended key", "extendedKey", "[REDACTED]");
     }
 }
 function mnemonicToSeed(mnemonic, password) {
     if (!password) {
         password = "";
     }
-    const salt = toUtf8Bytes$1("mnemonic" + password, UnicodeNormalizationForm$1.NFKD);
-    return pbkdf2(toUtf8Bytes$1(mnemonic, UnicodeNormalizationForm$1.NFKD), salt, 2048, 64, "sha512");
+    const salt = toUtf8Bytes("mnemonic" + password, UnicodeNormalizationForm.NFKD);
+    return pbkdf2(toUtf8Bytes(mnemonic, UnicodeNormalizationForm.NFKD), salt, 2048, 64, "sha512");
 }
 function mnemonicToEntropy(mnemonic, wordlist) {
     wordlist = getWordlist(wordlist);
-    logger$o.checkNormalize();
+    logger$n.checkNormalize();
     const words = wordlist.split(mnemonic);
     if ((words.length % 3) !== 0) {
         throw new Error("invalid mnemonic");
@@ -91572,7 +91111,7 @@ function isValidMnemonic(mnemonic, wordlist) {
 }
 function getAccountPath(index) {
     if (typeof (index) !== "number" || index < 0 || index >= HardenedBit || index % 1) {
-        logger$o.throwArgumentError("invalid account index", "index", index);
+        logger$n.throwArgumentError("invalid account index", "index", index);
     }
     return `m/44'/60'/${index}'/0/0`;
 }
@@ -92907,10 +92446,10 @@ var scrypt = createCommonjsModule(function (module, exports) {
 })(commonjsGlobal);
 });
 
-const version$n = "random/5.5.0";
+const version$m = "random/5.5.0";
 
 "use strict";
-const logger$p = new Logger(version$n);
+const logger$o = new Logger(version$m);
 // Debugging line for testing browser lib in node
 //const window = { crypto: { getRandomValues: () => { } } };
 let anyGlobal = null;
@@ -92933,10 +92472,10 @@ catch (error) {
 }
 let crypto$2 = anyGlobal.crypto || anyGlobal.msCrypto;
 if (!crypto$2 || !crypto$2.getRandomValues) {
-    logger$p.warn("WARNING: Missing strong random number source");
+    logger$o.warn("WARNING: Missing strong random number source");
     crypto$2 = {
         getRandomValues: function (buffer) {
-            return logger$p.throwError("no secure random source avaialble", Logger.errors.UNSUPPORTED_OPERATION, {
+            return logger$o.throwError("no secure random source avaialble", Logger.errors.UNSUPPORTED_OPERATION, {
                 operation: "crypto.getRandomValues"
             });
         }
@@ -92944,7 +92483,7 @@ if (!crypto$2 || !crypto$2.getRandomValues) {
 }
 function randomBytes(length) {
     if (length <= 0 || length > 1024 || (length % 1) || length != length) {
-        logger$p.throwArgumentError("invalid length", "length", length);
+        logger$o.throwArgumentError("invalid length", "length", length);
     }
     const result = new Uint8Array(length);
     crypto$2.getRandomValues(result);
@@ -92988,7 +92527,7 @@ function zpad(value, length) {
 }
 function getPassword(password) {
     if (typeof (password) === 'string') {
-        return toUtf8Bytes$1(password, UnicodeNormalizationForm$1.NFKC);
+        return toUtf8Bytes(password, UnicodeNormalizationForm.NFKC);
     }
     return arrayify(password);
 }
@@ -93033,7 +92572,7 @@ function uuidV4(randomBytes) {
     ].join("-");
 }
 
-const version$o = "json-wallets/5.5.0";
+const version$n = "json-wallets/5.5.0";
 
 "use strict";
 var __awaiter$3 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -93045,7 +92584,7 @@ var __awaiter$3 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$q = new Logger$1(version$o);
+const logger$p = new Logger$1(version$n);
 // Exported Types
 function hasMnemonic(value) {
     return (value != null && value.mnemonic && value.mnemonic.phrase);
@@ -93073,7 +92612,7 @@ function _getAccount(data, key) {
     }
     const privateKey = _decrypt(data, key.slice(0, 16), ciphertext);
     if (!privateKey) {
-        logger$q.throwError("unsupported cipher", Logger$1.errors.UNSUPPORTED_OPERATION, {
+        logger$p.throwError("unsupported cipher", Logger$1.errors.UNSUPPORTED_OPERATION, {
             operation: "decrypt"
         });
     }
@@ -93129,7 +92668,7 @@ function _computeKdfKey(data, password, pbkdf2Func, scryptFunc, progressCallback
     const kdf = searchPath(data, "crypto/kdf");
     if (kdf && typeof (kdf) === "string") {
         const throwError = function (name, value) {
-            return logger$q.throwArgumentError("invalid key-derivation function parameters", name, value);
+            return logger$p.throwArgumentError("invalid key-derivation function parameters", name, value);
         };
         if (kdf.toLowerCase() === "scrypt") {
             const salt = looseArrayify(searchPath(data, "crypto/kdfparams/salt"));
@@ -93171,7 +92710,7 @@ function _computeKdfKey(data, password, pbkdf2Func, scryptFunc, progressCallback
             return pbkdf2Func(passwordBytes, salt, count, dkLen, prfFunc);
         }
     }
-    return logger$q.throwArgumentError("unsupported key-derivation function", "kdf", kdf);
+    return logger$p.throwArgumentError("unsupported key-derivation function", "kdf", kdf);
 }
 function decryptSync(json, password) {
     const data = JSON.parse(json);
@@ -93357,14 +92896,14 @@ var lib_esm$f = /*#__PURE__*/Object.freeze({
 	decryptJsonWalletSync: decryptJsonWalletSync
 });
 
-const version$p = "solidity/5.5.0";
+const version$o = "solidity/5.5.0";
 
 "use strict";
 const regexBytes = new RegExp("^bytes([0-9]+)$");
 const regexNumber = new RegExp("^(u?int)([0-9]*)$");
 const regexArray = new RegExp("^(.*)\\[([0-9]*)\\]$");
 const Zeros$1 = "0000000000000000000000000000000000000000000000000000000000000000";
-const logger$r = new Logger(version$p);
+const logger$q = new Logger(version$o);
 function _pack(type, value, isArray) {
     switch (type) {
         case "address":
@@ -93388,7 +92927,7 @@ function _pack(type, value, isArray) {
         //let signed = (match[1] === "int")
         let size = parseInt(match[2] || "256");
         if ((match[2] && String(size) !== match[2]) || (size % 8 !== 0) || size === 0 || size > 256) {
-            logger$r.throwArgumentError("invalid number type", "type", type);
+            logger$q.throwArgumentError("invalid number type", "type", type);
         }
         if (isArray) {
             size = 256;
@@ -93400,10 +92939,10 @@ function _pack(type, value, isArray) {
     if (match) {
         const size = parseInt(match[1]);
         if (String(size) !== match[1] || size === 0 || size > 32) {
-            logger$r.throwArgumentError("invalid bytes type", "type", type);
+            logger$q.throwArgumentError("invalid bytes type", "type", type);
         }
         if (arrayify(value).byteLength !== size) {
-            logger$r.throwArgumentError(`invalid value for ${type}`, "value", value);
+            logger$q.throwArgumentError(`invalid value for ${type}`, "value", value);
         }
         if (isArray) {
             return arrayify((value + Zeros$1).substring(0, 66));
@@ -93415,7 +92954,7 @@ function _pack(type, value, isArray) {
         const baseType = match[1];
         const count = parseInt(match[2] || String(value.length));
         if (count != value.length) {
-            logger$r.throwArgumentError(`invalid array length for ${type}`, "value", value);
+            logger$q.throwArgumentError(`invalid array length for ${type}`, "value", value);
         }
         const result = [];
         value.forEach(function (value) {
@@ -93423,12 +92962,12 @@ function _pack(type, value, isArray) {
         });
         return concat(result);
     }
-    return logger$r.throwArgumentError("invalid type", "type", type);
+    return logger$q.throwArgumentError("invalid type", "type", type);
 }
 // @TODO: Array Enum
 function pack$1(types, values) {
     if (types.length != values.length) {
-        logger$r.throwArgumentError("wrong number of values; expected ${ types.length }", "values", values);
+        logger$q.throwArgumentError("wrong number of values; expected ${ types.length }", "values", values);
     }
     const tight = [];
     types.forEach(function (type, index) {
@@ -93450,10 +92989,10 @@ var lib_esm$g = /*#__PURE__*/Object.freeze({
 	sha256: sha256$2
 });
 
-const version$q = "units/5.5.0";
+const version$p = "units/5.5.0";
 
 "use strict";
-const logger$s = new Logger(version$q);
+const logger$r = new Logger(version$p);
 const names = [
     "wei",
     "kwei",
@@ -93468,7 +93007,7 @@ const names = [
 function commify(value) {
     const comps = String(value).split(".");
     if (comps.length > 2 || !comps[0].match(/^-?[0-9]*$/) || (comps[1] && !comps[1].match(/^[0-9]*$/)) || value === "." || value === "-.") {
-        logger$s.throwArgumentError("invalid value", "value", value);
+        logger$r.throwArgumentError("invalid value", "value", value);
     }
     // Make sure we have at least one whole digit (0 if none)
     let whole = comps[0];
@@ -93516,7 +93055,7 @@ function formatUnits(value, unitName) {
 }
 function parseUnits(value, unitName) {
     if (typeof (value) !== "string") {
-        logger$s.throwArgumentError("value must be a string", "value", value);
+        logger$r.throwArgumentError("value must be a string", "value", value);
     }
     if (typeof (unitName) === "string") {
         const index = names.indexOf(unitName);
@@ -93542,7 +93081,7 @@ var lib_esm$h = /*#__PURE__*/Object.freeze({
 	parseEther: parseEther
 });
 
-const version$r = "wallet/5.5.0";
+const version$q = "wallet/5.5.0";
 
 var __awaiter$4 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
@@ -93553,7 +93092,7 @@ var __awaiter$4 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$t = new Logger$1(version$r);
+const logger$s = new Logger$1(version$q);
 function isAccount(value) {
     return value != null && isHexString(value.privateKey, 32);
 }
@@ -93566,7 +93105,7 @@ function hasAlias(value) {
 }
 class Wallet extends Signer {
     constructor(identity, provider) {
-        logger$t.checkNew(new.target, Wallet);
+        logger$s.checkNew(new.target, Wallet);
         super();
         if (isAccount(identity) && !SigningKey.isSigningKey(identity)) {
             const signingKey = new SigningKey(identity.privateKey);
@@ -93578,7 +93117,7 @@ class Wallet extends Signer {
             if (hasAlias(identity)) {
                 defineReadOnly(this, "alias", identity.alias);
                 if (this.alias !== computeAlias(signingKey.privateKey)) {
-                    logger$t.throwArgumentError("privateKey/alias mismatch", "privateKey", "[REDACTED]");
+                    logger$s.throwArgumentError("privateKey/alias mismatch", "privateKey", "[REDACTED]");
                 }
             }
             if (hasMnemonic$1(identity)) {
@@ -93591,7 +93130,7 @@ class Wallet extends Signer {
                 const mnemonic = this.mnemonic;
                 const node = HDNode.fromMnemonic(mnemonic.phrase, null, mnemonic.locale).derivePath(mnemonic.path);
                 if (node.privateKey !== this._signingKey().privateKey) {
-                    logger$t.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
+                    logger$s.throwArgumentError("mnemonic/privateKey mismatch", "privateKey", "[REDACTED]");
                 }
             }
             else {
@@ -93602,7 +93141,7 @@ class Wallet extends Signer {
             if (SigningKey.isSigningKey(identity)) {
                 /* istanbul ignore if */
                 if (identity.curve !== "secp256k1") {
-                    logger$t.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
+                    logger$s.throwArgumentError("unsupported curve; must be secp256k1", "privateKey", "[REDACTED]");
                 }
                 defineReadOnly(this, "_signingKey", () => identity);
             }
@@ -93621,7 +93160,7 @@ class Wallet extends Signer {
         }
         /* istanbul ignore if */
         if (provider && !Provider.isProvider(provider)) {
-            logger$t.throwArgumentError("invalid provider", "provider", provider);
+            logger$s.throwArgumentError("invalid provider", "provider", provider);
         }
         defineReadOnly(this, "provider", provider || null);
     }
@@ -93673,7 +93212,7 @@ class Wallet extends Signer {
     }
     _signTypedData(domain, types, value) {
         return __awaiter$4(this, void 0, void 0, function* () {
-            return logger$t.throwError("_signTypedData not supported", Logger$1.errors.UNSUPPORTED_OPERATION, {
+            return logger$s.throwError("_signTypedData not supported", Logger$1.errors.UNSUPPORTED_OPERATION, {
                 operation: '_signTypedData'
             });
         });
@@ -93742,7 +93281,7 @@ class Wallet extends Signer {
     }
     _checkAddress(operation) {
         if (!this.address) {
-            logger$t.throwError("missing address", Logger$1.errors.UNSUPPORTED_OPERATION, {
+            logger$s.throwError("missing address", Logger$1.errors.UNSUPPORTED_OPERATION, {
                 operation: (operation || "_checkAddress")
             });
         }
@@ -93752,7 +93291,7 @@ function verifyMessage(message, signature) {
     return recoverPublicKey(arrayify(hashMessage(message)), signature);
 }
 function verifyTypedData(domain, types, value, signature) {
-    return logger$t.throwError("verifyTypedData not supported", Logger$1.errors.UNSUPPORTED_OPERATION, {
+    return logger$s.throwError("verifyTypedData not supported", Logger$1.errors.UNSUPPORTED_OPERATION, {
         operation: 'verifyTypedData'
     });
 }
@@ -93764,7 +93303,7 @@ var lib_esm$i = /*#__PURE__*/Object.freeze({
 	verifyTypedData: verifyTypedData
 });
 
-const version$s = "web/5.5.0";
+const version$r = "web/5.5.0";
 
 "use strict";
 var __awaiter$5 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -93826,7 +93365,7 @@ var __awaiter$6 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$u = new Logger(version$s);
+const logger$t = new Logger(version$r);
 function staller(duration) {
     return new Promise((resolve) => {
         setTimeout(resolve, duration);
@@ -93860,10 +93399,10 @@ function bodyify(value, type) {
 function _fetchData(connection, body, processFunc) {
     // How many times to retry in the event of a throttle
     const attemptLimit = (typeof (connection) === "object" && connection.throttleLimit != null) ? connection.throttleLimit : 12;
-    logger$u.assertArgument((attemptLimit > 0 && (attemptLimit % 1) === 0), "invalid connection throttle limit", "connection.throttleLimit", attemptLimit);
+    logger$t.assertArgument((attemptLimit > 0 && (attemptLimit % 1) === 0), "invalid connection throttle limit", "connection.throttleLimit", attemptLimit);
     const throttleCallback = ((typeof (connection) === "object") ? connection.throttleCallback : null);
     const throttleSlotInterval = ((typeof (connection) === "object" && typeof (connection.throttleSlotInterval) === "number") ? connection.throttleSlotInterval : 100);
-    logger$u.assertArgument((throttleSlotInterval > 0 && (throttleSlotInterval % 1) === 0), "invalid connection throttle slot interval", "connection.throttleSlotInterval", throttleSlotInterval);
+    logger$t.assertArgument((throttleSlotInterval > 0 && (throttleSlotInterval % 1) === 0), "invalid connection throttle slot interval", "connection.throttleSlotInterval", throttleSlotInterval);
     const headers = {};
     let url = null;
     // @TODO: Allow ConnectionInfo to override some of these values
@@ -93877,7 +93416,7 @@ function _fetchData(connection, body, processFunc) {
     }
     else if (typeof (connection) === "object") {
         if (connection == null || connection.url == null) {
-            logger$u.throwArgumentError("missing URL", "connection.url", connection);
+            logger$t.throwArgumentError("missing URL", "connection.url", connection);
         }
         url = connection.url;
         if (typeof (connection.timeout) === "number" && connection.timeout > 0) {
@@ -93894,7 +93433,7 @@ function _fetchData(connection, body, processFunc) {
         options.allowGzip = !!connection.allowGzip;
         if (connection.user != null && connection.password != null) {
             if (url.substring(0, 6) !== "https:" && connection.allowInsecureAuthentication !== true) {
-                logger$u.throwError("basic authentication requires a secure https url", Logger.errors.INVALID_ARGUMENT, { argument: "url", url: url, user: connection.user, password: "[REDACTED]" });
+                logger$t.throwError("basic authentication requires a secure https url", Logger.errors.INVALID_ARGUMENT, { argument: "url", url: url, user: connection.user, password: "[REDACTED]" });
             }
             const authorization = connection.user + ":" + connection.password;
             headers["authorization"] = {
@@ -93928,7 +93467,7 @@ function _fetchData(connection, body, processFunc) {
                         return;
                     }
                     timer = null;
-                    reject(logger$u.makeError("timeout", Logger.errors.TIMEOUT, {
+                    reject(logger$t.makeError("timeout", Logger.errors.TIMEOUT, {
                         requestBody: bodyify(options.body, flatHeaders["content-type"]),
                         requestMethod: options.method,
                         timeout: timeout,
@@ -93977,7 +93516,7 @@ function _fetchData(connection, body, processFunc) {
                     response = error.response;
                     if (response == null) {
                         runningTimeout.cancel();
-                        logger$u.throwError("missing response", Logger.errors.SERVER_ERROR, {
+                        logger$t.throwError("missing response", Logger.errors.SERVER_ERROR, {
                             requestBody: bodyify(options.body, flatHeaders["content-type"]),
                             requestMethod: options.method,
                             serverError: error,
@@ -93991,7 +93530,7 @@ function _fetchData(connection, body, processFunc) {
                 }
                 else if (response.statusCode < 200 || response.statusCode >= 300) {
                     runningTimeout.cancel();
-                    logger$u.throwError("bad response", Logger.errors.SERVER_ERROR, {
+                    logger$t.throwError("bad response", Logger.errors.SERVER_ERROR, {
                         status: response.statusCode,
                         headers: response.headers,
                         body: bodyify(body, ((response.headers) ? response.headers["content-type"] : null)),
@@ -94021,7 +93560,7 @@ function _fetchData(connection, body, processFunc) {
                             }
                         }
                         runningTimeout.cancel();
-                        logger$u.throwError("processing response error", Logger.errors.SERVER_ERROR, {
+                        logger$t.throwError("processing response error", Logger.errors.SERVER_ERROR, {
                             body: bodyify(body, ((response.headers) ? response.headers["content-type"] : null)),
                             error: error,
                             requestBody: bodyify(options.body, flatHeaders["content-type"]),
@@ -94035,7 +93574,7 @@ function _fetchData(connection, body, processFunc) {
                 // The "body" is now a Uint8Array.
                 return body;
             }
-            return logger$u.throwError("failed response", Logger.errors.SERVER_ERROR, {
+            return logger$t.throwError("failed response", Logger.errors.SERVER_ERROR, {
                 requestBody: bodyify(options.body, flatHeaders["content-type"]),
                 requestMethod: options.method,
                 url: url
@@ -94052,7 +93591,7 @@ function fetchJson(connection, json, processFunc) {
                 result = JSON.parse(toUtf8String(value));
             }
             catch (error) {
-                logger$u.throwError("invalid JSON", Logger.errors.SERVER_ERROR, {
+                logger$t.throwError("invalid JSON", Logger.errors.SERVER_ERROR, {
                     body: value,
                     error: error
                 });
@@ -94172,9 +93711,9 @@ var lib_esm$j = /*#__PURE__*/Object.freeze({
 	poll: poll
 });
 
-var abi_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$4);
+var abi_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$5);
 
-var address_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$7);
+var address_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$8);
 
 var require$$0$3 = /*@__PURE__*/getAugmentedNamespace(lib_esm$a);
 
@@ -94182,7 +93721,7 @@ var basex_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$b);
 
 var bytes_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm);
 
-var hash_1$1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$3);
+var hash_1$1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$4);
 
 var hdnode_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$d);
 
@@ -94190,7 +93729,7 @@ var json_wallets_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$f);
 
 var keccak256_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$2);
 
-var logger_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$5);
+var logger_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$6);
 
 var sha2_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$c);
 
@@ -94200,11 +93739,11 @@ var random_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$e);
 
 var properties_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$1);
 
-var require$$1$1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$6);
+var require$$1$1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$7);
 
 var signing_key_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$9);
 
-var strings_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$8);
+var strings_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$3);
 
 var transactions_1 = /*@__PURE__*/getAugmentedNamespace(lib_esm$k);
 
@@ -94378,7 +93917,7 @@ var __awaiter$7 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$v = new Logger$1(version$j);
+const logger$u = new Logger$1(version$i);
 var TransactionTypes;
 (function (TransactionTypes) {
     TransactionTypes[TransactionTypes["legacy"] = 0] = "legacy";
@@ -94411,7 +93950,7 @@ function accessSetify(addr, storageKeys) {
         address: getAddress$1(addr),
         storageKeys: (storageKeys || []).map((storageKey, index) => {
             if (hexDataLength(storageKey) !== 32) {
-                logger$v.throwArgumentError("invalid access list storageKey", `accessList[${addr}:${index}]`, storageKey);
+                logger$u.throwArgumentError("invalid access list storageKey", `accessList[${addr}:${index}]`, storageKey);
             }
             return storageKey.toLowerCase();
         })
@@ -94422,7 +93961,7 @@ function accessListify(value) {
         return value.map((set, index) => {
             if (Array.isArray(set)) {
                 if (set.length > 2) {
-                    logger$v.throwArgumentError("access list expected to be [ address, storageKeys[] ]", `value[${index}]`, set);
+                    logger$u.throwArgumentError("access list expected to be [ address, storageKeys[] ]", `value[${index}]`, set);
                 }
                 return accessSetify(set[0], set[1]);
             }
@@ -94483,7 +94022,7 @@ function serializeHederaTransaction(transaction, pubKey) {
                     .setInitialBalance(Hbar.fromTinybars(initialBalance.toString()));
             }
             else {
-                logger$v.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger$1.errors.INVALID_ARGUMENT, transaction);
+                logger$u.throwArgumentError("Cannot determine transaction type from given custom data. Need either `to`, `fileChunk`, `fileId` or `bytecodeFileId`", Logger$1.errors.INVALID_ARGUMENT, transaction);
             }
         }
     }
@@ -94594,7 +94133,7 @@ function parse$2(rawTransaction) {
             parsed = Transaction.fromBytes(payload);
         }
         catch (error) {
-            logger$v.throwArgumentError(error.message, "rawTransaction", rawTransaction);
+            logger$u.throwArgumentError(error.message, "rawTransaction", rawTransaction);
         }
         const tx = parsed.transactionId;
         let contents = {
@@ -94635,14 +94174,14 @@ function parse$2(rawTransaction) {
                 handleNumber(parsed.initialBalance.toBigNumber().toString()) : handleNumber('0');
         }
         else {
-            return logger$v.throwError(`unsupported transaction`, Logger$1.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
+            return logger$u.throwError(`unsupported transaction`, Logger$1.errors.UNSUPPORTED_OPERATION, { operation: "parse" });
         }
         // TODO populate r, s ,v
         return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
 }
 
-const version$t = "contracts/5.5.0";
+const version$s = "contracts/5.5.0";
 
 "use strict";
 var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments, P, generator) {
@@ -94654,7 +94193,7 @@ var __awaiter$8 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$w = new Logger$1(version$t);
+const logger$v = new Logger$1(version$s);
 ///////////////////////////////
 const allowedTransactionKeys$1 = {
     chainId: true, data: true, from: true, gasLimit: true, gasPrice: true, to: true, value: true,
@@ -94670,7 +94209,7 @@ function populateTransaction(contract, fragment, args) {
             overrides = shallowCopy(args.pop());
         }
         // Make sure the parameter count matches
-        logger$w.checkArgumentCount(args.length, fragment.inputs.length, "passed to contract");
+        logger$v.checkArgumentCount(args.length, fragment.inputs.length, "passed to contract");
         // Populate "from" override (allow promises)
         if (contract.signer) {
             if (overrides.from) {
@@ -94681,7 +94220,7 @@ function populateTransaction(contract, fragment, args) {
                     signer: contract.signer.getAddress()
                 }).then((check) => __awaiter$8(this, void 0, void 0, function* () {
                     if (getAddress$1(check.signer) !== check.override) {
-                        logger$w.throwError("Contract with a Signer cannot override from", Logger$1.errors.UNSUPPORTED_OPERATION, {
+                        logger$v.throwError("Contract with a Signer cannot override from", Logger$1.errors.UNSUPPORTED_OPERATION, {
                             operation: "overrides.from"
                         });
                     }
@@ -94746,7 +94285,7 @@ function populateTransaction(contract, fragment, args) {
         if (ro.value) {
             const roValue = BigNumber$1.from(ro.value);
             if (!roValue.isZero() && !fragment.payable) {
-                logger$w.throwError("non-payable method cannot override value", Logger$1.errors.UNSUPPORTED_OPERATION, {
+                logger$v.throwError("non-payable method cannot override value", Logger$1.errors.UNSUPPORTED_OPERATION, {
                     operation: "overrides.value",
                     value: overrides.value
                 });
@@ -94770,7 +94309,7 @@ function populateTransaction(contract, fragment, args) {
         // typo or using an unsupported key.
         const leftovers = Object.keys(overrides).filter((key) => (overrides[key] != null));
         if (leftovers.length) {
-            logger$w.throwError(`cannot override ${leftovers.map((l) => JSON.stringify(l)).join(",")}`, Logger$1.errors.UNSUPPORTED_OPERATION, {
+            logger$v.throwError(`cannot override ${leftovers.map((l) => JSON.stringify(l)).join(",")}`, Logger$1.errors.UNSUPPORTED_OPERATION, {
                 operation: "overrides",
                 overrides: leftovers
             });
@@ -94789,7 +94328,7 @@ function buildEstimate(contract, fragment) {
     return function (...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
             if (!signerOrProvider) {
-                logger$w.throwError("estimate require a provider or signer", Logger$1.errors.UNSUPPORTED_OPERATION, {
+                logger$v.throwError("estimate require a provider or signer", Logger$1.errors.UNSUPPORTED_OPERATION, {
                     operation: "estimateGas"
                 });
             }
@@ -94869,7 +94408,7 @@ function buildSend(contract, fragment) {
     return function (...args) {
         return __awaiter$8(this, void 0, void 0, function* () {
             if (!contract.signer) {
-                logger$w.throwError("sending a transaction requires a signer", Logger$1.errors.UNSUPPORTED_OPERATION, {
+                logger$v.throwError("sending a transaction requires a signer", Logger$1.errors.UNSUPPORTED_OPERATION, {
                     operation: "sendTransaction"
                 });
             }
@@ -94968,7 +94507,7 @@ class FragmentRunningEvent extends RunningEvent {
         let topic = contractInterface.getEventTopic(fragment);
         if (topics) {
             if (topic !== topics[0]) {
-                logger$w.throwArgumentError("topic mismatch", "topics", topics);
+                logger$v.throwArgumentError("topic mismatch", "topics", topics);
             }
             filter.topics = topics.slice();
         }
@@ -95034,7 +94573,7 @@ class WildcardRunningEvent extends RunningEvent {
 }
 class BaseContract {
     constructor(address, contractInterface, signerOrProvider) {
-        logger$w.checkNew(new.target, Contract);
+        logger$v.checkNew(new.target, Contract);
         if (address) {
             this.address = getAddressFromAccount(address);
         }
@@ -95052,7 +94591,7 @@ class BaseContract {
             defineReadOnly(this, "signer", null);
         }
         else {
-            logger$w.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
+            logger$v.throwArgumentError("invalid signer or provider", "signerOrProvider", signerOrProvider);
         }
         defineReadOnly(this, "callStatic", {});
         defineReadOnly(this, "functions", {});
@@ -95079,7 +94618,7 @@ class BaseContract {
                     defineReadOnly(this.filters, name, this.filters[filters[0]]);
                 }
                 else {
-                    logger$w.warn(`Duplicate definition of ${name} (${filters.join(", ")})`);
+                    logger$v.warn(`Duplicate definition of ${name} (${filters.join(", ")})`);
                 }
             });
         }
@@ -95092,7 +94631,7 @@ class BaseContract {
             // Check that the signature is unique; if not the ABI generation has
             // not been cleaned or may be incorrectly generated
             if (uniqueSignatures[signature]) {
-                logger$w.warn(`Duplicate ABI entry for ${JSON.stringify(signature)}`);
+                logger$v.warn(`Duplicate ABI entry for ${JSON.stringify(signature)}`);
                 return;
             }
             uniqueSignatures[signature] = true;
@@ -95178,7 +94717,7 @@ class BaseContract {
                 // Otherwise, poll for our code to be deployed
                 this._deployedPromise = this.provider.getCode(this.address).then((code) => {
                     if (code === "0x") {
-                        logger$w.throwError("contract not deployed", Logger$1.errors.UNSUPPORTED_OPERATION, {
+                        logger$v.throwError("contract not deployed", Logger$1.errors.UNSUPPORTED_OPERATION, {
                             contractAddress: this._address,
                             operation: "getDeployed"
                         });
@@ -95195,14 +94734,14 @@ class BaseContract {
     // estimateDeploy(bytecode: string, ...args): Promise<BigNumber>
     fallback(overrides) {
         if (!this.signer) {
-            logger$w.throwError("sending a transactions require a signer", Logger$1.errors.UNSUPPORTED_OPERATION, { operation: "sendTransaction(fallback)" });
+            logger$v.throwError("sending a transactions require a signer", Logger$1.errors.UNSUPPORTED_OPERATION, { operation: "sendTransaction(fallback)" });
         }
         const tx = shallowCopy(overrides || {});
         ["from", "to"].forEach(function (key) {
             if (tx[key] == null) {
                 return;
             }
-            logger$w.throwError("cannot override " + key, Logger$1.errors.UNSUPPORTED_OPERATION, { operation: key });
+            logger$v.throwError("cannot override " + key, Logger$1.errors.UNSUPPORTED_OPERATION, { operation: key });
         });
         tx.to = this.resolvedAddress;
         return this.deployed().then(() => {
@@ -95276,7 +94815,7 @@ class BaseContract {
     }
     _requireAddressSet() {
         if (!this.address || this.address == "") {
-            logger$w.throwArgumentError("Missing address", Logger$1.errors.INVALID_ARGUMENT, this.address);
+            logger$v.throwArgumentError("Missing address", Logger$1.errors.INVALID_ARGUMENT, this.address);
         }
     }
     _checkRunningEvents(runningEvent) {
@@ -95309,7 +94848,7 @@ class BaseContract {
     }
     _addEventListener(runningEvent, listener, once) {
         if (!this.provider) {
-            logger$w.throwError("events require a provider or a signer with a provider", Logger$1.errors.UNSUPPORTED_OPERATION, { operation: "once" });
+            logger$v.throwError("events require a provider or a signer with a provider", Logger$1.errors.UNSUPPORTED_OPERATION, { operation: "once" });
         }
         runningEvent.addListener(listener, once);
         // Track this running event and its listeners (may already be there; but no hard in updating)
@@ -95469,11 +95008,11 @@ class ContractFactory {
         }
         // Make sure the final result is valid bytecode
         if (!isHexString(bytecodeHex) || (bytecodeHex.length % 2)) {
-            logger$w.throwArgumentError("invalid bytecode", "bytecode", bytecode);
+            logger$v.throwArgumentError("invalid bytecode", "bytecode", bytecode);
         }
         // If we have a signer, make sure it is valid
         if (signer && !Signer.isSigner(signer)) {
-            logger$w.throwArgumentError("invalid signer", "signer", signer);
+            logger$v.throwArgumentError("invalid signer", "signer", signer);
         }
         defineReadOnly(this, "bytecode", bytecodeHex);
         defineReadOnly(this, "interface", getStatic(new.target, "getInterface")(contractInterface));
@@ -95494,19 +95033,19 @@ class ContractFactory {
             if (["gasLimit", "value"].indexOf(key) > -1) {
                 return;
             }
-            logger$w.throwError("cannot override " + key, Logger$1.errors.UNSUPPORTED_OPERATION, { operation: key });
+            logger$v.throwError("cannot override " + key, Logger$1.errors.UNSUPPORTED_OPERATION, { operation: key });
         });
         if (contractCreateTx.value) {
             const value = BigNumber$1.from(contractCreateTx.value);
             if (!value.isZero() && !this.interface.deploy.payable) {
-                logger$w.throwError("non-payable constructor cannot override value", Logger$1.errors.UNSUPPORTED_OPERATION, {
+                logger$v.throwError("non-payable constructor cannot override value", Logger$1.errors.UNSUPPORTED_OPERATION, {
                     operation: "overrides.value",
                     value: contractCreateTx.value
                 });
             }
         }
         // Make sure the call matches the constructor signature
-        logger$w.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
+        logger$v.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
         contractCreateTx = Object.assign(Object.assign({}, contractCreateTx), { data: hexlify(concat([
                 this.bytecode,
                 this.interface.encodeDeploy(args)
@@ -95521,7 +95060,7 @@ class ContractFactory {
                 overrides = args.pop();
             }
             // Make sure the call matches the constructor signature
-            logger$w.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
+            logger$v.checkArgumentCount(args.length, this.interface.deploy.inputs.length, " in Contract constructor");
             args.push(overrides);
             // Get the deployment transaction (with optional overrides)
             const contractCreate = this.getDeployTransaction(...args);
@@ -95542,7 +95081,7 @@ class ContractFactory {
     }
     static fromSolidity(compilerOutput, signer) {
         if (compilerOutput == null) {
-            logger$w.throwError("missing compiler output", Logger$1.errors.MISSING_ARGUMENT, { argument: "compilerOutput" });
+            logger$v.throwError("missing compiler output", Logger$1.errors.MISSING_ARGUMENT, { argument: "compilerOutput" });
         }
         if (typeof (compilerOutput) === "string") {
             compilerOutput = JSON.parse(compilerOutput);
@@ -95565,10 +95104,10 @@ class ContractFactory {
     }
 }
 
-const version$u = "networks/5.5.0";
+const version$t = "networks/5.5.0";
 
 "use strict";
-const logger$x = new Logger$1(version$u);
+const logger$w = new Logger$1(version$t);
 function isRenetworkable(value) {
     return (value && typeof (value.renetwork) === "function");
 }
@@ -95654,13 +95193,13 @@ function getNetwork(network) {
     // Not a standard network; check that it is a valid network in general
     if (!standard) {
         if (typeof (network.chainId) !== "number") {
-            logger$x.throwArgumentError("invalid network chainId", "network", network);
+            logger$w.throwArgumentError("invalid network chainId", "network", network);
         }
         return network;
     }
     // Make sure the chainId matches the expected network chainId (or is 0; disable EIP-155)
     if (network.chainId !== 0 && network.chainId !== standard.chainId) {
-        logger$x.throwArgumentError("network chainId mismatch", "network", network);
+        logger$w.throwArgumentError("network chainId mismatch", "network", network);
     }
     // @TODO: In the next major version add an attach function to a defaultProvider
     // class and move the _defaultProvider internal to this file (extend Network)
@@ -95682,13 +95221,13 @@ function getNetwork(network) {
     };
 }
 
-const version$v = "providers/5.5.0";
+const version$u = "providers/5.5.0";
 
 "use strict";
-const logger$y = new Logger$1(version$v);
+const logger$x = new Logger$1(version$u);
 class Formatter {
     constructor() {
-        logger$y.checkNew(new.target, Formatter);
+        logger$x.checkNew(new.target, Formatter);
         this.formats = this.getDefaultFormats();
     }
     getDefaultFormats() {
@@ -95785,7 +95324,7 @@ class Formatter {
     //TODO propper validation needed?
     timestamp(value) {
         if (!value.match(/([0-9]){10}[.]([0-9]){9}/)) {
-            logger$y.throwArgumentError("bad timestamp format", "value", value);
+            logger$x.throwArgumentError("bad timestamp format", "value", value);
         }
         return value;
     }
@@ -95835,7 +95374,7 @@ class Formatter {
                 return value.toLowerCase();
             }
         }
-        return logger$y.throwArgumentError("invalid hash", "value", value);
+        return logger$x.throwArgumentError("invalid hash", "value", value);
     }
     data(value, strict) {
         const result = this.hex(value, strict);
@@ -95867,7 +95406,7 @@ class Formatter {
     hash48(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 48) {
-            return logger$y.throwArgumentError("invalid hash", "value", value);
+            return logger$x.throwArgumentError("invalid hash", "value", value);
         }
         return result;
     }
@@ -95875,7 +95414,7 @@ class Formatter {
     hash32(value, strict) {
         const result = this.hex(value, strict);
         if (hexDataLength(result) !== 32) {
-            return logger$y.throwArgumentError("invalid topics hash", "value", value);
+            return logger$x.throwArgumentError("invalid topics hash", "value", value);
         }
         return result;
     }
@@ -99719,7 +99258,7 @@ var __awaiter$9 = (window && window.__awaiter) || function (thisArg, _arguments,
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-const logger$z = new Logger$1(version$v);
+const logger$y = new Logger$1(version$u);
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -99728,7 +99267,7 @@ function checkTopic(topic) {
         return "null";
     }
     if (hexDataLength(topic) !== 32) {
-        logger$z.throwArgumentError("invalid topic", "topic", topic);
+        logger$y.throwArgumentError("invalid topic", "topic", topic);
     }
     return topic.toLowerCase();
 }
@@ -99855,7 +99394,7 @@ class BaseProvider extends Provider {
      *
      */
     constructor(network) {
-        logger$z.checkNew(new.target, Provider);
+        logger$y.checkNew(new.target, Provider);
         super();
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
@@ -99884,7 +99423,7 @@ class BaseProvider extends Provider {
                     this.emit("network", knownNetwork, null);
                 }
                 else {
-                    logger$z.throwArgumentError("invalid network", "network", network);
+                    logger$y.throwArgumentError("invalid network", "network", network);
                 }
                 this.hederaClient = NodeClient.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
                 this._mirrorNodeUrl = resolveMirrorNetworkUrl(this._network);
@@ -99952,7 +99491,7 @@ class BaseProvider extends Provider {
     }
     _checkMirrorNode() {
         if (!this._mirrorNodeUrl)
-            logger$z.throwError("missing provider", Logger$1.errors.UNSUPPORTED_OPERATION);
+            logger$y.throwError("missing provider", Logger$1.errors.UNSUPPORTED_OPERATION);
     }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
@@ -99983,7 +99522,7 @@ class BaseProvider extends Provider {
                     yield stall(0);
                     return this._network;
                 }
-                const error = logger$z.makeError("underlying network changed", Logger$1.errors.NETWORK_ERROR, {
+                const error = logger$y.makeError("underlying network changed", Logger$1.errors.NETWORK_ERROR, {
                     event: "changed",
                     network: network,
                     detectedNetwork: currentNetwork
@@ -100025,7 +99564,7 @@ class BaseProvider extends Provider {
                         return resolve(this.formatter.receiptFromResponse(txResponse));
                     }
                 }
-                reject(logger$z.makeError("timeout exceeded", Logger$1.errors.TIMEOUT, { timeout: timeout }));
+                reject(logger$y.makeError("timeout exceeded", Logger$1.errors.TIMEOUT, { timeout: timeout }));
             }));
         });
     }
@@ -100046,7 +99585,7 @@ class BaseProvider extends Provider {
                 return BigNumber$1.from(balance.hbars.toTinybars().toNumber());
             }
             catch (error) {
-                return logger$z.throwError("bad result from backend", Logger$1.errors.SERVER_ERROR, {
+                return logger$y.throwError("bad result from backend", Logger$1.errors.SERVER_ERROR, {
                     method: "AccountBalanceQuery",
                     params: { address: accountLike },
                     error
@@ -100073,7 +99612,7 @@ class BaseProvider extends Provider {
             catch (error) {
                 if (error.response && error.response.status &&
                     (error.response.status != 404 || (error.response.status == 404 && throwOnNonExisting))) {
-                    logger$z.throwError("bad result from backend", Logger$1.errors.SERVER_ERROR, {
+                    logger$y.throwError("bad result from backend", Logger$1.errors.SERVER_ERROR, {
                         method: "ContractByteCodeQuery",
                         params: { address: accountLike },
                         error
@@ -100102,12 +99641,12 @@ class BaseProvider extends Provider {
         }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
-            logger$z.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger$1.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
+            logger$y.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger$1.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
         }
         result.wait = (timeout) => __awaiter$9(this, void 0, void 0, function* () {
             const receipt = yield this._waitForTransaction(tx.transactionId, timeout);
             if (receipt.status === 0) {
-                logger$z.throwError("transaction failed", Logger$1.errors.CALL_EXCEPTION, {
+                logger$y.throwError("transaction failed", Logger$1.errors.CALL_EXCEPTION, {
                     transactionHash: tx.hash,
                     transaction: tx,
                     receipt: receipt
@@ -100139,7 +99678,7 @@ class BaseProvider extends Provider {
                 return this._wrapTransaction(ethersTx, txHash, receipt);
             }
             catch (error) {
-                const err = logger$z.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
+                const err = logger$y.makeError(error.message, (_a = error.status) === null || _a === void 0 ? void 0 : _a.toString());
                 err.transaction = ethersTx;
                 err.transactionHash = txHash;
                 throw err;
@@ -100170,7 +99709,7 @@ class BaseProvider extends Provider {
     }
     estimateGas(transaction) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            return logger$z.throwArgumentError("estimateGas not implemented", Logger$1.errors.NOT_IMPLEMENTED, {
+            return logger$y.throwArgumentError("estimateGas not implemented", Logger$1.errors.NOT_IMPLEMENTED, {
                 operation: "estimateGas"
             });
         });
@@ -100217,7 +99756,7 @@ class BaseProvider extends Provider {
             }
             catch (error) {
                 if (error && error.response && error.response.status != 404) {
-                    logger$z.throwError("bad result from backend", Logger$1.errors.SERVER_ERROR, {
+                    logger$y.throwError("bad result from backend", Logger$1.errors.SERVER_ERROR, {
                         method: "TransactionResponseQuery",
                         error
                     });
@@ -100233,7 +99772,7 @@ class BaseProvider extends Provider {
      */
     getTransactionReceipt(transactionId) {
         return __awaiter$9(this, void 0, void 0, function* () {
-            return logger$z.throwError("getTransactionReceipt not implemented", Logger$1.errors.NOT_IMPLEMENTED, {
+            return logger$y.throwError("getTransactionReceipt not implemented", Logger$1.errors.NOT_IMPLEMENTED, {
                 operation: 'getTransactionReceipt'
             });
             // await this.getNetwork();
@@ -100274,7 +99813,7 @@ class BaseProvider extends Provider {
                 if (data) {
                     const mappedLogs = this.formatter.logsMapper(data.logs);
                     if (mappedLogs.length == oversizeResponseLegth) {
-                        logger$z.throwError(`query returned more than ${limit} results`, Logger$1.errors.SERVER_ERROR);
+                        logger$y.throwError(`query returned more than ${limit} results`, Logger$1.errors.SERVER_ERROR);
                     }
                     return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
                 }
@@ -100282,20 +99821,20 @@ class BaseProvider extends Provider {
             catch (error) {
                 const errorParams = { method: "ContractLogsQuery", error };
                 if (error.response && error.response.status != 404) {
-                    logger$z.throwError("bad result from backend", Logger$1.errors.SERVER_ERROR, errorParams);
+                    logger$y.throwError("bad result from backend", Logger$1.errors.SERVER_ERROR, errorParams);
                 }
-                logger$z.throwError(error.message, error.code, errorParams);
+                logger$y.throwError(error.message, error.code, errorParams);
             }
             return [];
         });
     }
     getHbarPrice() {
         return __awaiter$9(this, void 0, void 0, function* () {
-            return logger$z.throwError("NOT_IMPLEMENTED", Logger$1.errors.NOT_IMPLEMENTED);
+            return logger$y.throwError("NOT_IMPLEMENTED", Logger$1.errors.NOT_IMPLEMENTED);
         });
     }
     perform(method, params) {
-        return logger$z.throwError(method + " not implemented", Logger$1.errors.NOT_IMPLEMENTED, { operation: method });
+        return logger$y.throwError(method + " not implemented", Logger$1.errors.NOT_IMPLEMENTED, { operation: method });
     }
     _addEventListener(eventName, listener, once) {
         return this;
@@ -100332,7 +99871,7 @@ function mapNetworkToHederaNetworkName(net) {
         case 'testnet':
             return NetworkName.Testnet;
         default:
-            logger$z.throwArgumentError("Invalid network name", "network", net);
+            logger$y.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
 }
@@ -100346,7 +99885,7 @@ function resolveMirrorNetworkUrl(net) {
         case 'testnet':
             return 'https://testnet.mirrornode.hedera.com';
         default:
-            logger$z.throwArgumentError("Invalid network name", "network", net);
+            logger$y.throwArgumentError("Invalid network name", "network", net);
             return null;
     }
 }
@@ -100390,7 +99929,7 @@ class HederaProvider extends BaseProvider {
 }
 
 "use strict";
-const logger$A = new Logger$1(version$v);
+const logger$z = new Logger$1(version$u);
 ////////////////////////
 // Helper Functions
 function getDefaultProvider(network, options) {
@@ -100402,12 +99941,12 @@ function getDefaultProvider(network, options) {
         // Handle http and ws (and their secure variants)
         const match = network.match(/^(ws|http)s?:/i);
         if (match) {
-            logger$A.throwArgumentError("unsupported URL scheme", "network", network);
+            logger$z.throwArgumentError("unsupported URL scheme", "network", network);
         }
     }
     const n = getNetwork(network);
     if (!n || !n._defaultProvider) {
-        logger$A.throwError("unsupported getDefaultProvider network", Logger$1.errors.NETWORK_ERROR, {
+        logger$z.throwError("unsupported getDefaultProvider network", Logger$1.errors.NETWORK_ERROR, {
             operation: "getDefaultProvider",
             network: network
         });
@@ -100444,7 +99983,7 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 	FormatTypes: FormatTypes,
 	checkResultErrors: checkResultErrors,
 	Logger: Logger$1,
-	RLP: lib_esm$6,
+	RLP: lib_esm$7,
 	_fetchData: _fetchData,
 	fetchJson: fetchJson,
 	poll: poll,
@@ -100476,14 +100015,14 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 	hexZeroPad: hexZeroPad,
 	hexDataLength: hexDataLength,
 	hexDataSlice: hexDataSlice,
-	nameprep: nameprep$1,
-	_toEscapedUtf8String: _toEscapedUtf8String$1,
-	toUtf8Bytes: toUtf8Bytes$1,
-	toUtf8CodePoints: toUtf8CodePoints$1,
-	toUtf8String: toUtf8String$1,
-	Utf8ErrorFuncs: Utf8ErrorFuncs$1,
-	formatBytes32String: formatBytes32String$1,
-	parseBytes32String: parseBytes32String$1,
+	nameprep: nameprep,
+	_toEscapedUtf8String: _toEscapedUtf8String,
+	toUtf8Bytes: toUtf8Bytes,
+	toUtf8CodePoints: toUtf8CodePoints,
+	toUtf8String: toUtf8String,
+	Utf8ErrorFuncs: Utf8ErrorFuncs,
+	formatBytes32String: formatBytes32String,
+	parseBytes32String: parseBytes32String,
 	hashMessage: hashMessage,
 	id: id,
 	_TypedDataEncoder: TypedDataEncoder,
@@ -100527,18 +100066,18 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 	isValidMnemonic: isValidMnemonic,
 	mnemonicToSeed: mnemonicToSeed,
 	get SupportedAlgorithm () { return SupportedAlgorithm; },
-	get UnicodeNormalizationForm () { return UnicodeNormalizationForm$1; },
-	get Utf8ErrorReason () { return Utf8ErrorReason$1; },
+	get UnicodeNormalizationForm () { return UnicodeNormalizationForm; },
+	get Utf8ErrorReason () { return Utf8ErrorReason; },
 	Indexed: Indexed,
 	getAddressFromAccount: getAddressFromAccount,
 	getAccountFromAddress: getAccountFromAddress,
 	parseAccount: parseAccount
 });
 
-const version$w = "ethers/5.5.1";
+const version$v = "ethers/5.5.1";
 
 "use strict";
-const logger$B = new Logger$1(version$w);
+const logger$A = new Logger$1(version$v);
 
 var hethers = /*#__PURE__*/Object.freeze({
 	__proto__: null,
@@ -100554,10 +100093,10 @@ var hethers = /*#__PURE__*/Object.freeze({
 	FixedNumber: FixedNumber$1,
 	constants: index$4,
 	get errors () { return ErrorCode$1; },
-	logger: logger$B,
+	logger: logger$A,
 	utils: utils$4,
 	wordlists: wordlists,
-	version: version$w,
+	version: version$v,
 	Wordlist: Wordlist
 });
 
@@ -100570,5 +100109,5 @@ try {
 }
 catch (error) { }
 
-export { BaseContract, BigNumber$1 as BigNumber, Contract, ContractFactory, FixedNumber$1 as FixedNumber, Signer, VoidSigner, Wallet, Wordlist, index$4 as constants, ErrorCode$1 as errors, getDefaultProvider, hethers, logger$B as logger, index$5 as providers, utils$4 as utils, version$w as version, wordlists };
+export { BaseContract, BigNumber$1 as BigNumber, Contract, ContractFactory, FixedNumber$1 as FixedNumber, Signer, VoidSigner, Wallet, Wordlist, index$4 as constants, ErrorCode$1 as errors, getDefaultProvider, hethers, logger$A as logger, index$5 as providers, utils$4 as utils, version$v as version, wordlists };
 //# sourceMappingURL=hethers.esm.js.map

@@ -16,7 +16,7 @@ import { randomBytes, shuffled } from "@ethersproject/random";
 import { checkProperties, deepCopy, defineReadOnly, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import * as RLP from "@hethers/rlp";
 import { computePublicKey, recoverPublicKey, SigningKey } from "@ethersproject/signing-key";
-import { formatBytes32String, nameprep, parseBytes32String, _toEscapedUtf8String, toUtf8Bytes, toUtf8CodePoints, toUtf8String, Utf8ErrorFuncs } from "@hethers/strings";
+import { formatBytes32String, nameprep, parseBytes32String, _toEscapedUtf8String, toUtf8Bytes, toUtf8CodePoints, toUtf8String, Utf8ErrorFuncs } from "@ethersproject/strings";
 import { accessListify, computeAddress, computeAlias, parse as parseTransaction, recoverAddress, TransactionTypes } from "@hethers/transactions";
 import { commify, formatEther, parseEther, formatUnits, parseUnits } from "@ethersproject/units";
 import { verifyMessage, verifyTypedData } from "@hethers/wallet";
@@ -26,7 +26,7 @@ import { _fetchData, fetchJson, poll } from "@ethersproject/web";
 // Enums
 
 import { SupportedAlgorithm } from "@ethersproject/sha2";
-import { UnicodeNormalizationForm, Utf8ErrorReason } from "@hethers/strings";
+import { UnicodeNormalizationForm, Utf8ErrorReason } from "@ethersproject/strings";
 import { UnsignedTransaction } from "@hethers/transactions";
 
 ////////////////////////
@@ -37,7 +37,7 @@ import { Bytes, BytesLike, Hexable } from "@ethersproject/bytes"
 import { Mnemonic } from "@hethers/hdnode";
 import { EncryptOptions, ProgressCallback } from "@hethers/json-wallets";
 import { Deferrable } from "@ethersproject/properties";
-import { Utf8ErrorFunc } from "@hethers/strings";
+import { Utf8ErrorFunc } from "@ethersproject/strings";
 import { AccessList, AccessListish } from "@hethers/transactions";
 import { ConnectionInfo, FetchJsonResponse, OnceBlockable, OncePollable, PollOptions } from "@ethersproject/web";
 ////////////////////////
