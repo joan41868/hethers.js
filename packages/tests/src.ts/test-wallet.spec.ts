@@ -607,6 +607,8 @@ describe("Wallet createAccount", function () {
 
     it("Should throw an error for crypto transfer with data field", async function() {
         let exceptionThrown = false;
+        let errorReason = null;
+
         try {
             await acc1Wallet.sendTransaction({
                 to: acc2Wallet.account,
@@ -614,14 +616,18 @@ describe("Wallet createAccount", function () {
                 data: '0x'
             });
         } catch (e: any) {
+            errorReason = e.reason;
             exceptionThrown = true;
         }
 
+        assert.strictEqual(errorReason, 'gasLimit is not provided. Cannot execute a Contract Call');
         assert.strictEqual(exceptionThrown, true);
     }).timeout(timeout);
 
     it("Should throw an error for crypto transfer with gasLimit field", async function() {
         let exceptionThrown = false;
+        let errorReason = null;
+
         try {
             await acc1Wallet.sendTransaction({
                 to: acc2Wallet.account,
@@ -629,23 +635,29 @@ describe("Wallet createAccount", function () {
                 gasLimit: 300000
             });
         } catch (e: any) {
+            errorReason = e.reason;
             exceptionThrown = true;
         }
 
+        assert.strictEqual(errorReason, 'receiver is an account. Cannot execute a Contract Call');
         assert.strictEqual(exceptionThrown, true);
     }).timeout(timeout);
 
 
     it("Should throw an error for crypto transfer with missing to field", async function() {
         let exceptionThrown = false;
+        let errorCode = null;
+
         try {
             await acc1Wallet.sendTransaction({
                 value: 1
             });
         } catch (e: any) {
+            errorCode = e.code;
             exceptionThrown = true;
         }
 
+        assert.strictEqual(errorCode, 'ERR_INVALID_ARG_TYPE');
         assert.strictEqual(exceptionThrown, true);
     }).timeout(timeout);
 
@@ -671,6 +683,8 @@ describe("Wallet createAccount", function () {
 
     it("Should throw an exception if provider is not set", async function () {
         let exceptionThrown = false;
+        let errorReason = null;
+
         // @ts-ignore
         const acc1WalletWithoutProvider = new ethers.Wallet(acc1Eoa);
         try {
@@ -679,9 +693,11 @@ describe("Wallet createAccount", function () {
                 value: 1
             });
         } catch (e: any) {
+            errorReason = e.reason;
             exceptionThrown = true;
         }
 
+        assert.strictEqual(errorReason, 'missing provider');
         assert.strictEqual(exceptionThrown, true);
     }).timeout(timeout);
 

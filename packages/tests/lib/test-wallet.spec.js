@@ -796,11 +796,12 @@ describe("Wallet createAccount", function () {
     }).timeout(timeout);
     it("Should throw an error for crypto transfer with data field", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var exceptionThrown, e_1;
+            var exceptionThrown, errorReason, e_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         exceptionThrown = false;
+                        errorReason = null;
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
@@ -814,9 +815,11 @@ describe("Wallet createAccount", function () {
                         return [3 /*break*/, 4];
                     case 3:
                         e_1 = _a.sent();
+                        errorReason = e_1.reason;
                         exceptionThrown = true;
                         return [3 /*break*/, 4];
                     case 4:
+                        assert_1.default.strictEqual(errorReason, 'gasLimit is not provided. Cannot execute a Contract Call');
                         assert_1.default.strictEqual(exceptionThrown, true);
                         return [2 /*return*/];
                 }
@@ -825,11 +828,12 @@ describe("Wallet createAccount", function () {
     }).timeout(timeout);
     it("Should throw an error for crypto transfer with gasLimit field", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var exceptionThrown, e_2;
+            var exceptionThrown, errorReason, e_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         exceptionThrown = false;
+                        errorReason = null;
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
@@ -843,9 +847,11 @@ describe("Wallet createAccount", function () {
                         return [3 /*break*/, 4];
                     case 3:
                         e_2 = _a.sent();
+                        errorReason = e_2.reason;
                         exceptionThrown = true;
                         return [3 /*break*/, 4];
                     case 4:
+                        assert_1.default.strictEqual(errorReason, 'receiver is an account. Cannot execute a Contract Call');
                         assert_1.default.strictEqual(exceptionThrown, true);
                         return [2 /*return*/];
                 }
@@ -854,11 +860,12 @@ describe("Wallet createAccount", function () {
     }).timeout(timeout);
     it("Should throw an error for crypto transfer with missing to field", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var exceptionThrown, e_3;
+            var exceptionThrown, errorCode, e_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         exceptionThrown = false;
+                        errorCode = null;
                         _a.label = 1;
                     case 1:
                         _a.trys.push([1, 3, , 4]);
@@ -870,9 +877,11 @@ describe("Wallet createAccount", function () {
                         return [3 /*break*/, 4];
                     case 3:
                         e_3 = _a.sent();
+                        errorCode = e_3.code;
                         exceptionThrown = true;
                         return [3 /*break*/, 4];
                     case 4:
+                        assert_1.default.strictEqual(errorCode, 'ERR_INVALID_ARG_TYPE');
                         assert_1.default.strictEqual(exceptionThrown, true);
                         return [2 /*return*/];
                 }
@@ -918,11 +927,12 @@ describe("Wallet createAccount", function () {
     }).timeout(180000);
     it("Should throw an exception if provider is not set", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var exceptionThrown, acc1WalletWithoutProvider, e_5;
+            var exceptionThrown, errorReason, acc1WalletWithoutProvider, e_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         exceptionThrown = false;
+                        errorReason = null;
                         acc1WalletWithoutProvider = new ethers_1.ethers.Wallet(acc1Eoa);
                         _a.label = 1;
                     case 1:
@@ -936,9 +946,11 @@ describe("Wallet createAccount", function () {
                         return [3 /*break*/, 4];
                     case 3:
                         e_5 = _a.sent();
+                        errorReason = e_5.reason;
                         exceptionThrown = true;
                         return [3 /*break*/, 4];
                     case 4:
+                        assert_1.default.strictEqual(errorReason, 'missing provider');
                         assert_1.default.strictEqual(exceptionThrown, true);
                         return [2 /*return*/];
                 }
