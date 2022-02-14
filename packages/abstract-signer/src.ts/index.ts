@@ -325,7 +325,7 @@ export abstract class Signer {
 
     /**
      * Populates any missing properties in a transaction request.
-     * Properties affected - `to`, `chainId`, `isCryptoTransfer`
+     * Properties affected - `to`, `chainId`
      * @param transaction
      */
     async populateTransaction(transaction: Deferrable<TransactionRequest>): Promise<TransactionRequest> {
@@ -341,6 +341,7 @@ export abstract class Signer {
             tx.to.catch((error) => {  });
         }
 
+        let isCryptoTransfer = false;
         if (tx.to && tx.value) {
             if (tx.data && !tx.gasLimit) {
                 logger.throwError("gasLimit is not provided. Cannot execute a Contract Call");
@@ -351,8 +352,9 @@ export abstract class Signer {
                 logger.throwError("gasLimit is provided. Cannot execute a Crypto Transfer");
             }
 
-            tx.isCryptoTransfer = true;
+            isCryptoTransfer = true;
         }
+        tx.customData = {...tx.customData, isCryptoTransfer};
 
         const customData = await tx.customData;
 
@@ -362,7 +364,7 @@ export abstract class Signer {
         // CreateAccount always has a publicKey
         const isCreateAccount = customData && customData.publicKey;
 
-        if (!isFileCreateOrAppend && !isCreateAccount && !tx.isCryptoTransfer && tx.gasLimit == null) {
+        if (!isFileCreateOrAppend && !isCreateAccount && !tx.customData.isCryptoTransfer && tx.gasLimit == null) {
             return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, {tx: tx});
         }
 

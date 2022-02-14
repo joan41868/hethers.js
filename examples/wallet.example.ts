@@ -113,8 +113,7 @@ const hethers = require("ethers");
 	console.log(`Acc2 balance: ${(await acc2Wallet.getBalance()).toString()}\n\n`);
 	await acc1Wallet.sendTransaction({
 		to: acc2Wallet.account,
-		value: 1,
-		isCryptoTransfer: true
+		value: 1
 	});
 	console.log(`Acc1 balance: ${(await acc1Wallet.getBalance()).toString()}`);
 	console.log(`Acc2 balance: ${(await acc2Wallet.getBalance()).toString()}\n\n`);

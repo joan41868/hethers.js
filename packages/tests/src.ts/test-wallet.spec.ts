@@ -684,21 +684,4 @@ describe("Wallet createAccount", function () {
 
         assert.strictEqual(exceptionThrown, true);
     }).timeout(timeout);
-
-    it("Should throw an exception if isCryptoTransfer parameter is passed", async function () {
-        let exceptionThrown = false;
-        // @ts-ignore
-        const acc1WalletWithoutProvider = new ethers.Wallet(acc1Eoa);
-        try {
-            await acc1WalletWithoutProvider.sendTransaction({
-                to: acc2Wallet.account,
-                value: 1,
-                isCryptoTransfer: true
-            });
-        } catch (e: any) {
-            exceptionThrown = true;
-        }
-
-        assert.strictEqual(exceptionThrown, true);
-    }).timeout(timeout);
 });

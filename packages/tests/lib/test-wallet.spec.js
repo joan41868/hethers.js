@@ -945,35 +945,5 @@ describe("Wallet createAccount", function () {
             });
         });
     }).timeout(timeout);
-    it("Should throw an exception if isCryptoTransfer parameter is passed", function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var exceptionThrown, acc1WalletWithoutProvider, e_6;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        exceptionThrown = false;
-                        acc1WalletWithoutProvider = new ethers_1.ethers.Wallet(acc1Eoa);
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, acc1WalletWithoutProvider.sendTransaction({
-                                to: acc2Wallet.account,
-                                value: 1,
-                                isCryptoTransfer: true
-                            })];
-                    case 2:
-                        _a.sent();
-                        return [3 /*break*/, 4];
-                    case 3:
-                        e_6 = _a.sent();
-                        exceptionThrown = true;
-                        return [3 /*break*/, 4];
-                    case 4:
-                        assert_1.default.strictEqual(exceptionThrown, true);
-                        return [2 /*return*/];
-                }
-            });
-        });
-    }).timeout(timeout);
 });
 //# sourceMappingURL=test-wallet.spec.js.map
