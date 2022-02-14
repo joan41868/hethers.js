@@ -7,7 +7,7 @@
 import { ExternallyOwnedAccount } from "@hethers/abstract-signer";
 import { Base58 } from "@ethersproject/basex";
 import { arrayify, BytesLike, concat, hexDataSlice, hexZeroPad, hexlify } from "@ethersproject/bytes";
-import { BigNumber } from "@hethers/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { toUtf8Bytes, UnicodeNormalizationForm } from "@ethersproject/strings";
 import { pbkdf2 } from "@ethersproject/pbkdf2";
 import { defineReadOnly } from "@ethersproject/properties";

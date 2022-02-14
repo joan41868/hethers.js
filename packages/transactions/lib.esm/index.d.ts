@@ -1,5 +1,5 @@
 import { AccountLike } from "@hethers/address";
-import { BigNumber, BigNumberish } from "@hethers/bignumber";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike, SignatureLike } from "@ethersproject/bytes";
 import { Transaction as HederaTransaction, PublicKey as HederaPubKey } from "@hashgraph/sdk";
 import { TransactionRequest } from "@hethers/abstract-provider";

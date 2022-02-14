@@ -1,5 +1,5 @@
 import { Log, TransactionReceipt, TransactionResponse, HederaTransactionRecord } from "@hethers/abstract-provider";
-import { BigNumber } from "@hethers/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { AccessList } from "@hethers/transactions";
 export declare type FormatFunc = (value: any) => any;
 export declare type FormatFuncs = {

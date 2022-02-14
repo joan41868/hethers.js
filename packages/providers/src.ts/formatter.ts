@@ -2,7 +2,7 @@
 
 import { Log, TransactionReceipt, TransactionResponse, HederaTransactionRecord } from "@hethers/abstract-provider";
 import { getAddress, getAddressFromAccount, getContractAddress } from "@hethers/address";
-import { BigNumber } from "@hethers/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { hexDataLength, hexDataSlice, hexZeroPad, isHexString } from "@ethersproject/bytes";
 import { AddressZero } from "@hethers/constants";
 import { AccessList, accessListify, parse as parseTransaction } from "@hethers/transactions";

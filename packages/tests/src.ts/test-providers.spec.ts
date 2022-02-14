@@ -5,7 +5,7 @@ import assert from "assert";
 // import Web3HttpProvider from "web3-providers-http";
 
 import { hethers } from "hethers";
-import { BigNumber } from "@hethers/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { DefaultHederaProvider } from "@hethers/providers";
 import { HederaTransactionRecord, TransactionResponse, TransactionReceipt } from "@hethers/abstract-provider";
 import { getAddressFromAccount } from "hethers/lib/utils";

@@ -1,5 +1,5 @@
 import { Provider, TransactionRequest, TransactionResponse } from "@hethers/abstract-provider";
-import { BigNumber, BigNumberish } from "@hethers/bignumber";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable } from "@ethersproject/properties";
 import { Account } from "@hethers/address";

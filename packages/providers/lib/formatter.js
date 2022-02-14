@@ -2,7 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Formatter = void 0;
 var address_1 = require("@hethers/address");
-var bignumber_1 = require("@hethers/bignumber");
+var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var constants_1 = require("@hethers/constants");
 var transactions_1 = require("@hethers/transactions");

@@ -1,6 +1,6 @@
 "use strict";
 import { BaseContract, Contract, ContractFactory } from "@hethers/contracts";
-import { BigNumber, FixedNumber } from "@hethers/bignumber";
+import { BigNumber, FixedNumber } from "@ethersproject/bignumber";
 import { Signer, VoidSigner } from "@hethers/abstract-signer";
 import { Wallet } from "@hethers/wallet";
 import * as constants from "@hethers/constants";

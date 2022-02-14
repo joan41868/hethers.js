@@ -2,7 +2,7 @@ import { Fragment, Indexed, Interface, JsonFragment, Result } from "@ethersproje
 import { Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@hethers/abstract-provider";
 import { Signer } from "@hethers/abstract-signer";
 import { AccountLike } from "@hethers/address";
-import { BigNumber, BigNumberish } from "@hethers/bignumber";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike } from "@ethersproject/bytes";
 import { AccessList, AccessListish } from "@hethers/transactions";
 export interface Overrides {

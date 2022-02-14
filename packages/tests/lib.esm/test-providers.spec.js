@@ -11,7 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import assert from "assert";
 // import Web3HttpProvider from "web3-providers-http";
 import { hethers } from "hethers";
-import { BigNumber } from "@hethers/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { DefaultHederaProvider } from "@hethers/providers";
 import { getAddressFromAccount } from "hethers/lib/utils";
 import { HederaNetworks } from "@hethers/providers/lib/default-hedera-provider";
@@ -1119,19 +1119,37 @@ describe("Test Hedera Provider", function () {
             });
         }).timeout(timeout * 4);
     });
-    it("Should populate txn response", function () {
+    it("Should populate tx record by transactionId", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const existingId = `0.0.1546615-1641987871-235099329`;
             const record = yield provider.getTransaction(existingId);
             const network = yield provider.getNetwork();
+            assert.notStrictEqual(record, null);
             assert.strictEqual(record.transactionId, existingId);
             assert.strictEqual(record.chainId, network.chainId);
         });
     }).timeout(timeout * 4);
-    it("Should return null on record not found", function () {
+    it("Should populate tx record by consensus timestamp", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const timestamp = `1641987884.097680000`;
+            const record = yield provider.getTransaction(timestamp);
+            const network = yield provider.getNetwork();
+            assert.notStrictEqual(record, null);
+            assert.strictEqual(record.timestamp, timestamp);
+            assert.strictEqual(record.chainId, network.chainId);
+        });
+    }).timeout(timeout * 4);
+    it("Should return null on record not found by transactionId", function () {
         return __awaiter(this, void 0, void 0, function* () {
             const fakeTransactionId = `0.0.0-0000000000-000000000`;
             const record = yield provider.getTransaction(fakeTransactionId);
+            assert.strictEqual(record, null);
+        });
+    }).timeout(timeout * 4);
+    it("Should return null on record not found by timestamp", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const fakeTimestamp = `0000000000.000000000`;
+            const record = yield provider.getTransaction(fakeTimestamp);
             assert.strictEqual(record, null);
         });
     }).timeout(timeout * 4);

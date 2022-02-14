@@ -10,7 +10,7 @@ import {
     TransactionRequest,
     TransactionResponse
 } from "@hethers/abstract-provider";
-import { BigNumber } from "@hethers/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexDataLength, hexlify } from "@ethersproject/bytes";
 import { getNetwork, Network, Networkish, HederaNetworkConfigLike } from "@hethers/networks";
 import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";

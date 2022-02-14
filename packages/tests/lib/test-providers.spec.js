@@ -42,7 +42,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
 // import Web3HttpProvider from "web3-providers-http";
 var hethers_1 = require("hethers");
-var bignumber_1 = require("@hethers/bignumber");
+var bignumber_1 = require("@ethersproject/bignumber");
 var providers_1 = require("@hethers/providers");
 var utils_1 = require("hethers/lib/utils");
 var default_hedera_provider_1 = require("@hethers/providers/lib/default-hedera-provider");

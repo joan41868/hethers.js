@@ -705,9 +705,9 @@ describe("Test Contract Query Filter", function () {
         account: '0.0.29562194',
         privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
     };
-    var provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+    var provider = hethers_1.hethers.providers.getDefaultProvider('testnet');
     // @ts-ignore
-    var wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
+    var wallet = new hethers_1.hethers.Wallet(hederaEoa, provider);
     it("should filter contract events by timestamp string", function () {
         return __awaiter(this, void 0, void 0, function () {
             var contractAddress, fromTimestamp, toTimestamp, contract, filter, events;
@@ -717,7 +717,7 @@ describe("Test Contract Query Filter", function () {
                         contractAddress = '0x000000000000000000000000000000000186fb1a';
                         fromTimestamp = '1642065156.264170833';
                         toTimestamp = '1642080642.176149864';
-                        contract = ethers_1.ethers.ContractFactory.getContract(contractAddress, abi, wallet);
+                        contract = hethers_1.hethers.ContractFactory.getContract(contractAddress, abi, wallet);
                         filter = {
                             address: contractAddress,
                         };
@@ -749,7 +749,7 @@ describe("Test Contract Query Filter", function () {
                         contractAddress = '0x000000000000000000000000000000000186fb1a';
                         fromTimestamp = 1642065156264170;
                         toTimestamp = 1642080642176150;
-                        contract = ethers_1.ethers.ContractFactory.getContract(contractAddress, abi, wallet);
+                        contract = hethers_1.hethers.ContractFactory.getContract(contractAddress, abi, wallet);
                         filter = {
                             address: contractAddress,
                         };

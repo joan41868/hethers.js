@@ -1,5 +1,5 @@
 import { BaseContract, Contract, ContractFactory } from "@hethers/contracts";
-import { BigNumber, FixedNumber } from "@hethers/bignumber";
+import { BigNumber, FixedNumber } from "@ethersproject/bignumber";
 import { Signer, VoidSigner } from "@hethers/abstract-signer";
 import { Wallet } from "@hethers/wallet";
 import * as constants from "@hethers/constants";
@@ -8,7 +8,7 @@ import { getDefaultProvider } from "@hethers/providers";
 import { Wordlist, wordlists } from "@ethersproject/wordlists";
 import * as utils from "./utils";
 import { ErrorCode as errors } from "@hethers/logger";
-import { BigNumberish } from "@hethers/bignumber";
+import { BigNumberish } from "@ethersproject/bignumber";
 import { Bytes, BytesLike, Signature } from "@ethersproject/bytes";
 import { Transaction, UnsignedTransaction } from "@hethers/transactions";
 import { version } from "./_version";

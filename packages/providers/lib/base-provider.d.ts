@@ -1,5 +1,5 @@
 import { EventType, Filter, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@hethers/abstract-provider";
-import { BigNumber } from "@hethers/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@hethers/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@hethers/transactions";

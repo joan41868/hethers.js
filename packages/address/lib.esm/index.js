@@ -1,6 +1,6 @@
 "use strict";
 import { arrayify, concat, hexDataLength, hexDataSlice, hexlify, isHexString, stripZeros } from "@ethersproject/bytes";
-import { _base16To36, _base36To16, BigNumber } from "@hethers/bignumber";
+import { _base16To36, _base36To16, BigNumber } from "@ethersproject/bignumber";
 import { keccak256 } from "@ethersproject/keccak256";
 import { encode } from "@hethers/rlp";
 import { Logger } from "@hethers/logger";

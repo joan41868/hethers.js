@@ -1,4 +1,4 @@
-import { BigNumber, BigNumberish } from "@hethers/bignumber";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
 import { BytesLike } from "@ethersproject/bytes";
 import { Network } from "@hethers/networks";
 import { Deferrable } from "@ethersproject/properties";

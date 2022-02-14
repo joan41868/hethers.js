@@ -24,7 +24,7 @@ var contracts_1 = require("@hethers/contracts");
 Object.defineProperty(exports, "BaseContract", { enumerable: true, get: function () { return contracts_1.BaseContract; } });
 Object.defineProperty(exports, "Contract", { enumerable: true, get: function () { return contracts_1.Contract; } });
 Object.defineProperty(exports, "ContractFactory", { enumerable: true, get: function () { return contracts_1.ContractFactory; } });
-var bignumber_1 = require("@hethers/bignumber");
+var bignumber_1 = require("@ethersproject/bignumber");
 Object.defineProperty(exports, "BigNumber", { enumerable: true, get: function () { return bignumber_1.BigNumber; } });
 Object.defineProperty(exports, "FixedNumber", { enumerable: true, get: function () { return bignumber_1.FixedNumber; } });
 var abstract_signer_1 = require("@hethers/abstract-signer");

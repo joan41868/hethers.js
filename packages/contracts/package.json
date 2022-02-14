@@ -4,7 +4,7 @@
     "@hethers/abstract-provider": "1.0.0",
     "@hethers/abstract-signer": "1.0.0",
     "@hethers/address": "1.0.0",
-    "@hethers/bignumber": "1.0.0",
+    "@ethersproject/bignumber": "5.5.0",
     "@ethersproject/bytes": "5.5.0",
     "@hethers/constants": "1.0.0",
     "@hethers/logger": "1.0.0",

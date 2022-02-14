@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAccountPath = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.mnemonicToSeed = exports.HDNode = exports.defaultPath = void 0;
 var basex_1 = require("@ethersproject/basex");
 var bytes_1 = require("@ethersproject/bytes");
-var bignumber_1 = require("@hethers/bignumber");
+var bignumber_1 = require("@ethersproject/bignumber");
 var strings_1 = require("@ethersproject/strings");
 var pbkdf2_1 = require("@ethersproject/pbkdf2");
 var properties_1 = require("@ethersproject/properties");
