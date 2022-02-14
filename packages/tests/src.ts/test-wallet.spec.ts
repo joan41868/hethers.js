@@ -595,14 +595,14 @@ describe("Wallet createAccount", function () {
         const acc2BalanceBefore = (await acc2Wallet.getBalance()).toNumber();
         await acc1Wallet.sendTransaction({
             to: acc2Wallet.account,
-            value: 1,
+            value: 1000,
         });
         const acc1BalanceAfter = (await acc1Wallet.getBalance()).toNumber();
         const acc2BalanceAfter = (await acc2Wallet.getBalance()).toNumber();
 
         assert.strictEqual(acc1BalanceBefore > acc1BalanceAfter, true);
         assert.strictEqual(acc2BalanceBefore < acc2BalanceAfter, true);
-        assert.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 100000000);
+        assert.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 1000);
     }).timeout(timeout);
 
     it("Should throw an error for crypto transfer with data field", async function() {
@@ -683,5 +683,31 @@ describe("Wallet createAccount", function () {
         }
 
         assert.strictEqual(exceptionThrown, true);
+    }).timeout(timeout);
+
+    it("Should be able to get a crypto transfer transaction via provider.getTransaction(tx.transactionId)", async function () {
+        const transaction = await acc1Wallet.sendTransaction({
+            to: acc2Wallet.account,
+            value: 18925
+        });
+        await transaction.wait();
+
+        const tx = await provider.getTransaction(transaction.transactionId);
+        assert.strictEqual(tx.hasOwnProperty('chainId'), true);
+        assert.strictEqual(tx.hasOwnProperty('hash'), true);
+        assert.strictEqual(tx.hasOwnProperty('timestamp'), true);
+        assert.strictEqual(tx.hasOwnProperty('transactionId'), true);
+        assert.strictEqual(tx.hasOwnProperty('from'), true);
+        assert.strictEqual(tx.hasOwnProperty('to'), true);
+        assert.strictEqual(tx.hasOwnProperty('data'), true);
+        assert.strictEqual(tx.hasOwnProperty('gasLimit'), true);
+        assert.strictEqual(tx.hasOwnProperty('value'), true);
+        assert.strictEqual(tx.hasOwnProperty('customData'), true);
+        assert.strictEqual(tx.customData.hasOwnProperty('result'), true);
+        assert.strictEqual(tx.customData.result, 'SUCCESS');
+
+        assert.strictEqual(tx.from, acc1Wallet.account);
+        assert.strictEqual(tx.to, acc2Wallet.account);
+        assert.strictEqual(tx.value.toString(), '18925');
     }).timeout(timeout);
 });

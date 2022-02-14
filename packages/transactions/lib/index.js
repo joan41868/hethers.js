@@ -131,8 +131,8 @@ function serializeHederaTransaction(transaction, pubKey) {
     var gas = (0, bignumber_1.numberify)(transaction.gasLimit ? transaction.gasLimit : 0);
     if (transaction.customData.isCryptoTransfer) {
         tx = new sdk_1.TransferTransaction()
-            .addHbarTransfer(transaction.from.toString(), new sdk_1.Hbar(transaction.value.toString()).negated())
-            .addHbarTransfer(transaction.to.toString(), new sdk_1.Hbar(transaction.value.toString()));
+            .addHbarTransfer(transaction.from.toString(), new sdk_1.Hbar(transaction.value.toString(), sdk_1.HbarUnit.Tinybar).negated())
+            .addHbarTransfer(transaction.to.toString(), new sdk_1.Hbar(transaction.value.toString(), sdk_1.HbarUnit.Tinybar));
     }
     else if (transaction.to) {
         tx = new sdk_1.ContractExecuteTransaction()

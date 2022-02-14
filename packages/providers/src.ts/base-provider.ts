@@ -539,6 +539,7 @@ export class BaseProvider extends Provider {
                         chainId: this._network.chainId,
                         transactionId: transactionId,
                         result: filtered[0].result,
+                        customData: {}
                     };
 
                     const transactionName = filtered[0].name;
@@ -552,6 +553,28 @@ export class BaseProvider extends Provider {
                         record.hash = base64ToHex(filtered[0].transaction_hash);
 
                         record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
+                    } else if (transactionName === 'CRYPTOTRANSFER') {
+                        record.from = getAccountFromTransactionId(transactionId);
+                        record.timestamp = filtered[0].consensus_timestamp;
+                        record.hash = base64ToHex(filtered[0].transaction_hash);
+
+                        let charityFee = 0;
+                        const toTransfers = filtered[0].transfers.filter(function (t: any) {
+                            if (t.account == filtered[0].node) {
+                                charityFee = filtered[0].charged_tx_fee - t.amount;
+                                return false;
+                            }
+                            return t.account != record.from;
+                        }).filter(function (t: any) {
+                            return t.amount != charityFee;
+                        });
+
+                        if (toTransfers.length > 1) {
+                            record.transfersList = toTransfers;
+                        } else {
+                            record.to = toTransfers[0].account;
+                            record.amount = toTransfers[0].amount;
+                        }
                     }
                     else {
                         const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;

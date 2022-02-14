@@ -86580,14 +86580,18 @@ class Signer {
             }
             let isCryptoTransfer = false;
             if (tx.to && tx.value) {
-                if (tx.data && !tx.gasLimit) {
+                if (!tx.data && !tx.gasLimit) {
+                    isCryptoTransfer = true;
+                }
+                else if (tx.data && !tx.gasLimit) {
                     logger$e.throwError("gasLimit is not provided. Cannot execute a Contract Call");
                 }
-                this._checkProvider();
-                if (((yield this.provider.getCode(tx.to)) === '0x') && tx.gasLimit) {
-                    logger$e.throwError("gasLimit is provided. Cannot execute a Crypto Transfer");
+                else if (!tx.data && tx.gasLimit) {
+                    this._checkProvider();
+                    if ((yield this.provider.getCode(tx.to)) === '0x') {
+                        logger$e.throwError("receiver is an account. Cannot execute a Contract Call");
+                    }
                 }
-                isCryptoTransfer = true;
             }
             tx.customData = Object.assign(Object.assign({}, tx.customData), { isCryptoTransfer });
             const customData = yield tx.customData;
@@ -92783,8 +92787,8 @@ function serializeHederaTransaction(transaction, pubKey) {
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
     if (transaction.customData.isCryptoTransfer) {
         tx = new TransferTransaction()
-            .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString()).negated())
-            .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString()));
+            .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar).negated())
+            .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar));
     }
     else if (transaction.to) {
         tx = new ContractExecuteTransaction()
@@ -94323,7 +94327,8 @@ class Formatter {
                 gas_used: record.gas_used ? record.gas_used : null,
                 logs: record.logs ? record.logs : null,
                 result: record.result ? record.result : null,
-                accountAddress: record.accountAddress ? record.accountAddress : null
+                accountAddress: record.accountAddress ? record.accountAddress : null,
+                transfersList: record.transfersList ? record.transfersList : [],
             },
             wait: null,
         };
@@ -98533,6 +98538,7 @@ class BaseProvider extends Provider {
                             chainId: this._network.chainId,
                             transactionId: transactionId,
                             result: filtered[0].result,
+                            customData: {}
                         };
                         const transactionName = filtered[0].name;
                         if (transactionName === 'CRYPTOCREATEACCOUNT') {
@@ -98543,6 +98549,28 @@ class BaseProvider extends Provider {
                             // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
                             record.hash = base64ToHex(filtered[0].transaction_hash);
                             record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
+                        }
+                        else if (transactionName === 'CRYPTOTRANSFER') {
+                            record.from = getAccountFromTransactionId(transactionId);
+                            record.timestamp = filtered[0].consensus_timestamp;
+                            record.hash = base64ToHex(filtered[0].transaction_hash);
+                            let charityFee = 0;
+                            const toTransfers = filtered[0].transfers.filter(function (t) {
+                                if (t.account == filtered[0].node) {
+                                    charityFee = filtered[0].charged_tx_fee - t.amount;
+                                    return false;
+                                }
+                                return t.account != record.from;
+                            }).filter(function (t) {
+                                return t.amount != charityFee;
+                            });
+                            if (toTransfers.length > 1) {
+                                record.transfersList = toTransfers;
+                            }
+                            else {
+                                record.to = toTransfers[0].account;
+                                record.amount = toTransfers[0].amount;
+                            }
                         }
                         else {
                             const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + transactionId;
