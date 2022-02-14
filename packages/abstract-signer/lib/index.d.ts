@@ -3,7 +3,7 @@ import { BigNumber, BigNumberish } from "@hethers/bignumber";
 import { Bytes, BytesLike } from "@ethersproject/bytes";
 import { Deferrable } from "@ethersproject/properties";
 import { Account } from "@hethers/address";
-import { SigningKey } from "@hethers/signing-key";
+import { SigningKey } from "@ethersproject/signing-key";
 export interface TypedDataDomain {
     name?: string;
     version?: string;

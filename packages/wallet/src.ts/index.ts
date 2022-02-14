@@ -28,7 +28,7 @@ import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@hethers/hdnod
 import { keccak256 } from "@ethersproject/keccak256";
 import { defineReadOnly } from "@ethersproject/properties";
 import { randomBytes } from "@ethersproject/random";
-import { SigningKey, recoverPublicKey } from "@hethers/signing-key";
+import { SigningKey, recoverPublicKey } from "@ethersproject/signing-key";
 import {
 	decryptJsonWallet,
 	decryptJsonWalletSync,

@@ -12,7 +12,7 @@ import {
 } from "@ethersproject/bytes";
 import {Zero} from "@hethers/constants";
 import {keccak256} from "@ethersproject/keccak256";
-import {computePublicKey, recoverPublicKey} from "@hethers/signing-key";
+import {computePublicKey, recoverPublicKey} from "@ethersproject/signing-key";
 
 import {Logger} from "@hethers/logger";
 import {version} from "./_version";

@@ -12,7 +12,7 @@ import {
     getAddressFromAccount,
     getChecksumAddress
 } from "@hethers/address";
-import { SigningKey } from "@hethers/signing-key";
+import { SigningKey } from "@ethersproject/signing-key";
 import {
     AccountId,
     ContractCallQuery,

@@ -15,7 +15,7 @@ import { keccak256 as solidityKeccak256, pack as solidityPack, sha256 as solidit
 import { randomBytes, shuffled } from "@ethersproject/random";
 import { checkProperties, deepCopy, defineReadOnly, getStatic, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import * as RLP from "@hethers/rlp";
-import { computePublicKey, recoverPublicKey, SigningKey } from "@hethers/signing-key";
+import { computePublicKey, recoverPublicKey, SigningKey } from "@ethersproject/signing-key";
 import { formatBytes32String, nameprep, parseBytes32String, _toEscapedUtf8String, toUtf8Bytes, toUtf8CodePoints, toUtf8String, Utf8ErrorFuncs } from "@hethers/strings";
 import { accessListify, computeAddress, computeAlias, parse as parseTransaction, recoverAddress, TransactionTypes } from "@hethers/transactions";
 import { commify, formatEther, parseEther, formatUnits, parseUnits } from "@ethersproject/units";

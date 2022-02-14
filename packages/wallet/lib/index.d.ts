@@ -3,7 +3,7 @@ import { Provider, TransactionRequest, TransactionResponse } from "@hethers/abst
 import { ExternallyOwnedAccount, Signer, TypedDataDomain, TypedDataField, TypedDataSigner } from "@hethers/abstract-signer";
 import { Bytes, BytesLike, SignatureLike } from "@ethersproject/bytes";
 import { Mnemonic } from "@hethers/hdnode";
-import { SigningKey } from "@hethers/signing-key";
+import { SigningKey } from "@ethersproject/signing-key";
 import { ProgressCallback } from "@hethers/json-wallets";
 import { Wordlist } from "@ethersproject/wordlists";
 export declare class Wallet extends Signer implements ExternallyOwnedAccount, TypedDataSigner {

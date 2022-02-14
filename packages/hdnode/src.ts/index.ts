@@ -11,7 +11,7 @@ import { BigNumber } from "@hethers/bignumber";
 import { toUtf8Bytes, UnicodeNormalizationForm } from "@hethers/strings";
 import { pbkdf2 } from "@ethersproject/pbkdf2";
 import { defineReadOnly } from "@ethersproject/properties";
-import { SigningKey } from "@hethers/signing-key";
+import { SigningKey } from "@ethersproject/signing-key";
 import { computeHmac, ripemd160, sha256, SupportedAlgorithm } from "@ethersproject/sha2";
 import { Wordlist, wordlists } from "@ethersproject/wordlists";
 
