@@ -50,9 +50,6 @@
       "path": "./packages/contracts"
     },
     {
-      "path": "./packages/hash"
-    },
-    {
       "path": "./packages/hdnode"
     },
     {

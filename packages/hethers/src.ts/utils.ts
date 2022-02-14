@@ -5,7 +5,7 @@ import { getAddress, getChecksumAddress, getCreate2Address, getContractAddress, 
 import * as base64 from "@ethersproject/base64";
 import { Base58 as base58 } from "@ethersproject/basex";
 import { arrayify, concat, hexConcat, hexDataSlice, hexDataLength, hexlify, hexStripZeros, hexValue, hexZeroPad, isBytes, isBytesLike, isHexString, joinSignature, zeroPad, splitSignature, stripZeros } from "@ethersproject/bytes";
-import { _TypedDataEncoder, hashMessage, id } from "@hethers/hash";
+import { _TypedDataEncoder, hashMessage, id } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, getAccountPath, HDNode, isValidMnemonic, mnemonicToEntropy, mnemonicToSeed } from "@hethers/hdnode";
 import { getJsonWalletAddress } from "@hethers/json-wallets";
 import { keccak256 } from "@ethersproject/keccak256";

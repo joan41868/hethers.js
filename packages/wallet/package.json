@@ -5,7 +5,7 @@
     "@hethers/address": "1.0.0",
     "@hethers/bignumber": "1.0.0",
     "@ethersproject/bytes": "5.5.0",
-    "@hethers/hash": "1.0.0",
+    "@ethersproject/hash": "5.5.0",
     "@hethers/hdnode": "1.0.0",
     "@hethers/json-wallets": "1.0.0",
     "@ethersproject/keccak256": "5.5.0",

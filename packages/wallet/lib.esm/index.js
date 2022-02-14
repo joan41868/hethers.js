@@ -11,7 +11,7 @@ import { getAccountFromAddress, getAddress, getAddressFromAccount } from "@hethe
 import { Provider } from "@hethers/abstract-provider";
 import { Signer } from "@hethers/abstract-signer";
 import { arrayify, concat, hexDataSlice, hexlify, isHexString, joinSignature } from "@ethersproject/bytes";
-import { hashMessage } from "@hethers/hash";
+import { hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode } from "@hethers/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
 import { defineReadOnly } from "@ethersproject/properties";

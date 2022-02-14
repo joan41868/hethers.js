@@ -23,7 +23,7 @@ import {
 	joinSignature,
 	SignatureLike
 } from "@ethersproject/bytes";
-import { hashMessage } from "@hethers/hash";
+import { hashMessage } from "@ethersproject/hash";
 import { defaultPath, entropyToMnemonic, HDNode, Mnemonic } from "@hethers/hdnode";
 import { keccak256 } from "@ethersproject/keccak256";
 import { defineReadOnly } from "@ethersproject/properties";

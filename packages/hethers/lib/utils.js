@@ -67,7 +67,7 @@ Object.defineProperty(exports, "joinSignature", { enumerable: true, get: functio
 Object.defineProperty(exports, "zeroPad", { enumerable: true, get: function () { return bytes_1.zeroPad; } });
 Object.defineProperty(exports, "splitSignature", { enumerable: true, get: function () { return bytes_1.splitSignature; } });
 Object.defineProperty(exports, "stripZeros", { enumerable: true, get: function () { return bytes_1.stripZeros; } });
-var hash_1 = require("@hethers/hash");
+var hash_1 = require("@ethersproject/hash");
 Object.defineProperty(exports, "_TypedDataEncoder", { enumerable: true, get: function () { return hash_1._TypedDataEncoder; } });
 Object.defineProperty(exports, "hashMessage", { enumerable: true, get: function () { return hash_1.hashMessage; } });
 Object.defineProperty(exports, "id", { enumerable: true, get: function () { return hash_1.id; } });
