@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { getAccountFromAddress, getAddress } from "@ethersproject/address";
-import { BigNumber, numberify } from "@ethersproject/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexDataLength, hexDataSlice, hexlify, } from "@ethersproject/bytes";
 import { Zero } from "@ethersproject/constants";
 import { keccak256 } from "@ethersproject/keccak256";
@@ -280,5 +280,8 @@ export function parse(rawTransaction) {
         // TODO populate r, s ,v
         return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
+}
+export function numberify(num) {
+    return BigNumber.from(num).toNumber();
 }
 //# sourceMappingURL=index.js.map
