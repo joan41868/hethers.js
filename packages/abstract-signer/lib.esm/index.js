@@ -17,7 +17,6 @@ import { asAccountString, getAddressFromAccount, getChecksumAddress } from "@het
 import { AccountId, ContractCallQuery, Hbar, PrivateKey, PublicKey as HederaPubKey, TransactionId } from "@hashgraph/sdk";
 import * as Long from "long";
 import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
-import { splitInChunks } from "@hethers/strings";
 const logger = new Logger(version);
 const allowedTransactionKeys = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
@@ -312,5 +311,20 @@ export function randomNumBetween(min, max) {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+/**
+ * Splits data (utf8) into chunks with the given size
+ * @param data
+ * @param chunkSize
+ */
+function splitInChunks(data, chunkSize) {
+    const chunks = [];
+    let num = 0;
+    while (num <= data.length) {
+        const slice = data.slice(num, chunkSize + num);
+        num += chunkSize;
+        chunks.push(slice);
+    }
+    return chunks;
 }
 //# sourceMappingURL=index.js.map

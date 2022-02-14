@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.splitInChunks = exports.toUtf8CodePoints = exports.toUtf8String = exports._toUtf8String = exports._toEscapedUtf8String = exports.toUtf8Bytes = exports.Utf8ErrorFuncs = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = void 0;
+exports.toUtf8CodePoints = exports.toUtf8String = exports._toUtf8String = exports._toEscapedUtf8String = exports.toUtf8Bytes = exports.Utf8ErrorFuncs = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = void 0;
 var bytes_1 = require("@ethersproject/bytes");
 var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");
@@ -254,15 +254,4 @@ function toUtf8CodePoints(str, form) {
     return getUtf8CodePoints(toUtf8Bytes(str, form));
 }
 exports.toUtf8CodePoints = toUtf8CodePoints;
-function splitInChunks(data, chunkSize) {
-    var chunks = [];
-    var num = 0;
-    while (num <= data.length) {
-        var slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
-}
-exports.splitInChunks = splitInChunks;
 //# sourceMappingURL=utf8.js.map

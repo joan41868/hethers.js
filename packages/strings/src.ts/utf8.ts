@@ -293,14 +293,3 @@ export function toUtf8String(bytes: BytesLike, onError?: Utf8ErrorFunc): string 
 export function toUtf8CodePoints(str: string, form: UnicodeNormalizationForm = UnicodeNormalizationForm.current): Array<number> {
     return getUtf8CodePoints(toUtf8Bytes(str, form));
 }
-
-export function splitInChunks(data: string, chunkSize: number): string[] {
-    const chunks = [];
-    let num = 0;
-    while (num <= data.length) {
-        const slice = data.slice(num, chunkSize + num);
-        num += chunkSize;
-        chunks.push(slice);
-    }
-    return chunks;
-}

@@ -23,7 +23,6 @@ import {
 } from "@hashgraph/sdk";
 import * as Long from "long";
 import { SignedTransaction, TransactionBody } from "@hashgraph/proto";
-import { splitInChunks } from "@hethers/strings";
 
 const logger = new Logger(version);
 
@@ -421,4 +420,20 @@ export function randomNumBetween(min: number, max: number): number {
     min = Math.ceil(min);
     max = Math.floor(max);
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+/**
+ * Splits data (utf8) into chunks with the given size
+ * @param data
+ * @param chunkSize
+ */
+function splitInChunks(data: string, chunkSize: number): string[] {
+    const chunks = [];
+    let num = 0;
+    while (num <= data.length) {
+        const slice = data.slice(num, chunkSize + num);
+        num += chunkSize;
+        chunks.push(slice);
+    }
+    return chunks;
 }
