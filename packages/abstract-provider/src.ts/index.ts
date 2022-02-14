@@ -28,7 +28,6 @@ export type TransactionRequest = {
     maxFeePerGas?: BigNumberish;
     nodeId?: AccountLike,
     customData?: Record<string, any>;
-    isCryptoTransfer?: boolean;
 }
 
 export type HederaTransactionRecord = {

@@ -611,8 +611,7 @@ describe("Wallet createAccount", function () {
             await acc1Wallet.sendTransaction({
                 to: acc2Wallet.account,
                 value: 1,
-                data: '0x',
-                isCryptoTransfer: true
+                data: '0x'
             });
         } catch (e: any) {
             exceptionThrown = true;
@@ -627,8 +626,7 @@ describe("Wallet createAccount", function () {
             await acc1Wallet.sendTransaction({
                 to: acc2Wallet.account,
                 value: 1,
-                gasLimit: 300000,
-                isCryptoTransfer: true
+                gasLimit: 300000
             });
         } catch (e: any) {
             exceptionThrown = true;
@@ -642,28 +640,10 @@ describe("Wallet createAccount", function () {
         let exceptionThrown = false;
         try {
             await acc1Wallet.sendTransaction({
-                value: 1,
-                isCryptoTransfer: true
+                value: 1
             });
         } catch (e: any) {
             exceptionThrown = true;
-        }
-
-        assert.strictEqual(exceptionThrown, true);
-    }).timeout(timeout);
-
-    it("Should make a contract call with isCryptoTransfer false and set 'to' and 'value'", async function () {
-        let exceptionThrown = false;
-        try {
-            await acc1Wallet.sendTransaction({
-                to: acc2Wallet.account,
-                value: 1,
-                isCryptoTransfer: false,
-                gasLimit: 300000
-            });
-        } catch (e: any) {
-            exceptionThrown = true;
-            assert.strictEqual(e.code, 'INVALID_CONTRACT_ID');
         }
 
         assert.strictEqual(exceptionThrown, true);
@@ -684,10 +664,9 @@ describe("Wallet createAccount", function () {
             });
         } catch (e: any) {
             exceptionThrown = true;
-            assert.strictEqual(e.code, 'UNPREDICTABLE_GAS_LIMIT');
         }
 
-        assert.strictEqual(exceptionThrown, true);
+        assert.strictEqual(exceptionThrown, false);
     }).timeout(180000);
 
     it("Should throw an exception if provider is not set", async function () {
@@ -701,7 +680,6 @@ describe("Wallet createAccount", function () {
             });
         } catch (e: any) {
             exceptionThrown = true;
-            assert.strictEqual(e.reason, 'missing provider');
         }
 
         assert.strictEqual(exceptionThrown, true);

@@ -29,7 +29,7 @@ const logger = new Logger(version);
 
 const allowedTransactionKeys: Array<string> = [
     "accessList", "chainId", "customData", "data", "from", "gasLimit", "maxFeePerGas", "maxPriorityFeePerGas", "to", "type", "value",
-    "nodeId", "isCryptoTransfer"
+    "nodeId"
 ];
 
 // const forwardErrors = [
@@ -304,20 +304,6 @@ export abstract class Signer {
             }
         }
 
-        if (tx.isCryptoTransfer) {
-            if (tx.data) logger.throwError("Contract call data provided for contract execution. Cannot execute a CryptoTransfer");
-            if (!tx.to) logger.throwError("to address missing. Cannot execute a CryptoTransfer");
-            if (tx.gasLimit) logger.throwError("gasLimit provided. Cannot execute a CryptoTransfer");
-        } else if (!tx.hasOwnProperty('isCryptoTransfer')) {
-            tx.isCryptoTransfer = false;
-            if (tx.to && !tx.gasLimit && !tx.data && tx.value != 0) {
-                this._checkProvider();
-                tx.isCryptoTransfer = Promise.resolve(this.provider.getCode(tx.to)).then((res) => {
-                    return res === '0x';
-                });
-            }
-        }
-
         if (tx.from == null) {
             tx.from = this.getAddress();
 
@@ -355,6 +341,21 @@ export abstract class Signer {
             tx.to.catch((error) => {  });
         }
 
+        let isCryptoTransfer = false;
+        if (tx.to && tx.value) {
+            if (!tx.data && !tx.gasLimit) {
+                isCryptoTransfer = true;
+            } else if (tx.data && !tx.gasLimit) {
+                logger.throwError("gasLimit is not provided. Cannot execute a Contract Call");
+            } else if (!tx.data && tx.gasLimit) {
+                this._checkProvider();
+                if ((await this.provider.getCode(tx.to)) === '0x') {
+                    logger.throwError("receiver is an account. Cannot execute a Contract Call");
+                }
+            }
+        }
+        tx.customData = {...tx.customData, isCryptoTransfer};
+
         const customData = await tx.customData;
 
         // FileCreate and FileAppend always carry a customData.fileChunk object
@@ -363,7 +364,7 @@ export abstract class Signer {
         // CreateAccount always has a publicKey
         const isCreateAccount = customData && customData.publicKey;
 
-        if (!isFileCreateOrAppend && !isCreateAccount && !tx.isCryptoTransfer && tx.gasLimit == null) {
+        if (!isFileCreateOrAppend && !isCreateAccount && !tx.customData.isCryptoTransfer && tx.gasLimit == null) {
             return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, {tx: tx});
         }
 

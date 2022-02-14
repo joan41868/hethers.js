@@ -807,8 +807,7 @@ describe("Wallet createAccount", function () {
                         return [4 /*yield*/, acc1Wallet.sendTransaction({
                                 to: acc2Wallet.account,
                                 value: 1,
-                                data: '0x',
-                                isCryptoTransfer: true
+                                data: '0x'
                             })];
                     case 2:
                         _a.sent();
@@ -837,8 +836,7 @@ describe("Wallet createAccount", function () {
                         return [4 /*yield*/, acc1Wallet.sendTransaction({
                                 to: acc2Wallet.account,
                                 value: 1,
-                                gasLimit: 300000,
-                                isCryptoTransfer: true
+                                gasLimit: 300000
                             })];
                     case 2:
                         _a.sent();
@@ -865,8 +863,7 @@ describe("Wallet createAccount", function () {
                     case 1:
                         _a.trys.push([1, 3, , 4]);
                         return [4 /*yield*/, acc1Wallet.sendTransaction({
-                                value: 1,
-                                isCryptoTransfer: true
+                                value: 1
                             })];
                     case 2:
                         _a.sent();
@@ -882,40 +879,9 @@ describe("Wallet createAccount", function () {
             });
         });
     }).timeout(timeout);
-    it("Should make a contract call with isCryptoTransfer false and set 'to' and 'value'", function () {
-        return __awaiter(this, void 0, void 0, function () {
-            var exceptionThrown, e_4;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        exceptionThrown = false;
-                        _a.label = 1;
-                    case 1:
-                        _a.trys.push([1, 3, , 4]);
-                        return [4 /*yield*/, acc1Wallet.sendTransaction({
-                                to: acc2Wallet.account,
-                                value: 1,
-                                isCryptoTransfer: false,
-                                gasLimit: 300000
-                            })];
-                    case 2:
-                        _a.sent();
-                        return [3 /*break*/, 4];
-                    case 3:
-                        e_4 = _a.sent();
-                        exceptionThrown = true;
-                        assert_1.default.strictEqual(e_4.code, 'INVALID_CONTRACT_ID');
-                        return [3 /*break*/, 4];
-                    case 4:
-                        assert_1.default.strictEqual(exceptionThrown, true);
-                        return [2 /*return*/];
-                }
-            });
-        });
-    }).timeout(timeout);
     it("Should make a contract call with 'to' and 'value' with provided contract address as 'to'", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractFactory, contract, exceptionThrown, e_5;
+            var abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractFactory, contract, exceptionThrown, e_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -940,12 +906,11 @@ describe("Wallet createAccount", function () {
                         _a.sent();
                         return [3 /*break*/, 6];
                     case 5:
-                        e_5 = _a.sent();
+                        e_4 = _a.sent();
                         exceptionThrown = true;
-                        assert_1.default.strictEqual(e_5.code, 'UNPREDICTABLE_GAS_LIMIT');
                         return [3 /*break*/, 6];
                     case 6:
-                        assert_1.default.strictEqual(exceptionThrown, true);
+                        assert_1.default.strictEqual(exceptionThrown, false);
                         return [2 /*return*/];
                 }
             });
@@ -953,7 +918,7 @@ describe("Wallet createAccount", function () {
     }).timeout(180000);
     it("Should throw an exception if provider is not set", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var exceptionThrown, acc1WalletWithoutProvider, e_6;
+            var exceptionThrown, acc1WalletWithoutProvider, e_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -970,9 +935,8 @@ describe("Wallet createAccount", function () {
                         _a.sent();
                         return [3 /*break*/, 4];
                     case 3:
-                        e_6 = _a.sent();
+                        e_5 = _a.sent();
                         exceptionThrown = true;
-                        assert_1.default.strictEqual(e_6.reason, 'missing provider');
                         return [3 /*break*/, 4];
                     case 4:
                         assert_1.default.strictEqual(exceptionThrown, true);
