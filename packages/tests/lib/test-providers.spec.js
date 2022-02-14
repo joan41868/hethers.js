@@ -1282,7 +1282,7 @@ describe("Test Hedera Provider", function () {
             });
         }).timeout(timeout * 4);
     });
-    it("Should populate txn response", function () {
+    it("Should populate tx record by transactionId", function () {
         return __awaiter(this, void 0, void 0, function () {
             var existingId, record, network;
             return __generator(this, function (_a) {
@@ -1295,6 +1295,7 @@ describe("Test Hedera Provider", function () {
                         return [4 /*yield*/, provider.getNetwork()];
                     case 2:
                         network = _a.sent();
+                        assert_1.default.notStrictEqual(record, null);
                         assert_1.default.strictEqual(record.transactionId, existingId);
                         assert_1.default.strictEqual(record.chainId, network.chainId);
                         return [2 /*return*/];
@@ -1302,7 +1303,28 @@ describe("Test Hedera Provider", function () {
             });
         });
     }).timeout(timeout * 4);
-    it("Should return null on record not found", function () {
+    it("Should populate tx record by consensus timestamp", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var timestamp, record, network;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        timestamp = "1641987884.097680000";
+                        return [4 /*yield*/, provider.getTransaction(timestamp)];
+                    case 1:
+                        record = _a.sent();
+                        return [4 /*yield*/, provider.getNetwork()];
+                    case 2:
+                        network = _a.sent();
+                        assert_1.default.notStrictEqual(record, null);
+                        assert_1.default.strictEqual(record.timestamp, timestamp);
+                        assert_1.default.strictEqual(record.chainId, network.chainId);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout * 4);
+    it("Should return null on record not found by transactionId", function () {
         return __awaiter(this, void 0, void 0, function () {
             var fakeTransactionId, record;
             return __generator(this, function (_a) {
@@ -1310,6 +1332,22 @@ describe("Test Hedera Provider", function () {
                     case 0:
                         fakeTransactionId = "0.0.0-0000000000-000000000";
                         return [4 /*yield*/, provider.getTransaction(fakeTransactionId)];
+                    case 1:
+                        record = _a.sent();
+                        assert_1.default.strictEqual(record, null);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout * 4);
+    it("Should return null on record not found by timestamp", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var fakeTimestamp, record;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        fakeTimestamp = "0000000000.000000000";
+                        return [4 /*yield*/, provider.getTransaction(fakeTimestamp)];
                     case 1:
                         record = _a.sent();
                         assert_1.default.strictEqual(record, null);

@@ -143,4 +143,22 @@ const account = {
      */
     const transferMethodCall = await contract.transfer(contract.address, 1, {gasLimit: 300000});
     console.log(transferMethodCall.transactionId);
+
+    /**
+     * Filtering contract events
+     */
+    const filter = {
+        address: contract.address
+    };
+    // const fromTimestampNumber = hethers.BigNumber.from(1000000000000000);
+    // const toTimestampNumber = hethers.BigNumber.from(1999999999999999);
+    const fromTimestampNumber = 1000000000000000;
+    const toTimestampNumber = 1999999999999999;
+    const events1 = await contract.queryFilter(filter, fromTimestampNumber, toTimestampNumber);
+    console.log('events1:', events1);
+
+    const fromTimestampString = "1000000000.000000000";
+    const toTimestampString = "1999999999.9999999999";
+    const events2 = await contract.queryFilter(filter, fromTimestampString, toTimestampString);
+    console.log('events2:', events2);
 })();

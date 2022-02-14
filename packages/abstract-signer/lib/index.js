@@ -82,7 +82,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.randomNumBetween = exports.VoidSigner = exports.Signer = void 0;
-var bignumber_1 = require("@ethersproject/bignumber");
+var transactions_1 = require("@ethersproject/transactions");
 var bytes_1 = require("@ethersproject/bytes");
 var properties_1 = require("@ethersproject/properties");
 var logger_1 = require("@ethersproject/logger");
@@ -197,7 +197,7 @@ var Signer = /** @class */ (function () {
                             .setContractId(to)
                             .setFunctionParameters((0, bytes_1.arrayify)(tx.data))
                             .setNodeAccountIds([nodeID])
-                            .setGas((0, bignumber_1.numberify)(tx.gasLimit))
+                            .setGas((0, transactions_1.numberify)(tx.gasLimit))
                             .setPaymentTransactionId(paymentTxId);
                         cost = 3;
                         paymentBody = {

@@ -1,7 +1,8 @@
 "use strict";
 
 import { Provider, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
-import { BigNumber, BigNumberish, numberify } from "@ethersproject/bignumber";
+import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
+import { numberify } from "@ethersproject/transactions";
 import { arrayify, Bytes, BytesLike, hexlify } from "@ethersproject/bytes";
 import { Deferrable, defineReadOnly, resolveProperties, shallowCopy } from "@ethersproject/properties";
 import { Logger } from "@ethersproject/logger";
