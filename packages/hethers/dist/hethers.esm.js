@@ -29398,36 +29398,53 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$2 = keccak(256);
 
-var name = "elliptic";
-var version$o = "6.5.4";
-var description = "EC cryptography";
-var main = "lib/elliptic.js";
-var files = [
-	"lib"
+var _args = [
+	[
+		"elliptic@6.5.4",
+		"/home/nikolay/Desktop/t1t1t1/hethers.js"
+	]
 ];
-var scripts = {
-	lint: "eslint lib test",
-	"lint:fix": "npm run lint -- --fix",
-	unit: "istanbul test _mocha --reporter=spec test/index.js",
-	test: "npm run lint && npm run unit",
-	version: "grunt dist && git add dist/"
+var _from = "elliptic@6.5.4";
+var _id = "elliptic@6.5.4";
+var _inBundle = false;
+var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
+var _location = "/elliptic";
+var _phantomChildren = {
 };
-var repository = {
-	type: "git",
-	url: "git@github.com:indutny/elliptic"
+var _requested = {
+	type: "version",
+	registry: true,
+	raw: "elliptic@6.5.4",
+	name: "elliptic",
+	escapedName: "elliptic",
+	rawSpec: "6.5.4",
+	saveSpec: null,
+	fetchSpec: "6.5.4"
 };
-var keywords = [
-	"EC",
-	"Elliptic",
-	"curve",
-	"Cryptography"
+var _requiredBy = [
+	"/@ethersproject/signing-key",
+	"/@hashgraph/cryptography"
 ];
-var author = "Fedor Indutny <fedor@indutny.com>";
-var license = "MIT";
+var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
+var _spec = "6.5.4";
+var _where = "/home/nikolay/Desktop/t1t1t1/hethers.js";
+var author = {
+	name: "Fedor Indutny",
+	email: "fedor@indutny.com"
+};
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
-var homepage = "https://github.com/indutny/elliptic";
+var dependencies = {
+	"bn.js": "^4.11.9",
+	brorand: "^1.1.0",
+	"hash.js": "^1.0.0",
+	"hmac-drbg": "^1.0.1",
+	inherits: "^2.0.4",
+	"minimalistic-assert": "^1.0.1",
+	"minimalistic-crypto-utils": "^1.0.1"
+};
+var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
 	coveralls: "^3.1.0",
@@ -29443,30 +29460,58 @@ var devDependencies = {
 	istanbul: "^0.4.5",
 	mocha: "^8.0.1"
 };
-var dependencies = {
-	"bn.js": "^4.11.9",
-	brorand: "^1.1.0",
-	"hash.js": "^1.0.0",
-	"hmac-drbg": "^1.0.1",
-	inherits: "^2.0.4",
-	"minimalistic-assert": "^1.0.1",
-	"minimalistic-crypto-utils": "^1.0.1"
+var files = [
+	"lib"
+];
+var homepage = "https://github.com/indutny/elliptic";
+var keywords = [
+	"EC",
+	"Elliptic",
+	"curve",
+	"Cryptography"
+];
+var license = "MIT";
+var main = "lib/elliptic.js";
+var name = "elliptic";
+var repository = {
+	type: "git",
+	url: "git+ssh://git@github.com/indutny/elliptic.git"
 };
+var scripts = {
+	lint: "eslint lib test",
+	"lint:fix": "npm run lint -- --fix",
+	test: "npm run lint && npm run unit",
+	unit: "istanbul test _mocha --reporter=spec test/index.js",
+	version: "grunt dist && git add dist/"
+};
+var version$o = "6.5.4";
 var require$$0 = {
-	name: name,
-	version: version$o,
-	description: description,
-	main: main,
-	files: files,
-	scripts: scripts,
-	repository: repository,
-	keywords: keywords,
+	_args: _args,
+	_from: _from,
+	_id: _id,
+	_inBundle: _inBundle,
+	_integrity: _integrity,
+	_location: _location,
+	_phantomChildren: _phantomChildren,
+	_requested: _requested,
+	_requiredBy: _requiredBy,
+	_resolved: _resolved,
+	_spec: _spec,
+	_where: _where,
 	author: author,
-	license: license,
 	bugs: bugs,
-	homepage: homepage,
+	dependencies: dependencies,
+	description: description,
 	devDependencies: devDependencies,
-	dependencies: dependencies
+	files: files,
+	homepage: homepage,
+	keywords: keywords,
+	license: license,
+	main: main,
+	name: name,
+	repository: repository,
+	scripts: scripts,
+	version: version$o
 };
 
 var utils_1$2 = createCommonjsModule(function (module, exports) {
@@ -86379,22 +86424,49 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var name$1 = "@grpc/grpc-js";
-var version$p = "1.5.5";
-var description$1 = "gRPC Library for Node - pure JS implementation";
-var homepage$1 = "https://grpc.io/";
-var repository$1 = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
-var main$1 = "build/src/index.js";
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
-};
-var keywords$1 = [
+var _args$1 = [
+	[
+		"@grpc/grpc-js@1.5.5",
+		"/home/nikolay/Desktop/t1t1t1/hethers.js"
+	]
 ];
+var _from$1 = "@grpc/grpc-js@1.5.5";
+var _id$1 = "@grpc/grpc-js@1.5.5";
+var _inBundle$1 = false;
+var _integrity$1 = "sha512-FTd27ItHlsSG/7hp62xgI9YnqSwRbHRSVmDVR8DwOoC+6t8JhHRXe2JL0U8N9GLc0jS0HrtEbO/KP5+G0ebjLQ==";
+var _location$1 = "/@grpc/grpc-js";
+var _phantomChildren$1 = {
+};
+var _requested$1 = {
+	type: "version",
+	registry: true,
+	raw: "@grpc/grpc-js@1.5.5",
+	name: "@grpc/grpc-js",
+	escapedName: "@grpc%2fgrpc-js",
+	scope: "@grpc",
+	rawSpec: "1.5.5",
+	saveSpec: null,
+	fetchSpec: "1.5.5"
+};
+var _requiredBy$1 = [
+	"/@hashgraph/sdk"
+];
+var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.5.tgz";
+var _spec$1 = "1.5.5";
+var _where$1 = "/home/nikolay/Desktop/t1t1t1/hethers.js";
 var author$1 = {
 	name: "Google Inc."
 };
-var types = "build/src/index.d.ts";
-var license$1 = "Apache-2.0";
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var dependencies$1 = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
+};
+var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -86418,29 +86490,8 @@ var devDependencies$1 = {
 	"ts-node": "^8.3.0",
 	typescript: "^3.7.2"
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var scripts$1 = {
-	build: "npm run compile",
-	clean: "rimraf ./build",
-	compile: "tsc -p .",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	lint: "npm run check",
-	prepare: "npm run generate-types && npm run compile",
-	test: "gulp test",
-	check: "gts check src/**/*.ts",
-	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
-	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
-	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto"
-};
-var dependencies$1 = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
 var files$1 = [
 	"src/**/*.ts",
@@ -86456,23 +86507,62 @@ var files$1 = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
+var homepage$1 = "https://grpc.io/";
+var keywords$1 = [
+];
+var license$1 = "Apache-2.0";
+var main$1 = "build/src/index.js";
+var name$1 = "@grpc/grpc-js";
+var repository$1 = {
+	type: "git",
+	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
+};
+var scripts$1 = {
+	build: "npm run compile",
+	check: "gts check src/**/*.ts",
+	clean: "rimraf ./build",
+	compile: "tsc -p .",
+	fix: "gts fix src/*.ts",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
+	lint: "npm run check",
+	posttest: "npm run check && madge -c ./build/src",
+	prepare: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
+	test: "gulp test"
+};
+var types = "build/src/index.d.ts";
+var version$p = "1.5.5";
 var require$$0$2 = {
-	name: name$1,
-	version: version$p,
-	description: description$1,
-	homepage: homepage$1,
-	repository: repository$1,
-	main: main$1,
-	engines: engines,
-	keywords: keywords$1,
+	_args: _args$1,
+	_from: _from$1,
+	_id: _id$1,
+	_inBundle: _inBundle$1,
+	_integrity: _integrity$1,
+	_location: _location$1,
+	_phantomChildren: _phantomChildren$1,
+	_requested: _requested$1,
+	_requiredBy: _requiredBy$1,
+	_resolved: _resolved$1,
+	_spec: _spec$1,
+	_where: _where$1,
 	author: author$1,
-	types: types,
-	license: license$1,
-	devDependencies: devDependencies$1,
 	contributors: contributors,
-	scripts: scripts$1,
 	dependencies: dependencies$1,
-	files: files$1
+	description: description$1,
+	devDependencies: devDependencies$1,
+	engines: engines,
+	files: files$1,
+	homepage: homepage$1,
+	keywords: keywords$1,
+	license: license$1,
+	main: main$1,
+	name: name$1,
+	repository: repository$1,
+	scripts: scripts$1,
+	types: types,
+	version: version$p
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -92344,12 +92434,28 @@ class Signer {
                 // Prevent this error from causing an UnhandledPromiseException
                 tx.to.catch((error) => { });
             }
+            let isCryptoTransfer = false;
+            if (tx.to && tx.value) {
+                if (!tx.data && !tx.gasLimit) {
+                    isCryptoTransfer = true;
+                }
+                else if (tx.data && !tx.gasLimit) {
+                    logger$p.throwError("gasLimit is not provided. Cannot execute a Contract Call");
+                }
+                else if (!tx.data && tx.gasLimit) {
+                    this._checkProvider();
+                    if ((yield this.provider.getCode(tx.to)) === '0x') {
+                        logger$p.throwError("receiver is an account. Cannot execute a Contract Call");
+                    }
+                }
+            }
+            tx.customData = Object.assign(Object.assign({}, tx.customData), { isCryptoTransfer });
             const customData = yield tx.customData;
             // FileCreate and FileAppend always carry a customData.fileChunk object
             const isFileCreateOrAppend = customData && customData.fileChunk;
             // CreateAccount always has a publicKey
             const isCreateAccount = customData && customData.publicKey;
-            if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
+            if (!isFileCreateOrAppend && !isCreateAccount && !tx.customData.isCryptoTransfer && tx.gasLimit == null) {
                 return logger$p.throwError("cannot estimate gas; transaction requires manual gas limit", Logger$1.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
             }
             return yield resolveProperties(tx);
@@ -93327,7 +93433,12 @@ function serializeHederaTransaction(transaction, pubKey) {
     let tx;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-    if (transaction.to) {
+    if (transaction.customData.isCryptoTransfer) {
+        tx = new TransferTransaction()
+            .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar).negated())
+            .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar));
+    }
+    else if (transaction.to) {
         tx = new ContractExecuteTransaction()
             .setContractId(ContractId.fromSolidityAddress(utils$1.getAddressFromAccount(transaction.to)))
             .setFunctionParameters(arrayifiedData)
@@ -93825,7 +93936,8 @@ class Formatter {
                 gas_used: record.gas_used ? record.gas_used : null,
                 logs: record.logs ? record.logs : null,
                 result: record.result ? record.result : null,
-                accountAddress: record.accountAddress ? record.accountAddress : null
+                accountAddress: record.accountAddress ? record.accountAddress : null,
+                transfersList: record.transfersList ? record.transfersList : [],
             },
             wait: null,
         };
@@ -98040,6 +98152,7 @@ class BaseProvider extends Provider {
                             chainId: this._network.chainId,
                             transactionId: filtered[0].transaction_id,
                             result: filtered[0].result,
+                            customData: {}
                         };
                         const transactionName = filtered[0].name;
                         if (transactionName === 'CRYPTOCREATEACCOUNT') {
@@ -98050,6 +98163,28 @@ class BaseProvider extends Provider {
                             // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
                             record.hash = base64ToHex(filtered[0].transaction_hash);
                             record.accountAddress = getAddressFromAccount(filtered[0].entity_id);
+                        }
+                        else if (transactionName === 'CRYPTOTRANSFER') {
+                            record.from = getAccountFromTransactionId(filtered[0].transaction_id);
+                            record.timestamp = filtered[0].consensus_timestamp;
+                            record.hash = base64ToHex(filtered[0].transaction_hash);
+                            let charityFee = 0;
+                            const toTransfers = filtered[0].transfers.filter(function (t) {
+                                if (t.account == filtered[0].node) {
+                                    charityFee = filtered[0].charged_tx_fee - t.amount;
+                                    return false;
+                                }
+                                return t.account != record.from;
+                            }).filter(function (t) {
+                                return t.amount != charityFee;
+                            });
+                            if (toTransfers.length > 1) {
+                                record.transfersList = toTransfers;
+                            }
+                            else {
+                                record.to = toTransfers[0].account;
+                                record.amount = toTransfers[0].amount;
+                            }
                         }
                         else {
                             const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + filtered[0].transaction_id;

@@ -665,7 +665,7 @@ describe("Wallet createAccount", function () {
         const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
         const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
         const contractFactory = new hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, acc1Wallet);
-        const contract = await contractFactory.deploy(ethers.BigNumber.from('10000'), {gasLimit: 3000000});
+        const contract = await contractFactory.deploy(hethers.BigNumber.from('10000'), {gasLimit: 3000000});
         await contract.deployed();
 
         let exceptionThrown = false;
