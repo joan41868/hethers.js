@@ -16321,13 +16321,13 @@ const version$n = "units/5.5.0";
 "use strict";
 const logger$p = new Logger(version$n);
 const names = [
-    "wei",
-    "kwei",
-    "mwei",
-    "gwei",
-    "szabo",
-    "finney",
-    "ether",
+    "tinybar",
+    "microbar",
+    "millibar",
+    "hbar",
+    "kilobar",
+    "megabar",
+    "gigabar",
 ];
 // Some environments have issues with RegEx that contain back-tracking, so we cannot
 // use them.
@@ -16375,10 +16375,10 @@ function formatUnits(value, unitName) {
     if (typeof (unitName) === "string") {
         const index = names.indexOf(unitName);
         if (index !== -1) {
-            unitName = 3 * index;
+            unitName = Math.max((3 * index) - 1, 0);
         }
     }
-    return formatFixed(value, (unitName != null) ? unitName : 18);
+    return formatFixed(value, (unitName != null) ? unitName : 8);
 }
 function parseUnits(value, unitName) {
     if (typeof (value) !== "string") {
@@ -16387,16 +16387,16 @@ function parseUnits(value, unitName) {
     if (typeof (unitName) === "string") {
         const index = names.indexOf(unitName);
         if (index !== -1) {
-            unitName = 3 * index;
+            unitName = Math.max((3 * index) - 1, 0);
         }
     }
-    return parseFixed(value, (unitName != null) ? unitName : 18);
+    return parseFixed(value, (unitName != null) ? unitName : 8);
 }
-function formatEther(wei) {
-    return formatUnits(wei, 18);
+function formatHbar(tinybar) {
+    return formatUnits(tinybar, 8);
 }
-function parseEther(ether) {
-    return parseUnits(ether, 18);
+function parseHbar(hbar) {
+    return parseUnits(hbar, 8);
 }
 
 var lib_esm$h = /*#__PURE__*/Object.freeze({
@@ -16404,8 +16404,8 @@ var lib_esm$h = /*#__PURE__*/Object.freeze({
 	commify: commify,
 	formatUnits: formatUnits,
 	parseUnits: parseUnits,
-	formatEther: formatEther,
-	parseEther: parseEther
+	formatHbar: formatHbar,
+	parseHbar: parseHbar
 });
 
 const version$o = "abstract-signer/5.5.0";
@@ -29516,36 +29516,53 @@ const keccak = (/** @type {number} */ bits) => (/** @type {string} */ str) => {
  */
 const keccak256$2 = keccak(256);
 
-var name = "elliptic";
-var version$p = "6.5.4";
-var description = "EC cryptography";
-var main = "lib/elliptic.js";
-var files = [
-	"lib"
+var _args = [
+	[
+		"elliptic@6.5.4",
+		"/home/nikolay/Desktop/hethers.js"
+	]
 ];
-var scripts = {
-	lint: "eslint lib test",
-	"lint:fix": "npm run lint -- --fix",
-	unit: "istanbul test _mocha --reporter=spec test/index.js",
-	test: "npm run lint && npm run unit",
-	version: "grunt dist && git add dist/"
+var _from = "elliptic@6.5.4";
+var _id = "elliptic@6.5.4";
+var _inBundle = false;
+var _integrity = "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==";
+var _location = "/elliptic";
+var _phantomChildren = {
 };
-var repository = {
-	type: "git",
-	url: "git@github.com:indutny/elliptic"
+var _requested = {
+	type: "version",
+	registry: true,
+	raw: "elliptic@6.5.4",
+	name: "elliptic",
+	escapedName: "elliptic",
+	rawSpec: "6.5.4",
+	saveSpec: null,
+	fetchSpec: "6.5.4"
 };
-var keywords = [
-	"EC",
-	"Elliptic",
-	"curve",
-	"Cryptography"
+var _requiredBy = [
+	"/@ethersproject/signing-key",
+	"/@hashgraph/cryptography"
 ];
-var author = "Fedor Indutny <fedor@indutny.com>";
-var license = "MIT";
+var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
+var _spec = "6.5.4";
+var _where = "/home/nikolay/Desktop/hethers.js";
+var author = {
+	name: "Fedor Indutny",
+	email: "fedor@indutny.com"
+};
 var bugs = {
 	url: "https://github.com/indutny/elliptic/issues"
 };
-var homepage = "https://github.com/indutny/elliptic";
+var dependencies = {
+	"bn.js": "^4.11.9",
+	brorand: "^1.1.0",
+	"hash.js": "^1.0.0",
+	"hmac-drbg": "^1.0.1",
+	inherits: "^2.0.4",
+	"minimalistic-assert": "^1.0.1",
+	"minimalistic-crypto-utils": "^1.0.1"
+};
+var description = "EC cryptography";
 var devDependencies = {
 	brfs: "^2.0.2",
 	coveralls: "^3.1.0",
@@ -29561,30 +29578,58 @@ var devDependencies = {
 	istanbul: "^0.4.5",
 	mocha: "^8.0.1"
 };
-var dependencies = {
-	"bn.js": "^4.11.9",
-	brorand: "^1.1.0",
-	"hash.js": "^1.0.0",
-	"hmac-drbg": "^1.0.1",
-	inherits: "^2.0.4",
-	"minimalistic-assert": "^1.0.1",
-	"minimalistic-crypto-utils": "^1.0.1"
+var files = [
+	"lib"
+];
+var homepage = "https://github.com/indutny/elliptic";
+var keywords = [
+	"EC",
+	"Elliptic",
+	"curve",
+	"Cryptography"
+];
+var license = "MIT";
+var main = "lib/elliptic.js";
+var name = "elliptic";
+var repository = {
+	type: "git",
+	url: "git+ssh://git@github.com/indutny/elliptic.git"
 };
+var scripts = {
+	lint: "eslint lib test",
+	"lint:fix": "npm run lint -- --fix",
+	test: "npm run lint && npm run unit",
+	unit: "istanbul test _mocha --reporter=spec test/index.js",
+	version: "grunt dist && git add dist/"
+};
+var version$p = "6.5.4";
 var require$$0 = {
-	name: name,
-	version: version$p,
-	description: description,
-	main: main,
-	files: files,
-	scripts: scripts,
-	repository: repository,
-	keywords: keywords,
+	_args: _args,
+	_from: _from,
+	_id: _id,
+	_inBundle: _inBundle,
+	_integrity: _integrity,
+	_location: _location,
+	_phantomChildren: _phantomChildren,
+	_requested: _requested,
+	_requiredBy: _requiredBy,
+	_resolved: _resolved,
+	_spec: _spec,
+	_where: _where,
 	author: author,
-	license: license,
 	bugs: bugs,
-	homepage: homepage,
+	dependencies: dependencies,
+	description: description,
 	devDependencies: devDependencies,
-	dependencies: dependencies
+	files: files,
+	homepage: homepage,
+	keywords: keywords,
+	license: license,
+	main: main,
+	name: name,
+	repository: repository,
+	scripts: scripts,
+	version: version$p
 };
 
 var utils_1$2 = createCommonjsModule(function (module, exports) {
@@ -86497,22 +86542,49 @@ exports.setup = setup;
 
 var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 
-var name$1 = "@grpc/grpc-js";
-var version$q = "1.5.5";
-var description$1 = "gRPC Library for Node - pure JS implementation";
-var homepage$1 = "https://grpc.io/";
-var repository$1 = "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js";
-var main$1 = "build/src/index.js";
-var engines = {
-	node: "^8.13.0 || >=10.10.0"
-};
-var keywords$1 = [
+var _args$1 = [
+	[
+		"@grpc/grpc-js@1.5.5",
+		"/home/nikolay/Desktop/hethers.js"
+	]
 ];
+var _from$1 = "@grpc/grpc-js@1.5.5";
+var _id$1 = "@grpc/grpc-js@1.5.5";
+var _inBundle$1 = false;
+var _integrity$1 = "sha512-FTd27ItHlsSG/7hp62xgI9YnqSwRbHRSVmDVR8DwOoC+6t8JhHRXe2JL0U8N9GLc0jS0HrtEbO/KP5+G0ebjLQ==";
+var _location$1 = "/@grpc/grpc-js";
+var _phantomChildren$1 = {
+};
+var _requested$1 = {
+	type: "version",
+	registry: true,
+	raw: "@grpc/grpc-js@1.5.5",
+	name: "@grpc/grpc-js",
+	escapedName: "@grpc%2fgrpc-js",
+	scope: "@grpc",
+	rawSpec: "1.5.5",
+	saveSpec: null,
+	fetchSpec: "1.5.5"
+};
+var _requiredBy$1 = [
+	"/@hashgraph/sdk"
+];
+var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.5.tgz";
+var _spec$1 = "1.5.5";
+var _where$1 = "/home/nikolay/Desktop/hethers.js";
 var author$1 = {
 	name: "Google Inc."
 };
-var types = "build/src/index.d.ts";
-var license$1 = "Apache-2.0";
+var contributors = [
+	{
+		name: "Google Inc."
+	}
+];
+var dependencies$1 = {
+	"@grpc/proto-loader": "^0.6.4",
+	"@types/node": ">=12.12.47"
+};
+var description$1 = "gRPC Library for Node - pure JS implementation";
 var devDependencies$1 = {
 	"@types/gulp": "^4.0.6",
 	"@types/gulp-mocha": "0.0.32",
@@ -86536,29 +86608,8 @@ var devDependencies$1 = {
 	"ts-node": "^8.3.0",
 	typescript: "^3.7.2"
 };
-var contributors = [
-	{
-		name: "Google Inc."
-	}
-];
-var scripts$1 = {
-	build: "npm run compile",
-	clean: "rimraf ./build",
-	compile: "tsc -p .",
-	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
-	lint: "npm run check",
-	prepare: "npm run generate-types && npm run compile",
-	test: "gulp test",
-	check: "gts check src/**/*.ts",
-	fix: "gts fix src/*.ts",
-	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
-	posttest: "npm run check && madge -c ./build/src",
-	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
-	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto"
-};
-var dependencies$1 = {
-	"@grpc/proto-loader": "^0.6.4",
-	"@types/node": ">=12.12.47"
+var engines = {
+	node: "^8.13.0 || >=10.10.0"
 };
 var files$1 = [
 	"src/**/*.ts",
@@ -86574,23 +86625,62 @@ var files$1 = [
 	"deps/googleapis/google/rpc/*.proto",
 	"deps/protoc-gen-validate/validate/**/*.proto"
 ];
+var homepage$1 = "https://grpc.io/";
+var keywords$1 = [
+];
+var license$1 = "Apache-2.0";
+var main$1 = "build/src/index.js";
+var name$1 = "@grpc/grpc-js";
+var repository$1 = {
+	type: "git",
+	url: "https://github.com/grpc/grpc-node/tree/master/packages/grpc-js"
+};
+var scripts$1 = {
+	build: "npm run compile",
+	check: "gts check src/**/*.ts",
+	clean: "rimraf ./build",
+	compile: "tsc -p .",
+	fix: "gts fix src/*.ts",
+	format: "clang-format -i -style=\"{Language: JavaScript, BasedOnStyle: Google, ColumnLimit: 80}\" src/*.ts test/*.ts",
+	"generate-test-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --include-dirs test/fixtures/ -O test/generated/ --grpcLib ../../src/index test_service.proto",
+	"generate-types": "proto-loader-gen-types --keepCase --longs String --enums String --defaults --oneofs --includeComments --includeDirs proto/ --include-dirs test/fixtures/ -O src/generated/ --grpcLib ../index channelz.proto",
+	lint: "npm run check",
+	posttest: "npm run check && madge -c ./build/src",
+	prepare: "npm run generate-types && npm run compile",
+	pretest: "npm run generate-types && npm run generate-test-types && npm run compile",
+	test: "gulp test"
+};
+var types = "build/src/index.d.ts";
+var version$q = "1.5.5";
 var require$$0$2 = {
-	name: name$1,
-	version: version$q,
-	description: description$1,
-	homepage: homepage$1,
-	repository: repository$1,
-	main: main$1,
-	engines: engines,
-	keywords: keywords$1,
+	_args: _args$1,
+	_from: _from$1,
+	_id: _id$1,
+	_inBundle: _inBundle$1,
+	_integrity: _integrity$1,
+	_location: _location$1,
+	_phantomChildren: _phantomChildren$1,
+	_requested: _requested$1,
+	_requiredBy: _requiredBy$1,
+	_resolved: _resolved$1,
+	_spec: _spec$1,
+	_where: _where$1,
 	author: author$1,
-	types: types,
-	license: license$1,
-	devDependencies: devDependencies$1,
 	contributors: contributors,
-	scripts: scripts$1,
 	dependencies: dependencies$1,
-	files: files$1
+	description: description$1,
+	devDependencies: devDependencies$1,
+	engines: engines,
+	files: files$1,
+	homepage: homepage$1,
+	keywords: keywords$1,
+	license: license$1,
+	main: main$1,
+	name: name$1,
+	repository: repository$1,
+	scripts: scripts$1,
+	types: types,
+	version: version$q
 };
 
 var subchannel = createCommonjsModule(function (module, exports) {
@@ -93238,7 +93328,7 @@ var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatBytes32String = exports.Utf8ErrorFuncs = exports.toUtf8String = exports.toUtf8CodePoints = exports.toUtf8Bytes = exports._toEscapedUtf8String = exports.nameprep = exports.hexDataSlice = exports.hexDataLength = exports.hexZeroPad = exports.hexValue = exports.hexStripZeros = exports.hexConcat = exports.isHexString = exports.hexlify = exports.base64 = exports.base58 = exports.TransactionDescription = exports.LogDescription = exports.Interface = exports.SigningKey = exports.HDNode = exports.defaultPath = exports.isBytesLike = exports.isBytes = exports.zeroPad = exports.stripZeros = exports.concat = exports.arrayify = exports.shallowCopy = exports.resolveProperties = exports.getStatic = exports.defineReadOnly = exports.deepCopy = exports.checkProperties = exports.poll = exports.fetchJson = exports._fetchData = exports.RLP = exports.Logger = exports.checkResultErrors = exports.FormatTypes = exports.ParamType = exports.FunctionFragment = exports.EventFragment = exports.ErrorFragment = exports.ConstructorFragment = exports.Fragment = exports.defaultAbiCoder = exports.AbiCoder = void 0;
-exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAlias = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseEther = exports.formatEther = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getChecksumAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.hashMessage = exports.parseBytes32String = void 0;
+exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAlias = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseHbar = exports.formatHbar = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getChecksumAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.hashMessage = exports.parseBytes32String = void 0;
 
 Object.defineProperty(exports, "AbiCoder", { enumerable: true, get: function () { return abi_1.AbiCoder; } });
 Object.defineProperty(exports, "checkResultErrors", { enumerable: true, get: function () { return abi_1.checkResultErrors; } });
@@ -93346,8 +93436,8 @@ Object.defineProperty(exports, "recoverAddress", { enumerable: true, get: functi
 Object.defineProperty(exports, "TransactionTypes", { enumerable: true, get: function () { return transactions_1.TransactionTypes; } });
 
 Object.defineProperty(exports, "commify", { enumerable: true, get: function () { return units_1.commify; } });
-Object.defineProperty(exports, "formatEther", { enumerable: true, get: function () { return units_1.formatEther; } });
-Object.defineProperty(exports, "parseEther", { enumerable: true, get: function () { return units_1.parseEther; } });
+Object.defineProperty(exports, "formatHbar", { enumerable: true, get: function () { return units_1.formatHbar; } });
+Object.defineProperty(exports, "parseHbar", { enumerable: true, get: function () { return units_1.parseHbar; } });
 Object.defineProperty(exports, "formatUnits", { enumerable: true, get: function () { return units_1.formatUnits; } });
 Object.defineProperty(exports, "parseUnits", { enumerable: true, get: function () { return units_1.parseUnits; } });
 
@@ -99422,8 +99512,8 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 	getContractAddress: getContractAddress$1,
 	getCreate2Address: getCreate2Address$1,
 	isAddress: isAddress$1,
-	formatEther: formatEther,
-	parseEther: parseEther,
+	formatHbar: formatHbar,
+	parseHbar: parseHbar,
 	formatUnits: formatUnits,
 	parseUnits: parseUnits,
 	commify: commify,

@@ -67,8 +67,8 @@ class Script {
             id: hethers.utils.id,
             keccak256: hethers.utils.keccak256,
             sha256: hethers.utils.sha256,
-            parseEther: hethers.utils.parseEther,
-            formatEther: hethers.utils.formatEther,
+            parseHbar: hethers.utils.parseHbar,
+            formatHbar: hethers.utils.formatHbar,
             parseUnits: hethers.utils.parseUnits,
             formatUnits: hethers.utils.formatUnits,
             randomBytes: function (length) {

@@ -115,8 +115,8 @@ var Script = /** @class */ (function () {
             id: hethers_1.hethers.utils.id,
             keccak256: hethers_1.hethers.utils.keccak256,
             sha256: hethers_1.hethers.utils.sha256,
-            parseEther: hethers_1.hethers.utils.parseEther,
-            formatEther: hethers_1.hethers.utils.formatEther,
+            parseHbar: hethers_1.hethers.utils.parseHbar,
+            formatHbar: hethers_1.hethers.utils.formatHbar,
             parseUnits: hethers_1.hethers.utils.parseUnits,
             formatUnits: hethers_1.hethers.utils.formatUnits,
             randomBytes: function (length) {
