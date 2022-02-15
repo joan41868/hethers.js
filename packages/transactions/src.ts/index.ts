@@ -22,7 +22,7 @@ import {
     ContractExecuteTransaction, ContractId, FileAppendTransaction,
     FileCreateTransaction,
     Transaction as HederaTransaction,
-    PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction, AccountCreateTransaction, Hbar
+    PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction, AccountCreateTransaction, Hbar, HbarUnit
 } from "@hashgraph/sdk";
 import { TransactionRequest } from "@ethersproject/abstract-provider";
 
@@ -162,7 +162,11 @@ export function serializeHederaTransaction(transaction: TransactionRequest, pubK
     let tx: HederaTransaction;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-    if (transaction.to) {
+    if (transaction.customData.isCryptoTransfer) {
+        tx = new TransferTransaction()
+            .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar).negated())
+            .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar));
+    } else if (transaction.to) {
         tx = new ContractExecuteTransaction()
             .setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
             .setFunctionParameters(arrayifiedData)

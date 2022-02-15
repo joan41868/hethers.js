@@ -248,12 +248,28 @@ export class Signer {
                 // Prevent this error from causing an UnhandledPromiseException
                 tx.to.catch((error) => { });
             }
+            let isCryptoTransfer = false;
+            if (tx.to && tx.value) {
+                if (!tx.data && !tx.gasLimit) {
+                    isCryptoTransfer = true;
+                }
+                else if (tx.data && !tx.gasLimit) {
+                    logger.throwError("gasLimit is not provided. Cannot execute a Contract Call");
+                }
+                else if (!tx.data && tx.gasLimit) {
+                    this._checkProvider();
+                    if ((yield this.provider.getCode(tx.to)) === '0x') {
+                        logger.throwError("receiver is an account. Cannot execute a Contract Call");
+                    }
+                }
+            }
+            tx.customData = Object.assign(Object.assign({}, tx.customData), { isCryptoTransfer });
             const customData = yield tx.customData;
             // FileCreate and FileAppend always carry a customData.fileChunk object
             const isFileCreateOrAppend = customData && customData.fileChunk;
             // CreateAccount always has a publicKey
             const isCreateAccount = customData && customData.publicKey;
-            if (!isFileCreateOrAppend && !isCreateAccount && tx.gasLimit == null) {
+            if (!isFileCreateOrAppend && !isCreateAccount && !tx.customData.isCryptoTransfer && tx.gasLimit == null) {
                 return logger.throwError("cannot estimate gas; transaction requires manual gas limit", Logger.errors.UNPREDICTABLE_GAS_LIMIT, { tx: tx });
             }
             return yield resolveProperties(tx);
