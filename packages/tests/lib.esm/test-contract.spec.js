@@ -217,6 +217,7 @@ describe("Test Contract Transaction Population", function () {
             const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
             const contractFactory = new ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
             const contract = yield contractFactory.deploy(ethers.BigNumber.from('10000'), { gasLimit: 3000000 });
+            yield contract.deployed();
             // client wallet init
             let clientWallet = ethers.Wallet.createRandom();
             const clientAccountId = (yield contractWallet.createAccount(clientWallet._signingKey().compressedPublicKey)).customData.accountId;
@@ -397,6 +398,57 @@ describe("contract.deployed", function () {
             const contractDeployed = yield contract.deployed();
             assert.notStrictEqual(contractDeployed, null, "deployed returns the contract");
             assert.strictEqual(contractDeployed.address, contract.address, "deployed returns the same contract instance");
+        });
+    }).timeout(60000);
+});
+describe("Test Contract Query Filter", function () {
+    const hederaEoa = {
+        account: '0.0.29562194',
+        privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+    };
+    const provider = ethers.providers.getDefaultProvider('testnet');
+    // @ts-ignore
+    const wallet = new ethers.Wallet(hederaEoa, provider);
+    it("should filter contract events by timestamp string", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const contractAddress = '0x000000000000000000000000000000000186fb1a';
+            const fromTimestamp = '1642065156.264170833';
+            const toTimestamp = '1642080642.176149864';
+            const contract = ethers.ContractFactory.getContract(contractAddress, abi, wallet);
+            const filter = {
+                address: contractAddress,
+            };
+            const events = yield contract.queryFilter(filter, fromTimestamp, toTimestamp);
+            assert.strictEqual(events.length, 2, "queryFilter returns the contract events");
+            assert.strictEqual(events[0].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+            assert.notStrictEqual(events[0].data, null, "result data exists");
+            assert.strict(events[0].topics.length > 0, "result topics not empty");
+            assert.strict(events[0].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
+            assert.strict(events[0].timestamp <= toTimestamp, "result is less or equal toTimestamp");
+            assert.strictEqual(events[1].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+            assert.notStrictEqual(events[1].data, null, "result data exists");
+            assert.strict(events[1].topics.length > 0, "result topics not empty");
+            assert.strict(events[1].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
+            assert.strict(events[1].timestamp <= toTimestamp, "result is less or equal toTimestamp");
+        });
+    }).timeout(60000);
+    it("should filter contract events by timestamp number", function () {
+        return __awaiter(this, void 0, void 0, function* () {
+            const contractAddress = '0x000000000000000000000000000000000186fb1a';
+            const fromTimestamp = 1642065156264170;
+            const toTimestamp = 1642080642176150;
+            const contract = ethers.ContractFactory.getContract(contractAddress, abi, wallet);
+            const filter = {
+                address: contractAddress,
+            };
+            const events = yield contract.queryFilter(filter, fromTimestamp, toTimestamp);
+            assert.strictEqual(events.length, 2, "queryFilter returns the contract events");
+            assert.strictEqual(events[0].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+            assert.notStrictEqual(events[0].data, null, "result data exists");
+            assert.strict(events[0].topics.length > 0, "result topics not empty");
+            assert.strictEqual(events[1].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+            assert.notStrictEqual(events[1].data, null, "result data exists");
+            assert.strict(events[1].topics.length > 0, "result topics not empty");
         });
     }).timeout(60000);
 });
