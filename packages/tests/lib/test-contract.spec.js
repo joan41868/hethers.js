@@ -59,7 +59,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var assert_1 = __importDefault(require("assert"));
-var hethers_1 = require("hethers");
+var ethers_1 = require("ethers");
 var test_contract_json_1 = __importDefault(require("./test-contract.json"));
 var fs_1 = __importStar(require("fs"));
 // @ts-ignore
@@ -70,12 +70,12 @@ var abiWithArgs = __importStar(require("../../../examples/assets/abi/GLDTokenWit
 abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
-var utils_1 = require("hethers/lib/utils");
-// const provider = new hethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
-var provider = hethers_1.hethers.getDefaultProvider("testnet");
+var utils_1 = require("ethers/lib/utils");
+// const provider = new ethers.providers.InfuraProvider("rinkeby", "49a0efa3aaee4fd99797bfa94d8ce2f1");
+var provider = ethers_1.ethers.getDefaultProvider("testnet");
 var TIMEOUT_PERIOD = 120000;
 var contract = (function () {
-    return new hethers_1.hethers.Contract('', test_contract_json_1.default.interface, provider);
+    return new ethers_1.ethers.Contract('', test_contract_json_1.default.interface, provider);
 })();
 function equals(name, actual, expected) {
     if (Array.isArray(expected)) {
@@ -87,7 +87,7 @@ function equals(name, actual, expected) {
     }
     if (typeof (actual) === 'object') {
         if (expected.indexed) {
-            assert_1.default.ok(hethers_1.hethers.Contract.isIndexed(actual), 'index property has index - ' + name);
+            assert_1.default.ok(ethers_1.ethers.Contract.isIndexed(actual), 'index property has index - ' + name);
             if (expected.hash) {
                 assert_1.default.equal(actual.hash, expected.hash, 'index property with known hash matches - ' + name);
             }
@@ -132,7 +132,7 @@ function TestContractEvents() {
         var data;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, hethers_1.hethers.utils.fetchJson('https://api.hethers.io/api/v1/?action=triggerTest&address=' + contract.address)];
+                case 0: return [4 /*yield*/, ethers_1.ethers.utils.fetchJson('https://api.ethers.io/api/v1/?action=triggerTest&address=' + contract.address)];
                 case 1:
                     data = _a.sent();
                     console.log('*** Triggered Transaction Hash: ' + data.hash);
@@ -222,8 +222,8 @@ describe("Test Contract Transaction Population", function () {
     var testAddress = "0xdeadbeef00deadbeef01deadbeef02deadbeef03";
     var testAddressCheck = "0xDEAdbeeF00deAdbeEF01DeAdBEEF02DeADBEEF03";
     var fireflyAddress = "0x8ba1f109551bD432803012645Ac136ddd64DBA72";
-    var contract = new hethers_1.hethers.Contract(null, abi);
-    var contractConnected = contract.connect(hethers_1.hethers.getDefaultProvider("testnet"));
+    var contract = new ethers_1.ethers.Contract(null, abi);
+    var contractConnected = contract.connect(ethers_1.ethers.getDefaultProvider("testnet"));
     xit("standard population", function () {
         return __awaiter(this, void 0, void 0, function () {
             var tx;
@@ -434,11 +434,11 @@ describe("Test Contract Transaction Population", function () {
                     account: '0.0.29562194',
                     privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
                 };
-                provider = hethers_1.hethers.providers.getDefaultProvider('testnet');
-                wallet = new hethers_1.hethers.Wallet(hederaEoa, provider);
+                provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
                 contractBytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
-                contractFactory = new hethers_1.hethers.ContractFactory(abiWithArgs, contractBytecode, wallet);
-                transaction = contractFactory.getDeployTransaction(hethers_1.hethers.BigNumber.from("1000000"), {
+                contractFactory = new ethers_1.ethers.ContractFactory(abiWithArgs, contractBytecode, wallet);
+                transaction = contractFactory.getDeployTransaction(ethers_1.ethers.BigNumber.from("1000000"), {
                     gasLimit: 300000
                 });
                 (0, assert_1.default)('data' in transaction);
@@ -459,10 +459,10 @@ describe("Test Contract Transaction Population", function () {
                             account: '0.0.29562194',
                             privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
                         };
-                        provider = hethers_1.hethers.providers.getDefaultProvider('testnet');
-                        wallet = new hethers_1.hethers.Wallet(hederaEoa, provider);
+                        provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                        wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
                         bytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
-                        contractFactory = new hethers_1.hethers.ContractFactory(abi, bytecode, wallet);
+                        contractFactory = new ethers_1.ethers.ContractFactory(abi, bytecode, wallet);
                         return [4 /*yield*/, contractFactory.deploy({ gasLimit: 300000 })];
                     case 1:
                         contract = _a.sent();
@@ -480,7 +480,7 @@ describe("Test Contract Transaction Population", function () {
                             })];
                     case 2:
                         balance = _a.sent();
-                        assert_1.default.strictEqual(hethers_1.BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
+                        assert_1.default.strictEqual(ethers_1.BigNumber.from(balance).toNumber(), 10000, 'balance mismatch');
                         return [2 /*return*/];
                 }
             });
@@ -492,21 +492,24 @@ describe("Test Contract Transaction Population", function () {
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
-                        providerTestnet = hethers_1.hethers.providers.getDefaultProvider('testnet');
+                        providerTestnet = ethers_1.ethers.providers.getDefaultProvider('testnet');
                         contractHederaEoa = {
                             "account": '0.0.29562194',
                             "privateKey": '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
                         };
-                        contractWallet = new hethers_1.hethers.Wallet(contractHederaEoa, providerTestnet);
+                        contractWallet = new ethers_1.ethers.Wallet(contractHederaEoa, providerTestnet);
                         abiGLDTokenWithConstructorArgs = JSON.parse((0, fs_1.readFileSync)('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
                         contractByteCodeGLDTokenWithConstructorArgs = (0, fs_1.readFileSync)('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
-                        contractFactory = new hethers_1.hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
-                        return [4 /*yield*/, contractFactory.deploy(hethers_1.hethers.BigNumber.from('10000'), { gasLimit: 3000000 })];
+                        contractFactory = new ethers_1.ethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
+                        return [4 /*yield*/, contractFactory.deploy(ethers_1.ethers.BigNumber.from('10000'), { gasLimit: 3000000 })];
                     case 1:
                         contract = _g.sent();
-                        clientWallet = hethers_1.hethers.Wallet.createRandom();
-                        return [4 /*yield*/, contractWallet.createAccount(clientWallet._signingKey().compressedPublicKey)];
+                        return [4 /*yield*/, contract.deployed()];
                     case 2:
+                        _g.sent();
+                        clientWallet = ethers_1.ethers.Wallet.createRandom();
+                        return [4 /*yield*/, contractWallet.createAccount(clientWallet._signingKey().compressedPublicKey)];
+                    case 3:
                         clientAccountId = (_g.sent()).customData.accountId;
                         clientWallet = clientWallet.connect(providerTestnet).connectAccount(clientAccountId.toString());
                         // test sending hbars to the contract
@@ -516,44 +519,44 @@ describe("Test Contract Transaction Population", function () {
                                 value: 30,
                                 gasLimit: 300000
                             })];
-                    case 3:
+                    case 4:
                         // test sending hbars to the contract
                         _g.sent();
                         // test if initial balance of the client is zero
                         _b = (_a = assert_1.default).strictEqual;
                         return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
-                    case 4:
+                    case 5:
                         // test if initial balance of the client is zero
                         _b.apply(_a, [(_g.sent()).toString(), '0']);
                         return [4 /*yield*/, contract.getInternalCounter({ gasLimit: 300000 })];
-                    case 5:
+                    case 6:
                         viewMethodCall = _g.sent();
                         assert_1.default.strictEqual(viewMethodCall.toString(), '29');
                         return [4 /*yield*/, contract.populateTransaction.transfer(clientWallet.address, 10, { gasLimit: 300000 })];
-                    case 6:
+                    case 7:
                         populatedTx = _g.sent();
                         return [4 /*yield*/, contractWallet.signTransaction(populatedTx)];
-                    case 7:
+                    case 8:
                         signedTransaction = _g.sent();
                         return [4 /*yield*/, contractWallet.provider.sendTransaction(signedTransaction)];
-                    case 8:
+                    case 9:
                         tx = _g.sent();
                         return [4 /*yield*/, tx.wait()];
-                    case 9:
+                    case 10:
                         _g.sent();
                         _d = (_c = assert_1.default).strictEqual;
                         return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
-                    case 10:
+                    case 11:
                         _d.apply(_c, [(_g.sent()).toString(), '10']);
                         return [4 /*yield*/, contract.transfer(clientWallet.address, 10, { gasLimit: 300000 })];
-                    case 11:
+                    case 12:
                         transferMethodCall = _g.sent();
                         return [4 /*yield*/, transferMethodCall.wait()];
-                    case 12:
+                    case 13:
                         _g.sent();
                         _f = (_e = assert_1.default).strictEqual;
                         return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
-                    case 13:
+                    case 14:
                         _f.apply(_e, [(_g.sent()).toString(), '20']);
                         return [2 /*return*/];
                 }
@@ -570,10 +573,10 @@ describe("Test Contract Transaction Population", function () {
                             account: '0.0.29562194',
                             privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
                         };
-                        provider = hethers_1.hethers.providers.getDefaultProvider('testnet');
-                        wallet = new hethers_1.hethers.Wallet(hederaEoa, provider);
+                        provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+                        wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
                         bytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
-                        contractFactory = new hethers_1.hethers.ContractFactory(abi, bytecode, wallet);
+                        contractFactory = new ethers_1.ethers.ContractFactory(abi, bytecode, wallet);
                         return [4 /*yield*/, contractFactory.deploy({ gasLimit: 300000 })];
                     case 1:
                         contract = _a.sent();
@@ -635,7 +638,7 @@ describe("Test Contract Transaction Population", function () {
                         assert_1.default.strictEqual(eventTx.transactionId, receipt.transactionId, 'eventTx.transactionId is correct');
                         assert_1.default.strictEqual(eventTx.from, receipt.from, 'eventTx.from is correct');
                         assert_1.default.strictEqual(eventTx.to, receipt.contractAddress, 'eventTx.contractAddress is correct');
-                        assert_1.default.strictEqual(eventTx.value.toString(), hethers_1.BigNumber.from(0).toString(), 'eventTx.value is correct');
+                        assert_1.default.strictEqual(eventTx.value.toString(), ethers_1.BigNumber.from(0).toString(), 'eventTx.value is correct');
                         return [4 /*yield*/, event_1.getTransactionReceipt()];
                     case 9:
                         eventRc = _a.sent();
@@ -655,9 +658,9 @@ describe("contract.deployed", function () {
         account: '0.0.29562194',
         privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
     };
-    var provider = hethers_1.hethers.providers.getDefaultProvider('testnet');
+    var provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
     // @ts-ignore
-    var wallet = new hethers_1.hethers.Wallet(hederaEoa, provider);
+    var wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
     var bytecode = fs_1.default.readFileSync('examples/assets/bytecode/GLDToken.bin').toString();
     it("should work for already deployed contracts", function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -665,7 +668,7 @@ describe("contract.deployed", function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        contract = hethers_1.hethers.ContractFactory.getContract('0000000000000000000000000000000001c3903b', abi, wallet);
+                        contract = ethers_1.ethers.ContractFactory.getContract('0000000000000000000000000000000001c3903b', abi, wallet);
                         return [4 /*yield*/, contract.deployed()];
                     case 1:
                         contractDeployed = _a.sent();
@@ -682,7 +685,7 @@ describe("contract.deployed", function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        contractFactory = new hethers_1.hethers.ContractFactory(abi, bytecode, wallet);
+                        contractFactory = new ethers_1.ethers.ContractFactory(abi, bytecode, wallet);
                         return [4 /*yield*/, contractFactory.deploy({ gasLimit: 300000 })];
                     case 1:
                         contract = _a.sent();
@@ -705,9 +708,9 @@ describe("Test Contract Query Filter", function () {
         account: '0.0.29562194',
         privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
     };
-    var provider = hethers_1.hethers.providers.getDefaultProvider('testnet');
+    var provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
     // @ts-ignore
-    var wallet = new hethers_1.hethers.Wallet(hederaEoa, provider);
+    var wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
     it("should filter contract events by timestamp string", function () {
         return __awaiter(this, void 0, void 0, function () {
             var contractAddress, fromTimestamp, toTimestamp, contract, filter, events;
@@ -717,7 +720,7 @@ describe("Test Contract Query Filter", function () {
                         contractAddress = '0x000000000000000000000000000000000186fb1a';
                         fromTimestamp = '1642065156.264170833';
                         toTimestamp = '1642080642.176149864';
-                        contract = hethers_1.hethers.ContractFactory.getContract(contractAddress, abi, wallet);
+                        contract = ethers_1.ethers.ContractFactory.getContract(contractAddress, abi, wallet);
                         filter = {
                             address: contractAddress,
                         };
@@ -749,7 +752,7 @@ describe("Test Contract Query Filter", function () {
                         contractAddress = '0x000000000000000000000000000000000186fb1a';
                         fromTimestamp = 1642065156264170;
                         toTimestamp = 1642080642176150;
-                        contract = hethers_1.hethers.ContractFactory.getContract(contractAddress, abi, wallet);
+                        contract = ethers_1.ethers.ContractFactory.getContract(contractAddress, abi, wallet);
                         filter = {
                             address: contractAddress,
                         };
