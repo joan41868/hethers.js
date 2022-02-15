@@ -808,8 +808,7 @@ var BaseContract = /** @class */ (function () {
             _this._checkRunningEvents(runningEvent);
         };
         event.getTransaction = function () {
-            // TODO: blocked by missing data from mirror node
-            return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+            return _this.provider.getTransaction(event.timestamp);
         };
         event.getTransactionReceipt = function () {
             return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);

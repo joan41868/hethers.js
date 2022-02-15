@@ -4,7 +4,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
-import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
+import { Timestamp, TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
 import { AccountLike } from "@ethersproject/address";
 import { AccountId, Client } from "@hashgraph/sdk";
@@ -37,10 +37,12 @@ export declare class BaseProvider extends Provider {
     _emittedEvents: {
         [key: string]: boolean;
     };
+    _previousPollingTimestamps: {
+        [key: string]: Timestamp;
+    };
     readonly anyNetwork: boolean;
     private readonly hederaClient;
     private readonly _mirrorNodeUrl;
-    private _previousToTimestamp;
     constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike);
     _ready(): Promise<Network>;
     static getFormatter(): Formatter;
@@ -108,6 +110,11 @@ export declare class BaseProvider extends Provider {
     removeAllListeners(eventName?: EventType): this;
     get polling(): boolean;
     set polling(value: boolean);
+    /**
+     *
+     * from - previousToTimestamp - from; add 1 nanosecond to it ***
+     * to - the current time
+     */
     poll(): Promise<void>;
     purgeOldEvents(): void;
 }

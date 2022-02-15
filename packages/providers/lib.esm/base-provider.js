@@ -13,6 +13,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexDataLength, hexlify } from "@ethersproject/bytes";
 import { getNetwork } from "@ethersproject/networks";
 import { defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
+import { Timestamp } from '@hashgraph/sdk';
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
@@ -151,6 +152,7 @@ export class BaseProvider extends Provider {
         super();
         this._events = [];
         this._emittedEvents = {};
+        this._previousPollingTimestamps = {};
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -195,7 +197,6 @@ export class BaseProvider extends Provider {
             }
         }
         this._pollingInterval = 3000;
-        this._previousToTimestamp = 0;
     }
     _ready() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -555,12 +556,11 @@ export class BaseProvider extends Provider {
             this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
             // set default values
-            const now = new Date().getTime();
             if (!params.filter.fromTimestamp) {
-                params.filter.fromTimestamp = composeHederaTimestamp(1);
+                params.filter.fromTimestamp = Timestamp.fromDate(0).toString(); //nativeTimestampToHederaTimestamp(1);
             }
             if (!params.filter.toTimestamp) {
-                params.filter.toTimestamp = composeHederaTimestamp(now);
+                params.filter.toTimestamp = Timestamp.generate().toString();
             }
             const fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
             const toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
@@ -607,9 +607,11 @@ export class BaseProvider extends Provider {
     /* Events, Event Listeners & Polling */
     _startEvent(event) {
         this.polling = (this._events.filter((e) => e.pollable()).length > 0);
+        this._previousPollingTimestamps[event.tag] = Timestamp.generate();
     }
     _stopEvent(event) {
         this.polling = (this._events.filter((e) => e.pollable()).length > 0);
+        delete this._previousPollingTimestamps[event.tag];
     }
     perform(method, params) {
         return logger.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
@@ -733,40 +735,31 @@ export class BaseProvider extends Provider {
             this._poller = null;
         }
     }
+    /**
+     *
+     * from - previousToTimestamp - from; add 1 nanosecond to it ***
+     * to - the current time
+     */
     poll() {
         return __awaiter(this, void 0, void 0, function* () {
             const pollId = nextPollId++;
-            // cleanup on more than 100 events
-            if (Object.keys(this._emittedEvents).length > 100) {
-                this.purgeOldEvents();
-            }
+            // purge the old events
+            // this.purgeOldEvents();
             // Track all running promises, so we can trigger a post-poll once they are complete
             const runners = [];
             // Emit a poll event with the current timestamp
-            this.emit("poll", pollId, new Date().getTime());
+            const now = Timestamp.generate();
+            this.emit("poll", pollId, now.toDate().getTime());
             // Find all transaction hashes we are waiting on
             this._events.forEach((event) => {
+                let from = this._previousPollingTimestamps[event.tag];
+                // ensure we don't get from == to
+                from = from.plusNanos(1);
                 switch (event.type) {
-                    case "tx": {
-                        const hash = event.hash;
-                        let runner = this.getTransactionReceipt(hash).then((receipt) => {
-                            if (!receipt) {
-                                return null;
-                            }
-                            this.emit(hash, receipt);
-                            return null;
-                        }).catch((error) => { this.emit("error", error); });
-                        runners.push(runner);
-                        break;
-                    }
                     case "filter": {
                         const filter = event.filter;
-                        // ensure we don't get from == to
-                        const from = this._previousToTimestamp || new Date().getTime() - this._pollingInterval;
-                        const to = new Date().getTime();
-                        this._previousToTimestamp = to;
-                        filter.fromTimestamp = composeHederaTimestamp(from - 12000);
-                        filter.toTimestamp = composeHederaTimestamp(to);
+                        filter.fromTimestamp = from.toString();
+                        filter.toTimestamp = now.toString();
                         const runner = this.getLogs(filter).then((logs) => {
                             if (logs.length === 0) {
                                 return;
@@ -775,6 +768,12 @@ export class BaseProvider extends Provider {
                                 if (!this._emittedEvents[log.timestamp]) {
                                     this.emit(filter, log);
                                     this._emittedEvents[log.timestamp] = true;
+                                    const logTimestamp = Timestamp.fromDate(log.timestamp);
+                                    // longInstance.compare(other) returns -1 when other > this, 0 when they are equal and 1 then this > other
+                                    if (this._previousPollingTimestamps[event.tag].compare(logTimestamp) == -1) {
+                                        console.log('poll update');
+                                        this._previousPollingTimestamps[event.tag] = logTimestamp;
+                                    }
                                 }
                             });
                         }).catch((error) => { this.emit("error", error); });
@@ -792,11 +791,11 @@ export class BaseProvider extends Provider {
     }
     purgeOldEvents() {
         for (let emittedEventsKey in this._emittedEvents) {
-            const ts = numericFromHederaTimestamp(emittedEventsKey);
-            const now = new Date().getTime();
-            // clean up events which are significantly old
-            // depends on the polling interval, 30 seconds with 3sec interval
-            if (ts < (now - this._pollingInterval * 10)) {
+            const ts = Timestamp.fromDate(emittedEventsKey);
+            const now = Timestamp.generate();
+            // clean up events which are significantly old - older than 3 minutes
+            const threeMinutes = 1000 * 1000 * 1000 * 60 * 3;
+            if (ts.compare(now.plusNanos(threeMinutes)) == -1) {
                 delete this._emittedEvents[emittedEventsKey];
             }
         }
@@ -850,54 +849,5 @@ function getEventTag(eventName) {
         return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
     }
     throw new Error("invalid event - " + eventName);
-}
-/**
- * Always composes a hedera timestamp from the given string/numeric input.
- * May lose precision - JavaScript's floating point loss
- *
- * @param timestamp - the timestamp to be formatted
- */
-function composeHederaTimestamp(timestamp) {
-    if (typeof timestamp === "number") {
-        const tsCopy = timestamp.toString();
-        let seconds = tsCopy.slice(0, tsCopy.length - 3);
-        if (seconds.length < 9) {
-            for (let i = seconds.length; i < 9; i++) {
-                seconds += "0";
-            }
-        }
-        let nanosTemp = tsCopy.slice(seconds.length);
-        if (nanosTemp.length < 9) {
-            for (let i = nanosTemp.length; i < 9; i++) {
-                nanosTemp += "0";
-            }
-        }
-        return `${seconds}.${nanosTemp}`;
-    }
-    else if (typeof timestamp === "string") {
-        if (timestamp.includes(".")) {
-            // already formatted
-            const split = timestamp.split(".");
-            if (split[0].length === 10 && split[1].length === 9) {
-                return timestamp;
-            }
-            // floating point number - we lose precision
-            return composeHederaTimestamp(parseInt(timestamp.split('.')[0]));
-        }
-        else {
-            return composeHederaTimestamp(parseInt(timestamp));
-        }
-    }
-    else {
-        // not a string, neither a number
-        return logger.throwArgumentError('invalid timestamp', Logger.errors.INVALID_ARGUMENT, { timestamp });
-    }
-}
-// @ts-ignore
-function numericFromHederaTimestamp(ts) {
-    const seconds = ts.split(".")[0];
-    const nanos = ts.split(".")[1];
-    const parsedNanos = parseInt(nanos.slice(3));
-    return parseInt(seconds) + parsedNanos;
 }
 //# sourceMappingURL=base-provider.js.map

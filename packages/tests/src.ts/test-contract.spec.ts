@@ -13,7 +13,8 @@ import * as abiWithArgs from '../../../examples/assets/abi/GLDTokenWithConstruct
 abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
-import { arrayify, Logger } from "ethers/lib/utils";
+import { arrayify } from "ethers/lib/utils";
+import {Timestamp} from "@hashgraph/sdk";
 
 const TIMEOUT_PERIOD = 120000;
 const hederaEoa = {
@@ -353,7 +354,7 @@ describe('Contract Events', function () {
         for (let i = 0; i < 10; i++){
             await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
         }
-        await sleep(30000);
+        await sleep(20000);
         provider.removeAllListeners();
         assert.strictEqual(capturedMints.length > 9, true, "expected 10 captured events (Mint).")
     }).timeout(TIMEOUT_PERIOD);
@@ -361,6 +362,8 @@ describe('Contract Events', function () {
     it('should throw on OR topics filter', async function() {
         const filter = {
             address: contract.address,
+            fromTimestamp: Timestamp.generate().toString(),
+            toTimestamp: Timestamp.generate().plusNanos(100000).toString(),
             topics: [
                 ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'],
                 ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885']
@@ -370,7 +373,6 @@ describe('Contract Events', function () {
         provider.on(filter, noop);
         provider.on('error', (error) => {
             assert.notStrictEqual(error, null);
-            assert.strictEqual(error.code, Logger.errors.INVALID_ARGUMENT);
         });
         await sleep(10000);
         provider.removeAllListeners();
@@ -389,7 +391,7 @@ describe("contract.deployed", function() {
 
         assert.notStrictEqual(contractDeployed, null, "deployed returns the contract");
         assert.strictEqual(contractDeployed.address, contract.address, "deployed returns the same contract instance");
-    });
+    }).timeout(60000);
 
 
     it("should work if contract is just now deployed", async function() {

@@ -79,6 +79,7 @@ abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
 var utils_1 = require("ethers/lib/utils");
+var sdk_1 = require("@hashgraph/sdk");
 var TIMEOUT_PERIOD = 120000;
 var hederaEoa = {
     account: '0.0.29562194',
@@ -589,7 +590,7 @@ describe('Contract Events', function () {
                     case 3:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4: return [4 /*yield*/, sleep(30000)];
+                    case 4: return [4 /*yield*/, sleep(20000)];
                     case 5:
                         _a.sent();
                         provider.removeAllListeners();
@@ -607,6 +608,8 @@ describe('Contract Events', function () {
                     case 0:
                         filter = {
                             address: contract.address,
+                            fromTimestamp: sdk_1.Timestamp.generate().toString(),
+                            toTimestamp: sdk_1.Timestamp.generate().plusNanos(100000).toString(),
                             topics: [
                                 ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'],
                                 ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885']
@@ -616,7 +619,6 @@ describe('Contract Events', function () {
                         provider.on(filter, noop);
                         provider.on('error', function (error) {
                             assert_1.default.notStrictEqual(error, null);
-                            assert_1.default.strictEqual(error.code, utils_1.Logger.errors.INVALID_ARGUMENT);
                         });
                         return [4 /*yield*/, sleep(10000)];
                     case 1:
@@ -649,7 +651,7 @@ describe("contract.deployed", function () {
                 }
             });
         });
-    });
+    }).timeout(60000);
     it("should work if contract is just now deployed", function () {
         return __awaiter(this, void 0, void 0, function () {
             var contractFactory, contract, contractDeployed;
