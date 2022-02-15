@@ -4,7 +4,7 @@ exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAcc
 var bytes_1 = require("@ethersproject/bytes");
 var bignumber_1 = require("@ethersproject/bignumber");
 var keccak256_1 = require("@ethersproject/keccak256");
-var rlp_1 = require("@hethers/rlp");
+var rlp_1 = require("@ethersproject/rlp");
 var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);

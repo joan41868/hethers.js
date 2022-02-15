@@ -350,6 +350,7 @@ describe("Test Contract Transaction Population", function () {
             const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
             const contractFactory = new hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
             const contract = yield contractFactory.deploy(hethers.BigNumber.from('10000'), { gasLimit: 3000000 });
+            yield contract.deployed();
             // client wallet init
             let clientWallet = hethers.Wallet.createRandom();
             const clientAccountId = (yield contractWallet.createAccount(clientWallet._signingKey().compressedPublicKey)).customData.accountId;

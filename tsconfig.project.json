@@ -20,13 +20,10 @@
       "path": "./packages/logger"
     },
     {
-      "path": "./packages/networks"
-    },
-    {
-      "path": "./packages/rlp"
-    },
-    {
       "path": "./packages/address"
+    },
+    {
+      "path": "./packages/networks"
     },
     {
       "path": "./packages/transactions"
@@ -57,9 +54,6 @@
     },
     {
       "path": "./packages/hethers"
-    },
-    {
-      "path": "./packages/asm"
     },
     {
       "path": "./packages/testcases"

@@ -531,7 +531,9 @@ describe("Wallet local calls", async function () {
 
 describe("Wallet createAccount", function () {
 
-    let wallet: hethers.Wallet, newAccount: hethers.Wallet, newAccountPublicKey: BytesLike, provider: hethers.providers.BaseProvider;
+    let wallet: hethers.Wallet, newAccount: hethers.Wallet, newAccountPublicKey: BytesLike,
+        provider: hethers.providers.BaseProvider, acc1Wallet: hethers.Wallet, acc2Wallet: hethers.Wallet,
+        acc1Eoa: any, acc2Eoa: any;
     const timeout = 60000;
 
     before( async function() {
@@ -540,9 +542,15 @@ describe("Wallet createAccount", function () {
             account: '0.0.29562194',
             privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
         };
+        acc1Eoa = {"account":"0.0.29631749","privateKey":"0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b"};
+        acc2Eoa = {"account":"0.0.29631750","privateKey":"0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee"};
         provider = hethers.providers.getDefaultProvider('testnet');
         // @ts-ignore
         wallet = new hethers.Wallet(hederaEoa, provider);
+        // @ts-ignore
+        acc1Wallet = new hethers.Wallet(acc1Eoa, provider);
+        // @ts-ignore
+        acc2Wallet = new hethers.Wallet(acc2Eoa, provider);
     });
 
     beforeEach(async () => {
@@ -580,5 +588,142 @@ describe("Wallet createAccount", function () {
         assert.notStrictEqual(receipt.accountAddress, null,"accountAddress exists");
         assert.notStrictEqual(receipt.transactionId, null,"transactionId exists");
         assert.ok(receipt.accountAddress.match(new RegExp(/^0x/)), "accountAddress has the correct format");
+    }).timeout(timeout);
+
+    it("Should transfer funds between accounts", async function() {
+        const acc1BalanceBefore = (await acc1Wallet.getBalance()).toNumber();
+        const acc2BalanceBefore = (await acc2Wallet.getBalance()).toNumber();
+        await acc1Wallet.sendTransaction({
+            to: acc2Wallet.account,
+            value: 1000,
+        });
+        const acc1BalanceAfter = (await acc1Wallet.getBalance()).toNumber();
+        const acc2BalanceAfter = (await acc2Wallet.getBalance()).toNumber();
+
+        assert.strictEqual(acc1BalanceBefore > acc1BalanceAfter, true);
+        assert.strictEqual(acc2BalanceBefore < acc2BalanceAfter, true);
+        assert.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 1000);
+    }).timeout(timeout);
+
+    it("Should throw an error for crypto transfer with data field", async function() {
+        let exceptionThrown = false;
+        let errorReason = null;
+
+        try {
+            await acc1Wallet.sendTransaction({
+                to: acc2Wallet.account,
+                value: 1,
+                data: '0x'
+            });
+        } catch (e: any) {
+            errorReason = e.reason;
+            exceptionThrown = true;
+        }
+
+        assert.strictEqual(errorReason, 'gasLimit is not provided. Cannot execute a Contract Call');
+        assert.strictEqual(exceptionThrown, true);
+    }).timeout(timeout);
+
+    it("Should throw an error for crypto transfer with gasLimit field", async function() {
+        let exceptionThrown = false;
+        let errorReason = null;
+
+        try {
+            await acc1Wallet.sendTransaction({
+                to: acc2Wallet.account,
+                value: 1,
+                gasLimit: 300000
+            });
+        } catch (e: any) {
+            errorReason = e.reason;
+            exceptionThrown = true;
+        }
+
+        assert.strictEqual(errorReason, 'receiver is an account. Cannot execute a Contract Call');
+        assert.strictEqual(exceptionThrown, true);
+    }).timeout(timeout);
+
+
+    it("Should throw an error for crypto transfer with missing to field", async function() {
+        let exceptionThrown = false;
+        let errorCode = null;
+
+        try {
+            await acc1Wallet.sendTransaction({
+                value: 1
+            });
+        } catch (e: any) {
+            errorCode = e.code;
+            exceptionThrown = true;
+        }
+
+        assert.strictEqual(errorCode, 'ERR_INVALID_ARG_TYPE');
+        assert.strictEqual(exceptionThrown, true);
+    }).timeout(timeout);
+
+    it("Should make a contract call with 'to' and 'value' with provided contract address as 'to'", async function() {
+        const abiGLDTokenWithConstructorArgs = JSON.parse(readFileSync('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+        const contractByteCodeGLDTokenWithConstructorArgs = readFileSync('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+        const contractFactory = new hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, acc1Wallet);
+        const contract = await contractFactory.deploy(hethers.BigNumber.from('10000'), {gasLimit: 3000000});
+        await contract.deployed();
+
+        let exceptionThrown = false;
+        try {
+            await acc1Wallet.sendTransaction({
+                to: contract.address,
+                value: 1,
+            });
+        } catch (e: any) {
+            exceptionThrown = true;
+        }
+
+        assert.strictEqual(exceptionThrown, false);
+    }).timeout(180000);
+
+    it("Should throw an exception if provider is not set", async function () {
+        let exceptionThrown = false;
+        let errorReason = null;
+
+        // @ts-ignore
+        const acc1WalletWithoutProvider = new hethers.Wallet(acc1Eoa);
+        try {
+            await acc1WalletWithoutProvider.sendTransaction({
+                to: acc2Wallet.account,
+                value: 1
+            });
+        } catch (e: any) {
+            errorReason = e.reason;
+            exceptionThrown = true;
+        }
+
+        assert.strictEqual(errorReason, 'missing provider');
+        assert.strictEqual(exceptionThrown, true);
+    }).timeout(timeout);
+
+    it("Should be able to get a crypto transfer transaction via provider.getTransaction(tx.transactionId)", async function () {
+        const transaction = await acc1Wallet.sendTransaction({
+            to: acc2Wallet.account,
+            value: 18925
+        });
+        await transaction.wait();
+
+        const tx = await provider.getTransaction(transaction.transactionId);
+        assert.strictEqual(tx.hasOwnProperty('chainId'), true);
+        assert.strictEqual(tx.hasOwnProperty('hash'), true);
+        assert.strictEqual(tx.hasOwnProperty('timestamp'), true);
+        assert.strictEqual(tx.hasOwnProperty('transactionId'), true);
+        assert.strictEqual(tx.hasOwnProperty('from'), true);
+        assert.strictEqual(tx.hasOwnProperty('to'), true);
+        assert.strictEqual(tx.hasOwnProperty('data'), true);
+        assert.strictEqual(tx.hasOwnProperty('gasLimit'), true);
+        assert.strictEqual(tx.hasOwnProperty('value'), true);
+        assert.strictEqual(tx.hasOwnProperty('customData'), true);
+        assert.strictEqual(tx.customData.hasOwnProperty('result'), true);
+        assert.strictEqual(tx.customData.result, 'SUCCESS');
+
+        assert.strictEqual(tx.from, acc1Wallet.account);
+        assert.strictEqual(tx.to, acc2Wallet.account);
+        assert.strictEqual(tx.value.toString(), '18925');
     }).timeout(timeout);
 });

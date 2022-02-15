@@ -672,7 +672,7 @@ describe("Wallet local calls", function () {
 });
 describe("Wallet createAccount", function () {
     var _this = this;
-    var wallet, newAccount, newAccountPublicKey, provider;
+    var wallet, newAccount, newAccountPublicKey, provider, acc1Wallet, acc2Wallet, acc1Eoa, acc2Eoa;
     var timeout = 60000;
     before(function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -683,9 +683,15 @@ describe("Wallet createAccount", function () {
                     account: '0.0.29562194',
                     privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
                 };
+                acc1Eoa = { "account": "0.0.29631749", "privateKey": "0x18a2ac384f3fa3670f71fc37e2efbf4879a90051bb0d437dd8cbd77077b24d9b" };
+                acc2Eoa = { "account": "0.0.29631750", "privateKey": "0x6357b34b94fe53ded45ebe4c22b9c1175634d3f7a8a568079c2cb93bba0e3aee" };
                 provider = hethers_1.hethers.providers.getDefaultProvider('testnet');
                 // @ts-ignore
                 wallet = new hethers_1.hethers.Wallet(hederaEoa, provider);
+                // @ts-ignore
+                acc1Wallet = new hethers_1.hethers.Wallet(acc1Eoa, provider);
+                // @ts-ignore
+                acc2Wallet = new hethers_1.hethers.Wallet(acc2Eoa, provider);
                 return [2 /*return*/];
             });
         });
@@ -752,6 +758,237 @@ describe("Wallet createAccount", function () {
                         assert_1.default.notStrictEqual(receipt.accountAddress, null, "accountAddress exists");
                         assert_1.default.notStrictEqual(receipt.transactionId, null, "transactionId exists");
                         assert_1.default.ok(receipt.accountAddress.match(new RegExp(/^0x/)), "accountAddress has the correct format");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should transfer funds between accounts", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var acc1BalanceBefore, acc2BalanceBefore, acc1BalanceAfter, acc2BalanceAfter;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, acc1Wallet.getBalance()];
+                    case 1:
+                        acc1BalanceBefore = (_a.sent()).toNumber();
+                        return [4 /*yield*/, acc2Wallet.getBalance()];
+                    case 2:
+                        acc2BalanceBefore = (_a.sent()).toNumber();
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                to: acc2Wallet.account,
+                                value: 1000,
+                            })];
+                    case 3:
+                        _a.sent();
+                        return [4 /*yield*/, acc1Wallet.getBalance()];
+                    case 4:
+                        acc1BalanceAfter = (_a.sent()).toNumber();
+                        return [4 /*yield*/, acc2Wallet.getBalance()];
+                    case 5:
+                        acc2BalanceAfter = (_a.sent()).toNumber();
+                        assert_1.default.strictEqual(acc1BalanceBefore > acc1BalanceAfter, true);
+                        assert_1.default.strictEqual(acc2BalanceBefore < acc2BalanceAfter, true);
+                        assert_1.default.strictEqual(acc2BalanceAfter - acc2BalanceBefore, 1000);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should throw an error for crypto transfer with data field", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var exceptionThrown, errorReason, e_1;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        exceptionThrown = false;
+                        errorReason = null;
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                to: acc2Wallet.account,
+                                value: 1,
+                                data: '0x'
+                            })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_1 = _a.sent();
+                        errorReason = e_1.reason;
+                        exceptionThrown = true;
+                        return [3 /*break*/, 4];
+                    case 4:
+                        assert_1.default.strictEqual(errorReason, 'gasLimit is not provided. Cannot execute a Contract Call');
+                        assert_1.default.strictEqual(exceptionThrown, true);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should throw an error for crypto transfer with gasLimit field", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var exceptionThrown, errorReason, e_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        exceptionThrown = false;
+                        errorReason = null;
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                to: acc2Wallet.account,
+                                value: 1,
+                                gasLimit: 300000
+                            })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_2 = _a.sent();
+                        errorReason = e_2.reason;
+                        exceptionThrown = true;
+                        return [3 /*break*/, 4];
+                    case 4:
+                        assert_1.default.strictEqual(errorReason, 'receiver is an account. Cannot execute a Contract Call');
+                        assert_1.default.strictEqual(exceptionThrown, true);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should throw an error for crypto transfer with missing to field", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var exceptionThrown, errorCode, e_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        exceptionThrown = false;
+                        errorCode = null;
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                value: 1
+                            })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_3 = _a.sent();
+                        errorCode = e_3.code;
+                        exceptionThrown = true;
+                        return [3 /*break*/, 4];
+                    case 4:
+                        assert_1.default.strictEqual(errorCode, 'ERR_INVALID_ARG_TYPE');
+                        assert_1.default.strictEqual(exceptionThrown, true);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should make a contract call with 'to' and 'value' with provided contract address as 'to'", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractFactory, contract, exceptionThrown, e_4;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        abiGLDTokenWithConstructorArgs = JSON.parse((0, fs_1.readFileSync)('examples/assets/abi/GLDTokenWithConstructorArgs_abi.json').toString());
+                        contractByteCodeGLDTokenWithConstructorArgs = (0, fs_1.readFileSync)('examples/assets/bytecode/GLDTokenWithConstructorArgs.bin').toString();
+                        contractFactory = new hethers_1.hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, acc1Wallet);
+                        return [4 /*yield*/, contractFactory.deploy(hethers_1.hethers.BigNumber.from('10000'), { gasLimit: 3000000 })];
+                    case 1:
+                        contract = _a.sent();
+                        return [4 /*yield*/, contract.deployed()];
+                    case 2:
+                        _a.sent();
+                        exceptionThrown = false;
+                        _a.label = 3;
+                    case 3:
+                        _a.trys.push([3, 5, , 6]);
+                        return [4 /*yield*/, acc1Wallet.sendTransaction({
+                                to: contract.address,
+                                value: 1,
+                            })];
+                    case 4:
+                        _a.sent();
+                        return [3 /*break*/, 6];
+                    case 5:
+                        e_4 = _a.sent();
+                        exceptionThrown = true;
+                        return [3 /*break*/, 6];
+                    case 6:
+                        assert_1.default.strictEqual(exceptionThrown, false);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(180000);
+    it("Should throw an exception if provider is not set", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var exceptionThrown, errorReason, acc1WalletWithoutProvider, e_5;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        exceptionThrown = false;
+                        errorReason = null;
+                        acc1WalletWithoutProvider = new hethers_1.hethers.Wallet(acc1Eoa);
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, acc1WalletWithoutProvider.sendTransaction({
+                                to: acc2Wallet.account,
+                                value: 1
+                            })];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        e_5 = _a.sent();
+                        errorReason = e_5.reason;
+                        exceptionThrown = true;
+                        return [3 /*break*/, 4];
+                    case 4:
+                        assert_1.default.strictEqual(errorReason, 'missing provider');
+                        assert_1.default.strictEqual(exceptionThrown, true);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(timeout);
+    it("Should be able to get a crypto transfer transaction via provider.getTransaction(tx.transactionId)", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var transaction, tx;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, acc1Wallet.sendTransaction({
+                            to: acc2Wallet.account,
+                            value: 18925
+                        })];
+                    case 1:
+                        transaction = _a.sent();
+                        return [4 /*yield*/, transaction.wait()];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, provider.getTransaction(transaction.transactionId)];
+                    case 3:
+                        tx = _a.sent();
+                        assert_1.default.strictEqual(tx.hasOwnProperty('chainId'), true);
+                        assert_1.default.strictEqual(tx.hasOwnProperty('hash'), true);
+                        assert_1.default.strictEqual(tx.hasOwnProperty('timestamp'), true);
+                        assert_1.default.strictEqual(tx.hasOwnProperty('transactionId'), true);
+                        assert_1.default.strictEqual(tx.hasOwnProperty('from'), true);
+                        assert_1.default.strictEqual(tx.hasOwnProperty('to'), true);
+                        assert_1.default.strictEqual(tx.hasOwnProperty('data'), true);
+                        assert_1.default.strictEqual(tx.hasOwnProperty('gasLimit'), true);
+                        assert_1.default.strictEqual(tx.hasOwnProperty('value'), true);
+                        assert_1.default.strictEqual(tx.hasOwnProperty('customData'), true);
+                        assert_1.default.strictEqual(tx.customData.hasOwnProperty('result'), true);
+                        assert_1.default.strictEqual(tx.customData.result, 'SUCCESS');
+                        assert_1.default.strictEqual(tx.from, acc1Wallet.account);
+                        assert_1.default.strictEqual(tx.to, acc2Wallet.account);
+                        assert_1.default.strictEqual(tx.value.toString(), '18925');
                         return [2 /*return*/];
                 }
             });

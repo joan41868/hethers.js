@@ -11,7 +11,7 @@ import {
 } from "@ethersproject/bytes";
 import {_base16To36, _base36To16, BigNumber, BigNumberish} from "@ethersproject/bignumber";
 import {keccak256} from "@ethersproject/keccak256";
-import {encode} from "@hethers/rlp";
+import {encode} from "@ethersproject/rlp";
 
 import {Logger} from "@hethers/logger";
 import {version} from "./_version";

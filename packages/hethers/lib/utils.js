@@ -104,7 +104,7 @@ Object.defineProperty(exports, "defineReadOnly", { enumerable: true, get: functi
 Object.defineProperty(exports, "getStatic", { enumerable: true, get: function () { return properties_1.getStatic; } });
 Object.defineProperty(exports, "resolveProperties", { enumerable: true, get: function () { return properties_1.resolveProperties; } });
 Object.defineProperty(exports, "shallowCopy", { enumerable: true, get: function () { return properties_1.shallowCopy; } });
-var RLP = __importStar(require("@hethers/rlp"));
+var RLP = __importStar(require("@ethersproject/rlp"));
 exports.RLP = RLP;
 var signing_key_1 = require("@ethersproject/signing-key");
 Object.defineProperty(exports, "computePublicKey", { enumerable: true, get: function () { return signing_key_1.computePublicKey; } });

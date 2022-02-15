@@ -39,6 +39,10 @@ export declare type HederaTransactionRecord = {
     hash: string;
     logs?: {};
     accountAddress?: string;
+    transfersList?: Array<{
+        to: string;
+        amount: number;
+    }>;
 };
 export interface TransactionResponse extends Transaction {
     hash: string;

@@ -302,7 +302,8 @@ export class Formatter {
                 gas_used: record.gas_used ? record.gas_used : null,
                 logs: record.logs ? record.logs : null,
                 result: record.result ? record.result : null,
-                accountAddress: record.accountAddress ? record.accountAddress : null
+                accountAddress: record.accountAddress ? record.accountAddress : null,
+                transfersList: record.transfersList ? record.transfersList : [],
             },
             wait: null,
         };
