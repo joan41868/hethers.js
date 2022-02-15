@@ -657,7 +657,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getTransaction = function (transactionIdOrTimestamp) {
         return __awaiter(this, void 0, void 0, function () {
-            var transactionsEndpoint, data, filtered, record, transactionName, contractsEndpoint, dataWithLogs, error_5;
+            var transactionsEndpoint, data, filtered_1, record_1, transactionName, charityFee_1, toTransfers, contractsEndpoint, dataWithLogs, error_5;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -669,39 +669,62 @@ var BaseProvider = /** @class */ (function (_super) {
                         !transactionIdOrTimestamp.includes("-") ? transactionsEndpoint += ('?timestamp=' + transactionIdOrTimestamp) : transactionsEndpoint += transactionIdOrTimestamp;
                         _a.label = 2;
                     case 2:
-                        _a.trys.push([2, 8, , 9]);
+                        _a.trys.push([2, 9, , 10]);
                         return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + transactionsEndpoint)];
                     case 3:
                         data = (_a.sent()).data;
-                        if (!data) return [3 /*break*/, 7];
-                        filtered = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
-                        if (!(filtered.length > 0)) return [3 /*break*/, 7];
-                        record = void 0;
-                        record = {
+                        if (!data) return [3 /*break*/, 8];
+                        filtered_1 = data.transactions.filter(function (e) { return e.result != 'DUPLICATE_TRANSACTION'; });
+                        if (!(filtered_1.length > 0)) return [3 /*break*/, 8];
+                        record_1 = {
                             chainId: this._network.chainId,
-                            transactionId: filtered[0].transaction_id,
-                            result: filtered[0].result,
+                            transactionId: filtered_1[0].transaction_id,
+                            result: filtered_1[0].result,
+                            customData: {}
                         };
-                        transactionName = filtered[0].name;
+                        transactionName = filtered_1[0].name;
                         if (!(transactionName === 'CRYPTOCREATEACCOUNT')) return [3 /*break*/, 4];
-                        record.from = (0, address_1.getAccountFromTransactionId)(filtered[0].transaction_id);
-                        record.timestamp = filtered[0].consensus_timestamp;
+                        record_1.from = (0, address_1.getAccountFromTransactionId)(filtered_1[0].transaction_id);
+                        record_1.timestamp = filtered_1[0].consensus_timestamp;
                         // Different endpoints of the mirror node API returns hashes in different formats.
                         // In order to ensure consistency with data from MIRROR_NODE_CONTRACTS_ENDPOINT
                         // the hash from MIRROR_NODE_TRANSACTIONS_ENDPOINT is base64 decoded and then converted to hex.
-                        record.hash = base64ToHex(filtered[0].transaction_hash);
-                        record.accountAddress = (0, address_1.getAddressFromAccount)(filtered[0].entity_id);
-                        return [3 /*break*/, 6];
+                        record_1.hash = base64ToHex(filtered_1[0].transaction_hash);
+                        record_1.accountAddress = (0, address_1.getAddressFromAccount)(filtered_1[0].entity_id);
+                        return [3 /*break*/, 7];
                     case 4:
-                        contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + filtered[0].transaction_id;
-                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
+                        if (!(transactionName === 'CRYPTOTRANSFER')) return [3 /*break*/, 5];
+                        record_1.from = (0, address_1.getAccountFromTransactionId)(filtered_1[0].transaction_id);
+                        record_1.timestamp = filtered_1[0].consensus_timestamp;
+                        record_1.hash = base64ToHex(filtered_1[0].transaction_hash);
+                        charityFee_1 = 0;
+                        toTransfers = filtered_1[0].transfers.filter(function (t) {
+                            if (t.account == filtered_1[0].node) {
+                                charityFee_1 = filtered_1[0].charged_tx_fee - t.amount;
+                                return false;
+                            }
+                            return t.account != record_1.from;
+                        }).filter(function (t) {
+                            return t.amount != charityFee_1;
+                        });
+                        if (toTransfers.length > 1) {
+                            record_1.transfersList = toTransfers;
+                        }
+                        else {
+                            record_1.to = toTransfers[0].account;
+                            record_1.amount = toTransfers[0].amount;
+                        }
+                        return [3 /*break*/, 7];
                     case 5:
+                        contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + filtered_1[0].transaction_id;
+                        return [4 /*yield*/, axios_1.default.get(this._mirrorNodeUrl + contractsEndpoint)];
+                    case 6:
                         dataWithLogs = _a.sent();
-                        record = Object.assign({}, record, __assign({}, dataWithLogs.data));
-                        _a.label = 6;
-                    case 6: return [2 /*return*/, this.formatter.responseFromRecord(record)];
-                    case 7: return [3 /*break*/, 9];
-                    case 8:
+                        record_1 = Object.assign({}, record_1, __assign({}, dataWithLogs.data));
+                        _a.label = 7;
+                    case 7: return [2 /*return*/, this.formatter.responseFromRecord(record_1)];
+                    case 8: return [3 /*break*/, 10];
+                    case 9:
                         error_5 = _a.sent();
                         if (error_5 && error_5.response && error_5.response.status != 404) {
                             logger.throwError("bad result from backend", logger_1.Logger.errors.SERVER_ERROR, {
@@ -709,8 +732,8 @@ var BaseProvider = /** @class */ (function (_super) {
                                 error: error_5
                             });
                         }
-                        return [3 /*break*/, 9];
-                    case 9: return [2 /*return*/, null];
+                        return [3 /*break*/, 10];
+                    case 10: return [2 /*return*/, null];
                 }
             });
         });

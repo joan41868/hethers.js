@@ -47,7 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.parse = exports.serializeHederaTransaction = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
+exports.numberify = exports.parse = exports.serializeHederaTransaction = exports.accessListify = exports.recoverAddress = exports.computeAliasFromPubKey = exports.computeAlias = exports.computeAddress = exports.TransactionTypes = void 0;
 var address_1 = require("@ethersproject/address");
 var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
@@ -128,8 +128,13 @@ function serializeHederaTransaction(transaction, pubKey) {
     var _a, _b;
     var tx;
     var arrayifiedData = transaction.data ? (0, bytes_1.arrayify)(transaction.data) : new Uint8Array();
-    var gas = (0, bignumber_1.numberify)(transaction.gasLimit ? transaction.gasLimit : 0);
-    if (transaction.to) {
+    var gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
+    if (transaction.customData.isCryptoTransfer) {
+        tx = new sdk_1.TransferTransaction()
+            .addHbarTransfer(transaction.from.toString(), new sdk_1.Hbar(transaction.value.toString(), sdk_1.HbarUnit.Tinybar).negated())
+            .addHbarTransfer(transaction.to.toString(), new sdk_1.Hbar(transaction.value.toString(), sdk_1.HbarUnit.Tinybar));
+    }
+    else if (transaction.to) {
         tx = new sdk_1.ContractExecuteTransaction()
             .setContractId(sdk_1.ContractId.fromSolidityAddress((0, utils_1.getAddressFromAccount)(transaction.to)))
             .setFunctionParameters(arrayifiedData)
@@ -174,9 +179,9 @@ function serializeHederaTransaction(transaction, pubKey) {
     }
     var account = (0, address_1.getAccountFromAddress)(transaction.from.toString());
     tx.setTransactionId(sdk_1.TransactionId.generate(new sdk_1.AccountId({
-        shard: (0, bignumber_1.numberify)(account.shard),
-        realm: (0, bignumber_1.numberify)(account.realm),
-        num: (0, bignumber_1.numberify)(account.num)
+        shard: numberify(account.shard),
+        realm: numberify(account.realm),
+        num: numberify(account.num)
     })))
         .setNodeAccountIds([sdk_1.AccountId.fromString(transaction.nodeId.toString())])
         .freeze();
@@ -338,4 +343,8 @@ function parse(rawTransaction) {
     });
 }
 exports.parse = parse;
+function numberify(num) {
+    return bignumber_1.BigNumber.from(num).toNumber();
+}
+exports.numberify = numberify;
 //# sourceMappingURL=index.js.map

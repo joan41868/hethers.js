@@ -1,9 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports._base36To16 = exports._base16To36 = exports.parseFixed = exports.FixedNumber = exports.FixedFormat = exports.formatFixed = exports.numberify = exports.BigNumber = void 0;
+exports._base36To16 = exports._base16To36 = exports.parseFixed = exports.FixedNumber = exports.FixedFormat = exports.formatFixed = exports.BigNumber = void 0;
 var bignumber_1 = require("./bignumber");
 Object.defineProperty(exports, "BigNumber", { enumerable: true, get: function () { return bignumber_1.BigNumber; } });
-Object.defineProperty(exports, "numberify", { enumerable: true, get: function () { return bignumber_1.numberify; } });
 var fixednumber_1 = require("./fixednumber");
 Object.defineProperty(exports, "formatFixed", { enumerable: true, get: function () { return fixednumber_1.formatFixed; } });
 Object.defineProperty(exports, "FixedFormat", { enumerable: true, get: function () { return fixednumber_1.FixedFormat; } });

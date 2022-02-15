@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 import { getAccountFromAddress, getAddress } from "@ethersproject/address";
-import { BigNumber, numberify } from "@ethersproject/bignumber";
+import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexDataLength, hexDataSlice, hexlify, } from "@ethersproject/bytes";
 import { Zero } from "@ethersproject/constants";
 import { keccak256 } from "@ethersproject/keccak256";
@@ -17,7 +17,7 @@ import { computePublicKey, recoverPublicKey } from "@ethersproject/signing-key";
 import { Logger } from "@ethersproject/logger";
 import { version } from "./_version";
 import { base64, getAddressFromAccount } from "ethers/lib/utils";
-import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction, AccountCreateTransaction, Hbar } from "@hashgraph/sdk";
+import { ContractCreateTransaction, ContractExecuteTransaction, ContractId, FileAppendTransaction, FileCreateTransaction, Transaction as HederaTransaction, PublicKey as HederaPubKey, TransactionId, AccountId, TransferTransaction, AccountCreateTransaction, Hbar, HbarUnit } from "@hashgraph/sdk";
 const logger = new Logger(version);
 export var TransactionTypes;
 (function (TransactionTypes) {
@@ -84,7 +84,12 @@ export function serializeHederaTransaction(transaction, pubKey) {
     let tx;
     const arrayifiedData = transaction.data ? arrayify(transaction.data) : new Uint8Array();
     const gas = numberify(transaction.gasLimit ? transaction.gasLimit : 0);
-    if (transaction.to) {
+    if (transaction.customData.isCryptoTransfer) {
+        tx = new TransferTransaction()
+            .addHbarTransfer(transaction.from.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar).negated())
+            .addHbarTransfer(transaction.to.toString(), new Hbar(transaction.value.toString(), HbarUnit.Tinybar));
+    }
+    else if (transaction.to) {
         tx = new ContractExecuteTransaction()
             .setContractId(ContractId.fromSolidityAddress(getAddressFromAccount(transaction.to)))
             .setFunctionParameters(arrayifiedData)
@@ -280,5 +285,8 @@ export function parse(rawTransaction) {
         // TODO populate r, s ,v
         return Object.assign(Object.assign({}, contents), { chainId: 0, r: '', s: '', v: 0 });
     });
+}
+export function numberify(num) {
+    return BigNumber.from(num).toNumber();
 }
 //# sourceMappingURL=index.js.map

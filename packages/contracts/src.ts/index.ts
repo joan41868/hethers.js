@@ -12,6 +12,7 @@ import {
     Result
 } from "@ethersproject/abi";
 import {
+    Filter,
     Listener,
     Log,
     Provider,
@@ -19,6 +20,7 @@ import {
     TransactionRequest,
     TransactionResponse
 } from "@ethersproject/abstract-provider";
+import { composeHederaTimestamp } from "@ethersproject/providers";
 import { Signer, VoidSigner } from "@ethersproject/abstract-signer";
 import { AccountLike, getAddress, getAddressFromAccount } from "@ethersproject/address";
 import { BigNumber, BigNumberish } from "@ethersproject/bignumber";
@@ -885,7 +887,7 @@ export class BaseContract {
             this._checkRunningEvents(runningEvent);
         };
         event.getTransaction = () => {
-            return this.provider.getTransaction(event.timestamp);
+            return this.provider.getTransaction(log.timestamp);
         }
         event.getTransactionReceipt = () => {
             return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
@@ -939,23 +941,20 @@ export class BaseContract {
         }
     }
 
-    queryFilter(event: EventFilter): Promise<Array<Event>> {
+    async queryFilter(event: EventFilter, fromTimestamp?: string | number, toTimestamp?: string | number): Promise<Array<Event>> {
         this._requireAddressSet();
         const runningEvent = this._getRunningEvent(event);
         const filter = shallowCopy(runningEvent.filter);
 
-        // if (typeof(fromBlockOrBlockhash) === "string" && isHexString(fromBlockOrBlockhash, 32)) {
-        //     if (toBlock != null) {
-        //         logger.throwArgumentError("cannot specify toBlock with blockhash", "toBlock", toBlock);
-        //     }
-        //     (<FilterByBlockHash>filter).blockHash = fromBlockOrBlockhash;
-        // } else {
-        //      (<Filter>filter).fromBlock = ((fromBlockOrBlockhash != null) ? fromBlockOrBlockhash: 0);
-        //      (<Filter>filter).toBlock = ((toBlock != null) ? toBlock: "latest");
-        // }
-        return this.provider.getLogs(filter).then((logs) => {
-            return logs.map((log) => this._wrapEvent(runningEvent, log, null));
-        });
+        if (fromTimestamp) {
+            (<Filter>filter).fromTimestamp = composeHederaTimestamp(fromTimestamp);
+        }
+        if (toTimestamp) {
+            (<Filter>filter).toTimestamp = composeHederaTimestamp(toTimestamp);
+        }
+
+        const logs = await this.provider.getLogs(filter);
+        return logs.map((log) => this._wrapEvent(runningEvent, log, null));
     }
 
     on(event: EventFilter | string, listener: Listener): this {

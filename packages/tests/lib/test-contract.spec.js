@@ -364,9 +364,12 @@ describe("Test Contract Transaction Population", function () {
                         return [4 /*yield*/, contractFactory.deploy(ethers_1.ethers.BigNumber.from('10000'), { gasLimit: 3000000 })];
                     case 1:
                         contract = _g.sent();
+                        return [4 /*yield*/, contract.deployed()];
+                    case 2:
+                        _g.sent();
                         clientWallet = ethers_1.ethers.Wallet.createRandom();
                         return [4 /*yield*/, contractWallet.createAccount(clientWallet._signingKey().compressedPublicKey)];
-                    case 2:
+                    case 3:
                         clientAccountId = (_g.sent()).customData.accountId;
                         clientWallet = clientWallet.connect(providerTestnet).connectAccount(clientAccountId.toString());
                         // test sending hbars to the contract
@@ -376,44 +379,44 @@ describe("Test Contract Transaction Population", function () {
                                 value: 30,
                                 gasLimit: 300000
                             })];
-                    case 3:
+                    case 4:
                         // test sending hbars to the contract
                         _g.sent();
                         // test if initial balance of the client is zero
                         _b = (_a = assert_1.default).strictEqual;
                         return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
-                    case 4:
+                    case 5:
                         // test if initial balance of the client is zero
                         _b.apply(_a, [(_g.sent()).toString(), '0']);
                         return [4 /*yield*/, contract.getInternalCounter({ gasLimit: 300000 })];
-                    case 5:
+                    case 6:
                         viewMethodCall = _g.sent();
                         assert_1.default.strictEqual(viewMethodCall.toString(), '29');
                         return [4 /*yield*/, contract.populateTransaction.transfer(clientWallet.address, 10, { gasLimit: 300000 })];
-                    case 6:
+                    case 7:
                         populatedTx = _g.sent();
                         return [4 /*yield*/, contractWallet.signTransaction(populatedTx)];
-                    case 7:
+                    case 8:
                         signedTransaction = _g.sent();
                         return [4 /*yield*/, contractWallet.provider.sendTransaction(signedTransaction)];
-                    case 8:
+                    case 9:
                         tx = _g.sent();
                         return [4 /*yield*/, tx.wait()];
-                    case 9:
+                    case 10:
                         _g.sent();
                         _d = (_c = assert_1.default).strictEqual;
                         return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
-                    case 10:
+                    case 11:
                         _d.apply(_c, [(_g.sent()).toString(), '10']);
                         return [4 /*yield*/, contract.transfer(clientWallet.address, 10, { gasLimit: 300000 })];
-                    case 11:
+                    case 12:
                         transferMethodCall = _g.sent();
                         return [4 /*yield*/, transferMethodCall.wait()];
-                    case 12:
+                    case 13:
                         _g.sent();
                         _f = (_e = assert_1.default).strictEqual;
                         return [4 /*yield*/, contract.balanceOf(clientWallet.address, { gasLimit: 300000 })];
-                    case 13:
+                    case 14:
                         _f.apply(_e, [(_g.sent()).toString(), '20']);
                         return [2 /*return*/];
                 }
@@ -670,6 +673,75 @@ describe("contract.deployed", function () {
                         contractDeployed = _a.sent();
                         assert_1.default.notStrictEqual(contractDeployed, null, "deployed returns the contract");
                         assert_1.default.strictEqual(contractDeployed.address, contract.address, "deployed returns the same contract instance");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(60000);
+});
+describe("Test Contract Query Filter", function () {
+    var hederaEoa = {
+        account: '0.0.29562194',
+        privateKey: '0x3b6cd41ded6986add931390d5d3efa0bb2b311a8415cfe66716cac0234de035d'
+    };
+    var provider = ethers_1.ethers.providers.getDefaultProvider('testnet');
+    // @ts-ignore
+    var wallet = new ethers_1.ethers.Wallet(hederaEoa, provider);
+    it("should filter contract events by timestamp string", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var contractAddress, fromTimestamp, toTimestamp, contract, filter, events;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        contractAddress = '0x000000000000000000000000000000000186fb1a';
+                        fromTimestamp = '1642065156.264170833';
+                        toTimestamp = '1642080642.176149864';
+                        contract = ethers_1.ethers.ContractFactory.getContract(contractAddress, abi, wallet);
+                        filter = {
+                            address: contractAddress,
+                        };
+                        return [4 /*yield*/, contract.queryFilter(filter, fromTimestamp, toTimestamp)];
+                    case 1:
+                        events = _a.sent();
+                        assert_1.default.strictEqual(events.length, 2, "queryFilter returns the contract events");
+                        assert_1.default.strictEqual(events[0].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+                        assert_1.default.notStrictEqual(events[0].data, null, "result data exists");
+                        assert_1.default.strict(events[0].topics.length > 0, "result topics not empty");
+                        assert_1.default.strict(events[0].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
+                        assert_1.default.strict(events[0].timestamp <= toTimestamp, "result is less or equal toTimestamp");
+                        assert_1.default.strictEqual(events[1].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+                        assert_1.default.notStrictEqual(events[1].data, null, "result data exists");
+                        assert_1.default.strict(events[1].topics.length > 0, "result topics not empty");
+                        assert_1.default.strict(events[1].timestamp >= fromTimestamp, "result timestamp is greater or equal fromTimestamp");
+                        assert_1.default.strict(events[1].timestamp <= toTimestamp, "result is less or equal toTimestamp");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }).timeout(60000);
+    it("should filter contract events by timestamp number", function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var contractAddress, fromTimestamp, toTimestamp, contract, filter, events;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        contractAddress = '0x000000000000000000000000000000000186fb1a';
+                        fromTimestamp = 1642065156264170;
+                        toTimestamp = 1642080642176150;
+                        contract = ethers_1.ethers.ContractFactory.getContract(contractAddress, abi, wallet);
+                        filter = {
+                            address: contractAddress,
+                        };
+                        return [4 /*yield*/, contract.queryFilter(filter, fromTimestamp, toTimestamp)];
+                    case 1:
+                        events = _a.sent();
+                        assert_1.default.strictEqual(events.length, 2, "queryFilter returns the contract events");
+                        assert_1.default.strictEqual(events[0].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+                        assert_1.default.notStrictEqual(events[0].data, null, "result data exists");
+                        assert_1.default.strict(events[0].topics.length > 0, "result topics not empty");
+                        assert_1.default.strictEqual(events[1].address.toLowerCase(), contractAddress.toLowerCase(), "result address matches contract address");
+                        assert_1.default.notStrictEqual(events[1].data, null, "result data exists");
+                        assert_1.default.strict(events[1].topics.length > 0, "result topics not empty");
                         return [2 /*return*/];
                 }
             });
