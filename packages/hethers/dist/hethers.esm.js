@@ -16203,13 +16203,13 @@ const version$m = "units/5.5.0";
 "use strict";
 const logger$o = new Logger(version$m);
 const names = [
-    "wei",
-    "kwei",
-    "mwei",
-    "gwei",
-    "szabo",
-    "finney",
-    "ether",
+    "tinybar",
+    "microbar",
+    "millibar",
+    "hbar",
+    "kilobar",
+    "megabar",
+    "gigabar",
 ];
 // Some environments have issues with RegEx that contain back-tracking, so we cannot
 // use them.
@@ -16257,10 +16257,10 @@ function formatUnits(value, unitName) {
     if (typeof (unitName) === "string") {
         const index = names.indexOf(unitName);
         if (index !== -1) {
-            unitName = 3 * index;
+            unitName = Math.max((3 * index) - 1, 0);
         }
     }
-    return formatFixed(value, (unitName != null) ? unitName : 18);
+    return formatFixed(value, (unitName != null) ? unitName : 8);
 }
 function parseUnits(value, unitName) {
     if (typeof (value) !== "string") {
@@ -16269,16 +16269,16 @@ function parseUnits(value, unitName) {
     if (typeof (unitName) === "string") {
         const index = names.indexOf(unitName);
         if (index !== -1) {
-            unitName = 3 * index;
+            unitName = Math.max((3 * index) - 1, 0);
         }
     }
-    return parseFixed(value, (unitName != null) ? unitName : 18);
+    return parseFixed(value, (unitName != null) ? unitName : 8);
 }
-function formatEther(wei) {
-    return formatUnits(wei, 18);
+function formatHbar(tinybar) {
+    return formatUnits(tinybar, 8);
 }
-function parseEther(ether) {
-    return parseUnits(ether, 18);
+function parseHbar(hbar) {
+    return parseUnits(hbar, 8);
 }
 
 var lib_esm$h = /*#__PURE__*/Object.freeze({
@@ -16286,8 +16286,8 @@ var lib_esm$h = /*#__PURE__*/Object.freeze({
 	commify: commify,
 	formatUnits: formatUnits,
 	parseUnits: parseUnits,
-	formatEther: formatEther,
-	parseEther: parseEther
+	formatHbar: formatHbar,
+	parseHbar: parseHbar
 });
 
 const version$n = "abstract-signer/5.5.0";
@@ -93226,7 +93226,7 @@ var __importStar = (commonjsGlobal && commonjsGlobal.__importStar) || function (
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.formatBytes32String = exports.Utf8ErrorFuncs = exports.toUtf8String = exports.toUtf8CodePoints = exports.toUtf8Bytes = exports._toEscapedUtf8String = exports.nameprep = exports.hexDataSlice = exports.hexDataLength = exports.hexZeroPad = exports.hexValue = exports.hexStripZeros = exports.hexConcat = exports.isHexString = exports.hexlify = exports.base64 = exports.base58 = exports.TransactionDescription = exports.LogDescription = exports.Interface = exports.SigningKey = exports.HDNode = exports.defaultPath = exports.isBytesLike = exports.isBytes = exports.zeroPad = exports.stripZeros = exports.concat = exports.arrayify = exports.shallowCopy = exports.resolveProperties = exports.getStatic = exports.defineReadOnly = exports.deepCopy = exports.checkProperties = exports.poll = exports.fetchJson = exports._fetchData = exports.RLP = exports.Logger = exports.checkResultErrors = exports.FormatTypes = exports.ParamType = exports.FunctionFragment = exports.EventFragment = exports.ErrorFragment = exports.ConstructorFragment = exports.Fragment = exports.defaultAbiCoder = exports.AbiCoder = void 0;
-exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAlias = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseEther = exports.formatEther = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getChecksumAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.hashMessage = exports.parseBytes32String = void 0;
+exports.parseAccount = exports.getAccountFromAddress = exports.getAddressFromAccount = exports.Indexed = exports.Utf8ErrorReason = exports.UnicodeNormalizationForm = exports.SupportedAlgorithm = exports.mnemonicToSeed = exports.isValidMnemonic = exports.entropyToMnemonic = exports.mnemonicToEntropy = exports.getAccountPath = exports.verifyTypedData = exports.verifyMessage = exports.recoverPublicKey = exports.computePublicKey = exports.recoverAddress = exports.computeAlias = exports.computeAddress = exports.getJsonWalletAddress = exports.TransactionTypes = exports.parseTransaction = exports.accessListify = exports.joinSignature = exports.splitSignature = exports.soliditySha256 = exports.solidityKeccak256 = exports.solidityPack = exports.shuffled = exports.randomBytes = exports.sha512 = exports.sha256 = exports.ripemd160 = exports.keccak256 = exports.computeHmac = exports.commify = exports.parseUnits = exports.formatUnits = exports.parseHbar = exports.formatHbar = exports.isAddress = exports.getCreate2Address = exports.getContractAddress = exports.getIcapAddress = exports.getChecksumAddress = exports.getAddress = exports._TypedDataEncoder = exports.id = exports.hashMessage = exports.parseBytes32String = void 0;
 
 Object.defineProperty(exports, "AbiCoder", { enumerable: true, get: function () { return abi_1.AbiCoder; } });
 Object.defineProperty(exports, "checkResultErrors", { enumerable: true, get: function () { return abi_1.checkResultErrors; } });
@@ -93334,8 +93334,8 @@ Object.defineProperty(exports, "recoverAddress", { enumerable: true, get: functi
 Object.defineProperty(exports, "TransactionTypes", { enumerable: true, get: function () { return transactions_1.TransactionTypes; } });
 
 Object.defineProperty(exports, "commify", { enumerable: true, get: function () { return units_1.commify; } });
-Object.defineProperty(exports, "formatEther", { enumerable: true, get: function () { return units_1.formatEther; } });
-Object.defineProperty(exports, "parseEther", { enumerable: true, get: function () { return units_1.parseEther; } });
+Object.defineProperty(exports, "formatHbar", { enumerable: true, get: function () { return units_1.formatHbar; } });
+Object.defineProperty(exports, "parseHbar", { enumerable: true, get: function () { return units_1.parseHbar; } });
 Object.defineProperty(exports, "formatUnits", { enumerable: true, get: function () { return units_1.formatUnits; } });
 Object.defineProperty(exports, "parseUnits", { enumerable: true, get: function () { return units_1.parseUnits; } });
 
@@ -99439,8 +99439,8 @@ var utils$4 = /*#__PURE__*/Object.freeze({
 	getContractAddress: getContractAddress$1,
 	getCreate2Address: getCreate2Address$1,
 	isAddress: isAddress$1,
-	formatEther: formatEther,
-	parseEther: parseEther,
+	formatHbar: formatHbar,
+	parseHbar: parseHbar,
 	formatUnits: formatUnits,
 	parseUnits: parseUnits,
 	commify: commify,

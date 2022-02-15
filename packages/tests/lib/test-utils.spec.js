@@ -83,41 +83,7 @@ function equals(a, b) {
     return a === b;
 }
 describe('Test Unit Conversion', function () {
-    var tests = (0, testcases_1.loadTests)('units');
-    tests.forEach(function (test) {
-        var wei = hethers_1.hethers.BigNumber.from(test.wei);
-        it(('parses ' + test.ether + ' ether'), function () {
-            assert_1.default.ok(hethers_1.hethers.utils.parseEther(test.ether.replace(/,/g, '')).eq(wei), 'parsing ether failed - ' + test.name);
-        });
-        it(('formats ' + wei.toString() + ' wei to ether'), function () {
-            var actual = hethers_1.hethers.utils.formatEther(wei);
-            assert_1.default.equal(actual, test.ether_format, 'formatting wei failed - ' + test.name);
-        });
-    });
-    tests.forEach(function (test) {
-        var wei = hethers_1.hethers.BigNumber.from(test.wei);
-        ['kwei', 'mwei', 'gwei', 'szabo', 'finney', 'satoshi'].forEach(function (name) {
-            var unitName = name;
-            if (name === 'satoshi') {
-                unitName = 8;
-            }
-            if (test[name]) {
-                it(('parses ' + test[name] + ' ' + name), function () {
-                    this.timeout(120000);
-                    assert_1.default.ok(hethers_1.hethers.utils.parseUnits(test[name].replace(/,/g, ''), unitName).eq(wei), ('parsing ' + name + ' failed - ' + test.name));
-                });
-            }
-            var expectedKey = (name + '_format');
-            if (test[expectedKey]) {
-                it(('formats ' + wei.toString() + ' wei to ' + name + ')'), function () {
-                    var actual = hethers_1.hethers.utils.formatUnits(wei, unitName);
-                    var expected = test[expectedKey];
-                    assert_1.default.equal(actual, expected, ('formats ' + name + ' - ' + test.name));
-                });
-            }
-        });
-    });
-    it("formats with commify", function () {
+    it("should be able to execute formats with commify", function () {
         var tests = {
             "0.0": "0.0",
             ".0": "0.0",
@@ -133,23 +99,65 @@ describe('Test Unit Conversion', function () {
             "1000.12345": "1,000.12345",
             "998998998998.123456789": "998,998,998,998.123456789",
         };
-        Object.keys(tests).forEach(function (test) {
-            assert_1.default.equal(hethers_1.hethers.utils.commify(test), tests[test]);
-        });
+        for (var i in tests) {
+            assert_1.default.strictEqual(hethers_1.hethers.utils.commify(i), tests[i]);
+        }
     });
-    // See #2016; @TODO: Add more tests along these lines
-    it("checks extra tests", function () {
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2", 0).eq(2), "folds trailing zeros without decimal: 2");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2.", 0).eq(2), "folds trailing zeros without decimal: 2.");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2.0", 0).eq(2), "folds trailing zeros without decimal: 2.0");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2.00", 0).eq(2), "folds trailing zeros without decimal: 2.00");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2", 1).eq(20), "folds trailing zeros: 2");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2.", 1).eq(20), "folds trailing zeros: 2.");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2.0", 1).eq(20), "folds trailing zeros: 2.0");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2.00", 1).eq(20), "folds trailing zeros: 2.00");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2.5", 1).eq(25), "folds trailing zeros: 2.5");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2.50", 1).eq(25), "folds trailing zeros: 2.50");
-        assert_1.default.ok(hethers_1.hethers.utils.parseUnits("2.500", 1).eq(25), "folds trailing zeros: 2.500");
+    it("should be able to execute formatUnits()", function () {
+        var tinyBars = '100000000000';
+        var resultTinybar = hethers_1.hethers.utils.formatUnits(tinyBars, 'tinybar');
+        var expectedTinybar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Tinybar)).to(sdk_1.HbarUnit.Tinybar)).toString();
+        assert_1.default.strictEqual(resultTinybar, expectedTinybar);
+        var resultMicrobar = hethers_1.hethers.utils.formatUnits(tinyBars, 'microbar');
+        var expectedMicrobar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Tinybar)).to(sdk_1.HbarUnit.Microbar)).toNumber().toFixed(1);
+        assert_1.default.strictEqual(resultMicrobar, expectedMicrobar);
+        var resultMillibar = hethers_1.hethers.utils.formatUnits(tinyBars, 'millibar');
+        var expectedMillibar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Tinybar)).to(sdk_1.HbarUnit.Millibar)).toNumber().toFixed(1);
+        assert_1.default.strictEqual(resultMillibar, expectedMillibar);
+        var resultHbar = hethers_1.hethers.utils.formatUnits(tinyBars, 'hbar');
+        var expectedHbar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Tinybar)).to(sdk_1.HbarUnit.Hbar)).toNumber().toFixed(1);
+        assert_1.default.strictEqual(resultHbar, expectedHbar);
+        var resultKilobar = hethers_1.hethers.utils.formatUnits(tinyBars, 'kilobar');
+        var expectedKilobar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Tinybar)).to(sdk_1.HbarUnit.Kilobar)).toNumber().toFixed(1);
+        assert_1.default.strictEqual(resultKilobar, expectedKilobar);
+        var resultMegabar = hethers_1.hethers.utils.formatUnits(tinyBars, 'megabar');
+        var expectedMegabar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Tinybar)).to(sdk_1.HbarUnit.Megabar)).toString();
+        assert_1.default.strictEqual(resultMegabar, expectedMegabar);
+        var resultGigabar = hethers_1.hethers.utils.formatUnits(tinyBars, 'gigabar');
+        var expectedGigabar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Tinybar)).to(sdk_1.HbarUnit.Gigabar)).toString();
+        assert_1.default.strictEqual(resultGigabar, expectedGigabar);
+    });
+    it("should be able to execute parseUnits()", function () {
+        var tinyBars = '1';
+        var resultTinybar = hethers_1.hethers.utils.parseUnits(tinyBars, 'tinybar');
+        var expectedTinybar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Tinybar)).to(sdk_1.HbarUnit.Tinybar)).toString();
+        assert_1.default.strictEqual(resultTinybar.toString(), expectedTinybar);
+        var resultMicrobar = hethers_1.hethers.utils.parseUnits(tinyBars, 'microbar');
+        var expectedMicrobar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Microbar)).to(sdk_1.HbarUnit.Tinybar)).toString();
+        assert_1.default.strictEqual(resultMicrobar.toString(), expectedMicrobar);
+        var resultMillibar = hethers_1.hethers.utils.parseUnits(tinyBars, 'millibar');
+        var expectedMillibar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Millibar)).to(sdk_1.HbarUnit.Tinybar)).toString();
+        assert_1.default.strictEqual(resultMillibar.toString(), expectedMillibar);
+        var resultHbar = hethers_1.hethers.utils.parseUnits(tinyBars, 'hbar');
+        var expectedHbar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Hbar)).to(sdk_1.HbarUnit.Tinybar)).toString();
+        assert_1.default.strictEqual(resultHbar.toString(), expectedHbar);
+        var resultKilobar = hethers_1.hethers.utils.parseUnits(tinyBars, 'kilobar');
+        var expectedKilobar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Kilobar)).to(sdk_1.HbarUnit.Tinybar)).toString();
+        assert_1.default.strictEqual(resultKilobar.toString(), expectedKilobar);
+        var resultMegabar = hethers_1.hethers.utils.parseUnits(tinyBars, 'megabar');
+        var expectedMegabar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Megabar)).to(sdk_1.HbarUnit.Tinybar)).toString();
+        assert_1.default.strictEqual(resultMegabar.toString(), expectedMegabar);
+        var resultGigabar = hethers_1.hethers.utils.parseUnits(tinyBars, 'gigabar');
+        var expectedGigabar = ((new sdk_1.Hbar(tinyBars, sdk_1.HbarUnit.Gigabar)).to(sdk_1.HbarUnit.Tinybar)).toString();
+        assert_1.default.strictEqual(resultGigabar.toString(), expectedGigabar);
+    });
+    it("should be able to execute formatHbar()", function () {
+        var result = hethers_1.hethers.utils.formatHbar('100000000');
+        assert_1.default.strictEqual(result, '1.0');
+    });
+    it("should be able to execute parseHbar()", function () {
+        var result = hethers_1.hethers.utils.parseHbar('1');
+        assert_1.default.strictEqual(result.toString(), '100000000');
     });
 });
 describe('Test ID Hash Functions', function () {
