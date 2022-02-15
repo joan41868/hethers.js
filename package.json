@@ -85,6 +85,7 @@
     "@ethersproject/pbkdf2": "5.5.0",
     "@ethersproject/properties": "5.5.0",
     "@ethersproject/random": "5.5.0",
+    "@ethersproject/rlp": "5.5.0",
     "@ethersproject/sha2": "5.5.0",
     "@ethersproject/signing-key": "5.5.0",
     "@ethersproject/solidity": "5.5.0",
