@@ -14,7 +14,7 @@ abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
 import { arrayify } from "ethers/lib/utils";
-import {Timestamp} from "@hashgraph/sdk";
+import {Logger} from "@ethersproject/logger";
 
 const TIMEOUT_PERIOD = 120000;
 const hederaEoa = {
@@ -322,10 +322,10 @@ describe('Contract Events', function () {
     const contract = ethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, wallet);
     const sleep = async (timeout: number) => {
         await new Promise(resolve => {
-            console.log(`Waiting ${timeout/1000} secs before removing contract listeners.`)
             setTimeout(resolve, timeout);
         });
     };
+    const enoughEventsCaptured = (n:number) => n >= 4;
 
     it("should be able to capture events via contract", async function () {
         const capturedMints: any[] = [];
@@ -333,16 +333,17 @@ describe('Contract Events', function () {
             assert.strictEqual(args.length, 3, "expected 3 arguments - [address, unit256, log].");
             capturedMints.push([...args])
         });
-        for (let i = 0; i < 10; i++){
-            await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
+        for (let i = 0; i < 5; i++){
+            const mint = await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
+            await mint.wait();
         }
-        await sleep(20000);
+        await sleep(15000);
         contract.removeAllListeners();
-        assert.strictEqual(capturedMints.length > 9, true, "expected 10 captured events (Mint).")
+        assert.strictEqual(enoughEventsCaptured(capturedMints.length), true, "expected 10 captured events (Mint).")
         for(let mint of capturedMints) {
             assert.strictEqual(mint[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
         }
-    }).timeout(TIMEOUT_PERIOD);
+    }).timeout(TIMEOUT_PERIOD * 2);
 
     it('should be able to capture events via provider', async function() {
         const capturedMints: any[] = [];
@@ -352,28 +353,29 @@ describe('Contract Events', function () {
             assert.notStrictEqual(args, null, "expected 1 argument - log");
             capturedMints.push([args])
         });
-        for (let i = 0; i < 10; i++){
-            await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
+        for (let i = 0; i < 5; i++){
+            const mint = await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
+            await mint.wait();
         }
-        await sleep(20000);
+        await sleep(15000);
         provider.removeAllListeners();
-        assert.strictEqual(capturedMints.length > 9, true, "expected 10 captured events (Mint).")
-    }).timeout(TIMEOUT_PERIOD);
+        assert.strictEqual(enoughEventsCaptured(capturedMints.length), true, "expected 10 captured events (Mint).")
+    }).timeout(TIMEOUT_PERIOD * 2);
 
     it('should throw on OR topics filter', async function() {
         const filter = {
             address: contract.address,
-            fromTimestamp: Timestamp.generate().toString(),
-            toTimestamp: Timestamp.generate().plusNanos(100000).toString(),
             topics: [
-                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'],
-                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885']
+                '0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885',
+                null,
+                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885', '0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'],
             ]
         };
         const noop = () => {};
         provider.on(filter, noop);
         provider.on('error', (error) => {
             assert.notStrictEqual(error, null);
+            assert.strictEqual(error.code, Logger.errors.UNSUPPORTED_OPERATION);
         });
         await sleep(10000);
         provider.removeAllListeners();

@@ -10,28 +10,33 @@ import {
     TransactionRequest,
     TransactionResponse
 } from "@ethersproject/abstract-provider";
-import { BigNumber } from "@ethersproject/bignumber";
-import { arrayify, hexDataLength, hexlify } from "@ethersproject/bytes";
-import { getNetwork, Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
-import { Deferrable, defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
-import { Transaction } from "@ethersproject/transactions";
+import {BigNumber} from "@ethersproject/bignumber";
+import {arrayify, hexDataLength, hexlify} from "@ethersproject/bytes";
+import {getNetwork, Network, Networkish, HederaNetworkConfigLike} from "@ethersproject/networks";
+import {Deferrable, defineReadOnly, getStatic, resolveProperties} from "@ethersproject/properties";
+import {Transaction} from "@ethersproject/transactions";
 import {Timestamp, TransactionReceipt as HederaTransactionReceipt} from '@hashgraph/sdk';
 
-import { Logger } from "@ethersproject/logger";
-import { version } from "./_version";
+import {Logger} from "@ethersproject/logger";
+import {version} from "./_version";
+
 const logger = new Logger(version);
 
-import { Formatter } from "./formatter";
-import { getAccountFromTransactionId, AccountLike, asAccountString, getAddressFromAccount } from "@ethersproject/address";
-import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
+import {Formatter} from "./formatter";
+import {getAccountFromTransactionId, AccountLike, asAccountString, getAddressFromAccount} from "@ethersproject/address";
+import {AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction} from "@hashgraph/sdk";
 import axios from "axios";
 import {base64} from "ethers/lib/utils";
+
+const ZERO_HEDERA_TIMESTAMP = "1000000000.000000000";
 
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
 function checkTopic(topic: string): string {
-    if (topic == null) { return "null"; }
+    if (topic == null) {
+        return "null";
+    }
     if (hexDataLength(topic) !== 32) {
         logger.throwArgumentError("invalid topic", "topic", topic);
     }
@@ -42,13 +47,15 @@ function checkTopic(topic: string): string {
 function serializeTopics(topics: Array<string | Array<string>>): string {
     // Remove trailing null AND-topics; they are redundant
     topics = topics.slice();
-    while (topics.length > 0 && topics[topics.length - 1] == null) { topics.pop(); }
+    while (topics.length > 0 && topics[topics.length - 1] == null) {
+        topics.pop();
+    }
 
     return topics.map((topic) => {
         if (Array.isArray(topic)) {
 
             // Only track unique OR-topics
-            const unique: { [ topic: string ]: boolean } = { }
+            const unique: { [topic: string]: boolean } = {}
             topic.forEach((topic) => {
                 unique[checkTopic(topic)] = true;
             });
@@ -66,16 +73,20 @@ function serializeTopics(topics: Array<string | Array<string>>): string {
 }
 
 function deserializeTopics(data: string): Array<string | Array<string>> {
-    if (data === "") { return [ ]; }
+    if (data === "") {
+        return [];
+    }
 
     return data.split(/&/g).map((topic) => {
-        if (topic === "") { return [ ]; }
+        if (topic === "") {
+            return [];
+        }
 
         const comps = topic.split("|").map((topic) => {
-            return ((topic === "null") ? null: topic);
+            return ((topic === "null") ? null : topic);
         });
 
-        return ((comps.length === 1) ? comps[0]: comps);
+        return ((comps.length === 1) ? comps[0] : comps);
     });
 }
 
@@ -110,7 +121,7 @@ function base64ToHex(hash: string): string {
  *   - transaction hash
  */
 
-const PollableEvents = [ "network", "pending", "poll" ];
+const PollableEvents = ["network", "pending", "poll"];
 
 export class Event {
     readonly listener: Listener;
@@ -126,9 +137,9 @@ export class Event {
     get event(): EventType {
         switch (this.type) {
             case "tx":
-               return this.hash;
+                return this.hash;
             case "filter":
-               return this.filter;
+                return this.filter;
         }
         return this.tag;
     }
@@ -139,20 +150,28 @@ export class Event {
 
     get hash(): string {
         const comps = this.tag.split(":");
-        if (comps[0] !== "tx") { return null; }
+        if (comps[0] !== "tx") {
+            return null;
+        }
         return comps[1];
     }
 
     get filter(): Filter {
         const comps = this.tag.split(":");
-        if (comps[0] !== "filter") { return null; }
+        if (comps[0] !== "filter") {
+            return null;
+        }
         const address = comps[1];
 
         const topics = deserializeTopics(comps[2]);
-        const filter: Filter = { };
+        const filter: Filter = {};
 
-        if (topics.length > 0) { filter.topics = topics; }
-        if (address && address !== "*") { filter.address = address; }
+        if (topics.length > 0) {
+            filter.topics = topics;
+        }
+        if (address && address !== "*") {
+            filter.address = address;
+        }
 
         return filter;
     }
@@ -168,7 +187,7 @@ export interface Avatar {
 }
 
 let defaultFormatter: Formatter = null;
-const MIRROR_NODE_TRANSACTIONS_ENDPOINT =  '/api/v1/transactions/';
+const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
 const MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
 const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
 
@@ -186,8 +205,8 @@ export class BaseProvider extends Provider {
     _bootstrapPoll: NodeJS.Timer;
 
     formatter: Formatter;
-    _emittedEvents: { [key: string] : boolean}
-    _previousPollingTimestamps: { [key: string]:Timestamp}
+    _emittedEvents: { [key: string]: boolean }
+    _previousPollingTimestamps: { [key: string]: Timestamp }
 
     readonly anyNetwork: boolean;
     private readonly hederaClient: Client;
@@ -205,15 +224,19 @@ export class BaseProvider extends Provider {
         // network to change dynamically, and we auto-detect the
         // current network
         defineReadOnly(this, "anyNetwork", (network === "any"));
-        if (this.anyNetwork) { network = this.detectNetwork(); }
+        if (this.anyNetwork) {
+            network = this.detectNetwork();
+        }
 
         if (network instanceof Promise) {
             this._networkPromise = network;
             // Squash any "unhandled promise" errors; that do not need to be handled
-            network.catch((error) => { });
+            network.catch((error) => {
+            });
 
             // Trigger initial network setting (async)
-            this._ready().catch((error) => { });
+            this._ready().catch((error) => {
+            });
         } else {
             if (!isHederaNetworkConfigLike(network)) {
                 const asDefaultNetwork = network as Network;
@@ -250,7 +273,8 @@ export class BaseProvider extends Provider {
             if (this._networkPromise) {
                 try {
                     network = await this._networkPromise;
-                } catch (error) { }
+                } catch (error) {
+                }
             }
 
             // Try the Provider's network detection (this MUST throw if it cannot)
@@ -283,7 +307,7 @@ export class BaseProvider extends Provider {
 
     // @TODO: Remove this and just use getNetwork
     static getNetwork(network: Networkish): Network {
-        return getNetwork((network == null) ? "mainnet": network);
+        return getNetwork((network == null) ? "mainnet" : network);
     }
 
     get network(): Network {
@@ -343,7 +367,7 @@ export class BaseProvider extends Provider {
     }
 
     set pollingInterval(value: number) {
-        if (typeof(value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
+        if (typeof (value) !== "number" || value <= 0 || parseInt(String(value)) != value) {
             throw new Error("invalid polling interval");
         }
         this._pollingInterval = value;
@@ -367,7 +391,7 @@ export class BaseProvider extends Provider {
                     return resolve(this.formatter.receiptFromResponse(txResponse));
                 }
             }
-            reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, { timeout: timeout }));
+            reject(logger.makeError("timeout exceeded", Logger.errors.TIMEOUT, {timeout: timeout}));
         });
     }
 
@@ -406,7 +430,7 @@ export class BaseProvider extends Provider {
         accountLike = await accountLike;
         const account = asAccountString(accountLike);
         try {
-            let { data } = await axios.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account);
+            let {data} = await axios.get(this._mirrorNodeUrl + MIRROR_NODE_CONTRACTS_ENDPOINT + account);
             return data.bytecode ? hexlify(data.bytecode) : `0x`;
         } catch (error) {
             if (error.response && error.response.status &&
@@ -423,7 +447,9 @@ export class BaseProvider extends Provider {
 
     // This should be called by any subclass wrapping a TransactionResponse
     _wrapTransaction(tx: Transaction, hash?: string, receipt?: HederaTransactionReceipt): TransactionResponse {
-        if (hash != null && hexDataLength(hash) !== 48) { throw new Error("invalid response - sendTransaction"); }
+        if (hash != null && hexDataLength(hash) !== 48) {
+            throw new Error("invalid response - sendTransaction");
+        }
 
         const result = <TransactionResponse>tx;
         if (!result.customData) result.customData = {};
@@ -439,7 +465,10 @@ export class BaseProvider extends Provider {
 
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
-            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
+            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, {
+                expectedHash: tx.hash,
+                returnedHash: hash
+            });
         }
 
         result.wait = async (timeout?: number) => {
@@ -456,7 +485,7 @@ export class BaseProvider extends Provider {
         return result;
     }
 
-    public getHederaClient() : Client {
+    public getHederaClient(): Client {
         return this.hederaClient;
     }
 
@@ -487,19 +516,23 @@ export class BaseProvider extends Provider {
     async _getFilter(filter: Filter | Promise<Filter>): Promise<Filter> {
         filter = await filter;
 
-        const result: any = { };
+        const result: any = {};
 
         if (filter.address != null) {
             result.address = filter.address.toString();
         }
 
         ["topics"].forEach((key) => {
-            if ((<any>filter)[key] == null) { return; }
+            if ((<any>filter)[key] == null) {
+                return;
+            }
             result[key] = (<any>filter)[key];
         });
 
         ["fromTimestamp", "toTimestamp"].forEach((key) => {
-            if ((<any>filter)[key] == null) { return; }
+            if ((<any>filter)[key] == null) {
+                return;
+            }
             result[key] = (<any>filter)[key];
         });
 
@@ -523,7 +556,7 @@ export class BaseProvider extends Provider {
         let transactionsEndpoint = MIRROR_NODE_TRANSACTIONS_ENDPOINT;
         !transactionIdOrTimestamp.includes("-") ? transactionsEndpoint += ('?timestamp=' + transactionIdOrTimestamp) : transactionsEndpoint += transactionIdOrTimestamp;
         try {
-            let { data } = await axios.get(this._mirrorNodeUrl + transactionsEndpoint);
+            let {data} = await axios.get(this._mirrorNodeUrl + transactionsEndpoint);
             if (data) {
                 const filtered = data.transactions.filter((e: { result: string; }) => e.result != 'DUPLICATE_TRANSACTION');
                 if (filtered.length > 0) {
@@ -568,8 +601,7 @@ export class BaseProvider extends Provider {
                             record.to = toTransfers[0].account;
                             record.amount = toTransfers[0].amount;
                         }
-                    }
-                    else {
+                    } else {
                         const contractsEndpoint = MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT + filtered[0].transaction_id;
                         const dataWithLogs = await axios.get(this._mirrorNodeUrl + contractsEndpoint);
                         record = Object.assign({}, record, {...dataWithLogs.data});
@@ -625,24 +657,20 @@ export class BaseProvider extends Provider {
     async getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>> {
 
         this._checkMirrorNode();
-        const params = await resolveProperties({ filter: this._getFilter(filter) });
+        const params = await resolveProperties({filter: this._getFilter(filter)});
         // set default values
-        if (!params.filter.fromTimestamp) {
-            params.filter.fromTimestamp = Timestamp.fromDate(0).toString();//nativeTimestampToHederaTimestamp(1);
-        }
-        if (!params.filter.toTimestamp) {
-            params.filter.toTimestamp = Timestamp.generate().toString();
-        }
+        params.filter.fromTimestamp = params.filter.fromTimestamp || ZERO_HEDERA_TIMESTAMP;
+        params.filter.toTimestamp = params.filter.toTimestamp || Timestamp.generate().toString();
         const fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
         const toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
         const limit = 100;
         const oversizeResponseLength = limit + 1;
         let epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
         if (params.filter.topics && params.filter.topics.length > 0) {
-            for(let i=0; i < params.filter.topics.length; i++) {
+            for (let i = 0; i < params.filter.topics.length; i++) {
                 const topic = params.filter.topics[i];
                 if (typeof topic === "string") {
-                    epContractsLogs+= `&topic${i}=${topic}`;
+                    epContractsLogs += `&topic${i}=${topic}`;
                 } else {
                     return logger.throwArgumentError("OR on topics", Logger.errors.UNSUPPORTED_OPERATION, params.filter.topics);
                 }
@@ -650,7 +678,7 @@ export class BaseProvider extends Provider {
         }
         const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
         try {
-            let { data } = await axios.get(requestUrl);
+            let {data} = await axios.get(requestUrl);
             if (data) {
                 const mappedLogs = this.formatter.logsMapper(data.logs);
                 if (mappedLogs.length == oversizeResponseLength) {
@@ -659,7 +687,7 @@ export class BaseProvider extends Provider {
                 return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
             }
         } catch (error) {
-            const errorParams = { method: "ContractLogsQuery", error }
+            const errorParams = {method: "ContractLogsQuery", error}
             if (error.response && error.response.status != 404) {
                 logger.throwError("bad result from backend", Logger.errors.SERVER_ERROR, errorParams);
             }
@@ -685,7 +713,7 @@ export class BaseProvider extends Provider {
     }
 
     perform(method: string, params: any): Promise<any> {
-        return logger.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
+        return logger.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, {operation: method});
     }
 
     _addEventListener(eventName: EventType, listener: Listener, once: boolean): this {
@@ -706,11 +734,13 @@ export class BaseProvider extends Provider {
     emit(eventName: EventType, ...args: Array<any>): boolean {
         let result = false;
 
-        let stopped: Array<Event> = [ ];
+        let stopped: Array<Event> = [];
 
         let eventTag = getEventTag(eventName);
         this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag) { return true; }
+            if (event.tag !== eventTag) {
+                return true;
+            }
 
             setTimeout(() => {
                 event.listener.apply(this, args);
@@ -726,12 +756,16 @@ export class BaseProvider extends Provider {
             return true;
         });
 
-        stopped.forEach((event) => { this._stopEvent(event)});
+        stopped.forEach((event) => {
+            this._stopEvent(event)
+        });
         return result;
     }
 
     listenerCount(eventName?: EventType): number {
-        if (!eventName) { return this._events.length; }
+        if (!eventName) {
+            return this._events.length;
+        }
 
         let eventTag = getEventTag(eventName);
         return this._events.filter((event) => {
@@ -755,40 +789,50 @@ export class BaseProvider extends Provider {
             return this.removeAllListeners(eventName);
         }
 
-        const stopped: Array<Event> = [ ];
+        const stopped: Array<Event> = [];
 
         let found = false;
 
         let eventTag = getEventTag(eventName);
         this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag || event.listener != listener) { return true; }
-            if (found) { return true; }
+            if (event.tag !== eventTag || event.listener != listener) {
+                return true;
+            }
+            if (found) {
+                return true;
+            }
             found = true;
             stopped.push(event);
             return false;
         });
 
-        stopped.forEach((event) => { this._stopEvent(event); });
+        stopped.forEach((event) => {
+            this._stopEvent(event);
+        });
 
         return this;
     }
 
     removeAllListeners(eventName?: EventType): this {
-        let stopped: Array<Event> = [ ];
+        let stopped: Array<Event> = [];
         if (eventName == null) {
             stopped = this._events;
 
-            this._events = [ ];
+            this._events = [];
         } else {
             const eventTag = getEventTag(eventName);
             this._events = this._events.filter((event) => {
-                if (event.tag !== eventTag) { return true; }
+                if (event.tag !== eventTag) {
+                    return true;
+                }
                 stopped.push(event);
                 return false;
             });
         }
 
-        stopped.forEach((event) => { this._stopEvent(event); });
+        stopped.forEach((event) => {
+            this._stopEvent(event);
+        });
         return this;
     }
 
@@ -798,7 +842,9 @@ export class BaseProvider extends Provider {
 
     set polling(value: boolean) {
         if (value && !this._poller) {
-            this._poller = setInterval(() => { this.poll(); }, this.pollingInterval);
+            this._poller = setInterval(() => {
+                this.poll();
+            }, this.pollingInterval);
 
             if (!this._bootstrapPoll) {
                 this._bootstrapPoll = setTimeout(() => {
@@ -809,7 +855,9 @@ export class BaseProvider extends Provider {
                     this._bootstrapPoll = setTimeout(() => {
                         // If polling was disabled, something may require a poke
                         // since starting the bootstrap poll and it was disabled
-                        if (!this._poller) { this.poll(); }
+                        if (!this._poller) {
+                            this.poll();
+                        }
 
                         // Clear out the bootstrap so we can do another
                         this._bootstrapPoll = null;
@@ -823,15 +871,10 @@ export class BaseProvider extends Provider {
         }
     }
 
-    /**
-     *
-     * from - previousToTimestamp - from; add 1 nanosecond to it ***
-     * to - the current time
-     */
     async poll(): Promise<void> {
         const pollId = nextPollId++;
         // purge the old events
-        // this.purgeOldEvents();
+        this.purgeOldEvents();
         // Track all running promises, so we can trigger a post-poll once they are complete
         const runners: Array<Promise<void>> = [];
 
@@ -839,31 +882,34 @@ export class BaseProvider extends Provider {
         const now = Timestamp.generate();
         this.emit("poll", pollId, now.toDate().getTime());
 
-        // Find all transaction hashes we are waiting on
         this._events.forEach((event) => {
-            let from = this._previousPollingTimestamps[event.tag];
-            // ensure we don't get from == to
-            from = from.plusNanos(1);
             switch (event.type) {
                 case "filter": {
                     const filter = event.filter;
+                    let from = this._previousPollingTimestamps[event.tag];
+                    // ensure we don't get from == to
+                    from = from.plusNanos(1);
                     filter.fromTimestamp = from.toString();
                     filter.toTimestamp = now.toString();
                     const runner = this.getLogs(filter).then((logs) => {
-                        if (logs.length === 0) { return; }
+                        if (logs.length === 0) {
+                            return;
+                        }
                         logs.forEach((log: Log) => {
                             if (!this._emittedEvents[log.timestamp]) {
                                 this.emit(filter, log);
                                 this._emittedEvents[log.timestamp] = true;
-                                const logTimestamp = Timestamp.fromDate(log.timestamp);
+                                const [logTsSeconds, logTsNanos] = log.timestamp.split(".").map(parseInt);
+                                const logTimestamp = new Timestamp(logTsSeconds, logTsNanos);
                                 // longInstance.compare(other) returns -1 when other > this, 0 when they are equal and 1 then this > other
                                 if (this._previousPollingTimestamps[event.tag].compare(logTimestamp) == -1) {
-                                    console.log('poll update');
                                     this._previousPollingTimestamps[event.tag] = logTimestamp;
                                 }
                             }
                         });
-                    }).catch((error: Error) => { this.emit("error", error); });
+                    }).catch((error: Error) => {
+                        this.emit("error", error);
+                    });
                     runners.push(runner);
 
                     break;
@@ -873,16 +919,19 @@ export class BaseProvider extends Provider {
         // Once all events for this loop have been processed, emit "didPoll"
         Promise.all(runners).then(() => {
             this.emit("didPoll", pollId);
-        }).catch((error) => { this.emit("error", error); });
+        }).catch((error) => {
+            this.emit("error", error);
+        });
         return;
     }
 
     purgeOldEvents() {
         for (let emittedEventsKey in this._emittedEvents) {
-            const ts = Timestamp.fromDate(emittedEventsKey);
+            const [sec, nano] = emittedEventsKey.split(".").map(parseInt);
+            const ts = new Timestamp(sec, nano);
             const now = Timestamp.generate();
             // clean up events which are significantly old - older than 3 minutes
-            const threeMinutes = 1000*1000*1000*60*3;
+            const threeMinutes = 1000 * 1000 * 1000 * 60 * 3;
             if (ts.compare(now.plusNanos(threeMinutes)) == -1) {
                 delete this._emittedEvents[emittedEventsKey];
             }
@@ -920,12 +969,12 @@ function resolveMirrorNetworkUrl(net: Network): string {
     }
 }
 
-function isHederaNetworkConfigLike(cfg : HederaNetworkConfigLike | Networkish): cfg is HederaNetworkConfigLike {
+function isHederaNetworkConfigLike(cfg: HederaNetworkConfigLike | Networkish): cfg is HederaNetworkConfigLike {
     return (cfg as HederaNetworkConfigLike).network !== undefined;
 }
 
 function getEventTag(eventName: EventType): string {
-    if (typeof(eventName) === "string") {
+    if (typeof (eventName) === "string") {
         eventName = eventName.toLowerCase();
 
         if (hexDataLength(eventName) === 32) {
@@ -939,7 +988,7 @@ function getEventTag(eventName: EventType): string {
     } else if (Array.isArray(eventName)) {
         return "filter:*:" + serializeTopics(eventName);
 
-    } else if (eventName && typeof(eventName) === "object") {
+    } else if (eventName && typeof (eventName) === "object") {
         return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
     }
 

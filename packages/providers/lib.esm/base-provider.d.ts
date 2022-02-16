@@ -110,11 +110,6 @@ export declare class BaseProvider extends Provider {
     removeAllListeners(eventName?: EventType): this;
     get polling(): boolean;
     set polling(value: boolean);
-    /**
-     *
-     * from - previousToTimestamp - from; add 1 nanosecond to it ***
-     * to - the current time
-     */
     poll(): Promise<void>;
     purgeOldEvents(): void;
 }

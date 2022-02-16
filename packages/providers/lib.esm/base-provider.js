@@ -22,6 +22,7 @@ import { getAccountFromTransactionId, asAccountString, getAddressFromAccount } f
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
 import { base64 } from "ethers/lib/utils";
+const ZERO_HEDERA_TIMESTAMP = "1000000000.000000000";
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -164,9 +165,11 @@ export class BaseProvider extends Provider {
         if (network instanceof Promise) {
             this._networkPromise = network;
             // Squash any "unhandled promise" errors; that do not need to be handled
-            network.catch((error) => { });
+            network.catch((error) => {
+            });
             // Trigger initial network setting (async)
-            this._ready().catch((error) => { });
+            this._ready().catch((error) => {
+            });
         }
         else {
             if (!isHederaNetworkConfigLike(network)) {
@@ -206,7 +209,8 @@ export class BaseProvider extends Provider {
                     try {
                         network = yield this._networkPromise;
                     }
-                    catch (error) { }
+                    catch (error) {
+                    }
                 }
                 // Try the Provider's network detection (this MUST throw if it cannot)
                 if (network == null) {
@@ -393,7 +397,10 @@ export class BaseProvider extends Provider {
         }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
-            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
+            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, {
+                expectedHash: tx.hash,
+                returnedHash: hash
+            });
         }
         result.wait = (timeout) => __awaiter(this, void 0, void 0, function* () {
             const receipt = yield this._waitForTransaction(tx.transactionId, timeout);
@@ -579,12 +586,8 @@ export class BaseProvider extends Provider {
             this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
             // set default values
-            if (!params.filter.fromTimestamp) {
-                params.filter.fromTimestamp = Timestamp.fromDate(0).toString(); //nativeTimestampToHederaTimestamp(1);
-            }
-            if (!params.filter.toTimestamp) {
-                params.filter.toTimestamp = Timestamp.generate().toString();
-            }
+            params.filter.fromTimestamp = params.filter.fromTimestamp || ZERO_HEDERA_TIMESTAMP;
+            params.filter.toTimestamp = params.filter.toTimestamp || Timestamp.generate().toString();
             const fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
             const toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
             const limit = 100;
@@ -669,7 +672,9 @@ export class BaseProvider extends Provider {
             }
             return true;
         });
-        stopped.forEach((event) => { this._stopEvent(event); });
+        stopped.forEach((event) => {
+            this._stopEvent(event);
+        });
         return result;
     }
     listenerCount(eventName) {
@@ -708,7 +713,9 @@ export class BaseProvider extends Provider {
             stopped.push(event);
             return false;
         });
-        stopped.forEach((event) => { this._stopEvent(event); });
+        stopped.forEach((event) => {
+            this._stopEvent(event);
+        });
         return this;
     }
     removeAllListeners(eventName) {
@@ -727,7 +734,9 @@ export class BaseProvider extends Provider {
                 return false;
             });
         }
-        stopped.forEach((event) => { this._stopEvent(event); });
+        stopped.forEach((event) => {
+            this._stopEvent(event);
+        });
         return this;
     }
     get polling() {
@@ -735,7 +744,9 @@ export class BaseProvider extends Provider {
     }
     set polling(value) {
         if (value && !this._poller) {
-            this._poller = setInterval(() => { this.poll(); }, this.pollingInterval);
+            this._poller = setInterval(() => {
+                this.poll();
+            }, this.pollingInterval);
             if (!this._bootstrapPoll) {
                 this._bootstrapPoll = setTimeout(() => {
                     this.poll();
@@ -758,29 +769,23 @@ export class BaseProvider extends Provider {
             this._poller = null;
         }
     }
-    /**
-     *
-     * from - previousToTimestamp - from; add 1 nanosecond to it ***
-     * to - the current time
-     */
     poll() {
         return __awaiter(this, void 0, void 0, function* () {
             const pollId = nextPollId++;
             // purge the old events
-            // this.purgeOldEvents();
+            this.purgeOldEvents();
             // Track all running promises, so we can trigger a post-poll once they are complete
             const runners = [];
             // Emit a poll event with the current timestamp
             const now = Timestamp.generate();
             this.emit("poll", pollId, now.toDate().getTime());
-            // Find all transaction hashes we are waiting on
             this._events.forEach((event) => {
-                let from = this._previousPollingTimestamps[event.tag];
-                // ensure we don't get from == to
-                from = from.plusNanos(1);
                 switch (event.type) {
                     case "filter": {
                         const filter = event.filter;
+                        let from = this._previousPollingTimestamps[event.tag];
+                        // ensure we don't get from == to
+                        from = from.plusNanos(1);
                         filter.fromTimestamp = from.toString();
                         filter.toTimestamp = now.toString();
                         const runner = this.getLogs(filter).then((logs) => {
@@ -791,15 +796,17 @@ export class BaseProvider extends Provider {
                                 if (!this._emittedEvents[log.timestamp]) {
                                     this.emit(filter, log);
                                     this._emittedEvents[log.timestamp] = true;
-                                    const logTimestamp = Timestamp.fromDate(log.timestamp);
+                                    const [logTsSeconds, logTsNanos] = log.timestamp.split(".").map(parseInt);
+                                    const logTimestamp = new Timestamp(logTsSeconds, logTsNanos);
                                     // longInstance.compare(other) returns -1 when other > this, 0 when they are equal and 1 then this > other
                                     if (this._previousPollingTimestamps[event.tag].compare(logTimestamp) == -1) {
-                                        console.log('poll update');
                                         this._previousPollingTimestamps[event.tag] = logTimestamp;
                                     }
                                 }
                             });
-                        }).catch((error) => { this.emit("error", error); });
+                        }).catch((error) => {
+                            this.emit("error", error);
+                        });
                         runners.push(runner);
                         break;
                     }
@@ -808,13 +815,16 @@ export class BaseProvider extends Provider {
             // Once all events for this loop have been processed, emit "didPoll"
             Promise.all(runners).then(() => {
                 this.emit("didPoll", pollId);
-            }).catch((error) => { this.emit("error", error); });
+            }).catch((error) => {
+                this.emit("error", error);
+            });
             return;
         });
     }
     purgeOldEvents() {
         for (let emittedEventsKey in this._emittedEvents) {
-            const ts = Timestamp.fromDate(emittedEventsKey);
+            const [sec, nano] = emittedEventsKey.split(".").map(parseInt);
+            const ts = new Timestamp(sec, nano);
             const now = Timestamp.generate();
             // clean up events which are significantly old - older than 3 minutes
             const threeMinutes = 1000 * 1000 * 1000 * 60 * 3;

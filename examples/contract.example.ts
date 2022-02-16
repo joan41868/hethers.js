@@ -1,15 +1,13 @@
 import * as hethers from "ethers";
-import { arrayify, getAddressFromAccount } from "ethers/lib/utils";
 import { AccountCreateTransaction, PrivateKey, Hbar, Client, Key as HederaKey, TransactionId } from "@hashgraph/sdk";
 import { readFileSync } from "fs";
 import { Key } from "@hashgraph/proto";
-import { BigNumber } from "ethers";
-
 
 const sleep = async (timeout: number) => {
     console.log(`Sleep ${timeout}ms`)
     await new Promise(resolve => setTimeout(resolve, timeout));
-}
+};
+
 const account = {
     "operator_ED25519": {
         "account": "0.0.28542425",
@@ -34,7 +32,7 @@ const account = {
      */
     const accountCreate = await (await new AccountCreateTransaction()
         .setKey(HederaKey._fromProtobufKey(Key.create({
-            ECDSASecp256k1: arrayify(clientWallet._signingKey().compressedPublicKey)
+            ECDSASecp256k1: hethers.utils.arrayify(clientWallet._signingKey().compressedPublicKey)
         })))
         .setTransactionId(TransactionId.generate(account.operator_ED25519.account))
         .setInitialBalance(new Hbar(100))
@@ -76,7 +74,7 @@ const account = {
 	 * - balanceOf function for the wallet's address
 	 */
 	const approveParams = contractGLDToken.interface.encodeFunctionData('approve', [
-		getAddressFromAccount(account.operator_ED25519.account),
+		hethers.utils.getAddressFromAccount(account.operator_ED25519.account),
 		1000
 	]);
 	const approveTx = await clientWallet.sendTransaction({
@@ -104,7 +102,7 @@ const account = {
 	const balanceOfTx = {
 		to: contractGLDToken.address,
 		gasLimit: 30000,
-		data: arrayify(balanceOfParams)
+		data: hethers.utils.arrayify(balanceOfParams)
 	};
 	const balanceOfResponse = await clientWallet.call(balanceOfTx);
 	console.log('balanceOf response: ', balanceOfResponse);
@@ -122,13 +120,12 @@ const account = {
     /**
      * Creating a contract from ABI and bytecode
      */
-        // const contractFactory = new hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
-    const contract = hethers.ContractFactory.getContract('0x0000000000000000000000000000000001c42805', abiGLDTokenWithConstructorArgs, contractWallet);
+    const contractFactory = new hethers.ContractFactory(abiGLDTokenWithConstructorArgs, contractByteCodeGLDTokenWithConstructorArgs, contractWallet);
 
     /**
      * Using contractFactory.deploy()
      */
-    // const contract = await contractFactory.deploy(hethers.BigNumber.from("10000"), {gasLimit: 3000000});
+    const contract = await contractFactory.deploy(hethers.BigNumber.from("10000"), {gasLimit: 3000000});
     console.log(contract.address);
 
     /**
@@ -176,7 +173,7 @@ const account = {
      */
     contract.on('Mint', (...args) => {
         capturedMints.push({evt: args});
-        console.log('\x1b[33mReceived mint event timestamp:', args[2].timestamp, '\x1b[0m');
+        console.log('\x1b[32mReceived mint event timestamp:', args[2].timestamp, '\x1b[0m');
     });
     contract.on('error', (err) => {
         throw err;
@@ -187,7 +184,7 @@ const account = {
      *  - Mint(address, uint256)
      */
     for (let i = 0; i < 10; i++) {
-        const mint = await contract.mint(BigNumber.from(`${i + 1}`), {gasLimit: 300000});
+        const mint = await contract.mint(hethers.BigNumber.from(`${i + 1}`), {gasLimit: 300000});
         const awaitedMint = await mint.wait();
         console.log(`Mint ${i}:`, awaitedMint.timestamp);
     }

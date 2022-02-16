@@ -80,6 +80,7 @@ var address_1 = require("@ethersproject/address");
 var sdk_2 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
 var utils_1 = require("ethers/lib/utils");
+var ZERO_HEDERA_TIMESTAMP = "1000000000.000000000";
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -243,9 +244,11 @@ var BaseProvider = /** @class */ (function (_super) {
         if (network instanceof Promise) {
             _this._networkPromise = network;
             // Squash any "unhandled promise" errors; that do not need to be handled
-            network.catch(function (error) { });
+            network.catch(function (error) {
+            });
             // Trigger initial network setting (async)
-            _this._ready().catch(function (error) { });
+            _this._ready().catch(function (error) {
+            });
         }
         else {
             if (!isHederaNetworkConfigLike(network)) {
@@ -543,7 +546,10 @@ var BaseProvider = /** @class */ (function (_super) {
         }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
-            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", logger_1.Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
+            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", logger_1.Logger.errors.UNKNOWN_ERROR, {
+                expectedHash: tx.hash,
+                returnedHash: hash
+            });
         }
         result.wait = function (timeout) { return __awaiter(_this, void 0, void 0, function () {
             var receipt;
@@ -785,12 +791,8 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 1:
                         params = _a.sent();
                         // set default values
-                        if (!params.filter.fromTimestamp) {
-                            params.filter.fromTimestamp = sdk_1.Timestamp.fromDate(0).toString(); //nativeTimestampToHederaTimestamp(1);
-                        }
-                        if (!params.filter.toTimestamp) {
-                            params.filter.toTimestamp = sdk_1.Timestamp.generate().toString();
-                        }
+                        params.filter.fromTimestamp = params.filter.fromTimestamp || ZERO_HEDERA_TIMESTAMP;
+                        params.filter.toTimestamp = params.filter.toTimestamp || sdk_1.Timestamp.generate().toString();
                         fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
                         toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
                         limit = 100;
@@ -889,7 +891,9 @@ var BaseProvider = /** @class */ (function (_super) {
             }
             return true;
         });
-        stopped.forEach(function (event) { _this._stopEvent(event); });
+        stopped.forEach(function (event) {
+            _this._stopEvent(event);
+        });
         return result;
     };
     BaseProvider.prototype.listenerCount = function (eventName) {
@@ -929,7 +933,9 @@ var BaseProvider = /** @class */ (function (_super) {
             stopped.push(event);
             return false;
         });
-        stopped.forEach(function (event) { _this._stopEvent(event); });
+        stopped.forEach(function (event) {
+            _this._stopEvent(event);
+        });
         return this;
     };
     BaseProvider.prototype.removeAllListeners = function (eventName) {
@@ -949,7 +955,9 @@ var BaseProvider = /** @class */ (function (_super) {
                 return false;
             });
         }
-        stopped.forEach(function (event) { _this._stopEvent(event); });
+        stopped.forEach(function (event) {
+            _this._stopEvent(event);
+        });
         return this;
     };
     Object.defineProperty(BaseProvider.prototype, "polling", {
@@ -959,7 +967,9 @@ var BaseProvider = /** @class */ (function (_super) {
         set: function (value) {
             var _this = this;
             if (value && !this._poller) {
-                this._poller = setInterval(function () { _this.poll(); }, this.pollingInterval);
+                this._poller = setInterval(function () {
+                    _this.poll();
+                }, this.pollingInterval);
                 if (!this._bootstrapPoll) {
                     this._bootstrapPoll = setTimeout(function () {
                         _this.poll();
@@ -985,28 +995,24 @@ var BaseProvider = /** @class */ (function (_super) {
         enumerable: false,
         configurable: true
     });
-    /**
-     *
-     * from - previousToTimestamp - from; add 1 nanosecond to it ***
-     * to - the current time
-     */
     BaseProvider.prototype.poll = function () {
         return __awaiter(this, void 0, void 0, function () {
             var pollId, runners, now;
             var _this = this;
             return __generator(this, function (_a) {
                 pollId = nextPollId++;
+                // purge the old events
+                this.purgeOldEvents();
                 runners = [];
                 now = sdk_1.Timestamp.generate();
                 this.emit("poll", pollId, now.toDate().getTime());
-                // Find all transaction hashes we are waiting on
                 this._events.forEach(function (event) {
-                    var from = _this._previousPollingTimestamps[event.tag];
-                    // ensure we don't get from == to
-                    from = from.plusNanos(1);
                     switch (event.type) {
                         case "filter": {
                             var filter_1 = event.filter;
+                            var from = _this._previousPollingTimestamps[event.tag];
+                            // ensure we don't get from == to
+                            from = from.plusNanos(1);
                             filter_1.fromTimestamp = from.toString();
                             filter_1.toTimestamp = now.toString();
                             var runner = _this.getLogs(filter_1).then(function (logs) {
@@ -1017,15 +1023,17 @@ var BaseProvider = /** @class */ (function (_super) {
                                     if (!_this._emittedEvents[log.timestamp]) {
                                         _this.emit(filter_1, log);
                                         _this._emittedEvents[log.timestamp] = true;
-                                        var logTimestamp = sdk_1.Timestamp.fromDate(log.timestamp);
+                                        var _a = log.timestamp.split(".").map(parseInt), logTsSeconds = _a[0], logTsNanos = _a[1];
+                                        var logTimestamp = new sdk_1.Timestamp(logTsSeconds, logTsNanos);
                                         // longInstance.compare(other) returns -1 when other > this, 0 when they are equal and 1 then this > other
                                         if (_this._previousPollingTimestamps[event.tag].compare(logTimestamp) == -1) {
-                                            console.log('poll update');
                                             _this._previousPollingTimestamps[event.tag] = logTimestamp;
                                         }
                                     }
                                 });
-                            }).catch(function (error) { _this.emit("error", error); });
+                            }).catch(function (error) {
+                                _this.emit("error", error);
+                            });
                             runners.push(runner);
                             break;
                         }
@@ -1034,14 +1042,17 @@ var BaseProvider = /** @class */ (function (_super) {
                 // Once all events for this loop have been processed, emit "didPoll"
                 Promise.all(runners).then(function () {
                     _this.emit("didPoll", pollId);
-                }).catch(function (error) { _this.emit("error", error); });
+                }).catch(function (error) {
+                    _this.emit("error", error);
+                });
                 return [2 /*return*/];
             });
         });
     };
     BaseProvider.prototype.purgeOldEvents = function () {
         for (var emittedEventsKey in this._emittedEvents) {
-            var ts = sdk_1.Timestamp.fromDate(emittedEventsKey);
+            var _a = emittedEventsKey.split(".").map(parseInt), sec = _a[0], nano = _a[1];
+            var ts = new sdk_1.Timestamp(sec, nano);
             var now = sdk_1.Timestamp.generate();
             // clean up events which are significantly old - older than 3 minutes
             var threeMinutes = 1000 * 1000 * 1000 * 60 * 3;

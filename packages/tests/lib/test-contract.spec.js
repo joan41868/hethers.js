@@ -79,7 +79,7 @@ abi = abi.default;
 // @ts-ignore
 abiWithArgs = abiWithArgs.default;
 var utils_1 = require("ethers/lib/utils");
-var sdk_1 = require("@hashgraph/sdk");
+var logger_1 = require("@ethersproject/logger");
 var TIMEOUT_PERIOD = 120000;
 var hederaEoa = {
     account: '0.0.29562194',
@@ -520,7 +520,6 @@ describe('Contract Events', function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, new Promise(function (resolve) {
-                        console.log("Waiting " + timeout / 1000 + " secs before removing contract listeners.");
                         setTimeout(resolve, timeout);
                     })];
                 case 1:
@@ -529,9 +528,10 @@ describe('Contract Events', function () {
             }
         });
     }); };
+    var enoughEventsCaptured = function (n) { return n >= 4; };
     it("should be able to capture events via contract", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var capturedMints, i, _i, capturedMints_1, mint;
+            var capturedMints, i, mint, _i, capturedMints_1, mint;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -547,19 +547,22 @@ describe('Contract Events', function () {
                         i = 0;
                         _a.label = 1;
                     case 1:
-                        if (!(i < 10)) return [3 /*break*/, 4];
+                        if (!(i < 5)) return [3 /*break*/, 5];
                         return [4 /*yield*/, contract.mint(ethers_1.BigNumber.from("" + (i + 1)), { gasLimit: 300000 })];
                     case 2:
-                        _a.sent();
-                        _a.label = 3;
+                        mint = _a.sent();
+                        return [4 /*yield*/, mint.wait()];
                     case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4: return [4 /*yield*/, sleep(20000)];
-                    case 5:
+                    case 5: return [4 /*yield*/, sleep(15000)];
+                    case 6:
                         _a.sent();
                         contract.removeAllListeners();
-                        assert_1.default.strictEqual(capturedMints.length > 9, true, "expected 10 captured events (Mint).");
+                        assert_1.default.strictEqual(enoughEventsCaptured(capturedMints.length), true, "expected 10 captured events (Mint).");
                         for (_i = 0, capturedMints_1 = capturedMints; _i < capturedMints_1.length; _i++) {
                             mint = capturedMints_1[_i];
                             assert_1.default.strictEqual(mint[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
@@ -568,10 +571,10 @@ describe('Contract Events', function () {
                 }
             });
         });
-    }).timeout(TIMEOUT_PERIOD);
+    }).timeout(TIMEOUT_PERIOD * 2);
     it('should be able to capture events via provider', function () {
         return __awaiter(this, void 0, void 0, function () {
-            var capturedMints, i;
+            var capturedMints, i, mint;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -585,24 +588,27 @@ describe('Contract Events', function () {
                         i = 0;
                         _a.label = 1;
                     case 1:
-                        if (!(i < 10)) return [3 /*break*/, 4];
+                        if (!(i < 5)) return [3 /*break*/, 5];
                         return [4 /*yield*/, contract.mint(ethers_1.BigNumber.from("" + (i + 1)), { gasLimit: 300000 })];
                     case 2:
-                        _a.sent();
-                        _a.label = 3;
+                        mint = _a.sent();
+                        return [4 /*yield*/, mint.wait()];
                     case 3:
+                        _a.sent();
+                        _a.label = 4;
+                    case 4:
                         i++;
                         return [3 /*break*/, 1];
-                    case 4: return [4 /*yield*/, sleep(20000)];
-                    case 5:
+                    case 5: return [4 /*yield*/, sleep(15000)];
+                    case 6:
                         _a.sent();
                         provider.removeAllListeners();
-                        assert_1.default.strictEqual(capturedMints.length > 9, true, "expected 10 captured events (Mint).");
+                        assert_1.default.strictEqual(enoughEventsCaptured(capturedMints.length), true, "expected 10 captured events (Mint).");
                         return [2 /*return*/];
                 }
             });
         });
-    }).timeout(TIMEOUT_PERIOD);
+    }).timeout(TIMEOUT_PERIOD * 2);
     it('should throw on OR topics filter', function () {
         return __awaiter(this, void 0, void 0, function () {
             var filter, noop;
@@ -611,17 +617,17 @@ describe('Contract Events', function () {
                     case 0:
                         filter = {
                             address: contract.address,
-                            fromTimestamp: sdk_1.Timestamp.generate().toString(),
-                            toTimestamp: sdk_1.Timestamp.generate().plusNanos(100000).toString(),
                             topics: [
-                                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'],
-                                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885']
+                                '0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885',
+                                null,
+                                ['0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885', '0x0f6798a560793a54c3bcfe86a93cde1e73087d944c0ea20544137d4121396885'],
                             ]
                         };
                         noop = function () { };
                         provider.on(filter, noop);
                         provider.on('error', function (error) {
                             assert_1.default.notStrictEqual(error, null);
+                            assert_1.default.strictEqual(error.code, logger_1.Logger.errors.UNSUPPORTED_OPERATION);
                         });
                         return [4 /*yield*/, sleep(10000)];
                     case 1:
