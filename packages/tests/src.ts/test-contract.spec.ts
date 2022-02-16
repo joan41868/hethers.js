@@ -325,7 +325,7 @@ describe('Contract Events', function () {
             setTimeout(resolve, timeout);
         });
     };
-    const enoughEventsCaptured = (n:number) => n >= 4;
+    const enoughEventsCaptured = (n:number, expectedN:number) => n >= expectedN;
 
     it("should be able to capture events via contract", async function () {
         const capturedMints: any[] = [];
@@ -333,13 +333,11 @@ describe('Contract Events', function () {
             assert.strictEqual(args.length, 3, "expected 3 arguments - [address, unit256, log].");
             capturedMints.push([...args])
         });
-        for (let i = 0; i < 5; i++){
-            const mint = await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
-            await mint.wait();
-        }
+        const mint = await contract.mint(BigNumber.from(`1`), { gasLimit: 300000 });
+        await mint.wait();
         await sleep(15000);
         contract.removeAllListeners();
-        assert.strictEqual(enoughEventsCaptured(capturedMints.length), true, "expected 10 captured events (Mint).")
+        assert.strictEqual(enoughEventsCaptured(capturedMints.length, 1), true, "expected 5 captured events (Mint).")
         for(let mint of capturedMints) {
             assert.strictEqual(mint[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
         }
@@ -353,13 +351,11 @@ describe('Contract Events', function () {
             assert.notStrictEqual(args, null, "expected 1 argument - log");
             capturedMints.push([args])
         });
-        for (let i = 0; i < 5; i++){
-            const mint = await contract.mint(BigNumber.from(`${i+1}`), { gasLimit: 300000 });
-            await mint.wait();
-        }
+        const mint = await contract.mint(BigNumber.from(`1`), { gasLimit: 300000 });
+        await mint.wait();
         await sleep(15000);
         provider.removeAllListeners();
-        assert.strictEqual(enoughEventsCaptured(capturedMints.length), true, "expected 10 captured events (Mint).")
+        assert.strictEqual(enoughEventsCaptured(capturedMints.length, 1), true, "expected 5 captured events (Mint).")
     }).timeout(TIMEOUT_PERIOD * 2);
 
     it('should throw on OR topics filter', async function() {
@@ -375,7 +371,7 @@ describe('Contract Events', function () {
         provider.on(filter, noop);
         provider.on('error', (error) => {
             assert.notStrictEqual(error, null);
-            assert.strictEqual(error.code, Logger.errors.UNSUPPORTED_OPERATION);
+            assert.strictEqual(error.code, Logger.errors.INVALID_ARGUMENT);
         });
         await sleep(10000);
         provider.removeAllListeners();

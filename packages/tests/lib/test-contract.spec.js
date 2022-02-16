@@ -528,10 +528,10 @@ describe('Contract Events', function () {
             }
         });
     }); };
-    var enoughEventsCaptured = function (n) { return n >= 4; };
+    var enoughEventsCaptured = function (n, expectedN) { return n >= expectedN; };
     it("should be able to capture events via contract", function () {
         return __awaiter(this, void 0, void 0, function () {
-            var capturedMints, i, mint, _i, capturedMints_1, mint;
+            var capturedMints, mint, _i, capturedMints_1, mint_1;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -544,28 +544,20 @@ describe('Contract Events', function () {
                             assert_1.default.strictEqual(args.length, 3, "expected 3 arguments - [address, unit256, log].");
                             capturedMints.push(__spreadArray([], args, true));
                         });
-                        i = 0;
-                        _a.label = 1;
+                        return [4 /*yield*/, contract.mint(ethers_1.BigNumber.from("1"), { gasLimit: 300000 })];
                     case 1:
-                        if (!(i < 5)) return [3 /*break*/, 5];
-                        return [4 /*yield*/, contract.mint(ethers_1.BigNumber.from("" + (i + 1)), { gasLimit: 300000 })];
-                    case 2:
                         mint = _a.sent();
                         return [4 /*yield*/, mint.wait()];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, sleep(15000)];
                     case 3:
                         _a.sent();
-                        _a.label = 4;
-                    case 4:
-                        i++;
-                        return [3 /*break*/, 1];
-                    case 5: return [4 /*yield*/, sleep(15000)];
-                    case 6:
-                        _a.sent();
                         contract.removeAllListeners();
-                        assert_1.default.strictEqual(enoughEventsCaptured(capturedMints.length), true, "expected 10 captured events (Mint).");
+                        assert_1.default.strictEqual(enoughEventsCaptured(capturedMints.length, 1), true, "expected 5 captured events (Mint).");
                         for (_i = 0, capturedMints_1 = capturedMints; _i < capturedMints_1.length; _i++) {
-                            mint = capturedMints_1[_i];
-                            assert_1.default.strictEqual(mint[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
+                            mint_1 = capturedMints_1[_i];
+                            assert_1.default.strictEqual(mint_1[0].toLowerCase(), wallet.address.toLowerCase(), "address mismatch - mint");
                         }
                         return [2 /*return*/];
                 }
@@ -574,7 +566,7 @@ describe('Contract Events', function () {
     }).timeout(TIMEOUT_PERIOD * 2);
     it('should be able to capture events via provider', function () {
         return __awaiter(this, void 0, void 0, function () {
-            var capturedMints, i, mint;
+            var capturedMints, mint;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -585,25 +577,17 @@ describe('Contract Events', function () {
                             assert_1.default.notStrictEqual(args, null, "expected 1 argument - log");
                             capturedMints.push([args]);
                         });
-                        i = 0;
-                        _a.label = 1;
+                        return [4 /*yield*/, contract.mint(ethers_1.BigNumber.from("1"), { gasLimit: 300000 })];
                     case 1:
-                        if (!(i < 5)) return [3 /*break*/, 5];
-                        return [4 /*yield*/, contract.mint(ethers_1.BigNumber.from("" + (i + 1)), { gasLimit: 300000 })];
-                    case 2:
                         mint = _a.sent();
                         return [4 /*yield*/, mint.wait()];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, sleep(15000)];
                     case 3:
                         _a.sent();
-                        _a.label = 4;
-                    case 4:
-                        i++;
-                        return [3 /*break*/, 1];
-                    case 5: return [4 /*yield*/, sleep(15000)];
-                    case 6:
-                        _a.sent();
                         provider.removeAllListeners();
-                        assert_1.default.strictEqual(enoughEventsCaptured(capturedMints.length), true, "expected 10 captured events (Mint).");
+                        assert_1.default.strictEqual(enoughEventsCaptured(capturedMints.length, 1), true, "expected 5 captured events (Mint).");
                         return [2 /*return*/];
                 }
             });
@@ -627,7 +611,7 @@ describe('Contract Events', function () {
                         provider.on(filter, noop);
                         provider.on('error', function (error) {
                             assert_1.default.notStrictEqual(error, null);
-                            assert_1.default.strictEqual(error.code, logger_1.Logger.errors.UNSUPPORTED_OPERATION);
+                            assert_1.default.strictEqual(error.code, logger_1.Logger.errors.INVALID_ARGUMENT);
                         });
                         return [4 /*yield*/, sleep(10000)];
                     case 1:
