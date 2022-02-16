@@ -29401,7 +29401,7 @@ const keccak256$2 = keccak(256);
 var _args = [
 	[
 		"elliptic@6.5.4",
-		"/home/nikolay/Desktop/t1t1t1/hethers.js"
+		"/home/nikolay/Desktop/ttt222/hethers.js"
 	]
 ];
 var _from = "elliptic@6.5.4";
@@ -29427,7 +29427,7 @@ var _requiredBy = [
 ];
 var _resolved = "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz";
 var _spec = "6.5.4";
-var _where = "/home/nikolay/Desktop/t1t1t1/hethers.js";
+var _where = "/home/nikolay/Desktop/ttt222/hethers.js";
 var author = {
 	name: "Fedor Indutny",
 	email: "fedor@indutny.com"
@@ -86427,7 +86427,7 @@ var channelz$1 = /*@__PURE__*/getDefaultExportFromCjs(channelz);
 var _args$1 = [
 	[
 		"@grpc/grpc-js@1.5.5",
-		"/home/nikolay/Desktop/t1t1t1/hethers.js"
+		"/home/nikolay/Desktop/ttt222/hethers.js"
 	]
 ];
 var _from$1 = "@grpc/grpc-js@1.5.5";
@@ -86453,7 +86453,7 @@ var _requiredBy$1 = [
 ];
 var _resolved$1 = "https://registry.npmjs.org/@grpc/grpc-js/-/grpc-js-1.5.5.tgz";
 var _spec$1 = "1.5.5";
-var _where$1 = "/home/nikolay/Desktop/t1t1t1/hethers.js";
+var _where$1 = "/home/nikolay/Desktop/ttt222/hethers.js";
 var author$1 = {
 	name: "Google Inc."
 };
