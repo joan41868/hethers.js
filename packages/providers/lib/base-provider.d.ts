@@ -1,9 +1,10 @@
+/// <reference types="node" />
 import { EventType, Filter, Listener, Log, Provider, TransactionReceipt, TransactionRequest, TransactionResponse } from "@ethersproject/abstract-provider";
 import { BigNumber } from "@ethersproject/bignumber";
 import { Network, Networkish, HederaNetworkConfigLike } from "@ethersproject/networks";
 import { Deferrable } from "@ethersproject/properties";
 import { Transaction } from "@ethersproject/transactions";
-import { TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
+import { Timestamp, TransactionReceipt as HederaTransactionReceipt } from '@hashgraph/sdk';
 import { Formatter } from "./formatter";
 import { AccountLike } from "@ethersproject/address";
 import { AccountId, Client } from "@hashgraph/sdk";
@@ -30,19 +31,18 @@ export declare class BaseProvider extends Provider {
     _network: Network;
     _events: Array<Event>;
     _pollingInterval: number;
+    _poller: NodeJS.Timer;
+    _bootstrapPoll: NodeJS.Timer;
     formatter: Formatter;
+    _emittedEvents: {
+        [key: string]: boolean;
+    };
+    _previousPollingTimestamps: {
+        [key: string]: Timestamp;
+    };
     readonly anyNetwork: boolean;
     private readonly hederaClient;
     private readonly _mirrorNodeUrl;
-    /**
-     *  ready
-     *
-     *  A Promise<Network> that resolves only once the provider is ready.
-     *
-     *  Sub-classes that call the super with a network without a chainId
-     *  MUST set this. Standard named networks have a known chainId.
-     *
-     */
     constructor(network: Networkish | Promise<Network> | HederaNetworkConfigLike);
     _ready(): Promise<Network>;
     static getFormatter(): Formatter;
@@ -97,6 +97,8 @@ export declare class BaseProvider extends Provider {
      */
     getLogs(filter: Filter | Promise<Filter>): Promise<Array<Log>>;
     getHbarPrice(): Promise<number>;
+    _startEvent(event: Event): void;
+    _stopEvent(event: Event): void;
     perform(method: string, params: any): Promise<any>;
     _addEventListener(eventName: EventType, listener: Listener, once: boolean): this;
     on(eventName: EventType, listener: Listener): this;
@@ -106,5 +108,9 @@ export declare class BaseProvider extends Provider {
     listeners(eventName?: EventType): Array<Listener>;
     off(eventName: EventType, listener?: Listener): this;
     removeAllListeners(eventName?: EventType): this;
+    get polling(): boolean;
+    set polling(value: boolean);
+    poll(): Promise<void>;
+    purgeOldEvents(): void;
 }
 //# sourceMappingURL=base-provider.d.ts.map
