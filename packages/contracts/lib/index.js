@@ -808,7 +808,9 @@ var BaseContract = /** @class */ (function () {
             runningEvent.removeListener(listener);
             _this._checkRunningEvents(runningEvent);
         };
-        event.getTransaction = function () { return _this.provider.getTransaction(log.timestamp); };
+        event.getTransaction = function () {
+            return _this.provider.getTransaction(log.timestamp);
+        };
         event.getTransactionReceipt = function () {
             return logger.throwError("NOT_SUPPORTED", logger_1.Logger.errors.UNSUPPORTED_OPERATION);
         };

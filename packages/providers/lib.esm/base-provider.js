@@ -13,6 +13,7 @@ import { BigNumber } from "@ethersproject/bignumber";
 import { arrayify, hexDataLength, hexlify } from "@ethersproject/bytes";
 import { getNetwork } from "@hethers/networks";
 import { defineReadOnly, getStatic, resolveProperties } from "@ethersproject/properties";
+import { Timestamp } from '@hashgraph/sdk';
 import { Logger } from "@hethers/logger";
 import { version } from "./_version";
 const logger = new Logger(version);
@@ -21,6 +22,7 @@ import { getAccountFromTransactionId, asAccountString, getAddressFromAccount } f
 import { AccountBalanceQuery, AccountId, Client, NetworkName, Transaction as HederaTransaction } from "@hashgraph/sdk";
 import axios from "axios";
 import { base64 } from "hethers/lib/utils";
+const ZERO_HEDERA_TIMESTAMP = "1000000000.000000000";
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -85,7 +87,6 @@ function base64ToHex(hash) {
 // Provider Object
 /**
  *  EventType
- *   - "block"
  *   - "poll"
  *   - "didPoll"
  *   - "pending"
@@ -95,7 +96,7 @@ function base64ToHex(hash) {
  *   - topics array
  *   - transaction hash
  */
-const PollableEvents = ["block", "network", "pending", "poll"];
+const PollableEvents = ["network", "pending", "poll"];
 export class Event {
     constructor(tag, listener, once) {
         defineReadOnly(this, "tag", tag);
@@ -145,19 +146,14 @@ let defaultFormatter = null;
 const MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
 const MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
 const MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
+let nextPollId = 1;
 export class BaseProvider extends Provider {
-    /**
-     *  ready
-     *
-     *  A Promise<Network> that resolves only once the provider is ready.
-     *
-     *  Sub-classes that call the super with a network without a chainId
-     *  MUST set this. Standard named networks have a known chainId.
-     *
-     */
     constructor(network) {
         logger.checkNew(new.target, Provider);
         super();
+        this._events = [];
+        this._emittedEvents = {};
+        this._previousPollingTimestamps = {};
         this.formatter = new.target.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -169,9 +165,11 @@ export class BaseProvider extends Provider {
         if (network instanceof Promise) {
             this._networkPromise = network;
             // Squash any "unhandled promise" errors; that do not need to be handled
-            network.catch((error) => { });
+            network.catch((error) => {
+            });
             // Trigger initial network setting (async)
-            this._ready().catch((error) => { });
+            this._ready().catch((error) => {
+            });
         }
         else {
             if (!isHederaNetworkConfigLike(network)) {
@@ -182,7 +180,7 @@ export class BaseProvider extends Provider {
                 const knownNetwork = getStatic(new.target, "getNetwork")(asDefaultNetwork);
                 if (knownNetwork) {
                     defineReadOnly(this, "_network", knownNetwork);
-                    this.emit("network", knownNetwork, null);
+                    this.emit("network", knownNetwork);
                 }
                 else {
                     logger.throwArgumentError("invalid network", "network", network);
@@ -211,17 +209,13 @@ export class BaseProvider extends Provider {
                     try {
                         network = yield this._networkPromise;
                     }
-                    catch (error) { }
+                    catch (error) {
+                    }
                 }
                 // Try the Provider's network detection (this MUST throw if it cannot)
                 if (network == null) {
                     network = yield this.detectNetwork();
                 }
-                // This should never happen; every Provider sub-class should have
-                // suggested a network by here (or have thrown).
-                // if (!network) {
-                //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
-                // }
                 // Possible this call stacked so do not call defineReadOnly again
                 if (this._network == null) {
                     if (this.anyNetwork) {
@@ -257,7 +251,7 @@ export class BaseProvider extends Provider {
     }
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
-    // With the current hedera implementation, we do not support a changeable networks,
+    // With the current hedera implementation, we do not support changeable networks,
     // thus we do not need to query at this level
     detectNetwork() {
         return __awaiter(this, void 0, void 0, function* () {
@@ -403,7 +397,10 @@ export class BaseProvider extends Provider {
         }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
-            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
+            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", Logger.errors.UNKNOWN_ERROR, {
+                expectedHash: tx.hash,
+                returnedHash: hash
+            });
         }
         result.wait = (timeout) => __awaiter(this, void 0, void 0, function* () {
             const receipt = yield this._waitForTransaction(tx.transactionId, timeout);
@@ -588,17 +585,31 @@ export class BaseProvider extends Provider {
         return __awaiter(this, void 0, void 0, function* () {
             this._checkMirrorNode();
             const params = yield resolveProperties({ filter: this._getFilter(filter) });
-            const fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
-            const toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
+            // set default values
+            params.filter.fromTimestamp = params.filter.fromTimestamp || ZERO_HEDERA_TIMESTAMP;
+            params.filter.toTimestamp = params.filter.toTimestamp || Timestamp.generate().toString();
+            const fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+            const toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
             const limit = 100;
-            const oversizeResponseLegth = limit + 1;
-            const epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+            const oversizeResponseLength = limit + 1;
+            let epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
+            if (params.filter.topics && params.filter.topics.length > 0) {
+                for (let i = 0; i < params.filter.topics.length; i++) {
+                    const topic = params.filter.topics[i];
+                    if (typeof topic === "string") {
+                        epContractsLogs += `&topic${i}=${topic}`;
+                    }
+                    else {
+                        return logger.throwArgumentError("OR on topics", Logger.errors.UNSUPPORTED_OPERATION, params.filter.topics);
+                    }
+                }
+            }
             const requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
             try {
                 let { data } = yield axios.get(requestUrl);
                 if (data) {
                     const mappedLogs = this.formatter.logsMapper(data.logs);
-                    if (mappedLogs.length == oversizeResponseLegth) {
+                    if (mappedLogs.length == oversizeResponseLength) {
                         logger.throwError(`query returned more than ${limit} results`, Logger.errors.SERVER_ERROR);
                     }
                     return Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs);
@@ -619,10 +630,22 @@ export class BaseProvider extends Provider {
             return logger.throwError("NOT_IMPLEMENTED", Logger.errors.NOT_IMPLEMENTED);
         });
     }
+    /* Events, Event Listeners & Polling */
+    _startEvent(event) {
+        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
+        this._previousPollingTimestamps[event.tag] = Timestamp.generate();
+    }
+    _stopEvent(event) {
+        this.polling = (this._events.filter((e) => e.pollable()).length > 0);
+        delete this._previousPollingTimestamps[event.tag];
+    }
     perform(method, params) {
         return logger.throwError(method + " not implemented", Logger.errors.NOT_IMPLEMENTED, { operation: method });
     }
     _addEventListener(eventName, listener, once) {
+        const event = new Event(getEventTag(eventName), listener, once);
+        this._events.push(event);
+        this._startEvent(event);
         return this;
     }
     on(eventName, listener) {
@@ -632,19 +655,183 @@ export class BaseProvider extends Provider {
         return this._addEventListener(eventName, listener, true);
     }
     emit(eventName, ...args) {
-        return false;
+        let result = false;
+        let stopped = [];
+        let eventTag = getEventTag(eventName);
+        this._events = this._events.filter((event) => {
+            if (event.tag !== eventTag) {
+                return true;
+            }
+            setTimeout(() => {
+                event.listener.apply(this, args);
+            }, 0);
+            result = true;
+            if (event.once) {
+                stopped.push(event);
+                return false;
+            }
+            return true;
+        });
+        stopped.forEach((event) => {
+            this._stopEvent(event);
+        });
+        return result;
     }
     listenerCount(eventName) {
-        return 0;
+        if (!eventName) {
+            return this._events.length;
+        }
+        let eventTag = getEventTag(eventName);
+        return this._events.filter((event) => {
+            return (event.tag === eventTag);
+        }).length;
     }
     listeners(eventName) {
-        return null;
+        if (eventName == null) {
+            return this._events.map((event) => event.listener);
+        }
+        let eventTag = getEventTag(eventName);
+        return this._events
+            .filter((event) => (event.tag === eventTag))
+            .map((event) => event.listener);
     }
     off(eventName, listener) {
+        if (listener == null) {
+            return this.removeAllListeners(eventName);
+        }
+        const stopped = [];
+        let found = false;
+        let eventTag = getEventTag(eventName);
+        this._events = this._events.filter((event) => {
+            if (event.tag !== eventTag || event.listener != listener) {
+                return true;
+            }
+            if (found) {
+                return true;
+            }
+            found = true;
+            stopped.push(event);
+            return false;
+        });
+        stopped.forEach((event) => {
+            this._stopEvent(event);
+        });
         return this;
     }
     removeAllListeners(eventName) {
+        let stopped = [];
+        if (eventName == null) {
+            stopped = this._events;
+            this._events = [];
+        }
+        else {
+            const eventTag = getEventTag(eventName);
+            this._events = this._events.filter((event) => {
+                if (event.tag !== eventTag) {
+                    return true;
+                }
+                stopped.push(event);
+                return false;
+            });
+        }
+        stopped.forEach((event) => {
+            this._stopEvent(event);
+        });
         return this;
+    }
+    get polling() {
+        return (this._poller != null);
+    }
+    set polling(value) {
+        if (value && !this._poller) {
+            this._poller = setInterval(() => {
+                this.poll();
+            }, this.pollingInterval);
+            if (!this._bootstrapPoll) {
+                this._bootstrapPoll = setTimeout(() => {
+                    this.poll();
+                    // We block additional polls until the polling interval
+                    // is done, to prevent overwhelming the poll function
+                    this._bootstrapPoll = setTimeout(() => {
+                        // If polling was disabled, something may require a poke
+                        // since starting the bootstrap poll and it was disabled
+                        if (!this._poller) {
+                            this.poll();
+                        }
+                        // Clear out the bootstrap so we can do another
+                        this._bootstrapPoll = null;
+                    }, this.pollingInterval);
+                }, 0);
+            }
+        }
+        else if (!value && this._poller) {
+            clearInterval(this._poller);
+            this._poller = null;
+        }
+    }
+    poll() {
+        return __awaiter(this, void 0, void 0, function* () {
+            const pollId = nextPollId++;
+            // purge the old events
+            this.purgeOldEvents();
+            // Track all running promises, so we can trigger a post-poll once they are complete
+            const runners = [];
+            // Emit a poll event with the current timestamp
+            const now = Timestamp.generate();
+            this.emit("poll", pollId, now.toDate().getTime());
+            this._events.forEach((event) => {
+                switch (event.type) {
+                    case "filter": {
+                        const filter = event.filter;
+                        let from = this._previousPollingTimestamps[event.tag];
+                        // ensure we don't get from == to
+                        from = from.plusNanos(1);
+                        filter.fromTimestamp = from.toString();
+                        filter.toTimestamp = now.toString();
+                        const runner = this.getLogs(filter).then((logs) => {
+                            if (logs.length === 0) {
+                                return;
+                            }
+                            logs.forEach((log) => {
+                                if (!this._emittedEvents[log.timestamp]) {
+                                    this.emit(filter, log);
+                                    this._emittedEvents[log.timestamp] = true;
+                                    const [logTsSeconds, logTsNanos] = log.timestamp.split(".").map(parseInt);
+                                    const logTimestamp = new Timestamp(logTsSeconds, logTsNanos);
+                                    // longInstance.compare(other) returns -1 when other > this, 0 when they are equal and 1 then this > other
+                                    if (this._previousPollingTimestamps[event.tag].compare(logTimestamp) == -1) {
+                                        this._previousPollingTimestamps[event.tag] = logTimestamp;
+                                    }
+                                }
+                            });
+                        }).catch((error) => {
+                            this.emit("error", error);
+                        });
+                        runners.push(runner);
+                        break;
+                    }
+                }
+            });
+            // Once all events for this loop have been processed, emit "didPoll"
+            Promise.all(runners).then(() => {
+                this.emit("didPoll", pollId);
+            }).catch((error) => {
+                this.emit("error", error);
+            });
+            return;
+        });
+    }
+    purgeOldEvents() {
+        for (let emittedEventsKey in this._emittedEvents) {
+            const [sec, nano] = emittedEventsKey.split(".").map(parseInt);
+            const ts = new Timestamp(sec, nano);
+            const now = Timestamp.generate();
+            // clean up events which are significantly old - older than 3 minutes
+            const threeMinutes = 1000 * 1000 * 1000 * 60 * 3;
+            if (ts.compare(now.plusNanos(threeMinutes)) == -1) {
+                delete this._emittedEvents[emittedEventsKey];
+            }
+        }
     }
 }
 // resolves network string to a hedera network name
@@ -677,5 +864,23 @@ function resolveMirrorNetworkUrl(net) {
 }
 function isHederaNetworkConfigLike(cfg) {
     return cfg.network !== undefined;
+}
+function getEventTag(eventName) {
+    if (typeof (eventName) === "string") {
+        eventName = eventName.toLowerCase();
+        if (hexDataLength(eventName) === 32) {
+            return "tx:" + eventName;
+        }
+        if (eventName.indexOf(":") === -1) {
+            return eventName;
+        }
+    }
+    else if (Array.isArray(eventName)) {
+        return "filter:*:" + serializeTopics(eventName);
+    }
+    else if (eventName && typeof (eventName) === "object") {
+        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
+    }
+    throw new Error("invalid event - " + eventName);
 }
 //# sourceMappingURL=base-provider.js.map

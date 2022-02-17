@@ -71,14 +71,16 @@ var bignumber_1 = require("@ethersproject/bignumber");
 var bytes_1 = require("@ethersproject/bytes");
 var networks_1 = require("@hethers/networks");
 var properties_1 = require("@ethersproject/properties");
+var sdk_1 = require("@hashgraph/sdk");
 var logger_1 = require("@hethers/logger");
 var _version_1 = require("./_version");
 var logger = new logger_1.Logger(_version_1.version);
 var formatter_1 = require("./formatter");
 var address_1 = require("@hethers/address");
-var sdk_1 = require("@hashgraph/sdk");
+var sdk_2 = require("@hashgraph/sdk");
 var axios_1 = __importDefault(require("axios"));
 var utils_1 = require("hethers/lib/utils");
+var ZERO_HEDERA_TIMESTAMP = "1000000000.000000000";
 //////////////////////////////
 // Event Serializeing
 // @ts-ignore
@@ -143,7 +145,6 @@ function base64ToHex(hash) {
 // Provider Object
 /**
  *  EventType
- *   - "block"
  *   - "poll"
  *   - "didPoll"
  *   - "pending"
@@ -153,7 +154,7 @@ function base64ToHex(hash) {
  *   - topics array
  *   - transaction hash
  */
-var PollableEvents = ["block", "network", "pending", "poll"];
+var PollableEvents = ["network", "pending", "poll"];
 var Event = /** @class */ (function () {
     function Event(tag, listener, once) {
         (0, properties_1.defineReadOnly)(this, "tag", tag);
@@ -221,22 +222,17 @@ var defaultFormatter = null;
 var MIRROR_NODE_TRANSACTIONS_ENDPOINT = '/api/v1/transactions/';
 var MIRROR_NODE_CONTRACTS_RESULTS_ENDPOINT = '/api/v1/contracts/results/';
 var MIRROR_NODE_CONTRACTS_ENDPOINT = '/api/v1/contracts/';
+var nextPollId = 1;
 var BaseProvider = /** @class */ (function (_super) {
     __extends(BaseProvider, _super);
-    /**
-     *  ready
-     *
-     *  A Promise<Network> that resolves only once the provider is ready.
-     *
-     *  Sub-classes that call the super with a network without a chainId
-     *  MUST set this. Standard named networks have a known chainId.
-     *
-     */
     function BaseProvider(network) {
         var _newTarget = this.constructor;
         var _this = this;
         logger.checkNew(_newTarget, abstract_provider_1.Provider);
         _this = _super.call(this) || this;
+        _this._events = [];
+        _this._emittedEvents = {};
+        _this._previousPollingTimestamps = {};
         _this.formatter = _newTarget.getFormatter();
         // If network is any, this Provider allows the underlying
         // network to change dynamically, and we auto-detect the
@@ -248,9 +244,11 @@ var BaseProvider = /** @class */ (function (_super) {
         if (network instanceof Promise) {
             _this._networkPromise = network;
             // Squash any "unhandled promise" errors; that do not need to be handled
-            network.catch(function (error) { });
+            network.catch(function (error) {
+            });
             // Trigger initial network setting (async)
-            _this._ready().catch(function (error) { });
+            _this._ready().catch(function (error) {
+            });
         }
         else {
             if (!isHederaNetworkConfigLike(network)) {
@@ -261,17 +259,17 @@ var BaseProvider = /** @class */ (function (_super) {
                 var knownNetwork = (0, properties_1.getStatic)(_newTarget, "getNetwork")(asDefaultNetwork);
                 if (knownNetwork) {
                     (0, properties_1.defineReadOnly)(_this, "_network", knownNetwork);
-                    _this.emit("network", knownNetwork, null);
+                    _this.emit("network", knownNetwork);
                 }
                 else {
                     logger.throwArgumentError("invalid network", "network", network);
                 }
-                _this.hederaClient = sdk_1.Client.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
+                _this.hederaClient = sdk_2.Client.forName(mapNetworkToHederaNetworkName(asDefaultNetwork));
                 _this._mirrorNodeUrl = resolveMirrorNetworkUrl(_this._network);
             }
             else {
                 var asHederaNetwork = network;
-                _this.hederaClient = sdk_1.Client.forNetwork(asHederaNetwork.network);
+                _this.hederaClient = sdk_2.Client.forNetwork(asHederaNetwork.network);
                 _this._mirrorNodeUrl = asHederaNetwork.mirrorNodeUrl;
                 (0, properties_1.defineReadOnly)(_this, "_network", {
                     // FIXME: chainId
@@ -309,11 +307,6 @@ var BaseProvider = /** @class */ (function (_super) {
                         network = _a.sent();
                         _a.label = 6;
                     case 6:
-                        // This should never happen; every Provider sub-class should have
-                        // suggested a network by here (or have thrown).
-                        // if (!network) {
-                        //     logger.throwError("no network detected", Logger.errors.UNKNOWN_ERROR, { });
-                        // }
                         // Possible this call stacked so do not call defineReadOnly again
                         if (this._network == null) {
                             if (this.anyNetwork) {
@@ -355,7 +348,7 @@ var BaseProvider = /** @class */ (function (_super) {
     };
     // This method should query the network if the underlying network
     // can change, such as when connected to a JSON-RPC backend
-    // With the current hedera implementation, we do not support a changeable networks,
+    // With the current hedera implementation, we do not support changeable networks,
     // thus we do not need to query at this level
     BaseProvider.prototype.detectNetwork = function () {
         return __awaiter(this, void 0, void 0, function () {
@@ -474,8 +467,8 @@ var BaseProvider = /** @class */ (function (_super) {
                         _a.label = 2;
                     case 2:
                         _a.trys.push([2, 4, , 5]);
-                        return [4 /*yield*/, new sdk_1.AccountBalanceQuery()
-                                .setAccountId(sdk_1.AccountId.fromString(account))
+                        return [4 /*yield*/, new sdk_2.AccountBalanceQuery()
+                                .setAccountId(sdk_2.AccountId.fromString(account))
                                 .execute(this.hederaClient)];
                     case 3:
                         balance = _a.sent();
@@ -553,7 +546,10 @@ var BaseProvider = /** @class */ (function (_super) {
         }
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null && tx.hash !== hash) {
-            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", logger_1.Logger.errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
+            logger.throwError("Transaction hash mismatch from Provider.sendTransaction.", logger_1.Logger.errors.UNKNOWN_ERROR, {
+                expectedHash: tx.hash,
+                returnedHash: hash
+            });
         }
         result.wait = function (timeout) { return __awaiter(_this, void 0, void 0, function () {
             var receipt;
@@ -591,7 +587,7 @@ var BaseProvider = /** @class */ (function (_super) {
                     case 1:
                         signedTransaction = _c.sent();
                         txBytes = (0, bytes_1.arrayify)(signedTransaction);
-                        hederaTx = sdk_1.Transaction.fromBytes(txBytes);
+                        hederaTx = sdk_2.Transaction.fromBytes(txBytes);
                         return [4 /*yield*/, this.formatter.transaction(signedTransaction)];
                     case 2:
                         ethersTx = _c.sent();
@@ -786,7 +782,7 @@ var BaseProvider = /** @class */ (function (_super) {
      */
     BaseProvider.prototype.getLogs = function (filter) {
         return __awaiter(this, void 0, void 0, function () {
-            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLegth, epContractsLogs, requestUrl, data, mappedLogs, error_6, errorParams;
+            var params, fromTimestampFilter, toTimestampFilter, limit, oversizeResponseLength, epContractsLogs, i, topic, requestUrl, data, mappedLogs, error_6, errorParams;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -794,11 +790,25 @@ var BaseProvider = /** @class */ (function (_super) {
                         return [4 /*yield*/, (0, properties_1.resolveProperties)({ filter: this._getFilter(filter) })];
                     case 1:
                         params = _a.sent();
-                        fromTimestampFilter = params.filter.fromTimestamp ? '&timestamp=gte%3A' + params.filter.fromTimestamp : "";
-                        toTimestampFilter = params.filter.toTimestamp ? '&timestamp=lte%3A' + params.filter.toTimestamp : "";
+                        // set default values
+                        params.filter.fromTimestamp = params.filter.fromTimestamp || ZERO_HEDERA_TIMESTAMP;
+                        params.filter.toTimestamp = params.filter.toTimestamp || sdk_1.Timestamp.generate().toString();
+                        fromTimestampFilter = '&timestamp=gte%3A' + params.filter.fromTimestamp;
+                        toTimestampFilter = '&timestamp=lte%3A' + params.filter.toTimestamp;
                         limit = 100;
-                        oversizeResponseLegth = limit + 1;
-                        epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLegth;
+                        oversizeResponseLength = limit + 1;
+                        epContractsLogs = '/api/v1/contracts/' + params.filter.address + '/results/logs?limit=' + oversizeResponseLength;
+                        if (params.filter.topics && params.filter.topics.length > 0) {
+                            for (i = 0; i < params.filter.topics.length; i++) {
+                                topic = params.filter.topics[i];
+                                if (typeof topic === "string") {
+                                    epContractsLogs += "&topic" + i + "=" + topic;
+                                }
+                                else {
+                                    return [2 /*return*/, logger.throwArgumentError("OR on topics", logger_1.Logger.errors.UNSUPPORTED_OPERATION, params.filter.topics)];
+                                }
+                            }
+                        }
                         requestUrl = this._mirrorNodeUrl + epContractsLogs + toTimestampFilter + fromTimestampFilter;
                         _a.label = 2;
                     case 2:
@@ -808,7 +818,7 @@ var BaseProvider = /** @class */ (function (_super) {
                         data = (_a.sent()).data;
                         if (data) {
                             mappedLogs = this.formatter.logsMapper(data.logs);
-                            if (mappedLogs.length == oversizeResponseLegth) {
+                            if (mappedLogs.length == oversizeResponseLength) {
                                 logger.throwError("query returned more than " + limit + " results", logger_1.Logger.errors.SERVER_ERROR);
                             }
                             return [2 /*return*/, formatter_1.Formatter.arrayOf(this.formatter.filterLog.bind(this.formatter))(mappedLogs)];
@@ -834,10 +844,22 @@ var BaseProvider = /** @class */ (function (_super) {
             });
         });
     };
+    /* Events, Event Listeners & Polling */
+    BaseProvider.prototype._startEvent = function (event) {
+        this.polling = (this._events.filter(function (e) { return e.pollable(); }).length > 0);
+        this._previousPollingTimestamps[event.tag] = sdk_1.Timestamp.generate();
+    };
+    BaseProvider.prototype._stopEvent = function (event) {
+        this.polling = (this._events.filter(function (e) { return e.pollable(); }).length > 0);
+        delete this._previousPollingTimestamps[event.tag];
+    };
     BaseProvider.prototype.perform = function (method, params) {
         return logger.throwError(method + " not implemented", logger_1.Logger.errors.NOT_IMPLEMENTED, { operation: method });
     };
     BaseProvider.prototype._addEventListener = function (eventName, listener, once) {
+        var event = new Event(getEventTag(eventName), listener, once);
+        this._events.push(event);
+        this._startEvent(event);
         return this;
     };
     BaseProvider.prototype.on = function (eventName, listener) {
@@ -847,23 +869,197 @@ var BaseProvider = /** @class */ (function (_super) {
         return this._addEventListener(eventName, listener, true);
     };
     BaseProvider.prototype.emit = function (eventName) {
+        var _this = this;
         var args = [];
         for (var _i = 1; _i < arguments.length; _i++) {
             args[_i - 1] = arguments[_i];
         }
-        return false;
+        var result = false;
+        var stopped = [];
+        var eventTag = getEventTag(eventName);
+        this._events = this._events.filter(function (event) {
+            if (event.tag !== eventTag) {
+                return true;
+            }
+            setTimeout(function () {
+                event.listener.apply(_this, args);
+            }, 0);
+            result = true;
+            if (event.once) {
+                stopped.push(event);
+                return false;
+            }
+            return true;
+        });
+        stopped.forEach(function (event) {
+            _this._stopEvent(event);
+        });
+        return result;
     };
     BaseProvider.prototype.listenerCount = function (eventName) {
-        return 0;
+        if (!eventName) {
+            return this._events.length;
+        }
+        var eventTag = getEventTag(eventName);
+        return this._events.filter(function (event) {
+            return (event.tag === eventTag);
+        }).length;
     };
     BaseProvider.prototype.listeners = function (eventName) {
-        return null;
+        if (eventName == null) {
+            return this._events.map(function (event) { return event.listener; });
+        }
+        var eventTag = getEventTag(eventName);
+        return this._events
+            .filter(function (event) { return (event.tag === eventTag); })
+            .map(function (event) { return event.listener; });
     };
     BaseProvider.prototype.off = function (eventName, listener) {
+        var _this = this;
+        if (listener == null) {
+            return this.removeAllListeners(eventName);
+        }
+        var stopped = [];
+        var found = false;
+        var eventTag = getEventTag(eventName);
+        this._events = this._events.filter(function (event) {
+            if (event.tag !== eventTag || event.listener != listener) {
+                return true;
+            }
+            if (found) {
+                return true;
+            }
+            found = true;
+            stopped.push(event);
+            return false;
+        });
+        stopped.forEach(function (event) {
+            _this._stopEvent(event);
+        });
         return this;
     };
     BaseProvider.prototype.removeAllListeners = function (eventName) {
+        var _this = this;
+        var stopped = [];
+        if (eventName == null) {
+            stopped = this._events;
+            this._events = [];
+        }
+        else {
+            var eventTag_1 = getEventTag(eventName);
+            this._events = this._events.filter(function (event) {
+                if (event.tag !== eventTag_1) {
+                    return true;
+                }
+                stopped.push(event);
+                return false;
+            });
+        }
+        stopped.forEach(function (event) {
+            _this._stopEvent(event);
+        });
         return this;
+    };
+    Object.defineProperty(BaseProvider.prototype, "polling", {
+        get: function () {
+            return (this._poller != null);
+        },
+        set: function (value) {
+            var _this = this;
+            if (value && !this._poller) {
+                this._poller = setInterval(function () {
+                    _this.poll();
+                }, this.pollingInterval);
+                if (!this._bootstrapPoll) {
+                    this._bootstrapPoll = setTimeout(function () {
+                        _this.poll();
+                        // We block additional polls until the polling interval
+                        // is done, to prevent overwhelming the poll function
+                        _this._bootstrapPoll = setTimeout(function () {
+                            // If polling was disabled, something may require a poke
+                            // since starting the bootstrap poll and it was disabled
+                            if (!_this._poller) {
+                                _this.poll();
+                            }
+                            // Clear out the bootstrap so we can do another
+                            _this._bootstrapPoll = null;
+                        }, _this.pollingInterval);
+                    }, 0);
+                }
+            }
+            else if (!value && this._poller) {
+                clearInterval(this._poller);
+                this._poller = null;
+            }
+        },
+        enumerable: false,
+        configurable: true
+    });
+    BaseProvider.prototype.poll = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var pollId, runners, now;
+            var _this = this;
+            return __generator(this, function (_a) {
+                pollId = nextPollId++;
+                // purge the old events
+                this.purgeOldEvents();
+                runners = [];
+                now = sdk_1.Timestamp.generate();
+                this.emit("poll", pollId, now.toDate().getTime());
+                this._events.forEach(function (event) {
+                    switch (event.type) {
+                        case "filter": {
+                            var filter_1 = event.filter;
+                            var from = _this._previousPollingTimestamps[event.tag];
+                            // ensure we don't get from == to
+                            from = from.plusNanos(1);
+                            filter_1.fromTimestamp = from.toString();
+                            filter_1.toTimestamp = now.toString();
+                            var runner = _this.getLogs(filter_1).then(function (logs) {
+                                if (logs.length === 0) {
+                                    return;
+                                }
+                                logs.forEach(function (log) {
+                                    if (!_this._emittedEvents[log.timestamp]) {
+                                        _this.emit(filter_1, log);
+                                        _this._emittedEvents[log.timestamp] = true;
+                                        var _a = log.timestamp.split(".").map(parseInt), logTsSeconds = _a[0], logTsNanos = _a[1];
+                                        var logTimestamp = new sdk_1.Timestamp(logTsSeconds, logTsNanos);
+                                        // longInstance.compare(other) returns -1 when other > this, 0 when they are equal and 1 then this > other
+                                        if (_this._previousPollingTimestamps[event.tag].compare(logTimestamp) == -1) {
+                                            _this._previousPollingTimestamps[event.tag] = logTimestamp;
+                                        }
+                                    }
+                                });
+                            }).catch(function (error) {
+                                _this.emit("error", error);
+                            });
+                            runners.push(runner);
+                            break;
+                        }
+                    }
+                });
+                // Once all events for this loop have been processed, emit "didPoll"
+                Promise.all(runners).then(function () {
+                    _this.emit("didPoll", pollId);
+                }).catch(function (error) {
+                    _this.emit("error", error);
+                });
+                return [2 /*return*/];
+            });
+        });
+    };
+    BaseProvider.prototype.purgeOldEvents = function () {
+        for (var emittedEventsKey in this._emittedEvents) {
+            var _a = emittedEventsKey.split(".").map(parseInt), sec = _a[0], nano = _a[1];
+            var ts = new sdk_1.Timestamp(sec, nano);
+            var now = sdk_1.Timestamp.generate();
+            // clean up events which are significantly old - older than 3 minutes
+            var threeMinutes = 1000 * 1000 * 1000 * 60 * 3;
+            if (ts.compare(now.plusNanos(threeMinutes)) == -1) {
+                delete this._emittedEvents[emittedEventsKey];
+            }
+        }
     };
     return BaseProvider;
 }(abstract_provider_1.Provider));
@@ -872,11 +1068,11 @@ exports.BaseProvider = BaseProvider;
 function mapNetworkToHederaNetworkName(net) {
     switch (net) {
         case 'mainnet':
-            return sdk_1.NetworkName.Mainnet;
+            return sdk_2.NetworkName.Mainnet;
         case 'previewnet':
-            return sdk_1.NetworkName.Previewnet;
+            return sdk_2.NetworkName.Previewnet;
         case 'testnet':
-            return sdk_1.NetworkName.Testnet;
+            return sdk_2.NetworkName.Testnet;
         default:
             logger.throwArgumentError("Invalid network name", "network", net);
             return null;
@@ -898,5 +1094,23 @@ function resolveMirrorNetworkUrl(net) {
 }
 function isHederaNetworkConfigLike(cfg) {
     return cfg.network !== undefined;
+}
+function getEventTag(eventName) {
+    if (typeof (eventName) === "string") {
+        eventName = eventName.toLowerCase();
+        if ((0, bytes_1.hexDataLength)(eventName) === 32) {
+            return "tx:" + eventName;
+        }
+        if (eventName.indexOf(":") === -1) {
+            return eventName;
+        }
+    }
+    else if (Array.isArray(eventName)) {
+        return "filter:*:" + serializeTopics(eventName);
+    }
+    else if (eventName && typeof (eventName) === "object") {
+        return "filter:" + (eventName.address || "*") + ":" + serializeTopics(eventName.topics || []);
+    }
+    throw new Error("invalid event - " + eventName);
 }
 //# sourceMappingURL=base-provider.js.map

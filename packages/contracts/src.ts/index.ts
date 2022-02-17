@@ -886,12 +886,12 @@ export class BaseContract {
             runningEvent.removeListener(listener);
             this._checkRunningEvents(runningEvent);
         };
-
-        event.getTransaction = () => { return this.provider.getTransaction(log.timestamp); }
+        event.getTransaction = () => {
+            return this.provider.getTransaction(log.timestamp);
+        }
         event.getTransactionReceipt = () => {
             return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         }
-
         // This may throw if the topics and data mismatch the signature
         runningEvent.prepareEvent(event);
 
@@ -902,7 +902,6 @@ export class BaseContract {
         if (!this.provider) {
             logger.throwError("events require a provider or a signer with a provider", Logger.errors.UNSUPPORTED_OPERATION, { operation: "once" })
         }
-
         runningEvent.addListener(listener, once);
 
         // Track this running event and its listeners (may already be there; but no hard in updating)
@@ -960,7 +959,6 @@ export class BaseContract {
 
     on(event: EventFilter | string, listener: Listener): this {
         this._requireAddressSet();
-
         this._addEventListener(this._getRunningEvent(event), listener, false);
         return this;
     }

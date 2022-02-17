@@ -666,7 +666,9 @@ export class BaseContract {
             runningEvent.removeListener(listener);
             this._checkRunningEvents(runningEvent);
         };
-        event.getTransaction = () => { return this.provider.getTransaction(log.timestamp); };
+        event.getTransaction = () => {
+            return this.provider.getTransaction(log.timestamp);
+        };
         event.getTransactionReceipt = () => {
             return logger.throwError("NOT_SUPPORTED", Logger.errors.UNSUPPORTED_OPERATION);
         };
