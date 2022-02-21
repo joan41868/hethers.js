@@ -19,6 +19,8 @@ Alchemy
 Pocket Gateway
 --------------
 
+[Open PR link](https://github.com/hashgraph/hethers.js/compare/develop...joan41868:develop)
+
 Creating a Default Provider
 ---------------------------
 
